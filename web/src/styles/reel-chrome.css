@@ -11,7 +11,7 @@
   gap: 14px;
   padding: 0 28px;
   text-align: center;
-  background: #0a0807;
+  background: var(--reel-surface-flat);
 }
 
 /* font-display text-xl font-bold text-white */
@@ -66,7 +66,8 @@
   border-radius: 16px;
   background: var(--vermilion);
   padding: 16px 20px;
-  color: var(--reel-ink);
+  /* On vermilion in both themes, so its ink does not flip with the card's. */
+  color: #fff;
   box-shadow: 0 12px 32px -10px rgba(224, 77, 38, 0.55);
 }
 
@@ -83,9 +84,10 @@
   cursor: not-allowed;
 }
 
-/* animate-bounce text-white */
+/* animate-bounce text-white — this one sits on the PAGE, not the card, so it takes
+   the page's ink rather than the card's. */
 .reel-hint-arrow {
-  color: var(--reel-ink);
+  color: var(--color-ink);
   animation: reelHintBounce 1s infinite;
 }
 
@@ -133,7 +135,8 @@
   font-size: 12px;
   font-weight: 700;
   line-height: 1;
-  color: var(--reel-ink);
+  /* On vermilion in both themes. */
+  color: #fff;
   box-shadow: 0 8px 24px -8px rgba(224, 77, 38, 0.7);
 }
 

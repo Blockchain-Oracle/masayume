@@ -89,25 +89,31 @@ says so), rooms/comments, sharing, alerts, news/ticker, and the real `/status`, 
 never an invented odd, balance, fill or payout; loading and unavailable are valid states; a
 capability that is not connected keeps its control and says what is missing.
 
-## The dark-island trap (cost a real bug — do not repeat it)
+## Never write `var(--white)` on a surface that does not flip
 
 Yosuku's light theme works by **remapping `--white` to `#141210`**, so every `text-white` it wrote
 for dark mode becomes readable ink on cream. That is fine everywhere the surface flips with the
-theme — and wrong on a surface that does not.
+theme — and exactly backwards on a surface that does not.
 
-`/reels` is a deliberate dark island: the card stays black in light mode (part-14.css:124 says so
-explicitly, and re-asserts `#fff !important` under `.feed-card` for exactly this reason). The first
-cut of `reel.css` used `color: var(--white)` on the question, the countdown and the live price, so
-in light mode they rendered near-black ink on a near-black card — invisible. The literal
-`rgba(255,255,255,…)` steps in the same file were fine; only the token broke.
+The first cut of `reel.css` used `color: var(--white)` while the card stayed black in light mode
+(the reference's dark island). Result: the question, the countdown and the live price rendered
+near-black ink on a near-black card. The literal `rgba(255,255,255,…)` steps in the same file were
+fine; only the token broke, which is why *half* the card went missing rather than all of it.
+**None of typecheck, invariants, tests or build can catch this** — contrast is not a type error.
 
-The island now scopes its own ink once (`--reel-ink`, plus `--color-ink`/`-secondary`/`-muted`/
-`--color-hairline` on `.reel-card`). **If you add another island, scope its ink — never reach for
-`--white` inside one.**
+`/reels` is no longer an island: on the user's call (2026-09-01) the card follows the theme, using
+Yosuku's own light-card values from `.creator-studio` (`part-01.css:131`). `reel-theme.css` holds
+one ink triplet per theme and every step in `reel.css` is `rgb(var(--reel-ink-rgb) / <alpha>)`
+carrying the reference's own alpha — so a future theme change is one triplet, not eleven literals.
 
-`PriceChart.client.tsx` now reads its CSS vars off **its own container** rather than
-`document.documentElement`, which is what lets an island hand it surface-appropriate ink. Behaviour
-is unchanged everywhere else (verified: on `/markets` the container inherits the root's value).
+Two things that deliberately do **not** take that token: `.reel-take` and `.reel-hint-pill` sit on
+vermilion in both themes, so their ink is a literal `#fff`; `.reel-hint-arrow` sits on the *page*,
+so it takes `var(--color-ink)`.
+
+`PriceChart.client.tsx` reads its CSS vars off **its own container** rather than
+`document.documentElement`, which is what lets any card hand the chart surface-appropriate ink.
+Behaviour is unchanged everywhere else (verified: on `/markets` the container inherits the root's
+value, and a clean load draws dark-on-cream).
 
 ## Known, not fixed
 
@@ -130,9 +136,10 @@ is unchanged everywhere else (verified: on `/markets` the container inherits the
 ## User feedback carried forward
 
 - 2026-09-01: reviewed the running shell — "looks good", colours "getting there".
-- 2026-09-01: flagged the reel card reading wrong in light mode. Correct — it was the `--white`
-  remap above, now fixed and verified in the browser at both themes. The card *staying dark* on
-  cream is the reference's own choice and was kept; the user has been asked whether to keep it.
+- 2026-09-01: flagged the reel card reading wrong in light mode. Correct on both counts — the text
+  was invisible (the `--white` remap above), and the card's darkness was unwanted. **Decision: the
+  reel card follows the theme.** Recorded as a deviation in the ledger. Verified in the browser at
+  both themes after the change.
 - **Not yet reviewed by the user:** `/portfolio`, the toast. The user asked not to be shown routine
   browser automation and said they will flag UI problems themselves — so those went in verified by
   typecheck, invariants, tests and build. Inspect the browser when they *do* flag something: this

@@ -9,31 +9,9 @@
  * `.feed-snap` / `.feed-card` themselves are already ported verbatim in
  * yosuku/part-16.css and are not restated here.
  *
- * Light theme: /reels is an intentional DARK island in the reference — the card
- * stays black on cream (yosuku/part-14.css re-asserts the white palette under
- * `.feed-card` for exactly this reason). */
-
-/* The island's ink cannot be `var(--white)`. Yosuku remaps that token to #141210 on
- * cream — that is precisely how its dark-mode-authored `text-white` becomes readable
- * there — so on a card that stays black it paints near-black ink on a near-black
- * surface. The reference hits the same wall and answers it with `#fff !important`
- * scoped under `.feed-card` (part-14.css:129); a literal scoped once here is the same
- * fix without needing the override.
- *
- * The chart tokens go with it: PriceChart reads its colours off its own container, so
- * an island hands it surface-appropriate ink the same way. */
-.reel-card,
-.reel-take,
-.reel-hint {
-  --reel-ink: #fff;
-}
-
-.reel-card {
-  --color-ink: #fff;
-  --color-ink-secondary: rgba(255, 255, 255, 0.7);
-  --color-ink-muted: rgba(255, 255, 255, 0.45);
-  --color-hairline: rgba(255, 255, 255, 0.1);
-}
+ * Colour lives in `reel-theme.css`: one ink triplet per theme, and every step below
+ * is `rgb(var(--reel-ink-rgb) / <alpha>)` carrying the reference's own alpha. Never
+ * write `var(--white)` here — Yosuku remaps it to ink on cream. */
 
 /* The reel takes itself out of flow (`.feed-snap` is fixed between the chrome and
  * the viewport bottom), so the shell must not also reserve the chrome's height —
@@ -70,9 +48,9 @@ body:has(.reel-page) .footer {
   flex-direction: column;
   overflow: hidden;
   border-radius: 26px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 30px 120px -30px rgba(0, 0, 0, 0.9);
-  background: radial-gradient(130% 80% at 50% -8%, #16110d 0%, #0c0a08 44%, #080605 100%);
+  border: 1px solid rgb(var(--reel-ink-rgb) / 0.1);
+  box-shadow: var(--reel-shadow);
+  background: var(--reel-surface);
 }
 
 /* pointer-events-none absolute inset-0 z-30 opacity-[0.05] mix-blend-overlay
@@ -142,7 +120,7 @@ body:has(.reel-page) .footer {
   line-height: 1.2;
   text-transform: uppercase;
   letter-spacing: 0.16em;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgb(var(--reel-ink-rgb) / 0.7);
 }
 
 /* mt-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-white/35 */
@@ -153,7 +131,7 @@ body:has(.reel-page) .footer {
   line-height: 1.2;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: rgba(255, 255, 255, 0.35);
+  color: rgb(var(--reel-ink-rgb) / 0.35);
 }
 
 /* text-right */
@@ -169,7 +147,7 @@ body:has(.reel-page) .footer {
   font-size: 8px;
   text-transform: uppercase;
   letter-spacing: 0.2em;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgb(var(--reel-ink-rgb) / 0.4);
 }
 
 /* font-display text-2xl font-extrabold tabular-nums leading-none text-white,
@@ -212,12 +190,12 @@ body:has(.reel-page) .footer {
 
 /* the trailing "?" — text-white/85 */
 .reel-question-mark {
-  color: rgba(255, 255, 255, 0.85);
+  color: rgb(var(--reel-ink-rgb) / 0.85);
 }
 
 /* text-white/40 — no line to ask about yet */
 .reel-question-pending {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgb(var(--reel-ink-rgb) / 0.4);
 }
 
 /* mt-2 flex items-baseline gap-2.5 font-mono text-[12px] tabular-nums */
@@ -239,7 +217,7 @@ body:has(.reel-page) .footer {
 }
 
 .reel-distance.below {
-  color: rgba(255, 255, 255, 0.45);
+  color: rgb(var(--reel-ink-rgb) / 0.45);
 }
 
 /* text-[10px] uppercase tracking-[0.14em] text-white/35 */
@@ -247,7 +225,7 @@ body:has(.reel-page) .footer {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: rgba(255, 255, 255, 0.35);
+  color: rgb(var(--reel-ink-rgb) / 0.35);
 }
 
 /* relative z-10 mt-2 min-h-0 flex-1 px-1.5 — the chart is the hero of the card */
@@ -274,7 +252,7 @@ body:has(.reel-page) .footer {
   text-transform: uppercase;
   letter-spacing: 0.16em;
   line-height: 1.6;
-  color: rgba(255, 255, 255, 0.3);
+  color: rgb(var(--reel-ink-rgb) / 0.3);
 }
 
 /* relative z-10 px-5 pb-6 pt-2 */
@@ -317,13 +295,13 @@ body:has(.reel-page) .footer {
 
 /* border-white/15 bg-white/[0.02] text-white/80 hover:border-white/30 hover:text-white */
 .reel-side.down {
-  border-color: rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.02);
-  color: rgba(255, 255, 255, 0.8);
+  border-color: rgb(var(--reel-ink-rgb) / 0.15);
+  background: rgb(var(--reel-ink-rgb) / 0.02);
+  color: rgb(var(--reel-ink-rgb) / 0.8);
 }
 
 .reel-side.down:hover {
-  border-color: rgba(255, 255, 255, 0.3);
+  border-color: rgb(var(--reel-ink-rgb) / 0.3);
   color: var(--reel-ink);
 }
 
@@ -331,8 +309,8 @@ body:has(.reel-page) .footer {
    font-mono text-[10px] uppercase tracking-[0.18em] text-white/45 */
 .reel-note {
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgb(var(--reel-ink-rgb) / 0.08);
+  background: rgb(var(--reel-ink-rgb) / 0.02);
   padding: 16px 20px;
   text-align: center;
   font-family: var(--font-mono);
@@ -340,6 +318,6 @@ body:has(.reel-page) .footer {
   line-height: 1.7;
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  color: rgba(255, 255, 255, 0.45);
+  color: rgb(var(--reel-ink-rgb) / 0.45);
 }
 
