@@ -26,6 +26,34 @@ export const BANNER = {
   switching: "Switching…",
 } as const;
 
+export const FAUCET = {
+  title: "Fuel up",
+  intro: (amountText: string) => `Mint test tUSDC straight from the venue's own faucet — ${amountText} per tap, no sign-up.`,
+  cta: (amountText: string) => `Mint ${amountText} tUSDC`,
+  minted: "Minted — your balance updates on its own",
+  gasTitle: "Get STT for gas first",
+  yourAddress: "Your address:",
+  recheck: "I've got STT — check again",
+} as const;
+
+export const WALLET_DEV = {
+  connection: "Connection",
+  balances: "Balances",
+  faucet: "Faucet",
+  address: "address",
+  chain: "chain",
+  rightChain: "on Somnia Shannon",
+  wrongChain: "not on Somnia Shannon",
+  signer: "signer",
+  signerBound: "bound to the venue SDK",
+  noSigner: "not bound",
+  connectFirst: "Connect a wallet to read balances.",
+  spendable: "Spendable tUSDC",
+  native: "STT for gas",
+  escrow: "Order escrow",
+  credit: "Venue payout credit",
+} as const;
+
 export const CLAIM = {
   claimable: "claimable",
   claimAll: "Claim all",

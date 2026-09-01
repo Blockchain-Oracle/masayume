@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AppShell, LiveTicker } from "@/components/chrome";
+import { ConnectButton, NetworkBanner } from "@/features/markets/wallet";
 import { Toaster } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BRAND } from "@/lib/copy";
@@ -20,7 +21,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <AppProviders>
           <TooltipProvider>
             <Toaster limit={1}>
-              <AppShell ticker={<LiveTicker />}>{children}</AppShell>
+              <AppShell ticker={<LiveTicker />} banner={<NetworkBanner />} headerActions={<ConnectButton />}>
+                {children}
+              </AppShell>
             </Toaster>
           </TooltipProvider>
         </AppProviders>
