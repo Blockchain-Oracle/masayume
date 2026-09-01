@@ -24,3 +24,6 @@ coverage/
 
 # research clones (not ours)
 reference/
+
+# agent worktrees
+.claude/worktrees/
