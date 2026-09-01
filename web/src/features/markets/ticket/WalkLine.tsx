@@ -11,7 +11,7 @@ export function WalkLine() {
   const [dismissed, setDismissed, hydrated] = usePersistedState(STORAGE_KEY, false, booleanCodec);
   if (!hydrated || dismissed) return null;
   return (
-    <p className="flex items-center justify-between gap-3 rounded-md bg-gold-wash px-3 py-2 type-caption text-ink">
+    <p className="flex items-center justify-between gap-3 rounded-md bg-accent-wash px-3 py-2 type-caption text-ink">
       <span>{WALK_LINE}</span>
       <Button variant="ghost" size="xs" onClick={() => setDismissed(true)}>
         {TICKET.gotIt}

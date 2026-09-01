@@ -21,7 +21,7 @@ export default function DevIndexPage() {
       <ul className="flex flex-col gap-3">
         {FIXTURES.map(({ href, label, note }) => (
           <li key={href} className="flex flex-col gap-1 rounded-lg border border-hairline bg-surface-1 p-4">
-            <Link href={href} className="type-body-strong text-ink hover:text-gold">
+            <Link href={href} className="type-body-strong text-ink hover:text-accent">
               {label} →
             </Link>
             <span className="type-caption text-ink-secondary">{note}</span>

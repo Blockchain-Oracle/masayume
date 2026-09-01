@@ -3,12 +3,12 @@ import { darkTheme, type Theme } from "@rainbow-me/rainbowkit";
 const base = darkTheme({ borderRadius: "medium", fontStack: "system", overlayBlur: "small" });
 const NO_SHADOW = "none";
 
-/** RainbowKit's modal reads our tokens by reference; gold marks live/selected, warning marks errors (color law). */
+/** RainbowKit's modal reads our tokens by reference; vermilion marks live/selected, warning marks errors (color law). */
 export const rainbowKitTheme: Theme = {
   ...base,
   colors: {
     ...base.colors,
-    accentColor: "var(--color-gold)",
+    accentColor: "var(--color-accent)",
     accentColorForeground: "var(--color-cream-ink)",
     actionButtonBorder: "var(--color-hairline)",
     actionButtonBorderMobile: "var(--color-hairline)",
@@ -20,7 +20,7 @@ export const rainbowKitTheme: Theme = {
     connectButtonInnerBackground: "var(--color-surface-2)",
     connectButtonText: "var(--color-ink)",
     connectButtonTextError: "var(--color-warning)",
-    connectionIndicator: "var(--color-gold)",
+    connectionIndicator: "var(--color-accent)",
     downloadBottomCardBackground: "var(--color-surface-1)",
     downloadTopCardBackground: "var(--color-surface-2)",
     error: "var(--color-warning)",
@@ -36,7 +36,7 @@ export const rainbowKitTheme: Theme = {
     profileAction: "var(--color-surface-2)",
     profileActionHover: "var(--color-surface-3)",
     profileForeground: "var(--color-surface-1)",
-    selectedOptionBorder: "var(--color-gold)",
+    selectedOptionBorder: "var(--color-accent)",
     standby: "var(--color-warning)",
   },
   fonts: { body: "var(--font-body)" },

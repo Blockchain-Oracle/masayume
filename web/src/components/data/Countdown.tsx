@@ -43,7 +43,7 @@ export function Countdown({ expirySec, intervalSec, nowMs, announce = false, cla
   const announcement = useCountdownAnnouncement(state, announce);
 
   return (
-    <span role="timer" className={cn("numbers", state?.urgent && "text-gold", className)}>
+    <span role="timer" className={cn("numbers", state?.urgent && "text-accent", className)}>
       {state ? (state.settling ? SETTLING : formatClock(state.remainingSec)) : PLACEHOLDER}
       {announce && (
         <span className="sr-only" aria-live="polite">

@@ -21,7 +21,7 @@ export function QuestionRow({ market, nowMs, selected }: QuestionRowProps) {
   return (
     <li
       aria-current={selected ? "true" : undefined}
-      className={cn("flex flex-col gap-3 rounded-(--market-card-radius) border bg-(--market-card-surface) p-4", selected ? "border-gold-dim" : "border-(--market-card-border)")}
+      className={cn("flex flex-col gap-3 rounded-(--market-card-radius) border bg-(--market-card-surface) p-4", selected ? "border-accent-dim" : "border-(--market-card-border)")}
     >
       <div className="flex items-start justify-between gap-3">
         <p className={cn("type-body", question.pending ? "text-ink-secondary" : "text-ink")}>{question.text}</p>

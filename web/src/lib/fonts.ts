@@ -1,22 +1,36 @@
-import { Archivo, IBM_Plex_Mono, Instrument_Sans, Noto_Serif_JP } from "next/font/google";
+import { Inter, JetBrains_Mono, Noto_Serif_JP, Sora } from "next/font/google";
 
-export const archivo = Archivo({ subsets: ["latin"], variable: "--font-archivo", display: "swap" });
+/**
+ * Yosuku's four faces, with the same variable names and weights as the reference
+ * (reference/yosuku/app/layout.tsx @ 3c56ef5). The ported design system addresses
+ * these variables directly, so the names are part of the contract — not a preference.
+ */
 
-export const instrumentSans = Instrument_Sans({ subsets: ["latin"], variable: "--font-instrument-sans", display: "swap" });
-
-export const plexMono = IBM_Plex_Mono({
+export const sora = Sora({
+  variable: "--font-sora",
   subsets: ["latin"],
-  weight: ["500", "600"],
-  variable: "--font-plex-mono",
+  display: "swap",
+  weight: ["400", "600", "700", "800"],
+});
+
+export const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
   display: "swap",
 });
 
-// Kanji slices load on demand; the stamp vocabulary is a handful of glyphs.
+export const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600"],
+});
+
 export const notoSerifJp = Noto_Serif_JP({
-  subsets: ["latin"],
   variable: "--font-noto-serif-jp",
+  subsets: ["latin"],
   display: "swap",
-  preload: false,
+  weight: ["500", "700"],
 });
 
-export const fontVariables = [archivo.variable, instrumentSans.variable, plexMono.variable, notoSerifJp.variable].join(" ");
+export const fontVariables = [sora.variable, inter.variable, jetbrainsMono.variable, notoSerifJp.variable].join(" ");

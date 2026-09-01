@@ -37,7 +37,7 @@ export function ConnectButton() {
         }
         return (
           <Button variant="secondary" onClick={openAccountModal}>
-            <span aria-hidden="true" className="size-2 rounded-full bg-gold" />
+            <span aria-hidden="true" className="size-2 rounded-full bg-accent" />
             <Hash value={account.address} />
           </Button>
         );

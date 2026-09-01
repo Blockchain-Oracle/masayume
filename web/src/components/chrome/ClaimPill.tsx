@@ -22,9 +22,9 @@ export function ClaimPill({ amountText, href, placement = "fixed", className }: 
     >
       <Link
         href={href}
-        className="inline-flex min-h-touch items-center gap-2 rounded-full border border-gold-dim bg-gold-wash px-4 type-data text-ink"
+        className="inline-flex min-h-touch items-center gap-2 rounded-full border border-accent-dim bg-accent-wash px-4 type-data text-ink"
       >
-        <span className="size-2 rounded-full bg-gold" aria-hidden="true" />
+        <span className="size-2 rounded-full bg-accent" aria-hidden="true" />
         <span>{amountText}</span>
         <span className="type-label-micro text-ink-secondary">{CLAIM.claimable}</span>
       </Link>

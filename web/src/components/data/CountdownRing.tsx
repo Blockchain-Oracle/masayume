@@ -30,7 +30,7 @@ export function CountdownRing({ fraction, urgent = false, glow = false, classNam
           strokeDashoffset={RING_LENGTH - remaining}
           className={cn(
             "fill-none transition-[stroke-dashoffset] duration-1000 ease-linear",
-            urgent ? "stroke-gold" : "stroke-ink-secondary",
+            urgent ? "stroke-accent" : "stroke-ink-secondary",
           )}
         />
       </svg>

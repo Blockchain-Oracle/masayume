@@ -17,7 +17,7 @@
   --reel-card-radius: var(--radius-xl);
   --reel-card-max-width: 460px;
   --reel-card-surface: var(--color-surface-1);
-  --reel-card-live-hairline: var(--color-gold-dim);
+  --reel-card-live-hairline: var(--color-accent-dim);
 
   /* balance-plate */
   --balance-plate-surface: var(--color-surface-2);
@@ -25,8 +25,8 @@
   --balance-plate-radius: var(--radius-lg);
 
   /* claim-plate */
-  --claim-plate-surface: var(--color-gold-wash);
-  --claim-plate-border: var(--color-gold-dim);
+  --claim-plate-surface: var(--color-accent-wash);
+  --claim-plate-border: var(--color-accent-dim);
   --claim-plate-amount-font: var(--text-data-lg);
   --claim-plate-radius: var(--radius-lg);
 
@@ -34,7 +34,7 @@
   --receipt-surface: var(--color-cream);
   --receipt-ink: var(--color-cream-ink);
   --receipt-hairline: var(--color-cream-hairline);
-  --receipt-strip: var(--color-gold);
+  --receipt-strip: var(--color-accent);
   --receipt-radius: var(--radius-md);
   --receipt-shadow: 0 18px 40px -18px rgb(0 0 0 / 0.6), 0 6px 14px -8px rgb(0 0 0 / 0.45);
 
@@ -45,17 +45,17 @@
   --capability-receipt-radius: var(--radius-lg);
 
   /* verdict-stamp */
-  --verdict-stamp-win-ink: var(--color-gold);
+  --verdict-stamp-win-ink: var(--color-accent);
   --verdict-stamp-loss-ink: var(--color-ink-secondary);
   --verdict-stamp-void-ink: var(--color-ink-muted);
   --verdict-stamp-font: var(--text-stamp-hero);
   --verdict-stamp-rotation: -4deg;
 
   /* button-primary */
-  --button-primary-fill: var(--color-gold);
+  --button-primary-fill: var(--color-accent);
   --button-primary-ink: var(--color-cream-ink);
-  --button-primary-hover: var(--color-gold-hover);
-  --button-primary-pressed: var(--color-gold-pressed);
+  --button-primary-hover: var(--color-accent-hover);
+  --button-primary-pressed: var(--color-accent-pressed);
   --button-primary-radius: var(--radius-md);
   --button-primary-height: 48px;
 
@@ -70,17 +70,17 @@
   /* input */
   --input-surface: var(--color-ground);
   --input-border: var(--color-hairline);
-  --input-focus-ring: var(--color-gold);
+  --input-focus-ring: var(--color-accent);
   --input-radius: var(--radius-md);
   --input-height: 48px;
 
   /* badge-backed-resting / badge-backed-filled / badge-house */
-  --badge-backed-resting-border: var(--color-gold-dim);
-  --badge-backed-resting-ink: var(--color-gold);
+  --badge-backed-resting-border: var(--color-accent-dim);
+  --badge-backed-resting-ink: var(--color-accent);
   --badge-backed-resting-fill: transparent;
-  --badge-backed-filled-fill: var(--color-gold-wash);
-  --badge-backed-filled-ink: var(--color-gold);
-  --badge-backed-filled-border: var(--color-gold-dim);
+  --badge-backed-filled-fill: var(--color-accent-wash);
+  --badge-backed-filled-ink: var(--color-accent);
+  --badge-backed-filled-border: var(--color-accent-dim);
   --badge-house-border: var(--color-border-strong);
   --badge-house-ink: var(--color-ink-secondary);
   --badge-house-fill: transparent;
@@ -88,13 +88,13 @@
   /* countdown */
   --countdown-font: var(--text-data);
   --countdown-ink: var(--color-ink);
-  --countdown-urgent-ink: var(--color-gold);
+  --countdown-urgent-ink: var(--color-accent);
 
   /* banzuke-row */
   --banzuke-row-surface: var(--color-surface-1);
   --banzuke-row-divider: var(--color-hairline);
   --banzuke-row-rank-font: var(--text-data);
-  --banzuke-row-top-rank-ink: var(--color-gold);
+  --banzuke-row-top-rank-ink: var(--color-accent);
 
   /* chrome — DESIGN Layout & Elevation */
   --ticker-height: 32px;
@@ -102,8 +102,8 @@
   --pill-nav-clearance: calc(env(safe-area-inset-bottom, 0px) + var(--spacing) * 16);
   --claim-pill-offset: calc(var(--pill-nav-clearance) + var(--spacing) * 2);
   --toast-offset: calc(var(--pill-nav-clearance) + var(--spacing) * 2);
-  --glow-live: 0 0 24px color-mix(in srgb, var(--color-gold) 16%, transparent);
-  --focus-ring: 2px solid var(--color-gold);
+  --glow-live: 0 0 24px color-mix(in srgb, var(--color-accent) 16%, transparent);
+  --focus-ring: 2px solid var(--color-accent);
   --content-reading: 640px;
   --content-wide: 1200px;
 }

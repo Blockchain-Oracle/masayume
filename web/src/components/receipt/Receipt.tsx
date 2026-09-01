@@ -36,7 +36,7 @@ export function Receipt({
         className,
       )}
     >
-      <div className="h-1.5 bg-gold" aria-hidden="true" />
+      <div className="h-1.5 bg-accent" aria-hidden="true" />
       <div className="flex flex-col gap-4 p-5">
         <header className="flex items-start justify-between gap-3">
           <span className="type-label-micro text-cream-ink/70">{title}</span>

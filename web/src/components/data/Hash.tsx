@@ -18,7 +18,7 @@ export function Hash({ value, href, lead, tail, className }: HashProps) {
         target="_blank"
         rel="noreferrer"
         title={value}
-        className={cn("numbers underline decoration-dotted underline-offset-4 hover:text-gold", className)}
+        className={cn("numbers underline decoration-dotted underline-offset-4 hover:text-accent", className)}
       >
         {short}
       </a>

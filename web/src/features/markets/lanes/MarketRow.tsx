@@ -23,7 +23,7 @@ export function MarketRow({ market, nowMs, selected, selectedSide, onSelect }: M
       aria-current={selected ? "true" : undefined}
       className={cn(
         "flex flex-col gap-3 rounded-(--market-card-radius) border bg-(--market-card-surface) p-4",
-        selected ? "border-gold-dim" : "border-(--market-card-border)",
+        selected ? "border-accent-dim" : "border-(--market-card-border)",
       )}
     >
       <div className="flex items-center justify-between gap-3">

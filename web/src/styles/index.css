@@ -1,9 +1,11 @@
-@import "tailwindcss";
+/* Order matters:
+ *   1. the ported Yosuku design system (owns Tailwind, the palette, faces, easings)
+ *   2. the semantic bridge (adds only Masayume's existing semantic names)
+ *   3. component tiers and base rules
+ * The superseded gold/Archivo theme is gone — not overridden. */
+@import "./yosuku/index.css";
 @import "tw-animate-css";
-@import "shadcn/tailwind.css";
-
-@import "./theme.css";
+@import "./bridge.css";
 @import "./tokens.css";
+@import "./shell.css";
 @import "./base.css";
-
-@custom-variant dark (&:is(.dark *));

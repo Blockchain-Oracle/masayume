@@ -1,9 +1,12 @@
 @layer base {
+  /* Ground and ink come from the ported Yosuku system (html, body { background: var(--bg) }).
+   * Only the parts it does not set are declared here, so there is one owner per property. */
   html {
-    background-color: var(--color-ground);
-    color: var(--color-ink);
-    font-family: var(--font-body);
     color-scheme: dark;
+  }
+
+  html[data-theme="light"] {
+    color-scheme: light;
   }
 
   :focus-visible {
