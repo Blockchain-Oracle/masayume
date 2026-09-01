@@ -4,7 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "invariants": "node invariants/run.mjs"
+    "invariants": "node invariants/run.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "spike:reference": "tsx spike/reference-basis.ts",
+    "spike:pin-id": "tsx spike/pin-market-id.ts",
+    "spike:roll-gap": "tsx spike/roll-gap.ts"
   },
   "dependencies": {
     "@masayume/core": "workspace:*",
