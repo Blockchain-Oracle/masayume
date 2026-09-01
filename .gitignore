@@ -1,4 +1,26 @@
-reference/
+# dependencies
 node_modules/
+
+# build output
+.next/
+out/
+dist/
+build/
+contracts/out/
+contracts/cache/
+
+# env — the app boots with none; only .env.example is ever committed
 .env
-.env.local
+.env.*
+!.env.example
+
+# tooling
+*.tsbuildinfo
+next-env.d.ts
+.vercel
+.DS_Store
+*.pem
+coverage/
+
+# research clones (not ours)
+reference/

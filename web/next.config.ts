@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  transpilePackages: ["@masayume/core", "@masayume/markets"],
 };
 
 export default nextConfig;
