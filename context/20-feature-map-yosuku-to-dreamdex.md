@@ -1,5 +1,7 @@
 # Feature Map — Yosuku → DreamDEX Event Contracts
 
+> **SUPERSEDED DIRECTION — historical research only.** The user subsequently made current Yosuku the exact minimum product baseline. The keep/drop/tier decisions in this file do not govern implementation. Use `docs/architecture/yosuku-source-led-migration/03-feature-adaptation-ledger.md`; no user-visible exclusion is currently approved.
+
 > Synthesis of docs 01–15. For each Yosuku feature: the verdict for our build (KEEP ≈ port nearly as-is · ADAPT ≈ same idea, new mechanism · DROP · NEW ≈ ours, no Yosuku equivalent), and the exact DreamDEX/Somnia mechanism. Ordered by build priority, not by Yosuku's structure. Sources: port-worthiness ranking (`11-…` §end), adapter classification (`12-…` §end), component tags (`13-…`), guarantees table (`14-…` §11), route priorities (`15-…` §6).
 
 ## Tier 1 — the product core (build first)

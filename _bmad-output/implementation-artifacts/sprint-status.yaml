@@ -1,3 +1,7 @@
+# SUPERSEDED: This backlog predates the approved source-led Yosuku migration.
+# Do not execute it as current scope. See:
+# docs/architecture/yosuku-source-led-migration/05-migration-and-agency-handoff.md
+#
 # STATUS DEFINITIONS:
 # ==================
 # Epic Status:
@@ -28,6 +32,8 @@
 # - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
+status: superseded
+superseded_by: docs/architecture/yosuku-source-led-migration/05-migration-and-agency-handoff.md
 generated: 09-01-2026 01:30
 last_updated: 09-01-2026 02:50
 project: sommina-events

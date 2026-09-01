@@ -5,9 +5,10 @@ purpose: build-substrate
 altitude: feature
 paradigm: hexagonal (ports & adapters) around one chain port; pure-core engines; single-writer actor services
 scope: full Masayume product build — web app, contracts, ops services, Telegram rail
-status: final
+status: superseded
 created: '2026-09-01'
 updated: '2026-09-01'
+superseded_by: docs/architecture/yosuku-source-led-migration/README.md
 binds: [FR-1..FR-40, NFR-1..NFR-10]
 sources:
   - _bmad-output/planning-artifacts/prds/prd-sommina-events-2026-08-31/prd.md
@@ -18,6 +19,8 @@ companions: []
 ---
 
 # Architecture Spine — Masayume
+
+> **SUPERSEDED AS A COMPLETE ARCHITECTURE.** Retain only the engineering invariants explicitly adopted by `docs/architecture/yosuku-source-led-migration/02-target-architecture.md`. Its UI contract, scope, global signing model, and capability map are not current authority.
 
 ## Design Paradigm
 

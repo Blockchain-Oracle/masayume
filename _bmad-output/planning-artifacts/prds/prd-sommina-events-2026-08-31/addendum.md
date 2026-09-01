@@ -1,11 +1,14 @@
 ---
 title: Masayume PRD Addendum
-status: final
+status: superseded
 created: 2026-08-31
 updated: 2026-09-01
+superseded_by: docs/architecture/yosuku-source-led-migration/README.md
 ---
 
 # PRD Addendum — Masayume
+
+> **SUPERSEDED PRODUCT DIRECTION.** Retained for protocol research and prior decisions only. Current product, UX, scope, wallet, and architecture authority: `docs/architecture/yosuku-source-led-migration/README.md`.
 
 *Technical decisions, rejected alternatives, and reference detail that belongs downstream (architecture, UX, build) rather than in the PRD narrative. Sources: `context/` docs (cited per section); locked decisions from `context/30-ideas-and-direction.md`.*
 

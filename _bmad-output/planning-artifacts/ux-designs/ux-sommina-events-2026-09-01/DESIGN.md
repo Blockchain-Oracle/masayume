@@ -1,9 +1,10 @@
 ---
 name: Masayume
 description: Dark, mobile-first consumer prediction-market app on DreamDEX Event Contracts — Japanese editorial precision, one gold accent, honest states as law.
-status: final
+status: superseded
 created: 2026-09-01
 updated: 2026-09-01
+superseded_by: docs/architecture/yosuku-source-led-migration/README.md
 colors:
   ground: '#0B0A08'
   surface-1: '#141210'
@@ -204,6 +205,8 @@ components:
     rank-type: '{typography.data}'
     top-rank-ink: '{colors.gold}'
 ---
+
+> **SUPERSEDED VISUAL DIRECTION.** The dark/gold/Archivo system below must not be implemented. Current Masayume visual authority is pinned Yosuku source, with only approved identity/protocol substitutions and additive games. See `docs/architecture/yosuku-source-led-migration/01-reference-parity-manifest.md`.
 
 ## Brand & Style
 

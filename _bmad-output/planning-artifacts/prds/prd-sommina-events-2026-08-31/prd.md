@@ -1,11 +1,14 @@
 ---
 title: Masayume
-status: final
+status: superseded
 created: 2026-08-31
 updated: 2026-09-01
+superseded_by: docs/architecture/yosuku-source-led-migration/README.md
 ---
 
 # PRD: Masayume (正夢)
+
+> **SUPERSEDED PRODUCT DIRECTION.** Retained as historical research only. Its MVP cuts, dark/gold identity, route selection, and “rebuild our way” assumptions no longer govern Masayume. Current authority: `docs/architecture/yosuku-source-led-migration/README.md`.
 
 *A consumer prediction-market app on DreamDEX Event Contracts (Somnia Shannon testnet), built for the Somnia × DreamDEX Event Contracts hackathon.*
 

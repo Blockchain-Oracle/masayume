@@ -3,7 +3,7 @@
 Research memory for this project. **Read this first in any new session/agent.** Everything here was produced by reading the actual sources end-to-end; each doc cites its sources (file paths under `../reference/` or URLs).
 
 ## The mission (one paragraph)
-Build a production-quality consumer prediction-market app on **DreamDEX Event Contracts** (binary BTC/ETH Up/Down windows on Somnia's fully on-chain CLOB, zero fees, oracle-settled) for the hackathon (submission window ends **8 Sep 2026**; testnet, chain 50312). Direction: take the feature set and product thinking of **Yosuku** (a Sui/DeepBook Predict consumer layer — TikTok-style feed, one-tap gasless bets, social takes, predict-from-X, agent strategies, AI assistant, parlays) and rebuild it *our way* on the DreamDEX stack via `@somnia-chain/markets-sdk`, plus our own features.
+Build **Masayume as the complete current Yosuku product experience** on DreamDEX Event Contracts/Somnia, changing the identity and underlying protocol implementation while preserving Yosuku's routes, features, flows, states, design system, motion, onboarding, and responsive behavior, then add first-class games in that same product language. The authoritative decision and architecture live in `../docs/architecture/yosuku-source-led-migration/`. Earlier “rebuild it our way,” drop-list, dark/gold theme, and MVP-cut language is historical and must not govern implementation.
 
 ## Files
 | File | What's in it |
@@ -20,8 +20,8 @@ Build a production-quality consumer prediction-market app on **DreamDEX Event Co
 | `13-yosuku-components.md` | ~100 UI components inventory with portability tags + design-system notes |
 | `14-yosuku-contracts-and-services.md` | The 10 Move packages (no-divert vault, parlay, margin desk, trading vault, strategy market, attestation), executor service, gas sponsorship; EVM equivalents |
 | `15-yosuku-api-routes-and-backend.md` | All ~36 API routes, the trade-from-X / private-bet / Sensei flows, env inventory, portfolio spec summary |
-| `20-feature-map-yosuku-to-dreamdex.md` | Feature-by-feature port map (keep/adapt/drop/new) with the DreamDEX mechanism, drop list, NEW opportunities, cross-cutting disciplines |
-| `30-ideas-and-direction.md` | Direction proposal: thesis, recommended MVP, stretch options A–D, architecture, open decisions, deadline plan |
+| `20-feature-map-yosuku-to-dreamdex.md` | **Historical research only:** early keep/adapt/drop map; its drop decisions are superseded |
+| `30-ideas-and-direction.md` | **Historical research only:** earlier MVP/direction proposal; superseded by the source-led migration architecture |
 
 ## Reference folder (`../reference/`)
 - `yosuku/` — full clone of the reference product (Sui). Point at real code, e.g. `reference/yosuku/components/TakeComposer.tsx`.
@@ -29,6 +29,10 @@ Build a production-quality consumer prediction-market app on **DreamDEX Event Co
 - `dreamdex-docs/` — full markdown mirror of docs.dreamdex.io (re-fetch any page: append `.md` to its URL; ask questions via `GET <page>.md?ask=<question>`).
 - `dreamdex-llms.txt` — docs index.
 - `markets-sdk/package/` — extracted `@somnia-chain/markets-sdk` 0.28.1 npm package (read the real types/source here).
+
+## Current implementation authority
+
+Read `../docs/architecture/yosuku-source-led-migration/README.md` before using this research. Files `00–15` remain useful evidence. Files `20` and `30`, the BMAD planning package, and any recommendation labeled `drop`, `stretch`, “patterns not pixels,” or dark/gold-only are not current product decisions.
 
 ## Ground rules distilled (do not violate)
 1. EC has **no REST API** — everything goes through `@somnia-chain/markets-sdk` (indexer GraphQL + RPC) or raw contracts via its exported ABIs.

@@ -1,5 +1,7 @@
 ---
 stepsCompleted: [1, 2, 3, 4]
+status: superseded
+superseded_by: docs/architecture/yosuku-source-led-migration/05-migration-and-agency-handoff.md
 inputDocuments:
   - _bmad-output/planning-artifacts/prds/prd-sommina-events-2026-08-31/prd.md
   - _bmad-output/planning-artifacts/prds/prd-sommina-events-2026-08-31/addendum.md
@@ -9,6 +11,8 @@ inputDocuments:
 ---
 
 # Masayume - Epic Breakdown
+
+> **SUPERSEDED IMPLEMENTATION PLAN.** Do not execute these epics as the current backlog. They predate the approved full Yosuku source-led migration and additive game system. The next builder must create a new plan from `docs/architecture/yosuku-source-led-migration/`.
 
 ## Overview
 

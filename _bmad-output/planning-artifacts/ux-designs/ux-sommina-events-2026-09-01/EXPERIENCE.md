@@ -1,8 +1,9 @@
 ---
 name: Masayume
-status: final
+status: superseded
 created: 2026-09-01
 updated: 2026-09-01
+superseded_by: docs/architecture/yosuku-source-led-migration/README.md
 sources:
   - _bmad-output/planning-artifacts/prds/prd-sommina-events-2026-08-31/prd.md
   - _bmad-output/planning-artifacts/prds/prd-sommina-events-2026-08-31/addendum.md
@@ -10,6 +11,8 @@ sources:
 ---
 
 # Masayume — Experience Spine
+
+> **SUPERSEDED EXPERIENCE DIRECTION.** The “patterns, not pixels,” dark-only, route-cut, Telegram-first, and Yosuku-brand rejection decisions below no longer govern implementation. Preserve current Yosuku end to end under `docs/architecture/yosuku-source-led-migration/`.
 
 > Peer contract to `DESIGN.md` (visual identity). This spine defines behavior: surfaces, states, flows, and the honest-state law as a discipline. PRD Glossary terms are used verbatim and capitalized as defined. On conflict, the PRD wins; both spines win over any reference-product pattern.
 

@@ -1,5 +1,7 @@
 # Direction & Scope Proposal (working doc — decisions pending with the user)
 
+> **SUPERSEDED DIRECTION — historical research only.** The user selected a source-led full Yosuku migration with additive games. The MVP/stretch/“our way” decisions below no longer govern product, UX, or architecture. Read `docs/architecture/yosuku-source-led-migration/README.md` first.
+
 > My recommendation given: judging weights (Tech 25 / Innovation 20 / UX 20 / Impact 20 / Demo 15), ~9 days to the 8 Sep deadline, solo builder + agents, and the Yosuku direction the user set. Everything here is arguable — `20-feature-map…` holds the full menu.
 
 ## Thesis (the pitch in three sentences)
