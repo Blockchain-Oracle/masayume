@@ -106,7 +106,14 @@ export type VerdictOutcome = "win" | "loss" | "void";
 export interface Verdict {
   marketId: MarketId;
   outcome: VerdictOutcome;
+  /** Payout − cost basis when the entry cost is on record; otherwise the payout alone (see `costBasisBase`). */
   pnlBase: bigint;
+  payoutBase: bigint;
+  /** null when no entry cost is on record — the figure then reads as a payout, not a P&L. */
+  costBasisBase: bigint | null;
+  /** Every side the wallet held, a losing leg included at payout 0 — one card, both legs (FR-10). */
   legs: ClaimLeg[];
+  feeBps: number;
+  decimals: number;
   settledAtMs: number | null;
 }
