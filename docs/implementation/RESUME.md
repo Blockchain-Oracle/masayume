@@ -11,7 +11,8 @@ Start here, then read `parity-ledger.md`. The authority package is
 
 ## Where we are
 
-Branch **`feat/yosuku-source-led-shell`** off `main` (`497b43a`). **Stage 2 is complete.**
+Branch **`feat/yosuku-source-led-shell`** off `main` (`497b43a`). **Stage 2 is complete; Stage 3 is
+underway — the first-run Tutorial is in.**
 
 | Commit | What |
 |---|---|
@@ -22,7 +23,9 @@ Branch **`feat/yosuku-source-led-shell`** off `main` (`497b43a`). **Stage 2 is c
 | `315ddf0` | Stage 2 — one subscription coordinator for the live book |
 | `24ec4e2` | Stage 2 — `/reels` on the shared market stream |
 | `ac416b1` | Stage 2 — Portfolio's market portions |
-| *(this)* | Stage 2 — Toast presentation; Stage 2 closed |
+| `99d2623` | Stage 2 — Toast presentation; Stage 2 closed |
+| `3943222`, `d488471` | Reel light-mode fix, then the card made theme-following |
+| *(this)* | Stage 3 — first-run Tutorial |
 
 Everything is green: `pnpm typecheck`, `pnpm invariants` (12/12), `pnpm test` (32),
 `pnpm build` (51 routes). Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
@@ -66,16 +69,29 @@ moved. Three things it fixed are worth not re-introducing:
 `useTick` shares one timer per interval (`react/tick-clock.ts`). The SDK already ref-counts its pool
 watches, so the transport was never the duplicated part — do not rebuild that layer.
 
-## The next slice: Stage 3
+## Stage 3 — in progress
 
-Per `05-migration-and-agency-handoff.md`. The four things `/markets` and `/reels` are now visibly
-waiting on, all with their slots already on the page:
+Per `05-migration-and-agency-handoff.md`. Four slots were waiting on `/markets` and `/reels`.
+**The Tutorial is done** (`features/onboarding/`); three remain, and they are three *different*
+dependency classes — that is the thing to know before planning:
 
-1. **The Room** (`MarketRoom`) — `hero/HeroChartFoot.tsx` renders it disabled and names Stage 3.
-2. **The Sensei dock** — contextual bubble ("Coin-flip?" / "Up or down?"), live-only behaviour that
-   source-reading misses; see the plan's §Verified facts.
-3. **The first-run Tutorial** — a 5-step modal (Skip/Next), also live-only.
-4. **The word-market board** (`WordMarketBoard`).
+1. **The word-market board** (`WordMarketBoard`) — **no external dependency; do this next.** But the
+   reference computes its odds from a client-side logistic model (`probAbove`, L22–27) and derives
+   its line from spot via `strike624`. Both are invented numbers that doc 05 §No-fake-data forbids
+   and that we already have real answers for: take the cents from the book (the coordinator reading,
+   as `HeroYesNo` does) and the line from the **opening print**, as `/markets` and `/reels` already
+   do. Its CSS (`.words-*`, `.wq-*`) is **already ported** in `yosuku/part-16.css` + `part-17.css`.
+   Note the overlap to settle: our `plain-words` toggle rewords the *lane rail*; the reference's
+   board is a separate §02 "Just ask" section. The reference rail has no such toggle.
+2. **The Sensei dock** — needs a server-side LLM key. `.sensei-*` CSS is already ported (125 rules in
+   `part-02/03.css`). The reference's `app/api/sensei/route.ts` calls DeepSeek; Masayume should use
+   Claude. The route already models the unconfigured case honestly (503, "the brain key isn't
+   configured on the server"), so the dock can ship complete and light up when a key exists. The
+   countdown ring, teaser bubble and drawer need no key at all.
+3. **The Room** (`MarketRoom`) — **genuinely credential-blocked.** The reference runs on Sui Seal +
+   a messaging SDK + an on-chain membership rule (`useCommentRoom.ts`); none has an equivalent here,
+   and `packages/db` is still a 5-line stub. Needs a Neon/Postgres URL from the user, which puts it
+   in the same class as `/fund`'s Paystack key. `hero/HeroChartFoot.tsx` renders it disabled.
 
 Then the fill projection, which unblocks the largest pending set at once: settled history and
 receipts on `/portfolio`, the equity curve, PnL, stats, reputation, badges, `/portfolio/edge`
@@ -110,6 +126,24 @@ Two things that deliberately do **not** take that token: `.reel-take` and `.reel
 vermilion in both themes, so their ink is a literal `#fff`; `.reel-hint-arrow` sits on the *page*,
 so it takes `var(--color-ink)`.
 
+### The same rule for backgrounds and borders — and the gap that causes it
+
+The Tutorial slice hit this again in a new form. part-14.css remaps the `*-white` utilities for light
+mode, but its ladder has **holes**, and a utility that falls through renders white-on-cream:
+
+- `bg-white/20` — the ladder stops at `/10`
+- `border-white/[0.12]`, `hover:bg-white/[0.06]` — arbitrary values not in its lists
+
+The reference has the same defect (its own tutorial card flips to cream too). Fixed scoped in
+`styles/tutorial.css`, each value taken from part-14's own ladder rather than picked by eye.
+**Before porting the next dark component, grep its `*-white` utilities against part-14.** Do not
+hand-edit `part-14.css` — regenerate the split instead.
+
+The gray ramp is the second half of this. `text-gray-*` does not follow the light theme at all (the
+recorded Tailwind-4 `@config` finding). The ledger reserved "evidence of unreadable text" as the
+trigger to diverge, and the Tutorial produced it: body copy at **2.36:1** on cream. Remapped for
+that card only. **A reviewed global pass over the other 811 `text-gray-*` utilities is still open.**
+
 `PriceChart.client.tsx` reads its CSS vars off **its own container** rather than
 `document.documentElement`, which is what lets any card hand the chart surface-appropriate ink.
 Behaviour is unchanged everywhere else (verified: on `/markets` the container inherits the root's
@@ -140,7 +174,11 @@ value, and a clean load draws dark-on-cream).
   was invisible (the `--white` remap above), and the card's darkness was unwanted. **Decision: the
   reel card follows the theme.** Recorded as a deviation in the ledger. Verified in the browser at
   both themes after the change.
-- **Not yet reviewed by the user:** `/portfolio`, the toast. The user asked not to be shown routine
+- **Not yet reviewed by the user:** `/portfolio`, the toast, the Tutorial. The Tutorial *was*
+  inspected in the browser at both themes and at 390 before commit — a brand-new modal on a
+  flipping surface is the exact bug class the four gates miss, and that check is what caught the
+  two light-mode defects above. The user's `masayume.tutorialSeen` was left unset, so it opens on
+  their next visit to `/markets`. The user asked not to be shown routine
   browser automation and said they will flag UI problems themselves — so those went in verified by
   typecheck, invariants, tests and build. Inspect the browser when they *do* flag something: this
   bug was invisible to all four gates.

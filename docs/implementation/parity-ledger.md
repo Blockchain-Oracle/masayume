@@ -36,6 +36,8 @@ order", never "optional" or "cut".
 | 2026-09-01 | Brand mark is Masayume's own glyph (crescent + vermilion point), not the Yosuku celebrant figure | doc 00 §Allowed changes 1 — "brand substitution changes the mark and name, not the design grammar" | Different logo; identical drawing grammar, footprint and colour law | Deviation class pre-approved |
 | 2026-09-01 | Ticker driven by real DreamDEX asset prices + next close, not Yosuku's `/api/ticker`. Fear/Greed omitted while no provider is configured | doc 05 §No fake-data; ledger row "news/ticker" | Real figures only; the FNG cell returns when a real provider is connected | Recorded, pending row |
 | 2026-09-01 | Invariant rescope was **approved but not needed** — the CSS split kept every part under the cap and ported components carry no literals, so `design-literals` and `file-length` pass unmodified | repo invariants | Guardrails remain fully strict on all code | Approval unused |
+| 2026-09-01 | **Invisible-in-light fix, backgrounds.** The reference's Tutorial card is `bg-neutral-900/95`, which part-14 turns to cream in light mode — taking `bg-white/20` (step dots), `border-white/[0.12]` and `hover:bg-white/[0.06]` (choice cards) with it, none of which part-14 remaps. They render white-on-cream, i.e. invisible. Same defect class as the reel's `var(--white)`, in background form, and present in the reference itself | doc 00 authority order; RESUME.md §Never write `var(--white)` | Step dots and choice-card edges are visible on cream instead of absent; dark mode byte-identical to source | Deviation — the user's 2026-09-01 ruling (invisible is not fidelity) applied to the same defect class |
+| 2026-09-01 | **`text-gray-*` diverged for the Tutorial only.** The ledger row below records the gray ramp as stale-but-legible and reserves "evidence of unreadable text" as the trigger to diverge. Measured on this card: body copy `text-gray-400` = `rgb(163,163,163)` on cream at **2.36:1**, far under AA, on the one screen whose whole job is to be read. Remapped to part-14's own ladder (9.67:1 / 5.11:1 / 3.44:1) | doc 00 authority order 3–4; the row below | Onboarding prose is readable in light mode. Scoped to `.tutorial-card`; the other 811 `text-gray-*` utilities are untouched pending a reviewed global pass | Trigger the ledger itself defined |
 | 2026-09-01 | Light mode in the reference is partially stale: `tailwind.config.ts` maps `gray-*` to CSS vars but there is no `@config` directive, so under Tailwind 4 its 811 `text-gray-*` utilities compile to static dark-ramp hex and do not follow `[data-theme="light"]`. Verified live on yosuku.xyz (`--gray-400` = `#5e574b` while `text-gray-500` renders `#737373`). Rendering remains legible, so the port reproduces source behaviour rather than diverging | doc 00 authority order 3–4 | None today; recorded so it is a deliberate choice, not an unnoticed bug | Fidelity preserved; revisit only with evidence of unreadable text |
 
 
@@ -72,6 +74,27 @@ accessibility for a visual match.
 | Icon coloured by type (`emerald-400`, `rose-400`, gray) | L87–91 | `text-profit` / `text-loss` / `text-ink-muted` — **the reference's hex values *are* these tokens**: `#34D399` and `#FB7185` | **Done** |
 | Spring entry/exit from the right (`x: 80`, damping 22 / stiffness 300) | L116–119 | `translateX(120%)` on the starting and non-swipe ending styles, on `--ease-bounce` — Yosuku's own overshooting curve | **Adapted** — no framer-motion added for one component |
 | Warning type | — | follows the same formula, so the fourth kind is not the only one whose border says nothing | **Additive** |
+
+### First-run Tutorial (Stage 3, done 2026-09-01)
+
+Ported from `reference/yosuku/components/Tutorial.tsx` into `web/src/features/onboarding/`.
+Presentation values in `styles/tutorial.css` under the `markets-hero.css` convention.
+
+| Element | Reference | Destination | Class | Status |
+|---|---|---|---|---|
+| Shows once, `localStorage` flag, Skip/backdrop/Escape all dismiss | L8, L49–59, L82–88 | `useFirstRun.ts` | Exact | **Done** — hydrates after mount, so a returning visitor never sees a frame |
+| Modal: `bg-neutral-900/95`, `border-white/10`, `rounded-2xl`, bottom sheet → centred at `sm` | L96–107 | `Tutorial.tsx` + `styles/tutorial.css` | Adapted | **Done** — Base UI `Dialog` keeps the focus trap, dialog role and inert background the reference re-implements by hand; it takes the reference's presentation, as the Toast did |
+| Per-step reveal (framer-motion, `y:20 → 0`, `scale:.95 → 1`, 200 ms) | L100–107 | `.tutorial-step` | Adapted | **Done** — CSS keyed on the step on Yosuku's `--ease-out`; no second animation library. Honours `prefers-reduced-motion`, which the reference does not |
+| Five steps, Skip + Next, `Get started` on the last | L19–41, L171–186 | `steps.ts` | Exact shape; **rewritten prose** | **Done** — the reference describes Sui/zkLogin, sponsored gas and its on-chain Trading Balance. None is true here: step 3 says the user signs every transaction, step 4 describes the pools that *do* exist (spendable / order escrow / venue payout credit), and cadences are "whatever the venue is listing" because lanes derive from live `intervalSec` |
+| Step indicators (`w-6` vermilion active, `w-2` past/future) | L160–168 | `Tutorial.tsx` | Exact | **Done** — as an `<ol>` with `aria-current="step"`; the reference's are bare divs |
+| Final step: Simple/Pro choice writing `yosuku_trade_mode` | L117–129 | `TutorialChoice.tsx` | **Adapted** | **Done** — Masayume's ticket has one layout, so a literal port would ship a choice that changes nothing. The same question drives `plainWords`, the shipped preference that switches the live-Window rail between chart cards and Yes/No questions |
+| Ends on Connect; picking does not close; auto-dismiss on connect | L66–79, L130–135 | `Tutorial.tsx`, `TutorialChoice.tsx` | Exact | **Done** — wagmi `address` replaces `useCurrentAccount` |
+| Card wears no focus ring | — | `.tutorial-card:focus` | **Improved** | **Done** — Base UI's default initial focus lands on Close, so a welcome screen opened pointing at the way out. Focus goes to the dialog itself, ring suppressed on the container only |
+| Card scrolls rather than clipping on a short viewport | — | `.tutorial-card` | **Improved** | **Done** — the closing step overflows a 390×844 phone; the reference clips it off-screen |
+
+Two light-mode defects found here and fixed, both recorded in the decision log above: the
+`text-gray-*` body copy at 2.36:1, and three `*-white` utilities that fall through part-14's
+remap. **The `*-white` gap is general — check for it before porting the next dark component.**
 
 ### Subscription coordinator (Stage 2, done 2026-09-01)
 
@@ -118,7 +141,8 @@ DreamDEX pipeline — a presentation change, not a data change.
 | Bet type Up/Down · **Range** | `Ticket624Drawer` L858–869 | `ticket/BetModes.tsx` | Present, disabled | **Done** — Range names `RangeReserve` (Stage 5) as the missing piece; never wired to an ordinary Up/Down order |
 | **Leverage chips** | `Ticket624Drawer` L1075–1090 | `ticket/LeverageChips.tsx` | Present, disabled | **Done** — 1× is real and selected; 2×/3× say they need the prefunded reserve (Stage 5) |
 | Live-now card grid below the hero | L847–875 | `MarketsScreen.tsx` → existing `CadenceLanes` | Adapted | **Done** — our lane cards under `.markets-section` |
-| Sensei dock, Tutorial, `MarketRoom`, `WordMarketBoard` | L878–905 | — | — | Pending — Stage 3 |
+| Tutorial | L905 | `features/onboarding/*` | Exact shape | **Done** — see §First-run Tutorial |
+| Sensei dock, `MarketRoom`, `WordMarketBoard` | L878–904 | — | — | Pending — Stage 3 |
 
 Shell correction found in this slice: `.page-shell` reserved space for the fixed chrome and
 `.page-hero` reserved it again, leaving the hero under a band of dead page. `.page-shell` now
@@ -199,7 +223,7 @@ that read the market pipeline are connected here; everything else keeps a named 
 | Footer / grain / custom cursor | `Footer.tsx`, `GrainOverlay.tsx`, `CustomCursor.tsx` | `web/src/components/shell/*` | Exact; cursor honours reduced-motion + coarse pointer | **Done** |
 | Theme toggle | `components/ThemeToggle.tsx` (37 L) | `web/src/components/shell/ThemeToggle.tsx` | Exact | **Done** |
 | Toast / tx feedback | `components/Toast.tsx` (130 L) | `web/src/components/ui/toast.tsx` + `styles/toast.css` | Adapted | **Done** — see §Toast |
-| First-run onboarding modal (5 steps, Skip/Next) | Live `yosuku.xyz/markets` 2026-09-01 | `web/src/features/onboarding/*` | Exact; adapted copy | Pending |
+| First-run onboarding modal (5 steps, Skip/Next) | `components/Tutorial.tsx` (192 L) | `web/src/features/onboarding/*` | Exact shape; adapted copy | **Done** — see §First-run Tutorial |
 | Sensei dock + contextual bubble | Live `yosuku.xyz/markets`; `app/api/sensei/route.ts` | `web/src/features/sensei/*` | Adapted (AI over typed read models) | Pending |
 | Error boundary | `app/error.tsx` | `web/src/app/error.tsx` | Exact | Partial (exists) |
 
@@ -211,7 +235,7 @@ Portfolio and More all remain.
 | Route | Reference | Class | Data authority | Status |
 |---|---|---|---|---|
 | `/` | `app/page.tsx` | Exact shell; adapted identity/protocol copy | Static + real traction | **Shell** — honest dependency state |
-| `/markets` | `app/markets/page.tsx` | Adapted to DreamDEX | DreamDEX indexer + RPC | **Partial** — real lanes/book/lifecycle/ticket live, Yosuku hero-as-ticket ported (see Stage 2 above); Room, Sensei, Tutorial and the word-market board remain Stage 3 |
+| `/markets` | `app/markets/page.tsx` | Adapted to DreamDEX | DreamDEX indexer + RPC | **Partial** — real lanes/book/lifecycle/ticket live, Yosuku hero-as-ticket ported (see Stage 2 above), first-run Tutorial live; Room, Sensei and the word-market board remain Stage 3 |
 | `/markets/[id]` | `app/markets/[id]/page.tsx` | Exact redirect intent | — | **Done** — redirect |
 | `/reels` | `app/reels/page.tsx` | Adapted | Shared market stream | **Live** — see §`/reels` |
 | `/portfolio` | `app/portfolio/page.tsx` | Adapted | Chain/indexer projection | **Partial** — money, open bets and claimables live; see §`/portfolio` |

@@ -1,5 +1,6 @@
 "use client";
 
+import { Tutorial } from "@/features/onboarding";
 import { MarketsScreen } from "./MarketsScreen";
 import { TicketDock } from "./ticket";
 import type { MarketsSelection } from "./useMarketsSelection";
@@ -23,7 +24,17 @@ function renderVerdict(selection: MarketsSelection) {
   return <LiveVerdict marketId={selection.marketId} />;
 }
 
-/** Client composition of the /markets island: the screen plus the surfaces that plug into its slots. */
+/**
+ * Client composition of the /markets island: the screen plus the surfaces that plug into its slots.
+ *
+ * The walkthrough mounts here, as the reference mounts it (markets/page.tsx L905):
+ * `/markets` is the landing route, so first run happens where the product is.
+ */
 export function MarketsPage() {
-  return <MarketsScreen renderTicket={renderTicket} renderVerdict={renderVerdict} />;
+  return (
+    <>
+      <MarketsScreen renderTicket={renderTicket} renderVerdict={renderVerdict} />
+      <Tutorial />
+    </>
+  );
 }
