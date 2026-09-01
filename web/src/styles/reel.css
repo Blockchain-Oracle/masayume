@@ -11,8 +11,29 @@
  *
  * Light theme: /reels is an intentional DARK island in the reference — the card
  * stays black on cream (yosuku/part-14.css re-asserts the white palette under
- * `.feed-card` for exactly this reason). These classes bake their colours in, so
- * the island holds by construction and part-14's overrides never have to fire. */
+ * `.feed-card` for exactly this reason). */
+
+/* The island's ink cannot be `var(--white)`. Yosuku remaps that token to #141210 on
+ * cream — that is precisely how its dark-mode-authored `text-white` becomes readable
+ * there — so on a card that stays black it paints near-black ink on a near-black
+ * surface. The reference hits the same wall and answers it with `#fff !important`
+ * scoped under `.feed-card` (part-14.css:129); a literal scoped once here is the same
+ * fix without needing the override.
+ *
+ * The chart tokens go with it: PriceChart reads its colours off its own container, so
+ * an island hands it surface-appropriate ink the same way. */
+.reel-card,
+.reel-take,
+.reel-hint {
+  --reel-ink: #fff;
+}
+
+.reel-card {
+  --color-ink: #fff;
+  --color-ink-secondary: rgba(255, 255, 255, 0.7);
+  --color-ink-muted: rgba(255, 255, 255, 0.45);
+  --color-hairline: rgba(255, 255, 255, 0.1);
+}
 
 /* The reel takes itself out of flow (`.feed-snap` is fixed between the chrome and
  * the viewport bottom), so the shell must not also reserve the chrome's height —
@@ -160,7 +181,7 @@ body:has(.reel-page) .footer {
   font-weight: 800;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  color: var(--white);
+  color: var(--reel-ink);
 }
 
 .reel-clock.urgent .reel-clock-value {
@@ -181,7 +202,7 @@ body:has(.reel-page) .footer {
   font-weight: 800;
   line-height: 1.06;
   letter-spacing: -0.02em;
-  color: var(--white);
+  color: var(--reel-ink);
 }
 
 /* the line itself — text-vermilion */
@@ -209,7 +230,7 @@ body:has(.reel-page) .footer {
   font-family: var(--font-mono);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
-  color: var(--white);
+  color: var(--reel-ink);
 }
 
 /* the distance — text-vermilion above the line, text-white/45 below it */
@@ -303,7 +324,7 @@ body:has(.reel-page) .footer {
 
 .reel-side.down:hover {
   border-color: rgba(255, 255, 255, 0.3);
-  color: var(--white);
+  color: var(--reel-ink);
 }
 
 /* rounded-2xl border border-white/[0.08] bg-white/[0.02] py-4 text-center

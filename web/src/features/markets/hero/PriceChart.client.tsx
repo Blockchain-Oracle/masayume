@@ -36,9 +36,16 @@ interface Built {
 const toValue = (raw: bigint): number => Number(raw) / 10 ** ORACLE_SCALE;
 const MIN_MOVE = 1 / 10 ** ORACLE_SCALE;
 
-/** Theme comes from the token surfaces at mount, never from literals in this file. */
-function cssVar(name: string): string {
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || "currentColor";
+/**
+ * Theme comes from the token surfaces at mount, never from literals in this file.
+ *
+ * Read off the chart's own container, not the document root: `/reels` is a dark island
+ * that keeps its black card in light mode, so it scopes surface-appropriate ink on
+ * `.reel-card`. Reading from the root would hand that card the page's near-black ink
+ * and draw an invisible line on it.
+ */
+function cssVar(el: HTMLElement, name: string): string {
+  return getComputedStyle(el).getPropertyValue(name).trim() || "currentColor";
 }
 
 function buildChart(container: HTMLDivElement): Built {
@@ -46,11 +53,11 @@ function buildChart(container: HTMLDivElement): Built {
     autoSize: true,
     layout: {
       background: { type: ColorType.Solid, color: "transparent" },
-      textColor: cssVar("--color-ink-muted"),
-      fontFamily: cssVar("--font-data"),
+      textColor: cssVar(container, "--color-ink-muted"),
+      fontFamily: cssVar(container, "--font-data"),
       attributionLogo: false,
     },
-    grid: { vertLines: { visible: false }, horzLines: { color: cssVar("--color-hairline") } },
+    grid: { vertLines: { visible: false }, horzLines: { color: cssVar(container, "--color-hairline") } },
     rightPriceScale: { borderVisible: false },
     timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false },
     crosshair: { mode: CrosshairMode.Hidden },
@@ -58,7 +65,7 @@ function buildChart(container: HTMLDivElement): Built {
     handleScale: false,
   });
   const series = chart.addSeries(LineSeries, {
-    color: cssVar("--color-ink"),
+    color: cssVar(container, "--color-ink"),
     lineWidth: 2,
     priceLineVisible: false,
     lastValueVisible: true,
@@ -109,12 +116,13 @@ export function PriceChartClient({ points, openingRaw, className }: PriceChartCl
 
   useEffect(() => {
     const built = builtRef.current;
-    if (!built || openingRaw === null || built.priceLine) return;
+    const container = containerRef.current;
+    if (!built || !container || openingRaw === null || built.priceLine) return;
     const price = toValue(openingRaw);
     includeInAutoscale(built.series, price);
     built.priceLine = built.series.createPriceLine({
       price,
-      color: cssVar("--color-ink-secondary"),
+      color: cssVar(container, "--color-ink-secondary"),
       lineWidth: 1,
       lineStyle: LineStyle.Solid,
       axisLabelVisible: true,
