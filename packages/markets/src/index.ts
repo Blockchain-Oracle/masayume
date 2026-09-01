@@ -7,4 +7,5 @@ export * from "./exchange";
 export * from "./identity";
 export * from "./mappers";
 export * from "./provider";
+export * from "./submitter";
 export * from "./venue";

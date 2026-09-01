@@ -62,6 +62,7 @@ export function signerAddress() {
 /** Hands the wallet-session client from wagmi to the SDK; passing nothing unbinds on disconnect. */
 export function bindSigner(walletClient?: WalletClient): void {
   getExchange().setSigner(walletClient ? { walletClient } : {});
+  for (const listener of listeners) listener();
 }
 
 /** Bumps whenever the singleton is rebuilt so React providers can re-key. */

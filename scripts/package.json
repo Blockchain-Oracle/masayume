@@ -8,7 +8,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "spike:reference": "tsx spike/reference-basis.ts",
     "spike:pin-id": "tsx spike/pin-market-id.ts",
-    "spike:roll-gap": "tsx spike/roll-gap.ts"
+    "spike:roll-gap": "tsx spike/roll-gap.ts",
+    "spike:smoke-submitter": "tsx spike/smoke-submitter.ts"
   },
   "dependencies": {
     "@masayume/core": "workspace:*",
