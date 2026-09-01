@@ -11,13 +11,15 @@ Start here, then read `parity-ledger.md`. The authority package is
 
 ## Where we are
 
-Branch **`feat/yosuku-source-led-shell`** off `main` (`497b43a`). Three commits:
+Branch **`feat/yosuku-source-led-shell`** off `main` (`497b43a`):
 
 | Commit | What |
 |---|---|
 | `1658ffc` | Stage 0–1 — source-led Yosuku shell, identity, 42 public routes |
 | `cd35292` | Stage 2 (part) — shared read runtime + isolated signing sessions |
 | `2ad9237` | Ledger record of the signing architecture |
+| `d0dd6f5` | Resume point |
+| *(this)* | Stage 2 — `/markets` hero-as-ticket |
 
 Everything is green: `pnpm typecheck`, `pnpm invariants` (12/12), `pnpm test` (18),
 `pnpm build` (51 routes). Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
@@ -40,54 +42,56 @@ Everything is green: `pnpm typecheck`, `pnpm invariants` (12/12), `pnpm test` (1
   `scripts`; no raw hex or `px` literals in TS/TSX under `web/src/{app,components,features,providers}`
   — *including inside comments*. Run `pnpm invariants` before claiming done.
 
-## The next slice: port `/markets` to Yosuku's hero-as-ticket
+## Done last session: `/markets` hero-as-ticket
 
-This is the user's stated priority and the highest-value remaining work. The data pipeline
-underneath is **already real and correct** — this is a presentation port, not a data change.
+The hero is now the page — question, chart and ticket as one object, with the lanes below as the
+way to change it. Verified in the browser at 390 / 768 / 1024 / 1440, light and dark, no console
+errors and no horizontal overflow. Full parity table in `parity-ledger.md` §`/markets`
+hero-as-ticket. New surfaces: `features/markets/MarketsHero.tsx`, `features/markets/hero/Hero*`,
+`features/markets/ticket/{BetModes,LeverageChips}.tsx`, `styles/{markets-hero,ticket}.css`.
 
-**Current state:** `/markets` renders our own layout (numbered `01 · Live windows`,
-`02 · The window`, `03 · Your call`). The user has seen it and confirmed the shell/colours are
-"getting there", but the markets presentation itself must become Yosuku's.
+Three adaptations worth knowing before you touch it:
 
-**Reference:** `reference/yosuku/app/markets/page.tsx` (908 lines) — the render begins ~line 678.
-Structure to reproduce:
+- **The line is the opening print.** Yosuku derives a strike from spot; these Windows settle at or
+  above the opening print, so that is what the headline asks about. Real on-chain number, not a
+  derived one.
+- **Cadence tabs come from live lanes.** `groupIntoLanes` forbids a hardcoded cadence list (FR-6),
+  so the tab row is whatever is live plus the pinned lane, which keeps its slot and its highlight
+  while it is between rounds.
+- **The ramp and UP/DOWN prices are real top-of-book** (`hero/useTopOfBook.ts`). An empty side is
+  "—" with no fill; the reference's 50% default would be an invented odd.
 
-```
-section.page-hero.markets-hero  (+ .crop tl/tr/bl/br corner marks)
-  .container > .hero-grid.hero-grid-mini   (desktop: 1fr + 400px rail)
-    .hero-chart
-      .hero-chart-head
-        asset badge (₿) · mono asset label
-        cadence tabs — active is vermilion with a 1px underline; a lane between
-          rounds stays in place, dimmed and disabled, so the row never shifts under a tap
-        h2  "BTC holds above <span.text-vermilion>$77,800</span>?"
-        distance line — "$83 above the UP line" / "needs +$X for UP to win"
-        right: "Settles in" + countdown (whole block flips vermilion under 60s)
-      .hero-chart-canvas          ← keep our lightweight-charts PriceChart here
-      .hero-chart-foot            ← "The Room · bettors only" + .ramp UP bar/cents
-      .hero-yesno                 ← mobile UP/DOWN buttons with live cents
-    ticket rail (desktop) / drawer (mobile)
-```
+Range and leverage are rendered, disabled, naming Stage 5 as what they wait on. The Room is
+rendered, disabled, naming Stage 3.
 
-**What we already have to feed it** (all real, all working — reuse, do not rewrite):
-`web/src/features/markets/` — `useLanes`, `hero/` (PriceChart, CountdownBlock, DistanceReadout,
-OraclePrice), `ticket/` (useQuote, usePlaceBet, useTicket), `lanes/useLanes`, `verdict/`.
+**Known, not fixed (pre-existing, not from this slice):** `PriceChart.client.tsx` reads its colours
+from CSS vars *at mount*, so toggling the theme leaves the chart line in the old theme's ink until
+the next reload. Worth fixing when Stage 7 touches motion and performance.
 
-**Honesty constraints for this slice** (doc 05 §No fake-data, doc 00 §No-substitution):
-- The **RANGE tab** and **leverage chips** are Yosuku parity and must be *present*, but
-  `RangeReserve` and the prefunded leverage model are Stage 5. Render them **disabled with a
-  truthful explanation** — do not omit them, and do not wire them to ordinary Up/Down.
-- **The Room** is Stage 3 (Postgres + realtime). Keep the control, give it an honest state.
-- Never show an invented odd, balance, fill or payout. Loading and unavailable are valid states.
+## The next slice: one subscription coordinator (finishes Stage 2)
 
-## After that, still in Stage 2
+The hero surfaced the cost of per-route reads: `/markets` alone mounts `useLanes`, `useMarket`,
+`useOpeningPrice`, `useChartSeries` (history + live asset price) and `useBook` — and every lane
+card mounts its own `useBook` on top. React Query dedupes by key, but nothing normalises the
+readings or dedupes the *subscriptions* by market/account.
 
-- One subscription coordinator: normalise market/book/candle/account readings once and fan out,
-  instead of per-route queries. Deduplicate by market/account key.
-- Connect `/reels`, `/fund`, `/claim` to the same pipeline.
+Build the coordinator in `packages/markets/src/runtime/`: normalise market / book / candle /
+lifecycle / account readings once, fan out to subscribers, dedupe by market and account key. The
+read runtime from `cd35292` is where it belongs — it already owns the shared clients and caches
+and has no signer to worry about.
+
+Then, still in Stage 2:
+
+- Connect `/reels`, `/fund`, `/claim` and Portfolio's market portions to the same pipeline.
 - Port Yosuku's Toast presentation (currently ours; functional and themed).
 
-Then Stages 3→7 exactly as `05-migration-and-agency-handoff.md` sequences them.
+Then Stages 3→7 exactly as `05-migration-and-agency-handoff.md` sequences them. The first Stage 3
+items that `/markets` is now visibly waiting on: the Room (`MarketRoom`), the Sensei dock, the
+first-run Tutorial, and the word-market board — all four have their slots on the page already.
+
+**Honesty constraints that keep applying** (doc 05 §No fake-data, doc 00 §No-substitution):
+never an invented odd, balance, fill or payout; loading and unavailable are valid states; a
+capability that is not connected keeps its control and says what is missing.
 
 ## Open blockers (unchanged)
 
@@ -98,4 +102,5 @@ Then Stages 3→7 exactly as `05-migration-and-agency-handoff.md` sequences them
 ## User feedback carried forward
 
 - 2026-09-01: reviewed the running shell — "looks good", colours "getting there".
-- Flagged that the markets surface still needs work (this is the slice above).
+- Flagged that the markets surface still needs work → done, hero-as-ticket ported. **Not yet
+  reviewed by the user.** Show them `/markets` before treating the presentation as settled.

@@ -54,8 +54,34 @@ order", never "optional" or "cut".
 | Grant policy per session (`SESSION_TRADE`, `X_EXECUTOR`, …) | `EventVault` | Pending — Stage 4; the session already carries the authority it will be scoped by |
 
 Remaining Stage 2 work: normalise market/book/candle readings once for all routes behind one
-subscription coordinator, and port Yosuku's `/markets` presentation (hero-as-ticket, Room,
-Ticket with Range and leverage) onto the existing real pipeline.
+subscription coordinator, and connect `/reels`, `/fund`, `/claim` to the same pipeline.
+
+### `/markets` hero-as-ticket (Stage 2, done 2026-09-01)
+
+Ported from `reference/yosuku/app/markets/page.tsx` (render from L679) over the existing
+DreamDEX pipeline — a presentation change, not a data change.
+
+| Element | Reference | Destination | Class | Status |
+|---|---|---|---|---|
+| `section.page-hero.markets-hero` + 4 `.crop` marks | L686–691 | `features/markets/MarketsHero.tsx` | Exact | **Done** |
+| `.hero-grid.hero-grid-mini` (1fr + 400px, `items-start` at `lg`) | L693 | same + `styles/markets-hero.css` | Exact | **Done** — measured `836px 400px` at 1440, `534px 400px` at 1024 |
+| Asset badge · mono asset label | L699–700 | `hero/HeroChartHead.tsx`, `hero/asset-mark.ts` | Adapted | **Done** — ₿ on Bitcoin orange for BTC; the venue also lists ETH, which gets its initial on a neutral disc rather than another asset's mark |
+| Cadence tabs, active vermilion + 1px underline, dead lane dimmed and disabled | L707–729 | `hero/HeroCadenceTabs.tsx` | Adapted | **Done** — lanes derive from live `intervalSec` (FR-6), never a fixed list; the *pinned* lane is what holds its slot and its highlight when it is between rounds |
+| Headline `BTC holds above <span.text-vermilion>$X</span>?` | L731–737 | `hero/HeroQuestion.tsx` | Adapted | **Done** — the line is the **opening print**, the level these Windows actually settle against, not a strike derived from spot |
+| Distance line (`$83 above the UP line` / `needs +$X for UP to win`) | L738–746 | same | Exact phrasing | **Done** — branch from `neededMove` in core, not a second comparison |
+| "Settles in" + countdown, block flips vermilion when urgent | L748–759 | `hero/HeroSettlesIn.tsx` | Adapted | **Done** — urgency from `urgentAtSec(intervalSec)` rather than a flat 60 s, which would misread a 1d lane |
+| `.hero-chart-canvas` | L761–763 | `hero/HeroChart.tsx` | Adapted | **Done** — lightweight-charts in a filling box; the ported raw-`<canvas>` rule is scoped away from its internals |
+| `.hero-chart-foot` — The Room + `.ramp` UP bar/cents | L764–789 | `hero/HeroChartFoot.tsx` | Exact layout; honest state | **Done** — Room disabled and says it waits on Stage 3; the ramp is real top-of-book, and an empty side reads "—" with no fill (never the reference's 50% default) |
+| `.hero-yesno` mobile UP/DOWN with live cents | L790–813 | `hero/HeroYesNo.tsx` | Exact | **Done** — verified 79¢/24¢ matching the lane card at 390 |
+| Ticket rail (desktop) / drawer (mobile) | `Ticket624Drawer` | `ticket/TicketDock.tsx` | Adapted | **Done** — rail above 900px, drawer below; the drawer has no trigger of its own, the UP/DOWN buttons are it |
+| Bet type Up/Down · **Range** | `Ticket624Drawer` L858–869 | `ticket/BetModes.tsx` | Present, disabled | **Done** — Range names `RangeReserve` (Stage 5) as the missing piece; never wired to an ordinary Up/Down order |
+| **Leverage chips** | `Ticket624Drawer` L1075–1090 | `ticket/LeverageChips.tsx` | Present, disabled | **Done** — 1× is real and selected; 2×/3× say they need the prefunded reserve (Stage 5) |
+| Live-now card grid below the hero | L847–875 | `MarketsScreen.tsx` → existing `CadenceLanes` | Adapted | **Done** — our lane cards under `.markets-section` |
+| Sensei dock, Tutorial, `MarketRoom`, `WordMarketBoard` | L878–905 | — | — | Pending — Stage 3 |
+
+Shell correction found in this slice: `.page-shell` reserved space for the fixed chrome and
+`.page-hero` reserved it again, leaving the hero under a band of dead page. `.page-shell` now
+yields that reservation to a route that leads with a `.page-hero` (`styles/shell.css`).
 
 ---
 
@@ -85,7 +111,7 @@ Portfolio and More all remain.
 | Route | Reference | Class | Data authority | Status |
 |---|---|---|---|---|
 | `/` | `app/page.tsx` | Exact shell; adapted identity/protocol copy | Static + real traction | **Shell** — honest dependency state |
-| `/markets` | `app/markets/page.tsx` | Adapted to DreamDEX | DreamDEX indexer + RPC | **Partial** — real lanes/book/lifecycle/ticket live; needs Yosuku presentation |
+| `/markets` | `app/markets/page.tsx` | Adapted to DreamDEX | DreamDEX indexer + RPC | **Partial** — real lanes/book/lifecycle/ticket live, Yosuku hero-as-ticket ported (see Stage 2 above); Room, Sensei, Tutorial and the word-market board remain Stage 3 |
 | `/markets/[id]` | `app/markets/[id]/page.tsx` | Exact redirect intent | — | **Done** — redirect |
 | `/reels` | `app/reels/page.tsx` | Adapted | Shared market stream | **Shell** — honest dependency state |
 | `/portfolio` | `app/portfolio/page.tsx` | Adapted | Chain/indexer projection | **Shell** — honest dependency state |

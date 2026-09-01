@@ -1,53 +1,62 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { TICKET } from "@/lib/copy";
-import { SIDE_WORD } from "../side-styles";
 import { Ticket } from "./Ticket";
 import type { TicketSelection } from "./types";
 
-/** Tailwind's `lg` breakpoint; below it the Ticket lives in a bottom sheet, above it in the docked rail. */
-const DESKTOP_QUERY = "(min-width: 64rem)";
+/**
+ * The width at which the hero grid keeps its second column (part-04.css,
+ * `@media (max-width: 900px)`). Above it the ticket is docked in the rail beside
+ * the chart; below it the rail is gone and the ticket is a drawer.
+ */
+const RAIL_QUERY = "(min-width: 56.3125rem)";
 
-function useIsDesktop(): boolean {
-  const [desktop, setDesktop] = useState(false);
+function useHasRail(): boolean {
+  const [hasRail, setHasRail] = useState(false);
   useEffect(() => {
-    const media = window.matchMedia(DESKTOP_QUERY);
-    const sync = () => setDesktop(media.matches);
+    const media = window.matchMedia(RAIL_QUERY);
+    const sync = () => setHasRail(media.matches);
     sync();
     media.addEventListener("change", sync);
     return () => media.removeEventListener("change", sync);
   }, []);
-  return desktop;
+  return hasRail;
 }
 
-/** Docked at `lg`; a bottom sheet below it that opens whenever a side is chosen (tap-is-the-choice). */
+/**
+ * Docked beside the chart where there is room for it; a drawer where there is not.
+ *
+ * The drawer has no trigger of its own — the hero's UP/DOWN buttons are the
+ * trigger, exactly as in the reference. Choosing a side *is* opening the ticket,
+ * so there is never a second tap between the call and the deal.
+ */
 export function TicketDock({ selection }: { selection: TicketSelection }) {
-  const desktop = useIsDesktop();
+  const hasRail = useHasRail();
   const [open, setOpen] = useState(false);
   const { side, market } = selection;
 
   useEffect(() => {
-    if (!desktop && side) setOpen(true);
-  }, [desktop, side, market.marketId]);
+    if (!hasRail && side) setOpen(true);
+  }, [hasRail, side, market.marketId]);
 
-  if (desktop) return <Ticket selection={selection} />;
+  if (hasRail) {
+    return (
+      <div className="mh-rail">
+        <Ticket selection={selection} />
+      </div>
+    );
+  }
 
   return (
-    <>
-      <Button variant="outline" size="lg" className="w-full" onClick={() => setOpen(true)}>
-        {side ? TICKET.sheetCta(SIDE_WORD[side]) : TICKET.sheetCtaPlain}
-      </Button>
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="bottom" className="max-h-dvh overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>{TICKET.title}</SheetTitle>
-          </SheetHeader>
-          <div className="px-4 pb-4">{open && <Ticket selection={selection} />}</div>
-        </SheetContent>
-      </Sheet>
-    </>
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetContent side="bottom" className="max-h-dvh overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>{TICKET.title}</SheetTitle>
+        </SheetHeader>
+        <div className="px-4 pb-4">{open && <Ticket selection={selection} />}</div>
+      </SheetContent>
+    </Sheet>
   );
 }

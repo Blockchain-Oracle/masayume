@@ -115,6 +115,36 @@ export const HERO = {
   devEmpty: { why: "No live window on this venue right now — come back when the next window opens." },
 } as const;
 
+/**
+ * The hero-as-ticket head, ported from Yosuku's /markets.
+ *
+ * Yosuku asks "BTC holds above $77,800?" against a strike its model derives from
+ * spot. Masayume's Windows settle at or above the **opening print**, so the print
+ * is the line — the same question over a real on-chain number rather than a
+ * derived one. Until the print exists there is no line, and the headline says so
+ * by naming the pair instead of inventing a level.
+ */
+export const HERO_HEAD = {
+  holdsAbove: (asset: string) => `${asset} holds above`,
+  pair: (asset: string) => `${asset} · USD`,
+  cadenceGroup: "Market length",
+  betweenRounds: "Between rounds",
+  settlesIn: "Settles in",
+  noClock: "—",
+  aboveLine: "above the UP line",
+  needsForUp: "for UP to win",
+  needs: "needs",
+  room: "The Room",
+  roomQualifier: "bettors only",
+  /** Stage 3 stands the Room up on Postgres + realtime; the control is honest about that now. */
+  roomPending: "The Room opens when the comment service is live — it is not connected yet.",
+  settlesOnItsOwn: "Settles on its own the moment time's up",
+  rampUp: "UP",
+  noPrice: "—",
+  betUp: "Bet UP",
+  betDown: "Bet DOWN",
+} as const;
+
 export const BALANCE = {
   title: "Your money",
   spendable: "Spendable",
@@ -255,4 +285,23 @@ export const TICKET = {
   sheetCta: (side: string) => `Your call · ${side}`,
   sheetCtaPlain: "Open your call",
   srCost: (costText: string) => `Cost ${costText}`,
+} as const;
+
+/**
+ * Reference controls whose product is real but whose contract is not yet deployed.
+ *
+ * Both are Yosuku parity and both belong to Stage 5 (`RangeReserve`, and the
+ * prefunded model that backs leverage). They stay where the reference puts them
+ * and say exactly what is missing — omitting them would misrepresent the product,
+ * and wiring them to an ordinary Up/Down order would misrepresent the trade.
+ */
+export const TICKET_PENDING = {
+  modeLabel: "Bet type",
+  modeDirection: "Up / Down",
+  modeRange: "Range",
+  rangePending: "Range bets settle against the RangeReserve contract, which is not deployed yet. Up / Down is live.",
+  leverageLabel: "Leverage",
+  leverageOne: "1×",
+  leveragePending: (multiple: string) =>
+    `${multiple} needs the prefunded reserve that backs leveraged payouts. It is not deployed yet, so every bet here is 1×.`,
 } as const;

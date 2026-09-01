@@ -83,6 +83,14 @@
   }
 }
 
+/* A route that leads with the reference's `.page-hero` clears the fixed chrome
+ * itself — that top padding is part of the hero's ported geometry (168px, and
+ * 116px below 900px). Reserving the same space here as well left the hero
+ * floating under a band of dead page. */
+.page-shell:has(> .page-hero) {
+  padding-top: 0;
+}
+
 /* An honest holding state for a route whose capability is not connected yet.
  * It states what is missing rather than rendering a plausible-looking empty product. */
 .capability-pending {

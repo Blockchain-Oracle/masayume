@@ -10,7 +10,9 @@ import { TICKET } from "@/lib/copy";
 import { useWalletSession } from "@/lib/wallet-session";
 import { FaucetCard } from "../faucet";
 import { AutoAdvanceNote } from "./AutoAdvanceNote";
+import { BetModes } from "./BetModes";
 import { FundingNote } from "./FundingNote";
+import { LeverageChips } from "./LeverageChips";
 import { OutcomeNote } from "./OutcomeNote";
 import { QuickChips } from "./QuickChips";
 import { QuoteStrip } from "./QuoteStrip";
@@ -85,9 +87,11 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
     >
       <TicketHeader market={market} phase={phase} nowMs={t.nowMs} />
       <WalkLine />
+      <BetModes />
       <SideSegments side={side} onSelect={t.selectSide} />
       <StakeInput value={t.stakeText} onChange={t.setStakeText} decimals={decimals} symbol={symbol} costBase={displayed?.expectedCostBase ?? null} />
       <QuickChips availableBase={availableBase} decimals={decimals} onPick={t.setStakeBase} />
+      <LeverageChips />
       <QuoteStrip
         reading={quoteState.reading}
         quote={displayed}

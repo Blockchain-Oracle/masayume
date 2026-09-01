@@ -1,32 +1,29 @@
 "use client";
 
-import { BalancePlate } from "./balance";
-import { HeroMarket } from "./hero";
 import { MarketsScreen } from "./MarketsScreen";
 import { TicketDock } from "./ticket";
 import type { MarketsSelection } from "./useMarketsSelection";
 import { LiveVerdict } from "./verdict";
 
-function renderHero(selection: MarketsSelection) {
-  if (!selection.marketId) return null;
-  return (
-    <>
-      <HeroMarket marketId={selection.marketId} side={selection.side ?? undefined} />
-      <LiveVerdict marketId={selection.marketId} />
-    </>
-  );
+/**
+ * The ticket, wherever it belongs at this width.
+ *
+ * The balance plate that used to sit above it is gone from this rail — the header
+ * carries the same reading (`HeaderAccount` → `useBalancePlate`), which is where
+ * the reference keeps it, and two copies of one number on one screen is one too
+ * many.
+ */
+function renderTicket(selection: MarketsSelection) {
+  if (!selection.market) return null;
+  return <TicketDock selection={{ ...selection, market: selection.market }} />;
 }
 
-function renderTicket(selection: MarketsSelection) {
-  return (
-    <>
-      <BalancePlate />
-      {selection.market ? <TicketDock selection={{ ...selection, market: selection.market }} /> : null}
-    </>
-  );
+function renderVerdict(selection: MarketsSelection) {
+  if (!selection.marketId) return null;
+  return <LiveVerdict marketId={selection.marketId} />;
 }
 
 /** Client composition of the /markets island: the screen plus the surfaces that plug into its slots. */
 export function MarketsPage() {
-  return <MarketsScreen renderHero={renderHero} renderTicket={renderTicket} />;
+  return <MarketsScreen renderTicket={renderTicket} renderVerdict={renderVerdict} />;
 }
