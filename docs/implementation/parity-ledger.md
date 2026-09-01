@@ -75,6 +75,35 @@ accessibility for a visual match.
 | Spring entry/exit from the right (`x: 80`, damping 22 / stiffness 300) | L116–119 | `translateX(120%)` on the starting and non-swipe ending styles, on `--ease-bounce` — Yosuku's own overshooting curve | **Adapted** — no framer-motion added for one component |
 | Warning type | — | follows the same formula, so the fourth kind is not the only one whose border says nothing | **Additive** |
 
+### §01 rail card (Stage 3, done 2026-09-01)
+
+Ported from `Market624Card` (`reference/yosuku/app/markets/page.tsx` L251–400). `.market-card` and
+every `.mc-*` rule were already in `yosuku/part-06.css` + `part-16.css`, light theme in part-14/15.
+
+**Why now:** §01 held a text row that stated the Window as a plain question with an odds-chip pair.
+Once §02 landed, `/markets` asked the same question twice in two card languages. The reference has
+no such overlap because its §01 *is* this chart card. **User's call, 2026-09-01**, given the three
+options in the previous entry.
+
+| Element | Reference | Destination | Class | Status |
+|---|---|---|---|---|
+| Whole card is the ticket trigger; UP/DOWN stop propagation | L285–300, L369–387 | `MarketCard.tsx` | Exact | **Done** — keyboard activation guarded to the card itself, as the reference does |
+| `.mc-head` — asset disc · ticker · serif italic cadence · countdown with clock-dot | L303–315 | same | Adapted | **Done** — the disc is keyed to the asset (`asset-mark.ts`); ETH takes a neutral disc rather than Bitcoin's orange. Third surface to need that rule |
+| `.mc-question` "BTC holds above $X?" + strike dot; `···` while pending | L316–323 | same | Adapted | **Done** — the line is the **opening print**, via `HERO_HEAD.holdsAbove`, so the card and the hero cannot word it differently |
+| `.mc-pricebar` — big spot + change | L325–336 | same | Adapted | **Done** — the change is against **this Window's line**, not a 24h figure: it is the only comparison that decides anything here |
+| `.mc-spark` — `Spark624` canvas + dashed strike rule + tick | L241–249, L338–340 | `CardSpark.tsx` | **Adapted** | **Done** — SVG, not `<canvas>`. The reference draws three fixed cadences; a lane here holds every Window the venue lists, so the cost scales with the venue — SVG needs no ref, no effect and no redraw on resize, and is the same picture. The dashed rule and tick stay the elements part-06 already styles |
+| Line colour | — | `CardSpark.tsx` | **Corrected** | **Done** — first cut coloured by the series' own direction, which put a green line beside a red −$1,419 on a Window that had rallied off its low but still sat under its print. Caught in the browser; it now says which side of the **line** the price is on, the only question the card asks |
+| `.mc-strip` — LIVE ODDS + UP ramp + cents | L342–355 | `MarketCard.tsx` | **Adapted — no-fake-data** | **Done** — the reference fills the ramp with `odds?.upCents ?? 50`, so an unread book shows as an even market. An unread side shows nothing here, as on the hero |
+| Closing state replaces the strip and hides the foot | L343, L356–358, L360 | same | Adapted | **Done** — from `phase()` (AD-1), not the reference's `minMintMs * 0.6` approximation |
+| `.mc-foot` — outlined UP/DOWN pills with prices | L360–388 | same | Adapted | **Done** — top of the real book, so they do not sum to 100 |
+| `.mc-room` strip | L391–403 | same | Present, disabled | **Done** — names the comment service as the missing piece, exactly as `HeroChartFoot` does |
+| Fixed three-cadence rail (1m · 5m · 1h) with `RailPlaceholder` | L846–874 | `LaneTabs` + `BetweenRounds` | Adapted | **Done** — pre-existing: cadence tabs and one lane at a time, since lanes derive from live `intervalSec`. The grid is `auto-fill` rather than `repeat(3,1fr)` for the same reason |
+
+`.mc-spark .strike-tick` needed a light remap (`part-14/15` do not cover it, so its `rgba(5,5,5,0.7)`
+chip landed as a near-black blob on cream) — the same fall-through class as the Tutorial's
+`bg-white/20`. **That is three components in a row.** `OddsChips.tsx` went with the text row it
+served; its `useBook` call site is gone with it.
+
 ### Word-market board — `/markets` §02 "Just ask" (Stage 3, done 2026-09-01)
 
 Ported from `reference/yosuku/components/WordMarketBoard.tsx` into
@@ -100,14 +129,16 @@ Also fixed here, since the element was being edited: `MarketsScreen`'s §01 used
 `aria-labelledby="section-lanes"` against a `SectionHeader` that takes no `id`, so the reference
 dangled. It uses `aria-label` now, like the newer sections (was listed under §Known, not fixed).
 
-**Open question for the user, not decided here.** The reference's §01 is a rail of *chart* cards,
+**Resolved 2026-09-01 — the user chose to make §01 chart-like** (see §§01 rail card above). Original
+question, kept for the reasoning: the reference's §01 is a rail of *chart* cards,
 so its §02 word board is the page's only plain-language surface. Our §01 `MarketRow` already
 states each Window as a plain question (`plainQuestion`) and carries an odds chip pair, and there
 is a "Plain words" toggle above it as well. So `/markets` now says the same Windows in words
 twice, in two different card languages. Three ways out — keep both (they do differ: §01 is the
 trading rail with cadence tabs and hero selection, §02 browses every lane at once), make §01's
 rows chart-like to match the reference's rail, or retire the toggle now that §02 is the plain
-surface. Recorded rather than chosen, because it changes reviewed work.
+surface. Chosen: the first. The "Plain words" toggle stays and now means something sharper — chart cards by
+default, plain Yes/No questions on demand.
 
 ### First-run Tutorial (Stage 3, done 2026-09-01)
 
@@ -174,7 +205,7 @@ DreamDEX pipeline — a presentation change, not a data change.
 | Ticket rail (desktop) / drawer (mobile) | `Ticket624Drawer` | `ticket/TicketDock.tsx` | Adapted | **Done** — rail above 900px, drawer below; the drawer has no trigger of its own, the UP/DOWN buttons are it |
 | Bet type Up/Down · **Range** | `Ticket624Drawer` L858–869 | `ticket/BetModes.tsx` | Present, disabled | **Done** — Range names `RangeReserve` (Stage 5) as the missing piece; never wired to an ordinary Up/Down order |
 | **Leverage chips** | `Ticket624Drawer` L1075–1090 | `ticket/LeverageChips.tsx` | Present, disabled | **Done** — 1× is real and selected; 2×/3× say they need the prefunded reserve (Stage 5) |
-| Live-now card grid below the hero | L847–875 | `MarketsScreen.tsx` → existing `CadenceLanes` | Adapted | **Done** — our lane cards under `.markets-section` |
+| Live-now card grid below the hero (`Market624Card`) | L251–400, L847–875 | `lanes/MarketCard.tsx`, `lanes/CardSpark.tsx` | Adapted | **Done** — see §§01 rail card |
 | Tutorial | L905 | `features/onboarding/*` | Exact shape | **Done** — see §First-run Tutorial |
 | `WordMarketBoard` §02 | L878–881 | `features/markets/word-board/*` | Adapted | **Done** — see §Word-market board |
 | Sensei dock, `MarketRoom` | L890, L896–903 | — | — | Pending — Stage 3 |

@@ -12,7 +12,7 @@ Start here, then read `parity-ledger.md`. The authority package is
 ## Where we are
 
 Branch **`feat/yosuku-source-led-shell`** off `main` (`497b43a`). **Stage 2 is complete; Stage 3 is
-underway — the first-run Tutorial and the §02 word board are in.**
+underway — the Tutorial, the §02 word board and the §01 chart card are in.**
 
 | Commit | What |
 |---|---|
@@ -26,7 +26,8 @@ underway — the first-run Tutorial and the §02 word board are in.**
 | `99d2623` | Stage 2 — Toast presentation; Stage 2 closed |
 | `3943222`, `d488471` | Reel light-mode fix, then the card made theme-following |
 | `f451f38` | Stage 3 — first-run Tutorial |
-| *(this)* | Stage 3 — `/markets` §02 word-market board |
+| `aa3b3b8` | Stage 3 — `/markets` §02 word-market board |
+| *(this)* | Stage 3 — §01 as the reference's chart card |
 
 Everything is green: `pnpm typecheck`, `pnpm invariants` (12/12), `pnpm test` (36),
 `pnpm build` (51 routes). Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
@@ -76,12 +77,10 @@ Per `05-migration-and-agency-handoff.md`. Four slots were waiting on `/markets` 
 **The Tutorial and the word board are done**; the two that remain are two *different* dependency
 classes, which is the thing to know before planning:
 
-1. ~~**The word-market board**~~ — **done**, `/markets` §02. Its two invented numbers (the
-   `probAbove` logistic and the spot-derived `strike624` line) are the book's real asks and the
-   opening print. **One open product question came out of it, for the user:** our §01 rail already
-   states each Window as a plain question, so the page now says the same Windows in words twice.
-   The reference's §01 is a rail of *chart* cards, which is why it does not have this problem. See
-   the ledger's §Word-market board for the three ways out.
+1. ~~**The word-market board**~~ — **done**, `/markets` §02, and §01 is now the reference's chart
+   card (`Market624Card`) on the user's call, so the two sections speak different languages the way
+   the reference's do. Both invented numbers are gone: the `probAbove` logistic is the book's real
+   asks, the spot-derived `strike624` line is the opening print.
 2. **The Sensei dock** — needs a server-side LLM key. `.sensei-*` CSS is already ported (125 rules in
    `part-02/03.css`). The reference's `app/api/sensei/route.ts` calls DeepSeek; Masayume should use
    Claude. The route already models the unconfigured case honestly (503, "the brain key isn't
@@ -127,16 +126,18 @@ so it takes `var(--color-ink)`.
 
 ### The same rule for backgrounds and borders — and the gap that causes it
 
-The Tutorial slice hit this again in a new form. part-14.css remaps the `*-white` utilities for light
-mode, but its ladder has **holes**, and a utility that falls through renders white-on-cream:
+**Three components in a row have now hit this**, so treat it as expected, not as bad luck.
+part-14.css remaps the `*-white` utilities and the dark chips for light mode, but its ladder has
+**holes**, and anything that falls through renders white-on-cream or black-on-cream:
 
-- `bg-white/20` — the ladder stops at `/10`
-- `border-white/[0.12]`, `hover:bg-white/[0.06]` — arbitrary values not in its lists
+- `bg-white/20` — the ladder stops at `/10` (Tutorial step dots)
+- `border-white/[0.12]`, `hover:bg-white/[0.06]` — arbitrary values not in its lists (Tutorial)
+- `.mc-spark .strike-tick` — an `rgba(5,5,5,0.7)` chip with no light rule at all (§01 card)
 
-The reference has the same defect (its own tutorial card flips to cream too). Fixed scoped in
-`styles/tutorial.css`, each value taken from part-14's own ladder rather than picked by eye.
-**Before porting the next dark component, grep its `*-white` utilities against part-14.** Do not
-hand-edit `part-14.css` — regenerate the split instead.
+The reference has each of these defects too; its own cards flip to cream the same way. Each was
+fixed scoped, in the component's own CSS file, with values taken from part-14's own ladder rather
+than picked by eye. **Before porting the next dark component, grep its `*-white` utilities and any
+dark-ground chip against part-14.** Do not hand-edit `part-14.css` — regenerate the split instead.
 
 The gray ramp is the second half of this. `text-gray-*` does not follow the light theme at all (the
 recorded Tailwind-4 `@config` finding). The ledger reserved "evidence of unreadable text" as the

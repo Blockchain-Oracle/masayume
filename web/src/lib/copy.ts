@@ -15,6 +15,17 @@ export const SECTIONS = {
   words: { index: "02", title: "Just ask", desc: "No chart to read. Will it be up? Just answer yes or no." },
 } as const;
 
+/** The §01 rail card — `Market624Card` in the reference. */
+export const LANE_CARD = {
+  openTicket: (asset: string) => `Open the ticket for this ${asset} Window`,
+  oddsLive: "LIVE ODDS",
+  oddsLoading: "READING THE BOOK…",
+  closing: "CLOSING · NEXT ROUND SOON",
+  priceLoading: "···",
+  /** Labels the dashed rule on the card sparkline. */
+  line: "line",
+} as const;
+
 export const WORD_BOARD = {
   reading: "reading the board…",
   between: "Between rounds. New questions open as the next Window does.",

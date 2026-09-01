@@ -54,7 +54,6 @@ export function MarketsScreen({ renderTicket, renderVerdict }: MarketsScreenProp
               nowMs={nowMs}
               plainWords={plainWords}
               selectedMarketId={selection.marketId}
-              selectedSide={selection.side}
               onSelect={setSelection}
             />
           </section>

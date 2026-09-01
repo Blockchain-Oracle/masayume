@@ -19,7 +19,6 @@ interface CadenceLanesProps {
   nowMs: number;
   plainWords: boolean;
   selectedMarketId: MarketId | null;
-  selectedSide: Side | null;
   onSelect: (marketId: MarketId, side?: Side) => void;
 }
 
@@ -28,7 +27,7 @@ function laneReading(state: LanesState, boot: Reading<unknown> | null): Reading<
   return state.reading;
 }
 
-export function CadenceLanes({ state, boot, venueId, nowMs, plainWords, selectedMarketId, selectedSide, onSelect }: CadenceLanesProps) {
+export function CadenceLanes({ state, boot, venueId, nowMs, plainWords, selectedMarketId, onSelect }: CadenceLanesProps) {
   return (
     <ReadingBoundary
       reading={laneReading(state, boot)}
@@ -49,7 +48,7 @@ export function CadenceLanes({ state, boot, venueId, nowMs, plainWords, selected
           ) : plainWords ? (
             <PlainWordsList markets={state.activeLane.markets} nowMs={nowMs} selectedMarketId={selectedMarketId} />
           ) : (
-            <LaneRows lane={state.activeLane} nowMs={nowMs} selectedMarketId={selectedMarketId} selectedSide={selectedSide} onSelect={onSelect} />
+            <LaneRows lane={state.activeLane} nowMs={nowMs} selectedMarketId={selectedMarketId} onSelect={onSelect} />
           )}
           <StrikeDisclosure count={laneSet.excludedFixedStrike} />
         </div>
