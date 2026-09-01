@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { shortHex } from "./format";
+import { shortHex } from "@masayume/core/units";
 
 interface HashProps {
   value: string;

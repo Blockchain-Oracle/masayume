@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { bpsToOddsCents } from "./format";
+import { bpsToOddsCents } from "@masayume/core/units";
 
 interface OddsProps {
   bps: number;

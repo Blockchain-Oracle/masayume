@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { formatBaseUnits } from "./format";
+import { formatBaseUnits } from "@masayume/core/units";
 
 type MoneyTone = "neutral" | "pnl";
 

@@ -1,6 +1,6 @@
 import type { StaleReason } from "@masayume/core";
 import { TriangleAlertIcon } from "lucide-react";
-import { formatUtc } from "@/components/data/format";
+import { formatUtc } from "@masayume/core/units";
 import { STALE_REASON_LABEL, staleLine } from "@/lib/copy";
 import { cn } from "@/lib/utils";
 
