@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { BRAND } from "@/lib/copy";
 import { fontVariables } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
+import { AppProviders } from "@/providers";
 import "@/styles/index.css";
 
 export const metadata: Metadata = {
@@ -16,11 +17,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={cn("dark h-full antialiased", fontVariables)}>
       <body className="flex min-h-full flex-col bg-ground text-ink">
-        <TooltipProvider>
-          <Toaster limit={1}>
-            <AppShell>{children}</AppShell>
-          </Toaster>
-        </TooltipProvider>
+        <AppProviders>
+          <TooltipProvider>
+            <Toaster limit={1}>
+              <AppShell>{children}</AppShell>
+            </Toaster>
+          </TooltipProvider>
+        </AppProviders>
       </body>
     </html>
   );
