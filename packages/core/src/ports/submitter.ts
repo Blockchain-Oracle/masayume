@@ -29,8 +29,12 @@ export interface BookedOrder {
 
 export type OrderOutcome =
   | { status: "confirmed"; booked: BookedOrder }
+  /** The tx mined but crossed nothing: the book moved before the IOC landed; the stake was never taken. */
+  | { status: "nothingFilled"; txHash: Hex }
+  /** The fresh quote's `maxCostBase` exceeds the confirmed one — the surface shows the new cost and asks again. */
   | { status: "requote"; quote: Quote }
   | { status: "refused"; diagnosis: Diagnosis }
+  | { status: "reverted"; diagnosis: Diagnosis; txHash: Hex }
   | { status: "unknown"; diagnosis: Diagnosis; txHash?: Hex };
 
 export type TxIntent =

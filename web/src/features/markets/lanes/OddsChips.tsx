@@ -7,15 +7,9 @@ import { Odds } from "@/components/data";
 import { Button } from "@/components/ui/button";
 import { MARKETS } from "@/lib/copy";
 import { cn } from "@/lib/utils";
+import { SIDE_CLASSES, SIDE_WORD } from "../side-styles";
 
 const TOP_OF_BOOK = 1;
-
-const SIDE_CLASSES: Record<Side, string> = {
-  up: "border-(--button-up-border) text-(--button-up-ink) aria-pressed:bg-(--button-up-fill)",
-  down: "border-(--button-down-border) text-(--button-down-ink) aria-pressed:bg-(--button-down-fill)",
-};
-
-const SIDE_WORD: Record<Side, string> = { up: MARKETS.up, down: MARKETS.down };
 
 interface SideChipProps {
   side: Side;

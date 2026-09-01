@@ -13,6 +13,8 @@ export const DIAGNOSIS_KINDS = [
   "post-only-would-cross",
   "no-liquidity",
   "below-min-quantity",
+  "outside-band",
+  "daily-stop",
   "invalid-price",
   "not-settled",
   "already-claimed",

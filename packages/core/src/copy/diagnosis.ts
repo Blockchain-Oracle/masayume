@@ -18,6 +18,8 @@ const COPY: Record<DiagnosisKind, DiagnosisCopy> = {
   "post-only-would-cross": { headline: "Your price would fill immediately", body: "A backing order rests, it doesn't take. Adjust the level." },
   "no-liquidity": { headline: "No liquidity at this size", body: "Nobody is on the other side right now. Try a smaller stake or the next Window." },
   "below-min-quantity": { headline: "Below the venue's minimum", body: "This size rounds to nothing on the venue's lot grid." },
+  "outside-band": { headline: "Too close to certain or impossible", body: "This book is quoting outside the 2–97¢ band, so the order is refused rather than filled at a lottery price." },
+  "daily-stop": { headline: "Daily Stop hit", body: "Betting reopens at midnight your time. Nothing was sent." },
   "invalid-price": { headline: "Off the price grid", body: "The venue rejected the price step. Requote and try again." },
   "not-settled": { headline: "Not settled yet", body: "The oracle hasn't printed. Redemption opens the moment it does." },
   "already-claimed": { headline: "Already paid out", body: "The auto-payout got here first. Your wallet already has it." },

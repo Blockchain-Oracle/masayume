@@ -3,6 +3,7 @@ import type { IntentJournal, PhaseListener, TxIntent, TxOutcome } from "@masayum
 import { diagnosis, type Diagnosis } from "@masayume/core/types";
 import type { TxResult } from "@somnia-chain/markets-sdk";
 import { requireTrader, signerAddress } from "../exchange";
+import { isTimeoutError } from "./failure";
 import { checkGas, gasLimitFor } from "./gas";
 import { assertTxOk, diagnoseWrite, TxRevertedError } from "./steps/assert-tx-ok";
 
@@ -11,7 +12,6 @@ export interface TxLaneContext {
 }
 
 const LANE_OF: Record<TxIntent["kind"], GasLane> = { faucet: "faucet", redeem: "redeem", approve: "approve" };
-const TIMEOUT_RE = /timed? ?out|timeout/i;
 
 const NO_STANDALONE_APPROVE =
   "approvals are absorbed into the action that needs them (autoApprove); there is no standalone approve";
@@ -43,10 +43,6 @@ function send(intent: Exclude<TxIntent, { kind: "approve" }>): Promise<TxResult>
   });
 }
 
-function isTimeout(error: unknown): boolean {
-  return error instanceof Error && (TIMEOUT_RE.test(error.name) || TIMEOUT_RE.test(error.message));
-}
-
 function refused(diag: Diagnosis): TxOutcome {
   return { status: "refused", diagnosis: diag };
 }
@@ -59,7 +55,7 @@ async function settleFailure(journal: IntentJournal, id: string, error: unknown,
     onPhase?.("reverted", { txHash: error.txHash });
     return { status: "reverted", diagnosis: diag, txHash: error.txHash };
   }
-  if (isTimeout(error)) {
+  if (isTimeoutError(error)) {
     await journal.markUnknown(id);
     onPhase?.("unknown");
     return { status: "unknown", diagnosis: diagnosis("send-unknown", diag.technical) };
