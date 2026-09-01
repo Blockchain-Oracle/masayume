@@ -4,14 +4,20 @@ export const BLOCKER_KINDS = [
   "disconnected",
   "connecting",
   "wrong-chain",
+  "syncing",
   "placing",
+  "upcoming",
   "pending-opening-print",
   "no-entry-buffer",
   "locked",
   "settling",
   "no-funds",
   "out-of-gas",
+  "no-side",
+  "no-stake",
   "below-min-stake",
+  "over-balance",
+  "quoting",
   "no-liquidity-at-size",
   "outside-band-low",
   "outside-band-high",
@@ -26,6 +32,7 @@ export type BlockerKind = (typeof BLOCKER_KINDS)[number];
 export interface BlockerContext {
   chainName?: string;
   minStakeText?: string;
+  spendableText?: string;
   quotedCents?: number;
   cadence?: string;
   nextStartText?: string;
@@ -45,8 +52,12 @@ export function blockerLabel(kind: BlockerKind, ctx: BlockerContext = {}): strin
       return "Connecting…";
     case "wrong-chain":
       return `Switch to ${ctx.chainName ?? DEFAULT_CHAIN}`;
+    case "syncing":
+      return "Syncing the chain clock…";
     case "placing":
       return PLACING;
+    case "upcoming":
+      return "Opens soon — not trading yet";
     case "pending-opening-print":
       return "Waiting for the opening print";
     case "no-entry-buffer":
@@ -61,8 +72,16 @@ export function blockerLabel(kind: BlockerKind, ctx: BlockerContext = {}): strin
       return "No tUSDC yet — mint from the faucet";
     case "out-of-gas":
       return "Out of STT gas — fuel up first";
+    case "no-side":
+      return "Pick UP or DOWN";
+    case "no-stake":
+      return "Enter a stake";
     case "below-min-stake":
       return `Minimum stake ${ctx.minStakeText ?? DEFAULT_MIN_STAKE} — below this the venue rounds your order to nothing`;
+    case "over-balance":
+      return ctx.spendableText ? `Stake exceeds your ${ctx.spendableText} balance` : "Stake exceeds your balance";
+    case "quoting":
+      return "Quoting…";
     case "no-liquidity-at-size":
       return ctx.fillableStakeText ? `Only ${ctx.fillableStakeText} fillable at this size` : "No liquidity at this size";
     case "outside-band-low":

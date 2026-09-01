@@ -13,7 +13,7 @@ export class TxRevertedError extends Error {
   }
 }
 
-export function assertTxOk(result: TxResult, label: string): TxResult {
+export function assertTxOk<T extends TxResult>(result: T, label: string): T {
   if (result.receipt.status !== "success") throw new TxRevertedError(label, result.hash);
   return result;
 }

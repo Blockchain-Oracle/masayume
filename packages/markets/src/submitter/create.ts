@@ -6,6 +6,7 @@ import { nowMs as chainNowMs } from "../provider/clock";
 import { noopAttribution } from "./attribution";
 import { checkGas, requiredGasWei, type GasCheck } from "./gas";
 import { createMemoryJournal } from "./journal-memory";
+import { submitOrder } from "./order-lane";
 import { allowAllStopGate } from "./stop-gate";
 import { submitTx } from "./tx-lane";
 
@@ -36,9 +37,7 @@ export function createSubmitter(deps: SubmitterDeps = {}): MarketsSubmitter {
     attribution,
     hasSigner: () => signerAddress() !== undefined,
     submitTx: (intent, onPhase) => submitTx({ journal }, intent, onPhase),
-    async submitOrder() {
-      throw new Error("submitOrder lands in Story 1.8 (the order lane)");
-    },
+    submitOrder: (request, onPhase) => submitOrder({ journal, stopGate, attribution, nowMs }, request, onPhase),
     async checkGas(lane) {
       const wallet = signerAddress();
       if (wallet) return checkGas(wallet, lane);

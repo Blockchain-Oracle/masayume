@@ -10,6 +10,7 @@
     "spike:pin-id": "tsx spike/pin-market-id.ts",
     "spike:roll-gap": "tsx spike/roll-gap.ts",
     "spike:smoke-submitter": "tsx spike/smoke-submitter.ts",
+    "spike:smoke-order": "tsx spike/smoke-order.ts",
     "spike:check-claimables": "tsx spike/check-claimables.ts"
   },
   "dependencies": {
