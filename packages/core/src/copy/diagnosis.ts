@@ -1,0 +1,34 @@
+import type { DiagnosisKind } from "../types/diagnosis";
+import { OUT_OF_GAS } from "./strings";
+
+export interface DiagnosisCopy {
+  headline: string;
+  body: string;
+}
+
+const COPY: Record<DiagnosisKind, DiagnosisCopy> = {
+  "signer-required": { headline: "Connect a wallet first", body: "Reading works without one; writing needs your signature." },
+  "wrong-chain": { headline: "Wrong network", body: "This app runs on Somnia Shannon. Switch and try again." },
+  "user-rejected": { headline: "You cancelled in your wallet", body: "Nothing was sent. Try again when you're ready." },
+  "out-of-gas": { headline: "Out of STT gas", body: OUT_OF_GAS },
+  "insufficient-collateral": { headline: "Not enough tUSDC", body: "Your stake exceeds what your wallet holds. Mint from the faucet or lower the stake." },
+  "insufficient-allowance": { headline: "Approval needed", body: "The venue needs permission to take your stake. It's absorbed into your next bet." },
+  "market-not-trading": { headline: "The Window closed under you", body: "Your stake was never taken. The next Window is pre-armed." },
+  "order-expired": { headline: "Order expired before it filled", body: "The book moved past your quote. Nothing was taken." },
+  "post-only-would-cross": { headline: "Your price would fill immediately", body: "A backing order rests, it doesn't take. Adjust the level." },
+  "no-liquidity": { headline: "No liquidity at this size", body: "Nobody is on the other side right now. Try a smaller stake or the next Window." },
+  "below-min-quantity": { headline: "Below the venue's minimum", body: "This size rounds to nothing on the venue's lot grid." },
+  "invalid-price": { headline: "Off the price grid", body: "The venue rejected the price step. Requote and try again." },
+  "not-settled": { headline: "Not settled yet", body: "The oracle hasn't printed. Redemption opens the moment it does." },
+  "already-claimed": { headline: "Already paid out", body: "The auto-payout got here first. Your wallet already has it." },
+  "faucet-refused": { headline: "Faucet refused", body: "The venue's faucet said no — you may hold enough already, or it's capped. Try later." },
+  "indexer-down": { headline: "The indexer isn't answering", body: "Numbers stay at their last-good values until it's back." },
+  "rpc-down": { headline: "The chain endpoint isn't answering", body: "We're rotating to the backup RPC. Last-good values stay on screen." },
+  "contract-revert": { headline: "The contract refused", body: "Nothing moved. The technical details name the reason." },
+  "send-unknown": { headline: "Waiting for the chain to answer", body: "Your order is either in or it never left; we'll show you which." },
+  unknown: { headline: "Something went sideways", body: "Nothing on-chain changed without a signature. Details below." },
+};
+
+export function diagnosisCopy(kind: DiagnosisKind): DiagnosisCopy {
+  return COPY[kind];
+}
