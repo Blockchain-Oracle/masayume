@@ -177,6 +177,34 @@ export const REELS = {
   takesPending: "Community takes join the reel when the social layer is live — it is not connected yet.",
 } as const;
 
+/**
+ * Portfolio, ported from Yosuku's /portfolio.
+ *
+ * The reference's structural claim is that the page has no headline — "the nav
+ * already says where you are, and the thing people open this page for is the
+ * number" — so the balance is the header and the bets sit under it.
+ */
+export const PORTFOLIO = {
+  title: "Portfolio",
+  openBets: (n: number) => `${n} open`,
+  settled: (n: number) => `${n} to collect`,
+  betsTitle: "Your bets",
+  noBets: "No bets yet.",
+  firstCall: "make your first call",
+  live: "Live",
+  settling: "Settling",
+  left: "left",
+  stake: "Staked",
+  value: "Worth now",
+  bothSides: "UP + DOWN",
+  toMarkets: "Go to Markets",
+  collectTitle: "To collect",
+  /** Stage 3 stands up the settled-history and PnL projection; Stage 4 the vault and X wallet. */
+  historyPending: "Settled history, the equity curve and reputation arrive with the fill projection (Stage 3).",
+  edgePending: "Trader Edge reads that same projection — it opens with it (Stage 3).",
+  vaultPending: "The Trading Balance and its bounded grants arrive with EventVault (Stage 4).",
+} as const;
+
 export const BALANCE = {
   title: "Your money",
   spendable: "Spendable",

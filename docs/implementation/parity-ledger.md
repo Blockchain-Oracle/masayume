@@ -53,8 +53,8 @@ order", never "optional" or "cut".
 | Disposed on disconnect / account switch / chain switch / expiry / revocation | `packages/markets/src/react/session.tsx` | **Done** — new wallet client disposes and rebuilds; disposed sessions reject |
 | Grant policy per session (`SESSION_TRADE`, `X_EXECUTOR`, …) | `EventVault` | Pending — Stage 4; the session already carries the authority it will be scoped by |
 
-Remaining Stage 2 work: connect Portfolio's market portions to the same pipeline, and port Yosuku's
-Toast presentation. `/fund` and `/claim` are **not** Stage 2 reads — see §`/reels` for why.
+Remaining Stage 2 work: port Yosuku's Toast presentation. `/fund` and `/claim` are **not** Stage 2
+reads — see §`/reels` for why.
 
 ### Subscription coordinator (Stage 2, done 2026-09-01)
 
@@ -144,6 +144,27 @@ Paystack key and a funded treasury signer, both owner-only, and funding is outsi
 `/claim` (reference) is X-OAuth account recovery — Stage 4. Both keep their honest dependency state;
 neither was silently reclassified.
 
+### `/portfolio` — market portions (Stage 2, done 2026-09-01)
+
+Ported from `reference/yosuku/app/portfolio/page.tsx` and its `Portfolio624Section`. Only the parts
+that read the market pipeline are connected here; everything else keeps a named dependency state.
+
+| Element | Reference | Destination | Class | Status |
+|---|---|---|---|---|
+| No page headline — the balance is the header | L266–268 | `portfolio/PortfolioScreen.tsx` | Exact | **Done** |
+| One spendable number, every other pool named beneath it and never summed in | `BalancePlate` L46–70 | existing `balance/BalancePlate.tsx` | Adapted | **Done** — already live on `/markets` and reviewed; the rule (FR-5) is the reference's own |
+| `.ledger-plate` cream frame | `part-07.css:239` | — | Deviation | **Recorded** — the frame is a fixed cream slab with its own ink and the panel inside it is theme-aware; nesting them reproduces, in reverse, the "one card, two backgrounds" defect the reference's `.plate-rows` remap exists to fix. Our plate surface is used instead |
+| Open bets: status · market · countdown · stake · value | `Portfolio624Section` L431–455 | `portfolio/BetsPanel.tsx`, `portfolio/BetRow.tsx` | Adapted | **Done** — off `getOpenPositionsWithPnL`, so cost basis, mark value and unrealised PnL are the venue's own numbers, not recomputed here |
+| Silent status while a bet is live (pulsing dot + countdown say it twice already) | L440 | `BetRow.tsx` | Exact | **Done** |
+| Row links back to its market | — | `BetRow.tsx` | Improved | **Done** — the deep-link grammar, as on the reel |
+| Leverage column (`1.0×`) | L452 | — | Deviation | **Recorded** — Stage 5; a `1×` on every row is a number pretending to be a choice |
+| Claimables / "collect now" | L457–470 | existing `claims/LiveClaimPlate` | Adapted | **Done** — already live on `/claims`, mounted here as §02 |
+| Settled history, receipts, equity curve, reputation, badges, CSV export | L486–512 | — | — | Pending — Stage 3 (fill projection) |
+| Trader Edge link | `TraderEdgeLink` | — | — | Pending — Stage 3 |
+| Creator earnings, X wallet card | L318–329 | — | — | Pending — Stage 3–4 |
+| Trading Balance vault (deposit/withdraw/sweep, private withdrawal) | L51–58 | — | — | Pending — Stage 4 (`EventVault`) |
+| Copy-trading desk, leverage panel | L520+, `LeveragePortfolioPanel` | — | — | Pending — Stage 5 |
+
 ---
 
 ## Product shell
@@ -175,7 +196,7 @@ Portfolio and More all remain.
 | `/markets` | `app/markets/page.tsx` | Adapted to DreamDEX | DreamDEX indexer + RPC | **Partial** — real lanes/book/lifecycle/ticket live, Yosuku hero-as-ticket ported (see Stage 2 above); Room, Sensei, Tutorial and the word-market board remain Stage 3 |
 | `/markets/[id]` | `app/markets/[id]/page.tsx` | Exact redirect intent | — | **Done** — redirect |
 | `/reels` | `app/reels/page.tsx` | Adapted | Shared market stream | **Live** — see §`/reels` |
-| `/portfolio` | `app/portfolio/page.tsx` | Adapted | Chain/indexer projection | **Shell** — honest dependency state |
+| `/portfolio` | `app/portfolio/page.tsx` | Adapted | Chain/indexer projection | **Partial** — money, open bets and claimables live; see §`/portfolio` |
 | `/portfolio/edge` | `app/portfolio/edge/page.tsx` | Adapted | Real fills incl. losses/voids | **Shell** — honest dependency state |
 | `/leaderboard` | `app/leaderboard/page.tsx` | Adapted | DB projection from verified outcomes | **Shell** — honest dependency state |
 | `/earn` | `app/earn/page.tsx` | Adapted via `MarketMakerVault` | Masayume contract | **Shell** — honest dependency state (Stage 5) |
@@ -234,7 +255,7 @@ Tracked separately so the route table cannot hide a missing capability.
 | Range · leverage · private | Pending | Stage 5 — needs `RangeReserve` + prefunded leverage + link-private service |
 | Social takes, rooms, sharing, alerts, news/ticker, X linking | Pending | Stage 3–4 |
 | Trading Balance with labeled pools | **Partial** | Balance plate + labeled pools exist; `EventVault` pending |
-| Positions, PnL, history, equity, reputation, badges, Trader Edge | Pending | Stage 3 |
+| Positions, PnL, history, equity, reputation, badges, Trader Edge | **Partial** | Open positions with the venue's own PnL live on `/portfolio`; history, equity, reputation, badges and Trader Edge are Stage 3 |
 | Earn, parlays, strategies, creators, agents, playbooks, assistant | Pending | Stage 4–5 |
 | Faucet, account setup, recovery, smart-wallet session, revocation | **Partial** | Faucet live; rest Stage 4 |
 | Status, traction, docs, demo, pitch, download, error recovery | Pending | Stage 3 |
