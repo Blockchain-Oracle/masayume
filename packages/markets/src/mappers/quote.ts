@@ -1,9 +1,7 @@
 import { BPS_DENOMINATOR } from "@masayume/core/constants";
 import type { Quote, Side } from "@masayume/core/types";
-import { bpsToOddsCents, mulBps, oneUnit, priceRawToBps } from "@masayume/core/units";
+import { bpsToOddsCents, mulBps, oneCent, priceRawToBps } from "@masayume/core/units";
 import type { BinaryOrderQuote, BinaryStakeQuote } from "@somnia-chain/markets-sdk";
-
-const CENTS_PER_UNIT = 100n;
 
 export interface QuoteParts {
   side: Side;
@@ -33,7 +31,7 @@ export function toQuote({ side, stakeBase, stakeQuote, orderQuote, decimals, fee
     oddsCents: bpsToOddsCents(avgPriceBps),
     payoutIfRightBase: mulBps(stakeQuote.quantity, BPS_DENOMINATOR - feeBps),
     fillableStakeBase: stakeQuote.escrow,
-    partial: undeployed > oneUnit(decimals) / CENTS_PER_UNIT,
+    partial: undeployed > oneCent(decimals),
     feeBps,
     decimals,
     quotedAtMs,

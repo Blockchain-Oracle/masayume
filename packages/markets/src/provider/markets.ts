@@ -10,7 +10,7 @@ import { withReading } from "./reading";
 
 const LIVE_PAGE = 100;
 const SETTLED_PAGE = 50;
-const SETTLED_STATUSES: ReadonlySet<IndexedStatus> = new Set<IndexedStatus>(["Resolved", "Voided", "Finalized"]);
+export const SETTLED_STATUSES: ReadonlySet<IndexedStatus> = new Set<IndexedStatus>(["Resolved", "Voided", "Finalized"]);
 
 async function withOpeningPrices(rows: readonly BinaryMarket[]): Promise<EventMarket[]> {
   const ids = rows.map((row) => toMarketId(row.marketId));
@@ -33,7 +33,10 @@ export async function getMarket(marketId: MarketId): Promise<Reading<EventMarket
   });
 }
 
-/** Settled discovery goes through the past list, not the registry sweep, which hides finalized markets (canon #10); sorted by expiry locally. */
+/**
+ * Recent settled markets for history surfaces, via the past list rather than the registry sweep that hides
+ * finalized markets (canon #10); sorted by expiry locally. A page, so no money figure may depend on it (NFR-4).
+ */
 export async function listSettled(venueId: Bytes32, limit = SETTLED_PAGE): Promise<Reading<EventMarket[]>> {
   return withReading(`settled:${venueId}:${limit}`, async () => {
     const rows = await getClient().listPastBinaryMarkets({ venueId, limit, nowSec: nowSec() });

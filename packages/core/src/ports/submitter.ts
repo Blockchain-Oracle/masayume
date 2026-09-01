@@ -12,7 +12,7 @@ export interface OrderRequest {
   market: EventMarket;
   side: Side;
   stakeBase: bigint;
-  /** The quote the user confirmed; a fresh quote above its cap is surfaced, never silently accepted. */
+  /** The quote the user confirmed; its `maxCostBase` is the cap — a fresh quote whose `maxCostBase` exceeds it is surfaced as a requote, never silently accepted. */
   displayedQuote: Quote;
   wallet: Address;
 }

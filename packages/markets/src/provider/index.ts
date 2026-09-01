@@ -36,10 +36,11 @@ export const marketsProvider: MarketsProvider = {
   getResolution,
 };
 
+export { bootMarkets, type MarketsBoot } from "./boot";
 export { DEFAULT_BOOK_DEPTH, liveBookDepth } from "./books";
 export { applyClockSync, lastClockSync, nowMs, nowSec } from "./clock";
 export { syncClock } from "./clock-sync";
 export { laneNextStart } from "./next-window";
 export { fetchOpeningPrices } from "./prices";
 export { quoteFromBook, type QuoteInput } from "./quotes";
-export { forgetReading, withReading } from "./reading";
+export { forgetReading, unwrap, withReading, type Unwrap } from "./reading";

@@ -1,6 +1,6 @@
 import type { IndexedStatus } from "../types/market";
 import { msToSec } from "../units/time";
-import { headroomSec } from "./headroom";
+import { noEntryCutoffSec } from "./headroom";
 import { ONCHAIN_STATUS } from "./status";
 
 export type MarketPhase =
@@ -29,7 +29,7 @@ const ENTERABLE: ReadonlySet<MarketPhase> = new Set<MarketPhase>(["trading"]);
 
 function timePhase(m: PhaseInput, nowSec: number): MarketPhase {
   if (nowSec >= m.expirySec) return "locked";
-  if (nowSec >= m.expirySec - headroomSec(m.intervalSec)) return "noEntryBuffer";
+  if (nowSec >= noEntryCutoffSec(m.expirySec, m.intervalSec)) return "noEntryBuffer";
   if (nowSec < m.tradingStartSec) return "upcoming";
   if (m.openingPriceRaw === null) return "pendingOpeningPrint";
   return "trading";

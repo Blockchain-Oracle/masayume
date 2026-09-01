@@ -33,11 +33,13 @@ export function useStakeQuote({ target, side, stakeBase, enabled = true }: Stake
   const tick = useTick(REQUOTE_MS);
 
   return useMemo(() => {
-    if (!active || !target || watch === "hydrating" || !params) return null;
+    if (!active || !target || watch === "hydrating" || !params || !fee) return null;
     if (!isOk(params)) return params;
-    const feeBps = fee && isOk(fee) ? fee.value : 0;
-    const reading = ok(quoteFromBook({ book, params: params.value, target, side, stakeBase, feeBps }), nowMs());
-    return watch === "live" && status.wsConnected ? reading : stale(reading, "offline");
+    if (!isOk(fee)) return fee;
+    const reading = ok(quoteFromBook({ book, params: params.value, target, side, stakeBase, feeBps: fee.value }), nowMs());
+    if (watch !== "live" || !status.wsConnected) return stale(reading, "offline");
+    const innerStale = params.staleReason ?? fee.staleReason;
+    return innerStale ? stale(reading, innerStale) : reading;
     // `tick` is a deliberate dependency: it forces a requote on the interval even when the book is unchanged.
   }, [active, target, watch, book, params, fee, side, stakeBase, status.wsConnected, tick]);
 }

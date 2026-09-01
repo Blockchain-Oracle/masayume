@@ -1,51 +1,86 @@
-import { enumerateClaimables, type SettledHolding } from "@masayume/core/claims";
-import { isOk, type Reading } from "@masayume/core/schemas";
-import type { Address, Bytes32, ClaimableRow, EventMarket, Holdings } from "@masayume/core/types";
+import { enumerateClaimables, type SettledHolding, type SettledMarket } from "@masayume/core/claims";
+import type { Reading } from "@masayume/core/schemas";
+import { toMarketId, type Address, type Bytes32, type ClaimableRow, type Holdings, type MarketId } from "@masayume/core/types";
+import type { PortfolioMarket, PortfolioPosition } from "@somnia-chain/markets-sdk";
 import { getClient } from "../exchange";
+import { bigintOf, lowerAddress, numberOf } from "../mappers/scalars";
 import { settlementFeeBps } from "./fees";
-import { listSettled } from "./markets";
+import { SETTLED_STATUSES } from "./markets";
 import { getOnchain } from "./onchain";
-import { withReading } from "./reading";
+import { withReading, type Unwrap } from "./reading";
+
+interface SettledPosition {
+  market: SettledMarket;
+  tokenIds: { up: bigint | null; down: bigint | null };
+}
 
 let outcomeToken: Address | null = null;
 
 /** OutcomeToken6909 is one singleton for every market; learn its address from any market once. */
-async function resolveOutcomeToken(sample: EventMarket): Promise<Address> {
+async function resolveOutcomeToken(inner: Unwrap, marketId: MarketId): Promise<Address> {
   if (outcomeToken) return outcomeToken;
-  const onchain = await getOnchain(sample.marketId);
-  if (!isOk(onchain)) throw new Error(onchain.error.technical);
-  outcomeToken = onchain.value.outcomeToken;
+  outcomeToken = inner(await getOnchain(marketId)).outcomeToken;
   return outcomeToken;
 }
 
-async function holdingsFor(wallet: Address, markets: readonly EventMarket[], token: Address): Promise<Holdings[]> {
-  const queries = markets.flatMap((m) => [
-    { token, id: m.yesTokenId },
-    { token, id: m.noTokenId },
-  ]);
-  const balances = await getClient().getBalances(queries, wallet);
-  return markets.map((_, i) => ({ upRaw: balances[i * 2] ?? 0n, downRaw: balances[i * 2 + 1] ?? 0n }));
+function toSettledMarket(market: PortfolioMarket): SettledMarket {
+  return {
+    marketId: toMarketId(market.id),
+    marketAddress: lowerAddress(market.marketAddress),
+    asset: market.asset,
+    intervalSec: numberOf(market.intervalSec) ?? 0,
+    expirySec: numberOf(market.expiry) ?? 0,
+    decimals: market.quoteDecimals,
+    voided: market.voided,
+    winningOutcome: market.winningOutcome === 0 || market.winningOutcome === 1 ? market.winningOutcome : null,
+    resolvedAtMs: null,
+  };
 }
 
-/** Claimables for a wallet: settled markets discovered via the past list, holdings via ERC-6909, fee read at use time (canon #10, #11, #15). */
+/** The wallet's own non-zero positions, grouped by market and narrowed to settled ones — never a venue page (NFR-4). */
+function settledPositions(positions: readonly PortfolioPosition[]): SettledPosition[] {
+  const byMarket = new Map<MarketId, SettledPosition>();
+  for (const position of positions) {
+    if (!SETTLED_STATUSES.has(position.market.status)) continue;
+    const marketId = toMarketId(position.market.id);
+    const entry = byMarket.get(marketId) ?? { market: toSettledMarket(position.market), tokenIds: { up: null, down: null } };
+    if (position.outcomeIndex === 0) entry.tokenIds.up = bigintOf(position.tokenId);
+    if (position.outcomeIndex === 1) entry.tokenIds.down = bigintOf(position.tokenId);
+    byMarket.set(marketId, entry);
+  }
+  return [...byMarket.values()];
+}
+
+/** Head-fresh ERC-6909 balances for the held ids; an unheld side is 0 without a read. */
+async function holdingsFor(wallet: Address, settled: readonly SettledPosition[], token: Address): Promise<Holdings[]> {
+  const ids = settled.flatMap(({ tokenIds }) => [tokenIds.up, tokenIds.down]).filter((id): id is bigint => id !== null);
+  const balances = await getClient().getBalances(
+    ids.map((id) => ({ token, id })),
+    wallet,
+  );
+  let cursor = 0;
+  const next = (id: bigint | null): bigint => (id === null ? 0n : (balances[cursor++] ?? 0n));
+  return settled.map(({ tokenIds }) => ({ upRaw: next(tokenIds.up), downRaw: next(tokenIds.down) }));
+}
+
+/** Claimables discovered from the wallet's positions (never a row-capped venue scan), fee read at use time (canon #10, #11, #15). `venueId` only keys the cache. */
 export async function listClaimables(wallet: Address, venueId: Bytes32): Promise<Reading<ClaimableRow[]>> {
-  return withReading(`claimables:${wallet}:${venueId}`, async () => {
-    const settled = await listSettled(venueId);
-    if (!isOk(settled)) throw new Error(settled.error.technical);
-    const markets = settled.value;
-    if (markets.length === 0) return [];
+  return withReading(`claimables:${wallet}:${venueId}`, async (inner) => {
+    const portfolio = await getClient().getPortfolio(wallet, { ordersLimit: 0, tradesLimit: 0 });
+    const settled = settledPositions(portfolio.positions);
+    const first = settled[0];
+    if (!first) return [];
 
-    const token = await resolveOutcomeToken(markets[0] as EventMarket);
-    const holdings = await holdingsFor(wallet, markets, token);
-    const held = markets
-      .map((market, i) => ({ market, holdings: holdings[i] as Holdings }))
-      .filter(({ holdings: h }) => h.upRaw > 0n || h.downRaw > 0n);
-
-    const fees = await Promise.all(held.map(({ market }) => settlementFeeBps(market.marketId)));
-    const inputs: SettledHolding[] = held.map((entry, i) => {
-      const fee = fees[i];
-      return { ...entry, feeBps: fee && isOk(fee) ? fee.value : 0 };
-    });
+    const token = await resolveOutcomeToken(inner, first.market.marketId);
+    const [holdings, fees] = await Promise.all([
+      holdingsFor(wallet, settled, token),
+      Promise.all(settled.map(({ market }) => settlementFeeBps(market.marketId))),
+    ]);
+    const inputs: SettledHolding[] = settled.map(({ market }, i) => ({
+      market,
+      holdings: holdings[i] ?? { upRaw: 0n, downRaw: 0n },
+      feeBps: inner(fees[i] as Reading<number>),
+    }));
     return enumerateClaimables(inputs);
   });
 }

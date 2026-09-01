@@ -7,6 +7,7 @@ import {
   RpcError,
   SignerRequiredError,
 } from "@somnia-chain/markets-sdk";
+import { ReadingError } from "./reading-error";
 
 const USER_REJECTED_CODE = 4001;
 
@@ -63,6 +64,7 @@ function kindFromMessage(message: string): DiagnosisKind | null {
 
 /** Translates any provider/SDK failure into a typed diagnosis; the raw message survives as `technical`. */
 export function diagnose(error: unknown): Diagnosis {
+  if (error instanceof ReadingError) return error.diagnosis;
   const technical = messageOf(error);
   if (error instanceof SignerRequiredError) return diagnosis("signer-required", technical);
   if (isUserRejection(error)) return diagnosis("user-rejected", technical);

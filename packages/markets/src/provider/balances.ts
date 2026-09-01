@@ -24,14 +24,14 @@ function orderEscrow(portfolio: Portfolio, decimals: number): bigint {
     }, 0n);
 }
 
+/** `fallback.market` is the bytes32 market id (the indexer PK), never an address; pools dedupe before the cap. */
 async function poolsWithCredits(portfolio: Portfolio, fallbacks: readonly VaultPayoutFallback[]): Promise<Address[]> {
-  const pools = new Set<Address>(portfolio.positions.map((p) => lowerAddress(p.market.poolAddress)));
   const client = getClient();
-  for (const fallback of fallbacks.slice(0, MAX_CREDIT_POOLS)) {
-    const market = await client.getBinaryMarketByAddress(fallback.market);
-    if (market) pools.add(lowerAddress(market.poolAddress));
-  }
-  return [...pools];
+  const marketIds = [...new Set(fallbacks.map((fallback) => fallback.market))];
+  const markets = await Promise.all(marketIds.map((id) => client.getBinaryMarket(id)));
+  const pools = new Set<Address>(portfolio.positions.map((p) => lowerAddress(p.market.poolAddress)));
+  for (const market of markets) if (market) pools.add(lowerAddress(market.poolAddress));
+  return [...pools].slice(0, MAX_CREDIT_POOLS);
 }
 
 async function venueCredits(wallet: Address, token: Address, pools: readonly Address[]): Promise<VenueCredit[]> {

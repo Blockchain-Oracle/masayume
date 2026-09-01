@@ -6,8 +6,13 @@ export function headroomSec(intervalSec: number): number {
   return Math.max(HEADROOM_MIN_SEC, Math.min(HEADROOM_MAX_SEC, Math.round(intervalSec * HEADROOM_FRACTION)));
 }
 
+/** The instant entry closes: expiry less the headroom — the one definition every surface and the order lane share. */
+export function noEntryCutoffSec(expirySec: number, intervalSec: number): number {
+  return expirySec - headroomSec(intervalSec);
+}
+
 export function noEntryCutoffMs(expirySec: number, intervalSec: number): number {
-  return secToMs(expirySec - headroomSec(intervalSec));
+  return secToMs(noEntryCutoffSec(expirySec, intervalSec));
 }
 
 export function insideNoEntryBuffer(nowMs: number, expirySec: number, intervalSec: number): boolean {
@@ -19,7 +24,6 @@ export function insideNoEntryBuffer(nowMs: number, expirySec: number, intervalSe
  * Null inside the no-entry buffer — there is no admissible expiry to send.
  */
 export function orderExpirySec(nowSec: number, expirySec: number, intervalSec: number): number | null {
-  const headroom = headroomSec(intervalSec);
-  if (nowSec >= expirySec - headroom) return null;
-  return Math.min(expirySec, nowSec + headroom);
+  if (nowSec >= noEntryCutoffSec(expirySec, intervalSec)) return null;
+  return Math.min(expirySec, nowSec + headroomSec(intervalSec));
 }

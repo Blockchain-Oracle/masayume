@@ -9,7 +9,8 @@
     "spike:reference": "tsx spike/reference-basis.ts",
     "spike:pin-id": "tsx spike/pin-market-id.ts",
     "spike:roll-gap": "tsx spike/roll-gap.ts",
-    "spike:smoke-submitter": "tsx spike/smoke-submitter.ts"
+    "spike:smoke-submitter": "tsx spike/smoke-submitter.ts",
+    "spike:check-claimables": "tsx spike/check-claimables.ts"
   },
   "dependencies": {
     "@masayume/core": "workspace:*",

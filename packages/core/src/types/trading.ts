@@ -77,6 +77,7 @@ export interface ClaimableRow {
   marketAddress: Address;
   asset: string;
   intervalSec: number;
+  expirySec: number;
   legs: ClaimLeg[];
   netPayoutBase: bigint;
   feeBps: number;

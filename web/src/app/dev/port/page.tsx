@@ -1,5 +1,5 @@
 import { formatBaseUnits, formatOracleRaw, isOk, phase, type EventMarket, type Reading } from "@masayume/core";
-import { ensureMarkets, loadCollateral, marketsProvider, resolveVenueId, syncClock } from "@masayume/markets";
+import { bootMarkets, ensureMarkets, marketsProvider } from "@masayume/markets";
 import { ORACLE_PRICE_SCALE } from "@masayume/markets/identity";
 import { webEnv } from "@/lib/env";
 
@@ -23,8 +23,8 @@ function MarketRow({ market, nowMs }: { market: EventMarket; nowMs: number }) {
 
 export default async function PortPage() {
   ensureMarkets(webEnv.markets);
-  const [clock, collateral, venue] = await Promise.all([syncClock(), loadCollateral(), resolveVenueId(webEnv.markets.venueId)]);
-  const venueId = isOk(venue) ? venue.value.venueId : null;
+  const boot = await bootMarkets(webEnv.markets);
+  const venueId = isOk(boot) ? boot.value.venue.venueId : null;
   const lanes = venueId ? await marketsProvider.listLiveLanes(venueId) : null;
   const nowMs = marketsProvider.nowMs();
 
@@ -32,13 +32,15 @@ export default async function PortPage() {
     <main className="flex flex-1 flex-col gap-6 p-8 font-mono text-sm">
       <h1 className="text-xl font-semibold">Chain port — live lanes as Reading&lt;LaneSet&gt;</h1>
       <section>
-        <h2 className="font-semibold">Boot</h2>
-        <ul>
-          <li>clock: {describe(clock)}{isOk(clock) ? ` · offset ${clock.value.offsetMs} ms · rtt ${clock.value.rttMs} ms · block ${clock.value.blockNumber}` : ""}</li>
-          <li>collateral: {describe(collateral)}{isOk(collateral) ? ` · ${collateral.value.symbol} (${collateral.value.decimals} dp) ${collateral.value.address}` : ""}</li>
-          <li>venue: {describe(venue)}{isOk(venue) ? ` · source=${venue.value.source} · ${venue.value.venueId ?? "none"} · ${venue.value.liveCount} live` : ""}</li>
-          <li>now (chain-corrected): {new Date(nowMs).toISOString()}</li>
-        </ul>
+        <h2 className="font-semibold">Boot: {describe(boot)}</h2>
+        {isOk(boot) ? (
+          <ul>
+            <li>clock: offset {boot.value.clock.offsetMs} ms · rtt {boot.value.clock.rttMs} ms · block {boot.value.clock.blockNumber}</li>
+            <li>collateral: {boot.value.collateral.symbol} ({boot.value.collateral.decimals} dp) {boot.value.collateral.address}</li>
+            <li>venue: source={boot.value.venue.source} · {boot.value.venue.venueId ?? "none"} · {boot.value.venue.liveCount} live</li>
+            <li>now (chain-corrected): {new Date(nowMs).toISOString()}</li>
+          </ul>
+        ) : null}
       </section>
       {lanes ? (
         <section>

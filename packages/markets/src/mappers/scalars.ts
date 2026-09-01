@@ -1,7 +1,7 @@
 import type { Address } from "@masayume/core/types";
 import { secToMs } from "@masayume/core/units";
 
-type Scalar = string | number | bigint | null | undefined;
+export type Scalar = string | number | bigint | null | undefined;
 
 /** Indexer numerics arrive as decimal strings; a malformed one becomes null instead of crashing BigInt() (NFR-4). */
 export function bigintOf(value: Scalar): bigint | null {

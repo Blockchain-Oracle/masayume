@@ -3,6 +3,7 @@ import type { Reading } from "@masayume/core/schemas";
 import type { Bytes32, EventMarket } from "@masayume/core/types";
 import { getClient } from "../exchange";
 import { toEventMarket } from "../mappers/market";
+import { activeVenue } from "../venue";
 import { nowSec } from "./clock";
 import { fetchOpeningPrices } from "./prices";
 import { withReading } from "./reading";
@@ -10,11 +11,14 @@ import { withReading } from "./reading";
 const SUCCESSOR_PAGE = 20;
 const HISTORY_PAGE = 50;
 
-/** The successor window of the same asset and cadence — for Ticket auto-advance and dead-deep-link routing (AD-1). */
+/**
+ * The successor window of the same asset and cadence — for Ticket auto-advance and dead-deep-link routing (AD-1).
+ * Tail-discovered rows carry no venue id; the lookup stays scoped to the active venue regardless (canon #8).
+ */
 export async function nextWindow(market: EventMarket): Promise<Reading<EventMarket | null>> {
   return withReading(`next:${market.marketId}`, async () => {
     const rows = await getClient().listLiveBinaryMarkets({
-      venueId: market.venueId ?? undefined,
+      venueId: market.venueId ?? activeVenue()?.venueId ?? undefined,
       asset: market.asset,
       limit: SUCCESSOR_PAGE,
       nowSec: nowSec(),

@@ -8,7 +8,11 @@ export const ADMISSIBLE_MAX_BPS = 9_700;
 export const VENUE_MIN_BPS = 100;
 export const VENUE_MAX_BPS = 9_900;
 
-/** Cost-cap buffer over the fresh quote, interpolated by cadence and clamped at both anchors (PRD addendum §F). */
+/**
+ * Cost-cap buffer over the fresh quote, interpolated by cadence and clamped at both anchors (PRD addendum §F).
+ * Applied as a limit-price cushion, so it trades size for a locked max loss: a $10 stake at 50¢ on a 60 s lane
+ * buys 12.5 contracts, not 20, and can never cost more than the $10 escrowed.
+ */
 export const COST_CAP_ANCHORS = {
   fromSec: 60,
   fromBufferBps: 16_000,

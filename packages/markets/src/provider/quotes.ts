@@ -1,4 +1,4 @@
-import { isOk, type Reading } from "@masayume/core/schemas";
+import type { Reading } from "@masayume/core/schemas";
 import type { QuoteTarget } from "@masayume/core/ports";
 import { bufferToSlippageBps, costCapBufferBps } from "@masayume/core/sizing";
 import { SLIPPAGE_MIN_TICKS } from "@masayume/core/constants";
@@ -40,14 +40,14 @@ export function quoteFromBook({ book, params, target, side, stakeBase, feeBps }:
 
 /** Watch-free: reads the chain book directly so the Submitter never depends on React watch state (plan ruling #3). */
 export async function freshQuoteStake(target: QuoteTarget, side: Side, stakeBase: bigint): Promise<Reading<Quote | null>> {
-  return withReading(`quote:${target.marketId}:${side}:${stakeBase}`, async () => {
+  return withReading(`quote:${target.marketId}:${side}:${stakeBase}`, async (inner) => {
     const client = getClient();
     const [book, params, fee] = await Promise.all([
       client.getBinaryOrderBook(target.poolAddress, { depth: DEFAULT_BOOK_DEPTH, decimals: target.decimals }),
       client.getBinaryBookParams(target.poolAddress),
       settlementFeeBps(target.marketId),
     ]);
-    const feeBps = isOk(fee) ? fee.value : 0;
+    const feeBps = inner(fee);
     return quoteFromBook({
       book,
       params: { tickSizeRaw: params.tickSize, lotSizeRaw: params.lotSize, minQuantityRaw: params.minQuantity },
