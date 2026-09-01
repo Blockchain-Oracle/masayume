@@ -1,18 +1,29 @@
 "use client";
 
+import { BalancePlate } from "./balance";
 import { HeroMarket } from "./hero";
 import { MarketsScreen } from "./MarketsScreen";
 import { TicketDock } from "./ticket";
 import type { MarketsSelection } from "./useMarketsSelection";
+import { LiveVerdict } from "./verdict";
 
 function renderHero(selection: MarketsSelection) {
   if (!selection.marketId) return null;
-  return <HeroMarket marketId={selection.marketId} side={selection.side ?? undefined} />;
+  return (
+    <>
+      <HeroMarket marketId={selection.marketId} side={selection.side ?? undefined} />
+      <LiveVerdict marketId={selection.marketId} />
+    </>
+  );
 }
 
 function renderTicket(selection: MarketsSelection) {
-  if (!selection.market) return null;
-  return <TicketDock selection={{ ...selection, market: selection.market }} />;
+  return (
+    <>
+      <BalancePlate />
+      {selection.market ? <TicketDock selection={{ ...selection, market: selection.market }} /> : null}
+    </>
+  );
 }
 
 /** Client composition of the /markets island: the screen plus the surfaces that plug into its slots. */
