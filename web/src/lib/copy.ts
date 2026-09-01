@@ -67,3 +67,24 @@ export const DEV = {
   title: "Fixtures",
   intro: "Every card, receipt, and state from canned data — no wallet, no database.",
 } as const;
+
+export const MARKETS = {
+  title: "Markets",
+  plainWords: "Plain words",
+  up: "UP",
+  down: "DOWN",
+  estimated: "estimated",
+  volume: "vol",
+  noBook: "no book",
+  live: (n: number) => `${n} live`,
+  trades: (n: number) => `${n} ${n === 1 ? "trade" : "trades"}`,
+  fixedStrikeHidden: (n: number) => `${n} fixed-strike ${n === 1 ? "Window" : "Windows"} hidden — v1 lists up/down Windows only.`,
+  noLiveWindows: { why: "No live Windows on this venue right now — Windows roll continuously, so this fills in as the next one opens." },
+  heroPlaceholder: { why: "Pick a Window above to read it here." },
+  ticketPlaceholder: { why: "Choose a Window and a side to open your call." },
+  notes: {
+    moved: "That page moved — here are the live Windows.",
+    gone: "That Window is gone — showing the live Windows instead.",
+    successor: (cadence: string) => `That ${cadence} Window settled — moved you to its successor.`,
+  },
+} as const;
