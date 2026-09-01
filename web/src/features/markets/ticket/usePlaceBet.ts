@@ -48,7 +48,7 @@ export function usePlaceBet() {
 
   const place = useCallback(
     async (request: Omit<OrderRequest, "wallet">) => {
-      if (inFlight.current || !address) return;
+      if (inFlight.current || !submitter || !address) return;
       inFlight.current = true;
       setState({ phase: "submitted", outcome: null, txHash: null });
       try {

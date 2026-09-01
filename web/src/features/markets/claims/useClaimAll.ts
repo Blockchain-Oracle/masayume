@@ -72,7 +72,7 @@ export function useClaimAll() {
   const claimAll = useCallback(
     async (rows: readonly ClaimableRow[]) => {
       const items = itemsFromRows(rows);
-      if (!address || inFlight.current || items.length === 0) return;
+      if (!submitter || !address || inFlight.current || items.length === 0) return;
       inFlight.current = true;
       setRun({ status: "running", items, diagnosis: null, gasShort: false, finishedAtMs: null });
 

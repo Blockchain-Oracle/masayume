@@ -12,10 +12,10 @@ import { webEnv } from "@/lib/env";
 import { MarketsBoot } from "./MarketsBoot";
 import { createQueryClient } from "./query-client";
 import { rainbowKitTheme } from "./rainbowkit-theme";
-import { SignerBridge } from "./SignerBridge";
+import { UserSessionProvider } from "./UserSessionProvider";
 import { wagmiConfig } from "./wagmi";
 
-/** Client composition root: wallet session → query cache → wallet UI → chain port → signer handoff → boot gate. */
+/** Client composition root: wallet session → query cache → wallet UI → shared read runtime → isolated signing session → boot gate. */
 export function AppProviders({ children }: { children: ReactNode }) {
   const [queryClient] = useState(createQueryClient);
   return (
@@ -23,8 +23,9 @@ export function AppProviders({ children }: { children: ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider theme={rainbowKitTheme} initialChain={SOMNIA_SHANNON} modalSize="compact" appInfo={{ appName: BRAND.name }}>
           <MarketsProvider env={webEnv.markets}>
-            <SignerBridge />
-            <MarketsBoot>{children}</MarketsBoot>
+            <UserSessionProvider>
+              <MarketsBoot>{children}</MarketsBoot>
+            </UserSessionProvider>
           </MarketsProvider>
         </RainbowKitProvider>
       </QueryClientProvider>

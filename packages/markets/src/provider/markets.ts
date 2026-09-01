@@ -2,7 +2,7 @@ import { groupIntoLanes } from "@masayume/core/market";
 import type { Reading } from "@masayume/core/schemas";
 import { toMarketId, type Bytes32, type EventMarket, type IndexedStatus, type LaneSet, type MarketId } from "@masayume/core/types";
 import type { BinaryMarket } from "@somnia-chain/markets-sdk";
-import { getClient } from "../exchange";
+import { getClient } from "../runtime/read-runtime";
 import { toEventMarket } from "../mappers/market";
 import { nowSec } from "./clock";
 import { fetchOpeningPrices } from "./prices";

@@ -3,7 +3,7 @@ import type { Address, BalanceSheet, VenueCredit } from "@masayume/core/types";
 import { oneUnit, ownTermsPriceRaw } from "@masayume/core/units";
 import type { Portfolio, VaultPayoutFallback } from "@somnia-chain/markets-sdk";
 import { getCollateral } from "../collateral";
-import { getClient } from "../exchange";
+import { getClient } from "../runtime/read-runtime";
 import { bigintOrZero, lowerAddress } from "../mappers/scalars";
 import { isBuy } from "../mappers/side";
 import { withReading } from "./reading";

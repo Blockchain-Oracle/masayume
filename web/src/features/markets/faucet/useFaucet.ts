@@ -28,6 +28,7 @@ export function useFaucet() {
   const [state, setState] = useState<FaucetState>(IDLE);
 
   const recheckGas = useCallback(async (): Promise<boolean> => {
+    if (!submitter) return false;
     setState((s) => ({ ...s, checkingGas: true }));
     const gas = await submitter.checkGas("faucet");
     setState((s) => ({
@@ -41,7 +42,7 @@ export function useFaucet() {
 
   const mint = useCallback(async () => {
     const collateral = collateralOrNull();
-    if (!address || !collateral) return;
+    if (!submitter || !address || !collateral) return;
     // Gas is checked before any popup so an empty STT tank routes to the faucets instead of a raw revert (FR-2).
     if (!(await recheckGas())) return;
 

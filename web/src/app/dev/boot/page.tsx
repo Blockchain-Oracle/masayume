@@ -1,9 +1,9 @@
-import { ensureMarkets, PINNED_TESTNET, SOMNIA_SHANNON } from "@masayume/markets";
+import { ensureMarkets, getClient, PINNED_TESTNET, SOMNIA_SHANNON } from "@masayume/markets";
 import { webEnv } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
-type Client = ReturnType<typeof ensureMarkets>["client"];
+type Client = ReturnType<typeof getClient>;
 type LiveMarkets = Awaited<ReturnType<Client["listLiveBinaryMarkets"]>>;
 type SyncStatus = Awaited<ReturnType<Client["getSyncStatus"]>>;
 
@@ -12,7 +12,8 @@ type Probe =
   | { ok: false; message: string };
 
 async function probeShannon(): Promise<Probe> {
-  const { client } = ensureMarkets(webEnv.markets);
+  ensureMarkets(webEnv.markets);
+  const client = getClient();
   const startedMs = Date.now();
   try {
     const [markets, sync] = await Promise.all([
@@ -64,7 +65,7 @@ export default async function BootPage() {
           <section>
             <h2 className="font-semibold">Live up/down markets on this venue: {probe.markets.length}</h2>
             <ul>
-              {probe.markets.map((m) => (
+              {probe.markets.map((m: LiveMarkets[number]) => (
                 <li key={m.marketId}>
                   {m.asset} · {m.interval ?? `${m.intervalSec ?? "?"}s`} · {m.status} · expires {utc(m.expiry)} ·{" "}
                   {m.marketId.slice(0, 10)}…

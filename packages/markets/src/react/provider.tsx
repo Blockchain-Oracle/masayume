@@ -3,7 +3,7 @@
 import { SomniaMarketsProvider } from "@somnia-chain/markets-sdk/react";
 import { useEffect, useState, type ReactNode } from "react";
 import type { MarketsEnv } from "../env";
-import { activeWsIndex, configureMarkets, ensureMarkets, exchangeVersion, getClient, probeWsUrls, subscribeExchange } from "../exchange";
+import { activeWsIndex, configureMarkets, ensureMarkets, exchangeVersion, getClient, probeWsUrls, subscribeExchange } from "../runtime/read-runtime";
 
 /** Mounts the SDK's client provider over our singleton; re-keys whenever the singleton is rebuilt (RPC rotation). */
 export function MarketsProvider({ env, children }: { env: MarketsEnv; children: ReactNode }) {

@@ -5,7 +5,7 @@ import { SLIPPAGE_MIN_TICKS } from "@masayume/core/constants";
 import type { BookParams, Quote, Side } from "@masayume/core/types";
 import { oneUnit } from "@masayume/core/units";
 import { quoteBinaryOrderOverBook, quoteBinaryStakeOverBook, type BinaryOrderBook } from "@somnia-chain/markets-sdk";
-import { getClient } from "../exchange";
+import { getClient } from "../runtime/read-runtime";
 import { toQuote } from "../mappers/quote";
 import { toBuySide } from "../mappers/side";
 import { DEFAULT_BOOK_DEPTH } from "./books";

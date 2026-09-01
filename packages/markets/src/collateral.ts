@@ -1,7 +1,7 @@
 import { ok, type Reading } from "@masayume/core/schemas";
 import type { Address } from "@masayume/core/types";
 import { resolveAddresses } from "./addresses";
-import { getClient } from "./exchange";
+import { getClient } from "./runtime/read-runtime";
 import { nowMs } from "./provider/clock";
 import { withReading } from "./provider/reading";
 

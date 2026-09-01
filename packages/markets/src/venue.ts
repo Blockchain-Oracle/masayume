@@ -1,6 +1,6 @@
 import type { Reading } from "@masayume/core/schemas";
 import type { Bytes32 } from "@masayume/core/types";
-import { getClient } from "./exchange";
+import { getClient } from "./runtime/read-runtime";
 import { nowSec } from "./provider/clock";
 import { withReading } from "./provider/reading";
 

@@ -1,7 +1,7 @@
 import type { Reading } from "@masayume/core/schemas";
 import type { ClockSync } from "@masayume/core/types";
 import { secToMs } from "@masayume/core/units";
-import { getClient } from "../exchange";
+import { getClient } from "../runtime/read-runtime";
 import { applyClockSync } from "./clock";
 import { withReading } from "./reading";
 

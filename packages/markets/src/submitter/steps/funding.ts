@@ -1,6 +1,6 @@
 import { diagnosis, type Address, type Diagnosis, type OnchainSnapshot, type Quote } from "@masayume/core/types";
 import { diagnose } from "../../errors/error-map";
-import { getClient } from "../../exchange";
+import { getClient } from "../../runtime/read-runtime";
 import { checkGas } from "../gas";
 
 export type FundingCheck =

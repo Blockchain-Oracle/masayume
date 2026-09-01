@@ -2,13 +2,17 @@ import type { GasLane } from "@masayume/core/constants";
 import type { IntentJournal, PhaseListener, TxIntent, TxOutcome } from "@masayume/core/ports";
 import { diagnosis, type Diagnosis } from "@masayume/core/types";
 import type { TxResult } from "@somnia-chain/markets-sdk";
-import { requireTrader, signerAddress } from "../exchange";
+import type { Address } from "@masayume/core/types";
+import type { SessionTrader } from "../sessions/trader";
 import { isTimeoutError } from "./failure";
 import { checkGas, gasLimitFor } from "./gas";
 import { assertTxOk, diagnoseWrite, TxRevertedError } from "./steps/assert-tx-ok";
 
 export interface TxLaneContext {
   journal: IntentJournal;
+  /** The calling session's bound trader and the account it signs for. */
+  trader: SessionTrader;
+  wallet: Address;
 }
 
 const LANE_OF: Record<TxIntent["kind"], GasLane> = { faucet: "faucet", redeem: "redeem", approve: "approve" };
@@ -27,8 +31,7 @@ function summarize(intent: TxIntent): string {
   }
 }
 
-function send(intent: Exclude<TxIntent, { kind: "approve" }>): Promise<TxResult> {
-  const trader = requireTrader();
+function send(trader: SessionTrader, intent: Exclude<TxIntent, { kind: "approve" }>): Promise<TxResult> {
   const gas = gasLimitFor(LANE_OF[intent.kind]);
   if (intent.kind === "faucet") return trader.faucet({ amount: intent.amountBase, gas });
   // Explicit outcomeIdx always (canon #11): a voided market pays both sides, so "infer the winner" is meaningless there.
@@ -67,8 +70,7 @@ async function settleFailure(journal: IntentJournal, id: string, error: unknown,
 
 /** Every non-order write (AD-3 second lane): journal intent → gas check → send → assertTxOk → diagnose → book from the receipt. */
 export async function submitTx(ctx: TxLaneContext, intent: TxIntent, onPhase?: PhaseListener): Promise<TxOutcome> {
-  const wallet = signerAddress();
-  if (!wallet) return refused(diagnosis("signer-required", "connect a wallet before sending"));
+  const { wallet } = ctx;
   if (intent.kind === "approve") return refused(diagnosis("unknown", NO_STANDALONE_APPROVE));
 
   const record = await ctx.journal.record({ kind: intent.kind, wallet, summary: summarize(intent) });
@@ -80,7 +82,7 @@ export async function submitTx(ctx: TxLaneContext, intent: TxIntent, onPhase?: P
 
   onPhase?.("submitted");
   try {
-    const result = assertTxOk(await send(intent), intent.kind);
+    const result = assertTxOk(await send(ctx.trader, intent), intent.kind);
     await ctx.journal.markSent(record.id, result.hash);
     await ctx.journal.markConfirmed(record.id);
     onPhase?.("confirmed", { txHash: result.hash });

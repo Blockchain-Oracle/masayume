@@ -1,6 +1,6 @@
 import type { Reading } from "@masayume/core/schemas";
 import type { MarketId } from "@masayume/core/types";
-import { getClient } from "../exchange";
+import { getClient } from "../runtime/read-runtime";
 import { numberOf } from "../mappers/scalars";
 import { withReading } from "./reading";
 

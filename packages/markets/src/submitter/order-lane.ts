@@ -1,6 +1,7 @@
 import type { AttributionHook, IntentJournal, OrderOutcome, OrderRequest, PhaseListener, StopGate } from "@masayume/core/ports";
 import { diagnosis, type Diagnosis } from "@masayume/core/types";
-import { signerAddress } from "../exchange";
+import type { Address } from "@masayume/core/types";
+import type { SessionTrader } from "../sessions/trader";
 import { OrderRefusedError, RequoteError } from "./errors";
 import { isTimeoutError } from "./failure";
 import { assertTxOk, diagnoseWrite, TxRevertedError } from "./steps/assert-tx-ok";
@@ -13,6 +14,9 @@ import { statusGate } from "./steps/status-gate";
 
 export interface OrderLaneContext {
   journal: IntentJournal;
+  /** The calling session's bound trader and the account it signs for. */
+  trader: SessionTrader;
+  wallet: Address;
   stopGate: StopGate;
   attribution: AttributionHook;
   nowMs: () => number;
@@ -56,8 +60,7 @@ async function sendFailure(journal: IntentJournal, id: string, error: unknown, o
  * reservation. A send that times out with no digest is journaled unknown and never auto-retried.
  */
 export async function submitOrder(ctx: OrderLaneContext, req: OrderRequest, onPhase?: PhaseListener): Promise<OrderOutcome> {
-  const wallet = signerAddress();
-  if (!wallet) return refused(diagnosis("signer-required", "connect a wallet before betting"));
+  const { wallet } = ctx;
   const { market, side, stakeBase, displayedQuote } = req;
   const target = { marketId: market.marketId, poolAddress: market.poolAddress, decimals: market.decimals, intervalSec: market.intervalSec };
 
@@ -76,7 +79,7 @@ export async function submitOrder(ctx: OrderLaneContext, req: OrderRequest, onPh
     const record = await ctx.journal.record({ kind: "order", wallet, summary: summarize(req) });
     onPhase?.("submitted");
     try {
-      const result = assertTxOk(await sendOrder({ onchain, side, quote, expireTimestampNs, attribution: ctx.attribution(req) }), "order");
+      const result = assertTxOk(await sendOrder({ trader: ctx.trader, onchain, side, quote, expireTimestampNs, attribution: ctx.attribution(req) }), "order");
       await ctx.journal.markSent(record.id, result.hash);
       const booked = bookFills({ result, marketId: market.marketId, side, decimals: market.decimals });
       await ctx.journal.markConfirmed(record.id);

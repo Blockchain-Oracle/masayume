@@ -9,7 +9,9 @@
     "./chain": "./src/chain.ts",
     "./env": "./src/env.ts",
     "./identity": "./src/identity.ts",
-    "./react": "./src/react/index.ts"
+    "./react": "./src/react/index.ts",
+    "./runtime": "./src/runtime/index.ts",
+    "./sessions": "./src/sessions/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json"

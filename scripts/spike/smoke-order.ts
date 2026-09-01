@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { phase } from "@masayume/core/lifecycle";
 import type { EventMarket } from "@masayume/core/types";
 import { oneUnit } from "@masayume/core/units";
-import { createMemoryJournal, createSubmitter, marketsProvider, resolveVenueId } from "@masayume/markets";
+import { createMemoryJournal, createSubmitterSession, marketsProvider, resolveVenueId } from "@masayume/markets";
 import { runSpike } from "./lib/boot";
 
 const STAKE_UNITS = 5n;
@@ -16,10 +16,14 @@ function soonestTrading(markets: EventMarket[], nowMs: number): EventMarket | un
  * Proves the order lane on the live book with an unfunded random key: the quote kernel must produce a
  * real quote, and the lane must refuse before any popup (gas or collateral) with no transaction sent.
  */
-await runSpike(async ({ env, exchange }) => {
-  exchange.setSigner({ privateKey: `0x${randomBytes(32).toString("hex")}` });
-  const wallet = exchange.walletAddress;
-  if (!wallet) throw new Error("signer did not bind");
+await runSpike(async ({ env }) => {
+  const session = await createSubmitterSession({
+    env,
+    authority: "user-wallet",
+    signer: { privateKey: `0x${randomBytes(32).toString("hex")}` },
+    journal: createMemoryJournal(),
+  });
+  const wallet = session.address;
 
   await marketsProvider.syncClock();
   const venue = await resolveVenueId(env.venueId);
@@ -38,11 +42,12 @@ await runSpike(async ({ env, exchange }) => {
   console.log("fresh quote", json(quote));
   if (!quote.ok || !quote.value) throw new Error("no quote on the live book");
 
-  const submitter = createSubmitter({ journal: createMemoryJournal() });
+  const { submitter } = session;
   const outcome = await submitter.submitOrder(
     { market, side: "up", stakeBase, displayedQuote: quote.value, wallet },
     (writePhase) => console.log("phase", writePhase),
   );
   console.log("submitOrder", json(outcome));
   console.log("unresolved", json(await submitter.journal.listUnresolved(wallet)));
+  await session.dispose();
 });

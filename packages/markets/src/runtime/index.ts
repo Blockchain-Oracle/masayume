@@ -1,0 +1,16 @@
+/**
+ * The shared read-only DreamDEX runtime. No account, no signer, no `.trader`.
+ * Everything that signs lives in ../sessions.
+ */
+export {
+  activeWsIndex,
+  AUTO_ROTATE_RPC,
+  closeRuntime,
+  configureMarkets,
+  ensureMarkets,
+  exchangeVersion,
+  getClient,
+  probeWsUrls,
+  rotateRpc,
+  subscribeExchange,
+} from "./read-runtime";

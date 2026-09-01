@@ -1,6 +1,6 @@
 import type { Reading } from "@masayume/core/schemas";
 import type { AssetPrice, MarketId, PricePoint } from "@masayume/core/types";
-import { getClient } from "../exchange";
+import { getClient } from "../runtime/read-runtime";
 import { toAssetPrice, toPricePoint } from "../mappers/price";
 import { bigintOf } from "../mappers/scalars";
 import { withReading } from "./reading";
