@@ -96,7 +96,7 @@ export const HERO = {
   pendingPrint: "waiting for the opening print",
   pendingDistance: "No opening print yet — nothing to measure against.",
   noLivePrice: "No live price right now.",
-  needs: (side: string, amount: string) => `needs ${amount} for ${side}`,
+  needs: { before: "needs", after: (side: string) => `for ${side}` },
   leading: (side: string) => `${side} is winning right now`,
   source: "Settles on the Prophecy oracle median · chart follows the feed EMA",
   depthTitle: "Top of book",

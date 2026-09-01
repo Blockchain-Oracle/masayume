@@ -22,8 +22,7 @@ function SideLine({ side, needsRaw, emphasized }: { side: Side; needsRaw: bigint
         HERO.leading(word)
       ) : (
         <>
-          {HERO.needs(word, "")}
-          <OraclePrice raw={signedRaw} signed />
+          {HERO.needs.before} <OraclePrice raw={signedRaw} signed /> {HERO.needs.after(word)}
         </>
       )}
     </li>
