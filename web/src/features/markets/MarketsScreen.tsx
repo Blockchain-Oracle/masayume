@@ -44,11 +44,11 @@ export function MarketsScreen({ renderHero, renderTicket }: MarketsScreenProps) 
       <div className="flex flex-col gap-10 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:items-start lg:gap-8">
         <section className="flex flex-col gap-4" aria-labelledby="section-hero">
           <SectionHeader index={SECTIONS.hero.index} title={SECTIONS.hero.title} />
-          {renderHero ? renderHero(selection) : <EmptyState why={MARKETS.heroPlaceholder.why} />}
+          {renderHero?.(selection) ?? <EmptyState why={MARKETS.heroPlaceholder.why} />}
         </section>
         <section className="flex flex-col gap-4 lg:sticky lg:top-6" aria-labelledby="section-ticket">
           <SectionHeader index={SECTIONS.ticket.index} title={SECTIONS.ticket.title} />
-          {renderTicket ? renderTicket(selection) : <EmptyState why={MARKETS.ticketPlaceholder.why} />}
+          {renderTicket?.(selection) ?? <EmptyState why={MARKETS.ticketPlaceholder.why} />}
         </section>
       </div>
     </div>
