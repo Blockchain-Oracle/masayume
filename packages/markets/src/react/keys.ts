@@ -14,6 +14,8 @@ export const keys = {
   bookParams: (pool: string | null) => [QUERY_KEY_SCOPE, APP, "bookParams", pool] as const,
   resolution: (marketId: string | null) => [QUERY_KEY_SCOPE, APP, "resolution", marketId] as const,
   positions: (wallet: string | null) => [QUERY_KEY_SCOPE, APP, "positions", wallet] as const,
+  /** Nested under the wallet's positions so one invalidation after a write refreshes both. */
+  holdings: (wallet: string | null, marketId: string | null) => [QUERY_KEY_SCOPE, APP, "positions", wallet, "holdings", marketId] as const,
   claimables: (wallet: string | null, venueId: Bytes32 | null) => [QUERY_KEY_SCOPE, APP, "claimables", wallet, venueId] as const,
   balanceSheet: (wallet: string | null) => [QUERY_KEY_SCOPE, APP, "balanceSheet", wallet] as const,
   nextWindow: (marketId: MarketId | null) => [QUERY_KEY_SCOPE, APP, "nextWindow", marketId] as const,
