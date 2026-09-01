@@ -17,8 +17,8 @@ export function LiveVerdict({ marketId }: { marketId: MarketId }) {
   const symbol = boot?.ok ? boot.value.collateral.symbol : FALLBACK_SYMBOL;
   const state = useVerdict({ marketId, wallet: address });
 
-  if (!address) return <EmptyState why={VERDICT_UI.connect.why} />;
   if (state.phase === "open") return null;
+  if (!address) return <EmptyState why={VERDICT_UI.connect.why} />;
   if (state.phase === "settling") {
     return (
       <p className="type-body text-ink-secondary" role="status">

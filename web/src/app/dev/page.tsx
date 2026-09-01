@@ -4,6 +4,12 @@ import { DEV } from "@/lib/copy";
 
 const FIXTURES = [
   { href: "/dev/states", label: "States", note: "honest-state primitives, data, chrome, receipt, ui" },
+  { href: "/dev/wallet", label: "Wallet", note: "connect ladder, network banner, balance plate, faucet" },
+  { href: "/dev/hero", label: "Hero market", note: "chart as ticket on the soonest live window (?m= to pick one)" },
+  { href: "/dev/balance", label: "Balance plate", note: "every money state from canned sheets, then live" },
+  { href: "/dev/verdict", label: "Verdict", note: "win, loss, void, both-sides-net, then live (?m=)" },
+  { href: "/dev/claims", label: "Claim-all", note: "idle plate, mid-run progress, success receipt, then live" },
+  { href: "/dev/port", label: "Chain port", note: "live lanes as Reading<LaneSet>, venue and clock" },
   { href: "/dev/boot", label: "Boot check", note: "zero-env round-trip to the Shannon indexer" },
 ] as const;
 
