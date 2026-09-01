@@ -119,3 +119,26 @@ export const HERO = {
   devTitle: "Hero market",
   devEmpty: { why: "No live window on this venue right now — come back when the next window opens." },
 } as const;
+
+export const BALANCE = {
+  title: "Your money",
+  spendable: "Spendable",
+  headlineNote: "what you can bet right now — nothing else is added in",
+  poolsLabel: "Other pools of your money",
+  rows: { vault: "Vault", escrow: "Order escrow", credit: "Venue payout credit", gas: "STT for gas" },
+  escrowNote: "locked in your resting orders until they fill or you cancel",
+  creditFirst: "spent first on your next buy in its window",
+  creditFirstHint: "of venue credit is spent first on your next buy",
+  gasLow: "below the gas envelope — the next write needs more STT",
+  connect: { why: "Connect a wallet to see your money: one spendable number, every other pool labeled beneath it." },
+  devTitle: "Balance plate",
+  fixtures: {
+    zero: "Zero wallet",
+    funded: "Funded wallet",
+    pools: "Escrow + venue credit",
+    stale: "Stale — last good kept, as-of tick",
+    error: "First read failed",
+    loading: "Nothing known yet",
+    live: "Live — connected wallet",
+  },
+} as const;
