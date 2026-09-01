@@ -54,11 +54,6 @@ export const WALLET_DEV = {
   credit: "Venue payout credit",
 } as const;
 
-export const CLAIM = {
-  claimable: "claimable",
-  claimAll: "Claim all",
-} as const;
-
 export const TOASTS = {
   copied: "Copied",
 } as const;
@@ -173,5 +168,55 @@ export const VERDICT_UI = {
     loss: "Loss — 逆夢 in neutral ink; a fact, not a scare",
     void: "Void — 無効; no reliable print, both sides pay 0.5",
     both: "Both sides held — one card, net P&L, both legs listed",
+  },
+} as const;
+
+export const CLAIM = {
+  claimable: "claimable",
+  claimAll: "Claim all",
+  retry: "Claim the rest",
+  title: "Claim everything",
+  pageIntro: "Winnings are claimed, never sent. Each redemption is one signature, paid to your wallet only.",
+  waiting: (n: number) => (n === 0 ? "Nothing waiting right now" : `${n} settled ${n === 1 ? "Window" : "Windows"} waiting`),
+  netLabel: "net of the settlement fee",
+  feeNote: (bps: number) => (bps === 0 ? "fee 0% — read from chain" : `fee ${(bps / 100).toString()}% — read from chain`),
+  oneSignatureEach: "One signature per redemption — the venue has no batch claim, so each item reports its own outcome.",
+  contracts: "contracts",
+  closed: "closed",
+  settled: "settled",
+  kind: {
+    win: "Win",
+    void: "Void — no reliable print, both sides pay 0.5",
+    "vault-credit": "Vault credit — withdrawal",
+  },
+  leg: { up: "UP leg", down: "DOWN leg" },
+  status: {
+    pending: "waiting",
+    claiming: "claiming…",
+    confirmed: "claimed",
+    reverted: "reverted — nothing moved",
+    unknown: "unknown — check the explorer",
+  },
+  progress: (current: number, total: number) => `claiming ${current} of ${total}`,
+  finished: (claimed: number, total: number) => (claimed === total ? `Claimed ${claimed} of ${total}` : `${claimed} of ${total} claimed — the rest stayed put`),
+  stopped: "Stopped early — every remaining item is untouched.",
+  receipt: {
+    title: "Claim receipt",
+    figureLabel: "Paid to your wallet",
+    settlement: "settlement tx",
+    oracle: "Oracle Graph",
+    pending: "…",
+    settlementDegraded: "settlement tx not indexed yet — redemption tx only",
+    oracleDegraded: "oracle question unknown — raw tx only",
+  },
+  empty: { why: "Nothing to claim — winnings land here the moment a Window you're in settles." },
+  disconnected: { why: "Connect a wallet to see what's waiting for it." },
+  dev: {
+    title: "Claim-all plate",
+    intro: "Canned rows for every claim state, then the live plate for the connected wallet.",
+    plate: "Plate, idle",
+    progress: "Mid-run — one reverted, one signing",
+    receipt: "Success receipt",
+    live: "Live — your wallet",
   },
 } as const;

@@ -1,4 +1,5 @@
 export const MARKETS_PATH = "/markets";
+export const CLAIMS_PATH = "/claims";
 
 /** `?note=` carries a one-line explanation across a redirect (routing law: nothing 404s, moved routes say so). */
 export const NOTE_PARAM = "note";
