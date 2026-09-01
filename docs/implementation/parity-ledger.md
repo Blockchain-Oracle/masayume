@@ -75,6 +75,45 @@ accessibility for a visual match.
 | Spring entry/exit from the right (`x: 80`, damping 22 / stiffness 300) | L116–119 | `translateX(120%)` on the starting and non-swipe ending styles, on `--ease-bounce` — Yosuku's own overshooting curve | **Adapted** — no framer-motion added for one component |
 | Warning type | — | follows the same formula, so the fourth kind is not the only one whose border says nothing | **Additive** |
 
+### Sensei (Stage 3, done 2026-09-01)
+
+Ported from `components/SenseiDock.tsx`, `SenseiTape.tsx`, `SenseiTradeCards.tsx` and
+`app/api/sensei/route.ts` into `web/src/features/sensei/` + `app/api/sensei/route.ts`. All 125
+`.sensei-*` / `.sd-*` / `.sm-*` / `.st-*` rules were already ported in `part-02/03.css`.
+
+**Ships complete without a credential.** The ring, teaser, drawer, meter, tape and trade cards all
+run off the market stream `/markets` already holds; only the reply needs a key, and with none set
+the route returns the reference's own 503 wording and the dock says it in the thread. Set
+`ANTHROPIC_API_KEY` (documented in `web/.env.example`, never `NEXT_PUBLIC_`) and it lights up with
+no code change. **The live reply path is therefore unverified** — see the note below the table.
+
+| Element | Reference | Destination | Class | Status |
+|---|---|---|---|---|
+| Dock: draining ring + close time, urgent under the wire, hover-expanding name | L232–248 | `SenseiDock.tsx` | Adapted | **Done** — the ring's fraction and urgency come from `countdown()`/`urgentAtSec`, the venue-aware rule the hero and reel use, not the reference's flat 60 s and its fixed `{1m,5m,1h}` seconds table |
+| Rotating teaser bubble, three pops then rest, hidden under reduced motion | L157–176, L220–231 | same | Exact | **Done** — cadence and copy verbatim; reduced motion is *subscribed* rather than read once at module scope, which the reference cannot do without breaking SSR |
+| `sensei:open` event, `?sensei=1`, and the same-page anchor intercept | L78–102 | same | Exact | **Done** — including the reference's own fix for a client-side nav to the page you are already on |
+| Drawer: head, pinned meter, thread, chips, starters, input | L251–334 | `SenseiDrawer.tsx` | Exact | **Done** |
+| Meter: spot · drift · span · time left, tinted by direction | L265–289 | same + `core/market/drift.ts` | Adapted | **Done** — `computeDrift` ported with its honest rule intact: `spanMin` is the span the samples *actually* cover, so a thin history reports "3 min", never the 15 it asked for. Checked in `drift.test.ts` (5 cases). The flat band is a fraction, not the reference's hardcoded $3, because this venue lists assets priced under it |
+| `SenseiTape` — the real chart, not a hairline | `SenseiTape.tsx` | `CardSpark` | Adapted | **Done** — the reference polls its own price history; this reads the series `/markets` already streams, so Sensei's price cannot disagree with the card behind the drawer. Same picture, one implementation |
+| Typewriter reveal, word by word, with a caret | L42–58 | `Typewriter.tsx` | Exact | **Done** — splits on `(\s+)` as the reference does, so the paragraph does not jump as it reflows |
+| Contextual follow-up chips, sit-it-out branch first | L61–67 | `copy.ts` `chipsFor` | Exact | **Done** — rules verbatim |
+| Brain | DeepSeek `deepseek-chat`, temp 0.4 | Claude `claude-opus-5` | **Substituted** | **Done** — `effort: low` (a market read is short and latency-sensitive), adaptive thinking, refusal fallback to `claude-opus-4-8`, the stable system prompt cached and the per-turn figures placed after it |
+| System prompt: voice, three-part read, ground-truth-only, style bans, never say "bell" | L42–58 | `prompt.ts` | Exact | **Done** — carried whole, including the reason the word "bell" has to be banned by name |
+| **THE BRAKE** | L54 | same | Exact | **Done** — verbatim. The one voice in the product allowed to say do not take this one |
+| Pricing instruction | — | `prompt.ts` | **Additive** | **Done** — Yosuku prices off a house model, so its two sides sum to a dollar. DreamDEX has a real book on each side and they do not. A model left to assume otherwise would quietly do `100 - x` and state it as the market's price, so the prompt forbids it explicitly |
+| Market snapshot sent with each turn | L136–147: spot + cadence + minsToClose + `strike624` line | `useSenseiSnapshot.ts` | Adapted | **Done** — the line is the opening print, and each Window also carries its **real top of book**, which the reference has nothing to send. `useTopOfBook` is called a fixed four times against a possibly-null market, so the hook count is constant |
+| `restless` tilt cue (4+ asks in 3 min) | L182–183 | `useSenseiChat.ts` | Exact | **Done** — local timestamps only; no identity attached, nothing stored |
+| `userId` → MemWal persistent memory | L36, L40, L80 | — | **Dropped** | **Recorded** — the reference posts the wallet address to a MemWal relayer that remembers each person. There is no such store here, so the field would put a wallet on the wire for a feature that does not exist. Persistent memory needs its own decision, not a field that arrived early |
+| `SenseiTradeCards` — stake chips + Place, calling `placeMint624` directly | `SenseiTradeCards.tsx` | `SenseiTradeCards.tsx` | **Adapted — one write path** | **Done** — a second signing path inside a chat drawer is exactly what doc 02 §"do not scatter DreamDEX calls through components" exists to prevent, and every other surface here hands off to the one Ticket. The cards keep the job and drop the mechanism: tap a side and the Window opens in the ticket with that side chosen. Its `probAbove`/`payoutX` odds are the real book |
+| Cards appear only once a read exists | L320 | `SenseiDrawer.tsx` | **Corrected** | **Done** — first cut counted any assistant turn, so an *unreachable brain* opened the trade cards and offered "Why?" as a follow-up to a configuration error. Failure notices are flagged and count as neither |
+
+**Not verified: the live reply.** Every gate passes and the unconfigured path was exercised in the
+browser, but no request has been made to Claude — there is no key on this machine and spending the
+user's credential without asking is not this agent's call. The request *shape* is checked by the
+SDK's own types at compile time (`output_config`, `thinking`, `betas`, `fallbacks`, cached
+`system`). First run with a real key should confirm: a reply arrives, the typewriter fires, the
+trade cards open, and the style rules hold (no em dashes, no "bell").
+
 ### §01 rail card (Stage 3, done 2026-09-01)
 
 Ported from `Market624Card` (`reference/yosuku/app/markets/page.tsx` L251–400). `.market-card` and
@@ -208,7 +247,8 @@ DreamDEX pipeline — a presentation change, not a data change.
 | Live-now card grid below the hero (`Market624Card`) | L251–400, L847–875 | `lanes/MarketCard.tsx`, `lanes/CardSpark.tsx` | Adapted | **Done** — see §§01 rail card |
 | Tutorial | L905 | `features/onboarding/*` | Exact shape | **Done** — see §First-run Tutorial |
 | `WordMarketBoard` §02 | L878–881 | `features/markets/word-board/*` | Adapted | **Done** — see §Word-market board |
-| Sensei dock, `MarketRoom` | L890, L896–903 | — | — | Pending — Stage 3 |
+| Sensei dock | L890 | `features/sensei/*` | Adapted | **Done** — see §Sensei |
+| `MarketRoom` | L896–903 | — | — | Pending — Stage 3, credential-blocked |
 
 Shell correction found in this slice: `.page-shell` reserved space for the fixed chrome and
 `.page-hero` reserved it again, leaving the hero under a band of dead page. `.page-shell` now
@@ -290,7 +330,7 @@ that read the market pipeline are connected here; everything else keeps a named 
 | Theme toggle | `components/ThemeToggle.tsx` (37 L) | `web/src/components/shell/ThemeToggle.tsx` | Exact | **Done** |
 | Toast / tx feedback | `components/Toast.tsx` (130 L) | `web/src/components/ui/toast.tsx` + `styles/toast.css` | Adapted | **Done** — see §Toast |
 | First-run onboarding modal (5 steps, Skip/Next) | `components/Tutorial.tsx` (192 L) | `web/src/features/onboarding/*` | Exact shape; adapted copy | **Done** — see §First-run Tutorial |
-| Sensei dock + contextual bubble | Live `yosuku.xyz/markets`; `app/api/sensei/route.ts` | `web/src/features/sensei/*` | Adapted (AI over typed read models) | Pending |
+| Sensei dock + contextual bubble | `components/SenseiDock.tsx` (337 L), `SenseiTape.tsx`, `SenseiTradeCards.tsx`, `app/api/sensei/route.ts` | `web/src/features/sensei/*`, `app/api/sensei/route.ts` | Adapted — Claude over typed read models | **Done** — see §Sensei |
 | Error boundary | `app/error.tsx` | `web/src/app/error.tsx` | Exact | Partial (exists) |
 
 Games add exactly one navigation destination. Markets, Reels, Create, Strategies, Leaderboard,
@@ -301,7 +341,7 @@ Portfolio and More all remain.
 | Route | Reference | Class | Data authority | Status |
 |---|---|---|---|---|
 | `/` | `app/page.tsx` | Exact shell; adapted identity/protocol copy | Static + real traction | **Shell** — honest dependency state |
-| `/markets` | `app/markets/page.tsx` | Adapted to DreamDEX | DreamDEX indexer + RPC | **Partial** — real lanes/book/lifecycle/ticket live, Yosuku hero-as-ticket ported (see Stage 2 above), first-run Tutorial and the §02 word board live; Room and Sensei remain Stage 3 |
+| `/markets` | `app/markets/page.tsx` | Adapted to DreamDEX | DreamDEX indexer + RPC | **Partial** — real lanes/book/lifecycle/ticket live, Yosuku hero-as-ticket ported (see Stage 2 above), first-run Tutorial, §02 word board, §01 chart card and Sensei live; the Room remains Stage 3 |
 | `/markets/[id]` | `app/markets/[id]/page.tsx` | Exact redirect intent | — | **Done** — redirect |
 | `/reels` | `app/reels/page.tsx` | Adapted | Shared market stream | **Live** — see §`/reels` |
 | `/portfolio` | `app/portfolio/page.tsx` | Adapted | Chain/indexer projection | **Partial** — money, open bets and claimables live; see §`/portfolio` |
@@ -361,10 +401,11 @@ Tracked separately so the route table cannot hide a missing capability.
 | Reel — snap feed of live Windows | **Partial** | Market cards live off the shared stream; woven community takes are Stage 3 |
 | Up/Down · stake · cash-out · claim · receipt | **Partial** | Up/Down, stake, claim, receipt live; cash-out pending |
 | Range · leverage · private | Pending | Stage 5 — needs `RangeReserve` + prefunded leverage + link-private service |
-| Social takes, rooms, sharing, alerts, news/ticker, X linking | Pending | Stage 3–4 |
+| Social takes, rooms, sharing, alerts, news/ticker, X linking | Pending | Stage 3–4; the Room needs a Postgres URL |
 | Trading Balance with labeled pools | **Partial** | Balance plate + labeled pools exist; `EventVault` pending |
 | Positions, PnL, history, equity, reputation, badges, Trader Edge | **Partial** | Open positions with the venue's own PnL live on `/portfolio`; history, equity, reputation, badges and Trader Edge are Stage 3 |
-| Earn, parlays, strategies, creators, agents, playbooks, assistant | Pending | Stage 4–5 |
+| Earn, parlays, strategies, creators, agents, playbooks | Pending | Stage 4–5 |
+| Assistant (Sensei) | **Done** | Claude-backed; honest unconfigured state, lights up on `ANTHROPIC_API_KEY` |
 | Faucet, account setup, recovery, smart-wallet session, revocation | **Partial** | Faucet live; rest Stage 4 |
 | Status, traction, docs, demo, pitch, download, error recovery | Pending | Stage 3 |
 | Game selection, progress, achievements, stats, matchmaking, MMR, sound/haptics | Pending | Stage 6 |

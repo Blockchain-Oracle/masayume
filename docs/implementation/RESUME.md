@@ -12,7 +12,7 @@ Start here, then read `parity-ledger.md`. The authority package is
 ## Where we are
 
 Branch **`feat/yosuku-source-led-shell`** off `main` (`497b43a`). **Stage 2 is complete; Stage 3 is
-underway — the Tutorial, the §02 word board and the §01 chart card are in.**
+underway — the Tutorial, the §02 word board, the §01 chart card and Sensei are in.**
 
 | Commit | What |
 |---|---|
@@ -27,10 +27,11 @@ underway — the Tutorial, the §02 word board and the §01 chart card are in.**
 | `3943222`, `d488471` | Reel light-mode fix, then the card made theme-following |
 | `f451f38` | Stage 3 — first-run Tutorial |
 | `aa3b3b8` | Stage 3 — `/markets` §02 word-market board |
-| *(this)* | Stage 3 — §01 as the reference's chart card |
+| `9de0a01` | Stage 3 — §01 as the reference's chart card |
+| *(this)* | Stage 3 — Sensei on Claude, honest without a key |
 
-Everything is green: `pnpm typecheck`, `pnpm invariants` (12/12), `pnpm test` (36),
-`pnpm build` (51 routes). Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
+Everything is green: `pnpm typecheck`, `pnpm invariants` (12/12), `pnpm test` (41),
+`pnpm build` (52 routes). Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
 
 **Never touch or commit** the untracked `context/screens/` and `prompt.md`. They are the user's.
 
@@ -74,18 +75,21 @@ watches, so the transport was never the duplicated part — do not rebuild that 
 ## Stage 3 — in progress
 
 Per `05-migration-and-agency-handoff.md`. Four slots were waiting on `/markets` and `/reels`.
-**The Tutorial and the word board are done**; the two that remain are two *different* dependency
-classes, which is the thing to know before planning:
+**Three of the four are done.** Only the Room remains, and it is the one with a real external
+dependency:
 
 1. ~~**The word-market board**~~ — **done**, `/markets` §02, and §01 is now the reference's chart
    card (`Market624Card`) on the user's call, so the two sections speak different languages the way
    the reference's do. Both invented numbers are gone: the `probAbove` logistic is the book's real
    asks, the spot-derived `strike624` line is the opening print.
-2. **The Sensei dock** — needs a server-side LLM key. `.sensei-*` CSS is already ported (125 rules in
-   `part-02/03.css`). The reference's `app/api/sensei/route.ts` calls DeepSeek; Masayume should use
-   Claude. The route already models the unconfigured case honestly (503, "the brain key isn't
-   configured on the server"), so the dock can ship complete and light up when a key exists. The
-   countdown ring, teaser bubble and drawer need no key at all.
+2. ~~**The Sensei dock**~~ — **done**, on Claude (`claude-opus-5`). The whole surface runs with no
+   credential: ring, teaser, drawer, meter, tape and trade cards all read the market stream the page
+   already holds, and with no key the route returns the reference's own 503 wording, which the dock
+   says in the thread. **Set `ANTHROPIC_API_KEY` in `web/.env.local`** (documented in
+   `.env.example`, never `NEXT_PUBLIC_`) and it lights up with no code change. **The live reply is
+   the one thing unverified** — no key exists on this machine and spending the user's credential
+   uninvited was not this agent's call; the request shape is checked by the SDK's types. First run
+   with a key should confirm a reply arrives, the typewriter fires, and the style rules hold.
 3. **The Room** (`MarketRoom`) — **genuinely credential-blocked.** The reference runs on Sui Seal +
    a messaging SDK + an on-chain membership rule (`useCommentRoom.ts`); none has an equivalent here,
    and `packages/db` is still a 5-line stub. Needs a Neon/Postgres URL from the user, which puts it

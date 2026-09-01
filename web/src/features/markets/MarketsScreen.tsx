@@ -8,6 +8,7 @@ import { MarketsHero } from "./MarketsHero";
 import { PlainWordsToggle, usePlainWords } from "./plain-words";
 import { useChainNowMs } from "./useChainNow";
 import { useMarketsSelection, type MarketsSelection } from "./useMarketsSelection";
+import { SenseiDock } from "@/features/sensei";
 import { useVenue } from "./useVenue";
 import { WordMarketBoard } from "./word-board";
 
@@ -65,6 +66,9 @@ export function MarketsScreen({ renderTicket, renderVerdict }: MarketsScreenProp
           </section>
         </div>
       </div>
+
+      {/* The dock rides above the page, as the reference mounts it (markets/page.tsx L890). */}
+      <SenseiDock laneSet={lanes.laneSet} nowMs={nowMs} />
     </>
   );
 }

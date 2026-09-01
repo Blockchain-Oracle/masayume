@@ -31,14 +31,21 @@ function dedupeByTime(points: ChartPoint[]): ChartPoint[] {
   return [...byTime.values()].sort((a, b) => a.timeSec - b.timeSec);
 }
 
-/** History from a minute before the window opened, then live ticks appended; both on the settlement basis (Story 1.4). */
-export function useChartSeries(market: EventMarket): Reading<ChartSeries> | null {
-  const fromSec = market.tradingStartSec - HISTORY_LEAD_SEC;
-  const history = usePriceHistory(market.asset, fromSec, market.expirySec);
-  const live = useAssetPrice(market.asset);
+/**
+ * History from a minute before the window opened, then live ticks appended; both on
+ * the settlement basis (Story 1.4).
+ *
+ * `null` is a valid market: both underlying reads gate on their own `enabled`, so a
+ * caller with nothing selected yet (Sensei, before a lane lands) holds the hook
+ * without fetching, rather than passing a fabricated market to keep the count.
+ */
+export function useChartSeries(market: EventMarket | null): Reading<ChartSeries> | null {
+  const fromSec = (market?.tradingStartSec ?? 0) - HISTORY_LEAD_SEC;
+  const history = usePriceHistory(market?.asset ?? null, fromSec, market?.expirySec ?? 0);
+  const live = useAssetPrice(market?.asset ?? null);
   const [liveTicks, setLiveTicks] = useState<ChartPoint[]>([]);
 
-  useEffect(() => setLiveTicks([]), [market.marketId]);
+  useEffect(() => setLiveTicks([]), [market?.marketId]);
 
   useEffect(() => {
     if (!live?.ok || !live.value) return;
