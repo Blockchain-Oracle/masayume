@@ -12,7 +12,7 @@ Start here, then read `parity-ledger.md`. The authority package is
 ## Where we are
 
 Branch **`feat/yosuku-source-led-shell`** off `main` (`497b43a`). **Stage 2 is complete; Stage 3 is
-underway — the first-run Tutorial is in.**
+underway — the first-run Tutorial and the §02 word board are in.**
 
 | Commit | What |
 |---|---|
@@ -25,9 +25,10 @@ underway — the first-run Tutorial is in.**
 | `ac416b1` | Stage 2 — Portfolio's market portions |
 | `99d2623` | Stage 2 — Toast presentation; Stage 2 closed |
 | `3943222`, `d488471` | Reel light-mode fix, then the card made theme-following |
-| *(this)* | Stage 3 — first-run Tutorial |
+| `f451f38` | Stage 3 — first-run Tutorial |
+| *(this)* | Stage 3 — `/markets` §02 word-market board |
 
-Everything is green: `pnpm typecheck`, `pnpm invariants` (12/12), `pnpm test` (32),
+Everything is green: `pnpm typecheck`, `pnpm invariants` (12/12), `pnpm test` (36),
 `pnpm build` (51 routes). Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
 
 **Never touch or commit** the untracked `context/screens/` and `prompt.md`. They are the user's.
@@ -72,17 +73,15 @@ watches, so the transport was never the duplicated part — do not rebuild that 
 ## Stage 3 — in progress
 
 Per `05-migration-and-agency-handoff.md`. Four slots were waiting on `/markets` and `/reels`.
-**The Tutorial is done** (`features/onboarding/`); three remain, and they are three *different*
-dependency classes — that is the thing to know before planning:
+**The Tutorial and the word board are done**; the two that remain are two *different* dependency
+classes, which is the thing to know before planning:
 
-1. **The word-market board** (`WordMarketBoard`) — **no external dependency; do this next.** But the
-   reference computes its odds from a client-side logistic model (`probAbove`, L22–27) and derives
-   its line from spot via `strike624`. Both are invented numbers that doc 05 §No-fake-data forbids
-   and that we already have real answers for: take the cents from the book (the coordinator reading,
-   as `HeroYesNo` does) and the line from the **opening print**, as `/markets` and `/reels` already
-   do. Its CSS (`.words-*`, `.wq-*`) is **already ported** in `yosuku/part-16.css` + `part-17.css`.
-   Note the overlap to settle: our `plain-words` toggle rewords the *lane rail*; the reference's
-   board is a separate §02 "Just ask" section. The reference rail has no such toggle.
+1. ~~**The word-market board**~~ — **done**, `/markets` §02. Its two invented numbers (the
+   `probAbove` logistic and the spot-derived `strike624` line) are the book's real asks and the
+   opening print. **One open product question came out of it, for the user:** our §01 rail already
+   states each Window as a plain question, so the page now says the same Windows in words twice.
+   The reference's §01 is a rail of *chart* cards, which is why it does not have this problem. See
+   the ledger's §Word-market board for the three ways out.
 2. **The Sensei dock** — needs a server-side LLM key. `.sensei-*` CSS is already ported (125 rules in
    `part-02/03.css`). The reference's `app/api/sensei/route.ts` calls DeepSeek; Masayume should use
    Claude. The route already models the unconfigured case honestly (503, "the brain key isn't
@@ -155,8 +154,6 @@ value, and a clean load draws dark-on-cream).
   in the old theme's ink until the next reload. Pre-existing, and unrelated to the container change
   above. Confirmed in the browser: a clean load is correct in both themes; only a live toggle is
   stale. Worth fixing when Stage 7 touches motion and performance.
-- `MarketsScreen.tsx` uses `aria-labelledby="section-lanes"`, but `SectionHeader` takes no `id`, so
-  the reference dangles. Newer sections use `aria-label` instead. One-line fix, not made mid-slice.
 
 ## Open blockers (unchanged)
 

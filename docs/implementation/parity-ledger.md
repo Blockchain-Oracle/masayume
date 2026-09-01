@@ -75,6 +75,40 @@ accessibility for a visual match.
 | Spring entry/exit from the right (`x: 80`, damping 22 / stiffness 300) | L116–119 | `translateX(120%)` on the starting and non-swipe ending styles, on `--ease-bounce` — Yosuku's own overshooting curve | **Adapted** — no framer-motion added for one component |
 | Warning type | — | follows the same formula, so the fourth kind is not the only one whose border says nothing | **Additive** |
 
+### Word-market board — `/markets` §02 "Just ask" (Stage 3, done 2026-09-01)
+
+Ported from `reference/yosuku/components/WordMarketBoard.tsx` into
+`web/src/features/markets/word-board/`. `.words-*` / `.wq-*` were already ported verbatim in
+`yosuku/part-16.css` + `part-17.css`, **including their light-theme block**, so only three
+source assumptions this venue does not share are in `styles/word-board.css`.
+
+| Element | Reference | Destination | Class | Status |
+|---|---|---|---|---|
+| §02 header "Just ask / No chart to read…" | `app/markets/page.tsx` L878–881 | `MarketsScreen.tsx`, `SECTIONS.words` | Exact | **Done** — `SectionHeader` gained the reference's `desc` slot |
+| Horizon groups at 6 min / 65 min, count beside the label, empty groups dropped | L31–35, L79–82 | `@masayume/core/market/horizons.ts` | Adapted | **Done** — bands verbatim; only the third label changes, because "Later today" is false for a 1d Window closing tomorrow (observed live: a 1:00 AM close). Bands are half-open, checked in `horizons.test.ts` (4 cases) — a boundary slip would silently drop or double-list a Window |
+| Card frame, odds bar, Yes/No buttons, `min-height` question, 720px type ramp | `part-16/17.css` | already ported | Exact | **Done** — verified at 390 (one column, 16px question, no x-overflow) and 1440 |
+| The line in the question | `strike624(spot,'up')` L67 | `core/copy/question.ts` `wordQuestion` | **Adapted** | **Done** — the **opening print**, as `/markets` and `/reels` already use. A strike derived from spot is not the number these Windows settle against |
+| Odds: `probAbove`, a client-side logistic on `(line−spot)/σ` | L22–27, L74 | `hero/useTopOfBook.ts` | **Adapted — no-fake-data** | **Done** — the reference calls it "an honest client-side odds estimate"; it is still an invented number, barred by doc 05. Prices are the top of the real book, the same reading the hero's UP/DOWN buttons show, so the two cannot disagree |
+| `No` priced as `100 − yes` | L119 | `WordCard.tsx` | **Corrected** | **Done** — each side is its own contract with its own ask, so they do not sum to 100 (observed live: 38¢ / 59¢). Neither is derived from the other |
+| The odds bar's fill | L109 | `WordCard.tsx` | **Adapted** | **Done** — with two independent asks there is no single probability, so the bar is the stated split `up/(up+down)` and the label says "N% implied on Yes", never "the odds". One-sided or unread book → a flat unfilled track, because an empty green fill reads as "0%, everyone says no", a claim about the market rather than about our knowledge of it |
+| BTC disc (`.wq-btc`, orange radial + tilted ₿) | `part-16.css` | `.wq-generic` + `hero/asset-mark.ts` | Adapted | **Done** — the venue also lists ETH, which gets its initial on a neutral disc rather than wearing Bitcoin's colour; same rule and values as `.mh-asset-badge` |
+| Template rotation across the four phrasings | `TEMPLATES[i % 4]` L73 | `wordQuestion` | **Corrected** | **Done** — keyed on the market id, not the array index. On index, every card reworded itself whenever a Window closed and the list shifted underneath it |
+| Self-contained fetch of markets + spot on a 12 s poll | L51–63 | prop from `useLanesState` | **Adapted** | **Done** — the reference is self-contained so it can also stand alone; here that would put a second market stream on `/markets` (see §Subscription coordinator) |
+| Yes/No hand off to the ticket | `router.push` L84 | `marketDeepLink` | **Done** — the existing deep-link grammar, as the reel uses |
+
+Also fixed here, since the element was being edited: `MarketsScreen`'s §01 used
+`aria-labelledby="section-lanes"` against a `SectionHeader` that takes no `id`, so the reference
+dangled. It uses `aria-label` now, like the newer sections (was listed under §Known, not fixed).
+
+**Open question for the user, not decided here.** The reference's §01 is a rail of *chart* cards,
+so its §02 word board is the page's only plain-language surface. Our §01 `MarketRow` already
+states each Window as a plain question (`plainQuestion`) and carries an odds chip pair, and there
+is a "Plain words" toggle above it as well. So `/markets` now says the same Windows in words
+twice, in two different card languages. Three ways out — keep both (they do differ: §01 is the
+trading rail with cadence tabs and hero selection, §02 browses every lane at once), make §01's
+rows chart-like to match the reference's rail, or retire the toggle now that §02 is the plain
+surface. Recorded rather than chosen, because it changes reviewed work.
+
 ### First-run Tutorial (Stage 3, done 2026-09-01)
 
 Ported from `reference/yosuku/components/Tutorial.tsx` into `web/src/features/onboarding/`.
@@ -142,7 +176,8 @@ DreamDEX pipeline — a presentation change, not a data change.
 | **Leverage chips** | `Ticket624Drawer` L1075–1090 | `ticket/LeverageChips.tsx` | Present, disabled | **Done** — 1× is real and selected; 2×/3× say they need the prefunded reserve (Stage 5) |
 | Live-now card grid below the hero | L847–875 | `MarketsScreen.tsx` → existing `CadenceLanes` | Adapted | **Done** — our lane cards under `.markets-section` |
 | Tutorial | L905 | `features/onboarding/*` | Exact shape | **Done** — see §First-run Tutorial |
-| Sensei dock, `MarketRoom`, `WordMarketBoard` | L878–904 | — | — | Pending — Stage 3 |
+| `WordMarketBoard` §02 | L878–881 | `features/markets/word-board/*` | Adapted | **Done** — see §Word-market board |
+| Sensei dock, `MarketRoom` | L890, L896–903 | — | — | Pending — Stage 3 |
 
 Shell correction found in this slice: `.page-shell` reserved space for the fixed chrome and
 `.page-hero` reserved it again, leaving the hero under a band of dead page. `.page-shell` now
@@ -235,7 +270,7 @@ Portfolio and More all remain.
 | Route | Reference | Class | Data authority | Status |
 |---|---|---|---|---|
 | `/` | `app/page.tsx` | Exact shell; adapted identity/protocol copy | Static + real traction | **Shell** — honest dependency state |
-| `/markets` | `app/markets/page.tsx` | Adapted to DreamDEX | DreamDEX indexer + RPC | **Partial** — real lanes/book/lifecycle/ticket live, Yosuku hero-as-ticket ported (see Stage 2 above), first-run Tutorial live; Room, Sensei and the word-market board remain Stage 3 |
+| `/markets` | `app/markets/page.tsx` | Adapted to DreamDEX | DreamDEX indexer + RPC | **Partial** — real lanes/book/lifecycle/ticket live, Yosuku hero-as-ticket ported (see Stage 2 above), first-run Tutorial and the §02 word board live; Room and Sensei remain Stage 3 |
 | `/markets/[id]` | `app/markets/[id]/page.tsx` | Exact redirect intent | — | **Done** — redirect |
 | `/reels` | `app/reels/page.tsx` | Adapted | Shared market stream | **Live** — see §`/reels` |
 | `/portfolio` | `app/portfolio/page.tsx` | Adapted | Chain/indexer projection | **Partial** — money, open bets and claimables live; see §`/portfolio` |
@@ -290,7 +325,7 @@ Tracked separately so the route table cannot hide a missing capability.
 
 | Family | Status | Notes |
 |---|---|---|
-| Cadence-aware market discovery | **Partial** | Real 5m/15m/1h/4h/1d lanes live, on `/markets` and in the reel |
+| Cadence-aware market discovery | **Partial** | Real 5m/15m/1h/4h/1d lanes live, on `/markets`, in the reel, and across the §02 word board |
 | Hero-as-ticket trade flow | **Partial** | Ticket + quote + guarded write live; Yosuku presentation ported |
 | Reel — snap feed of live Windows | **Partial** | Market cards live off the shared stream; woven community takes are Stage 3 |
 | Up/Down · stake · cash-out · claim · receipt | **Partial** | Up/Down, stake, claim, receipt live; cash-out pending |

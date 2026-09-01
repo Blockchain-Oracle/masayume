@@ -11,6 +11,17 @@ export const SECTIONS = {
   lanes: { index: "01", title: "Live windows" },
   hero: { index: "02", title: "The window" },
   ticket: { index: "03", title: "Your call" },
+  /** The reference's own §02 header, verbatim (app/markets/page.tsx L879). */
+  words: { index: "02", title: "Just ask", desc: "No chart to read. Will it be up? Just answer yes or no." },
+} as const;
+
+export const WORD_BOARD = {
+  reading: "reading the board…",
+  between: "Between rounds. New questions open as the next Window does.",
+  closes: (clock: string) => `closes ${clock}`,
+  /** The two asks are independent contracts, so the bar is a stated derivation, never "the odds". */
+  implied: (share: number) => `${share}% implied on Yes`,
+  noLean: "no book on both sides yet",
 } as const;
 
 export const CONNECT = {

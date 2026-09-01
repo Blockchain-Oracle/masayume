@@ -11,6 +11,18 @@ export function formatClock(remainingSec: number): string {
   return hours > 0 ? `${hours}:${pad2(minutes)}:${pad2(seconds)}` : `${minutes}:${pad2(seconds)}`;
 }
 
+/**
+ * Wall-clock `h:mm` for "closes at 3:45" — the word board's own idiom, where a
+ * scheduled time reads more naturally than a countdown.
+ *
+ * Locale-dependent, so it is only ever safe from a mounted clock: every caller
+ * gates on `useChainNowMs() > 0`, which is 0 until the first client tick, so the
+ * server never renders a time the client would disagree with.
+ */
+export function formatWallClock(ms: number): string {
+  return new Date(ms).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+
 export function shortHex(hex: string, lead = 6, tail = 4): string {
   return hex.length <= lead + tail + 1 ? hex : `${hex.slice(0, lead)}…${hex.slice(-tail)}`;
 }

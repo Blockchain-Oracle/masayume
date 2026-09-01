@@ -9,6 +9,7 @@ import { PlainWordsToggle, usePlainWords } from "./plain-words";
 import { useChainNowMs } from "./useChainNow";
 import { useMarketsSelection, type MarketsSelection } from "./useMarketsSelection";
 import { useVenue } from "./useVenue";
+import { WordMarketBoard } from "./word-board";
 
 export interface MarketsScreenProps {
   /** The rail beside the hero chart above 900px; its own drawer below that. */
@@ -40,7 +41,7 @@ export function MarketsScreen({ renderTicket, renderVerdict }: MarketsScreenProp
         <div className="container">
           {renderVerdict(selection)}
 
-          <section className="markets-section flex flex-col gap-4" aria-labelledby="section-lanes">
+          <section className="markets-section flex flex-col gap-4" aria-label={SECTIONS.lanes.title}>
             <SectionHeader
               index={SECTIONS.lanes.index}
               title={SECTIONS.lanes.title}
@@ -56,6 +57,12 @@ export function MarketsScreen({ renderTicket, renderVerdict }: MarketsScreenProp
               selectedSide={selection.side}
               onSelect={setSelection}
             />
+          </section>
+
+          {/* §02, where the reference puts it: the same live Windows, said in plain language. */}
+          <section className="markets-section flex flex-col gap-4" aria-label={SECTIONS.words.title}>
+            <SectionHeader index={SECTIONS.words.index} title={SECTIONS.words.title} desc={SECTIONS.words.desc} />
+            <WordMarketBoard laneSet={lanes.laneSet} nowMs={nowMs} />
           </section>
         </div>
       </div>
