@@ -114,7 +114,24 @@ importers:
         specifier: 'catalog:'
         version: 5.9.3
 
-  scripts: {}
+  scripts:
+    dependencies:
+      '@masayume/core':
+        specifier: workspace:*
+        version: link:../packages/core
+      '@masayume/markets':
+        specifier: workspace:*
+        version: link:../packages/markets
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.13
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.20.1
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
 
   services/ops:
     dependencies:

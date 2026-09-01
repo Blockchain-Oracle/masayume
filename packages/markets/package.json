@@ -8,6 +8,7 @@
     ".": "./src/index.ts",
     "./chain": "./src/chain.ts",
     "./env": "./src/env.ts",
+    "./identity": "./src/identity.ts",
     "./react": "./src/react/index.ts"
   },
   "scripts": {
