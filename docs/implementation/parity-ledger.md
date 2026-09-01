@@ -38,6 +38,25 @@ order", never "optional" or "cut".
 | 2026-09-01 | Invariant rescope was **approved but not needed** — the CSS split kept every part under the cap and ported components carry no literals, so `design-literals` and `file-length` pass unmodified | repo invariants | Guardrails remain fully strict on all code | Approval unused |
 | 2026-09-01 | Light mode in the reference is partially stale: `tailwind.config.ts` maps `gray-*` to CSS vars but there is no `@config` directive, so under Tailwind 4 its 811 `text-gray-*` utilities compile to static dark-ramp hex and do not follow `[data-theme="light"]`. Verified live on yosuku.xyz (`--gray-400` = `#5e574b` while `text-gray-500` renders `#737373`). Rendering remains legible, so the port reproduces source behaviour rather than diverging | doc 00 authority order 3–4 | None today; recorded so it is a deliberate choice, not an unnoticed bug | Fidelity preserved; revisit only with evidence of unreadable text |
 
+
+## Signing and authority (doc 02 §Signing and authority architecture)
+
+| Requirement | Destination | Status |
+|---|---|---|
+| Shared read-only runtime, no mutable account or signer | `packages/markets/src/runtime/read-runtime.ts` | **Done** — `setSigner`/`signerAddress`/`requireTrader` removed; `.trader` unreachable; `configureMarkets`/`ensureMarkets` return `void` so the exchange object is never handed out |
+| Endpoint rotation cannot change signing authority | same | **Done** — rotation rebuilds reads only |
+| `SubmitterSession` per account + chain + authority | `packages/markets/src/sessions/submitter-session.ts` | **Done** — owns its own SDK instance, signer passed at construction, `setSigner` never called |
+| Sessions do not multiply sockets | same | **Done** — no `wsRpcUrl`; SDK opens a socket only when configured, so subscriptions stay on the one shared runtime |
+| Own nonce queue (one key, one writer) | `packages/markets/src/sessions/nonce-queue.ts` | **Done** — serialised; a rejection does not stall the queue (targeted check) |
+| Own journal, attribution, stop gate | `packages/markets/src/submitter/create.ts` | **Done** — bound to one account |
+| Authority types enumerated | `packages/markets/src/sessions/authority.ts` | **Done** — 9 roles, delegated ones marked |
+| Disposed on disconnect / account switch / chain switch / expiry / revocation | `packages/markets/src/react/session.tsx` | **Done** — new wallet client disposes and rebuilds; disposed sessions reject |
+| Grant policy per session (`SESSION_TRADE`, `X_EXECUTOR`, …) | `EventVault` | Pending — Stage 4; the session already carries the authority it will be scoped by |
+
+Remaining Stage 2 work: normalise market/book/candle readings once for all routes behind one
+subscription coordinator, and port Yosuku's `/markets` presentation (hero-as-ticket, Room,
+Ticket with Range and leverage) onto the existing real pipeline.
+
 ---
 
 ## Product shell
