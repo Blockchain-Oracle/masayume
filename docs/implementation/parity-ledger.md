@@ -53,8 +53,32 @@ order", never "optional" or "cut".
 | Disposed on disconnect / account switch / chain switch / expiry / revocation | `packages/markets/src/react/session.tsx` | **Done** — new wallet client disposes and rebuilds; disposed sessions reject |
 | Grant policy per session (`SESSION_TRADE`, `X_EXECUTOR`, …) | `EventVault` | Pending — Stage 4; the session already carries the authority it will be scoped by |
 
-Remaining Stage 2 work: normalise market/book/candle readings once for all routes behind one
-subscription coordinator, and connect `/reels`, `/fund`, `/claim` to the same pipeline.
+Remaining Stage 2 work: connect `/reels`, `/fund`, `/claim` and Portfolio's market portions to the
+same pipeline, and port Yosuku's Toast presentation.
+
+### Subscription coordinator (Stage 2, done 2026-09-01)
+
+`packages/markets/src/runtime/coordinator.ts` — one normalised book per market, shared by every
+consumer. The SDK already ref-counts its pool watches, so the transport was never the duplicated
+part; three costs sat above it, all verified in the SDK source at the pinned version:
+
+| Cost | Evidence | Now |
+|---|---|---|
+| Depth forked the store's memo cache (`bookynm:<market>:<depth>` over `book:<pool>:<depth>`), so it walked the whole resting-order map once per distinct depth per pool per block | `createClient.ts:253`, `store.ts:648` | One `CANONICAL_BOOK_DEPTH` (10) read per market; consumers slice what they display. Matches the SDK default, so `useStakeQuote`'s raw book shares the same entry |
+| The memo cache is keyed on a version every new head bumps, so an unchanged book arrived as a new object every block and re-rendered every consumer | `store.ts:656` | `sameBookDepth` compares the mapped value; an unchanged book holds its reading, so nothing re-renders |
+| `useBook`'s `useMemo` never held — all three call sites passed a fresh object literal as `target`, so `toBookDepth` re-ran on every render, not merely every block | `OddsChips.tsx:39`, `DepthStrip.tsx:40`, `useTopOfBook.ts:27` | The hook depends on `marketId`/`poolAddress`/`decimals` as primitives and reads through `useSyncExternalStore` |
+
+Also collapsed: `useTick` now shares one timer per interval (`react/tick-clock.ts`) instead of one
+per hook — the ticker strip alone was running four unsynchronised one-second intervals.
+
+Honesty preserved: a hydrating watch reads `null` ("…"), never an empty book nobody has read; a
+dropped socket flips the reading to `stale · offline` stamped with the **last live confirmation**,
+not the last time the book moved, because the coordinator advances that timestamp every block
+without emitting. The value logic is pure and checked in `runtime/book-reading.test.ts` (14 cases) —
+a wrong equality check would silently freeze the book on screen.
+
+Runtime rotation and `closeRuntime` both drop every entry and its watches (`onRuntimeClose`), so a
+rebuilt client never leaves a book on screen that nothing is confirming.
 
 ### `/markets` hero-as-ticket (Stage 2, done 2026-09-01)
 

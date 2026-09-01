@@ -9,8 +9,6 @@ import { MARKETS } from "@/lib/copy";
 import { cn } from "@/lib/utils";
 import { SIDE_CLASSES, SIDE_WORD } from "../side-styles";
 
-const TOP_OF_BOOK = 1;
-
 interface SideChipProps {
   side: Side;
   level: BookLevelView | null;
@@ -36,7 +34,7 @@ interface OddsChipsProps {
 }
 
 export function OddsChips({ market, selectedSide, onSelect }: OddsChipsProps) {
-  const book = useBook({ marketId: market.marketId, poolAddress: market.poolAddress, decimals: market.decimals }, TOP_OF_BOOK);
+  const book = useBook({ marketId: market.marketId, poolAddress: market.poolAddress, decimals: market.decimals });
   const depth = book && isOk(book) ? book.value : null;
   return (
     <div className="flex gap-2" role="group" aria-label={`${market.asset} sides`}>

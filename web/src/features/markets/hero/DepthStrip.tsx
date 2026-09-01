@@ -37,7 +37,8 @@ function DepthColumn({ title, asks, decimals }: { title: string; asks: BookLevel
 
 /** Top of book for both sides — what you pay to buy each. An empty side says so; nothing is invented. */
 export function DepthStrip({ market }: DepthStripProps) {
-  const book = useBook({ marketId: market.marketId, poolAddress: market.poolAddress, decimals: market.decimals }, DEPTH);
+  // The reading carries the coordinator's canonical depth; DEPTH is how many of those levels we show.
+  const book = useBook({ marketId: market.marketId, poolAddress: market.poolAddress, decimals: market.decimals });
   return (
     <section aria-label={HERO.depthTitle} className="flex flex-col gap-2 border-t border-hairline pt-3">
       <ReadingBoundary reading={book} shape="row" tick={false}>

@@ -5,8 +5,6 @@ import type { EventMarket } from "@masayume/core/types";
 import { bpsToOddsCents } from "@masayume/core/units";
 import { useBook } from "@masayume/markets/react";
 
-const TOP_OF_BOOK = 1;
-
 export interface TopOfBook {
   /** Cents to buy $1 of UP, from the best resting ask; null when nothing rests there. */
   upCents: number | null;
@@ -24,10 +22,7 @@ export interface TopOfBook {
  * reference's own fallback — and never a filled-in number.
  */
 export function useTopOfBook(market: EventMarket | null): TopOfBook {
-  const book = useBook(
-    market ? { marketId: market.marketId, poolAddress: market.poolAddress, decimals: market.decimals } : null,
-    TOP_OF_BOOK,
-  );
+  const book = useBook(market ? { marketId: market.marketId, poolAddress: market.poolAddress, decimals: market.decimals } : null);
   const depth = book && isOk(book) ? book.value : null;
   const up = depth?.upAsks[0];
   const down = depth?.downAsks[0];

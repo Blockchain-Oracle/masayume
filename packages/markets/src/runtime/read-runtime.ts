@@ -24,6 +24,7 @@ let exchange: SomniaMarkets | null = null;
 let version = 0;
 let wsIndex = 0;
 const listeners = new Set<() => void>();
+const teardowns = new Set<() => void>();
 
 function buildConfig(env: MarketsEnv, wsRpcUrl: string | undefined): ExchangeConfig {
   return {
@@ -68,10 +69,21 @@ export function exchangeVersion(): number {
   return version;
 }
 
+/**
+ * Registers work that must run before the shared client is closed — releasing the watch handles
+ * held on it, above all. Kept as a registry rather than a direct call so nothing downstream of the
+ * runtime has to be imported back into it.
+ */
+export function onRuntimeClose(teardown: () => void): () => void {
+  teardowns.add(teardown);
+  return () => teardowns.delete(teardown);
+}
+
 /** Releases the shared runtime and its watches. */
 export async function closeRuntime(): Promise<void> {
   const previous = exchange;
   exchange = null;
+  for (const teardown of [...teardowns]) teardown();
   await previous?.close().catch(() => undefined);
 }
 
