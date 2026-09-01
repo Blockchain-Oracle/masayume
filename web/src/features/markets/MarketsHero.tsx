@@ -12,6 +12,8 @@ export interface MarketsHeroProps {
   selection: MarketsSelection;
   lanes: LanesState;
   onSelect: (marketId: MarketId, side: Side) => void;
+  /** Opens the Room for the Window in the hero. Held by the screen, not here — see MarketsScreen. */
+  onOpenRoom: () => void;
   /** The ticket rail; it renders itself into the grid's second column, or as a drawer. */
   renderTicket: (selection: MarketsSelection) => ReactNode;
 }
@@ -24,7 +26,7 @@ export interface MarketsHeroProps {
  * the lanes below became a way to change the hero rather than a list you pick from
  * and then scroll past.
  */
-export function MarketsHero({ selection, lanes, onSelect, renderTicket }: MarketsHeroProps) {
+export function MarketsHero({ selection, lanes, onSelect, onOpenRoom, renderTicket }: MarketsHeroProps) {
   const laneList = lanes.laneSet?.lanes ?? [];
   return (
     <section className="page-hero markets-hero">
@@ -44,6 +46,7 @@ export function MarketsHero({ selection, lanes, onSelect, renderTicket }: Market
               pinnedMissingIntervalSec={lanes.pinnedMissing ? lanes.activeIntervalSec : null}
               onPin={lanes.pin}
               onSelect={onSelect}
+              onOpenRoom={onOpenRoom}
             />
           ) : (
             <div className="hero-chart mh-hero-empty">

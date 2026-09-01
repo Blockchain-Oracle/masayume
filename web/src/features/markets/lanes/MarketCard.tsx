@@ -17,6 +17,8 @@ interface MarketCardProps {
   nowMs: number;
   selected: boolean;
   onSelect: (marketId: MarketId, side?: Side) => void;
+  /** Opens this Window's Room. The sheet is mounted by the screen, not the card. */
+  onOpenRoom: (market: EventMarket) => void;
 }
 
 /** Whole dollars, grouped — the card's own scale, as the hero headline uses. */
@@ -41,7 +43,7 @@ const price = (value: number | null, hydrating: boolean): string =>
  * the real book. The reference fills its ramp with `odds?.upCents ?? 50`, so an
  * unread book shows as an even market; here an unread side shows nothing.
  */
-export function MarketCard({ market, nowMs, selected, onSelect }: MarketCardProps) {
+export function MarketCard({ market, nowMs, selected, onSelect, onOpenRoom }: MarketCardProps) {
   const series = useChartSeries(market);
   const { upCents, downCents, hydrating } = useTopOfBook(market);
 
@@ -164,9 +166,17 @@ export function MarketCard({ market, nowMs, selected, onSelect }: MarketCardProp
         </div>
       )}
 
-      {/* The reference's Room strip. Kept in place and disabled, exactly as the
-          hero's does, rather than dropped — the capability is named, not hidden. */}
-      <button type="button" className="mc-room" disabled title={HERO_HEAD.roomPending}>
+      {/* The reference's Room strip, live. `stopPropagation` because the whole card
+          is the ticket trigger and this is the one control inside it that is not. */}
+      <button
+        type="button"
+        className="mc-room"
+        data-cursor="hover"
+        onClick={(event) => {
+          event.stopPropagation();
+          onOpenRoom(market);
+        }}
+      >
         <span className="mc-room-label">{HERO_HEAD.room}</span>
         <span className="mc-room-hint">{HERO_HEAD.roomQualifier}</span>
       </button>

@@ -12,6 +12,7 @@
     "@anthropic-ai/sdk": "^0.122.0",
     "@base-ui/react": "^1.7.0",
     "@masayume/core": "workspace:*",
+    "@masayume/db": "workspace:*",
     "@masayume/markets": "workspace:*",
     "@rainbow-me/rainbowkit": "catalog:",
     "@tanstack/react-query": "catalog:",

@@ -18,6 +18,7 @@ export interface HeroChartProps {
   pinnedMissingIntervalSec: number | null;
   onPin: (intervalSec: number) => void;
   onSelect: (marketId: MarketId, side: Side) => void;
+  onOpenRoom: () => void;
 }
 
 /**
@@ -35,6 +36,7 @@ export function HeroChart({
   pinnedMissingIntervalSec,
   onPin,
   onSelect,
+  onOpenRoom,
 }: HeroChartProps) {
   const opening = useOpeningPrice(market.marketId);
   const series = useChartSeries(market);
@@ -62,7 +64,7 @@ export function HeroChart({
           </ReadingBoundary>
         </div>
       </div>
-      <HeroChartFoot book={book} />
+      <HeroChartFoot book={book} onOpenRoom={onOpenRoom} />
       <HeroYesNo marketId={market.marketId} upCents={book.upCents} downCents={book.downCents} onSelect={onSelect} />
     </div>
   );

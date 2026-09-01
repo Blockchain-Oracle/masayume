@@ -1,5 +1,12 @@
 /**
- * Optional Postgres (Neon via Drizzle) for social/copilot/ops data only — chain truth is never stored here.
- * Schema, client, and the degradation table land in Epic 2 (Story 2.1).
+ * Optional Postgres for social records only — chain truth is never stored here.
+ *
+ * Every export is `null`-shaped when `DATABASE_URL` is absent, so the app runs
+ * correctly with no database and each surface says plainly that it is not
+ * connected rather than showing an empty room that nobody has read.
  */
 export const DB_PACKAGE = "@masayume/db" as const;
+
+export * from "./client";
+export * from "./comments";
+export * from "./schema";

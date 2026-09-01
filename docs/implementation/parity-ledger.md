@@ -75,6 +75,40 @@ accessibility for a visual match.
 | Spring entry/exit from the right (`x: 80`, damping 22 / stiffness 300) | L116–119 | `translateX(120%)` on the starting and non-swipe ending styles, on `--ease-bounce` — Yosuku's own overshooting curve | **Adapted** — no framer-motion added for one component |
 | Warning type | — | follows the same formula, so the fourth kind is not the only one whose border says nothing | **Additive** |
 
+### The Room (Stage 3, done 2026-09-01)
+
+Ported from `components/MarketRoom.tsx`, `CommentRoom.tsx` and `lib/sui/useCommentRoom.ts` into
+`web/src/features/room/`, over a real store (`packages/db`) and a real gate
+(`web/src/app/api/room/*`). Opens from the hero foot and from every §01 card.
+
+**The gate is the server's, not the sheet's.** Two facts must hold before a wallet reads or posts:
+it owns the address (an EVM `personal_sign` the route verifies) and it holds a position on that
+market (a chain read the route makes). A gate that lives only in the UI is not a gate — the sheet
+says "bettors only", so the server has to mean it.
+
+| Element | Reference | Destination | Class | Status |
+|---|---|---|---|---|
+| Gate machine `connect → locked → joinable → joining → joined` | `useCommentRoom.ts` L5–10 | `useRoom.ts` | Exact + one | **Done** — plus `unavailable`, which the reference cannot have: its store is the chain, ours can be absent, and "not connected here" must never look like "nobody has posted" |
+| Position gate | on-chain `market_room_rule::join` → `bet_registry::has_bet` | `gate.server.ts` `holdsPosition` | Adapted | **Done** — `marketsProvider.listOpenPositions`, the closest honest read: a bettor holds the outcome tokens from fill until redemption. **Narrower than the reference**: a wallet that already redeemed a settled Window loses that Room. Recorded rather than widened — inventing more access than the chain can prove is the wrong way round |
+| Identity | zkLogin wallet gates; a separate Ed25519 **delegate** does all messaging | one wallet | **Simplified** | **Done** — the delegate exists only because the messaging SDK rejects zkLogin's signature scheme. An ordinary `personal_sign` is exactly what a server can verify, so the wallet holding the position is the wallet that speaks. `alsoTry` went with it: it exists because the reference's ticket silently rolls a bet to the next round; ours does not |
+| Encryption | E2E via Seal + the Sui messaging SDK | — | **Not carried** | **Recorded** — comments are stored in the clear and the server can read them. The reference's header badge reads "Bettors only · Encrypted"; **ours says only "bettors only"**, because the second half would be false |
+| Sheet: framed panel, vermilion top hairline, mark tile, title, badge, close | `CommentRoom.tsx` L127–152 | `CommentRoom.tsx` + `styles/room.css` | Adapted | **Done** — Base UI `Dialog` keeps the focus trap and dialog role, as the Toast and Tutorial do |
+| Dark island (`data-theme="dark"` pinned on the panel) | L130 | `styles/room.css` | **Deviation** | **Done** — the sheet follows the theme, on the user's 2026-09-01 ruling for the same defect on `/reels`. Light values are Yosuku's own light-card treatment, as `reel-theme.css` uses. One ink/surface set per theme |
+| Onboarding states, haloed icon each | L154–200 | `RoomStates.tsx` | Exact shape | **Done** — `locked` also names *where* the rule lives, since "the check is on-chain" is the difference between a gate and a setting somebody could be asked to waive |
+| Thread: author disc hued from the address, `timeAgo`, own-message tint | L26–39 | `CommentRoom.tsx` + `styles/room-thread.css` | Exact | **Done** — hue and `timeAgo` are the reference's own functions |
+| Composer, 280 cap, whitespace collapsed | L118–125 | same | Exact | **Done** — the cap is enforced in the input, in the schema and in a `CHECK` constraint |
+| 9 s thread poll while joined | L37, L117–127 | `useRoom.ts` | Exact | **Done** |
+| Error boundary around the whole Room | `MarketRoom.tsx` L28–42 | `MarketRoom.tsx` | Exact | **Done** — same reasoning kept: never a full-page crash over a comment thread |
+| Mounted at the page, not inside the card | `markets/page.tsx` L893–903 | `MarketsScreen.tsx` | Exact | **Done** — including the reference's reason: a cadence switch cannot leave it open on a Window the page is no longer showing |
+
+**Verified against a real database**, not only by the gates. 14 checks over the live endpoints, all
+passing: read with no token (400) and with a garbage token (401); join with a malformed signature
+(401), with a **valid signature from a wallet holding no position (403)**, with a stale signature
+(400), and with a signature made for a different market (401); a forged MAC, an expired token and a
+token bound to another market (401 each); then the happy path — read, post, read back — plus a
+spoofed `author` in the request body, which was ignored in favour of the token's address, confirmed
+in the table. Over-long bodies refused at 400.
+
 ### Sensei (Stage 3, done 2026-09-01)
 
 Ported from `components/SenseiDock.tsx`, `SenseiTape.tsx`, `SenseiTradeCards.tsx` and
@@ -248,7 +282,7 @@ DreamDEX pipeline — a presentation change, not a data change.
 | Tutorial | L905 | `features/onboarding/*` | Exact shape | **Done** — see §First-run Tutorial |
 | `WordMarketBoard` §02 | L878–881 | `features/markets/word-board/*` | Adapted | **Done** — see §Word-market board |
 | Sensei dock | L890 | `features/sensei/*` | Adapted | **Done** — see §Sensei |
-| `MarketRoom` | L896–903 | — | — | Pending — Stage 3, credential-blocked |
+| `MarketRoom` | L896–903 | `features/room/*`, `api/room/*` | Adapted | **Done** — see §The Room |
 
 Shell correction found in this slice: `.page-shell` reserved space for the fixed chrome and
 `.page-hero` reserved it again, leaving the hero under a band of dead page. `.page-shell` now
@@ -341,7 +375,7 @@ Portfolio and More all remain.
 | Route | Reference | Class | Data authority | Status |
 |---|---|---|---|---|
 | `/` | `app/page.tsx` | Exact shell; adapted identity/protocol copy | Static + real traction | **Shell** — honest dependency state |
-| `/markets` | `app/markets/page.tsx` | Adapted to DreamDEX | DreamDEX indexer + RPC | **Partial** — real lanes/book/lifecycle/ticket live, Yosuku hero-as-ticket ported (see Stage 2 above), first-run Tutorial, §02 word board, §01 chart card and Sensei live; the Room remains Stage 3 |
+| `/markets` | `app/markets/page.tsx` | Adapted to DreamDEX | DreamDEX indexer + RPC | **Partial** — real lanes/book/lifecycle/ticket live, Yosuku hero-as-ticket ported (see Stage 2 above), first-run Tutorial, §02 word board, §01 chart card, Sensei and the Room live — all four Stage 3 slots closed |
 | `/markets/[id]` | `app/markets/[id]/page.tsx` | Exact redirect intent | — | **Done** — redirect |
 | `/reels` | `app/reels/page.tsx` | Adapted | Shared market stream | **Live** — see §`/reels` |
 | `/portfolio` | `app/portfolio/page.tsx` | Adapted | Chain/indexer projection | **Partial** — money, open bets and claimables live; see §`/portfolio` |
@@ -401,7 +435,8 @@ Tracked separately so the route table cannot hide a missing capability.
 | Reel — snap feed of live Windows | **Partial** | Market cards live off the shared stream; woven community takes are Stage 3 |
 | Up/Down · stake · cash-out · claim · receipt | **Partial** | Up/Down, stake, claim, receipt live; cash-out pending |
 | Range · leverage · private | Pending | Stage 5 — needs `RangeReserve` + prefunded leverage + link-private service |
-| Social takes, rooms, sharing, alerts, news/ticker, X linking | Pending | Stage 3–4; the Room needs a Postgres URL |
+| Rooms / comments | **Done** | Position-gated, signature-authenticated, over `packages/db`; honest when unconfigured |
+| Social takes, sharing, alerts, news/ticker, X linking | Pending | Stage 3–4 |
 | Trading Balance with labeled pools | **Partial** | Balance plate + labeled pools exist; `EventVault` pending |
 | Positions, PnL, history, equity, reputation, badges, Trader Edge | **Partial** | Open positions with the venue's own PnL live on `/portfolio`; history, equity, reputation, badges and Trader Edge are Stage 3 |
 | Earn, parlays, strategies, creators, agents, playbooks | Pending | Stage 4–5 |

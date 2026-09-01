@@ -6,25 +6,27 @@ import type { TopOfBook } from "./useTopOfBook";
 
 interface HeroChartFootProps {
   book: TopOfBook;
+  onOpenRoom: () => void;
 }
 
 /**
  * The Room, and how the market is currently priced.
  *
- * The Room is a Stage 3 capability — comments need Postgres and realtime, neither
- * of which is connected. The control stays where the reference puts it and says
- * so, rather than disappearing and leaving the foot looking like a different
- * product.
+ * The Room is live: the control opens it, and the sheet itself says which of the
+ * gate's states this wallet is in — including "not connected on this deployment",
+ * when there is no social store. That belongs in the sheet rather than in a
+ * disabled button, because "you have no position" and "this deployment has no
+ * database" are different answers and only one of them is about you.
  *
  * The ramp's fill is the UP price, so a bar at 64¢ means UP costs 64¢ — the width
  * is the number, not a mood. With no resting offer there is no width to draw, so
  * the bar stays empty and the figure reads "—".
  */
-export function HeroChartFoot({ book }: HeroChartFootProps) {
+export function HeroChartFoot({ book, onOpenRoom }: HeroChartFootProps) {
   const cents = book.upCents;
   return (
     <div className="hero-chart-foot">
-      <button type="button" className="mh-room" disabled title={HERO_HEAD.roomPending}>
+      <button type="button" className="mh-room" onClick={onOpenRoom} data-cursor="hover">
         <MessageCircle className="mh-room-icon" aria-hidden />
         {HERO_HEAD.room}
         <span className="mh-room-meta">{HERO_HEAD.roomQualifier}</span>

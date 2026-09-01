@@ -1,8 +1,13 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { EventMarket } from "@masayume/core/types";
+import { formatCadence } from "@masayume/core/market";
+import { formatOracleRaw } from "@masayume/core/units";
+import { ORACLE_PRICE_SCALE } from "@masayume/markets/identity";
+import { useCallback, useState, type ReactNode } from "react";
 import { SectionHeader } from "@/components/chrome";
-import { SECTIONS } from "@/lib/copy";
+import { MarketRoom } from "@/features/room";
+import { HERO_HEAD, SECTIONS } from "@/lib/copy";
 import { CadenceLanes, useLanesState } from "./lanes";
 import { MarketsHero } from "./MarketsHero";
 import { PlainWordsToggle, usePlainWords } from "./plain-words";
@@ -11,6 +16,13 @@ import { useMarketsSelection, type MarketsSelection } from "./useMarketsSelectio
 import { SenseiDock } from "@/features/sensei";
 import { useVenue } from "./useVenue";
 import { WordMarketBoard } from "./word-board";
+
+/** The Room's header line: the question it is about, and which Window that was. */
+function roomCallLabel(market: EventMarket): string {
+  const cadence = formatCadence(market.intervalSec);
+  if (market.openingPriceRaw === null) return `${market.asset} · ${cadence}`;
+  return `${HERO_HEAD.holdsAbove(market.asset)} $${formatOracleRaw(market.openingPriceRaw, ORACLE_PRICE_SCALE, 0)}? · ${cadence}`;
+}
 
 export interface MarketsScreenProps {
   /** The rail beside the hero chart above 900px; its own drawer below that. */
@@ -33,10 +45,15 @@ export function MarketsScreen({ renderTicket, renderVerdict }: MarketsScreenProp
   const lanes = useLanesState(venue.venueId);
   const [plainWords, setPlainWords] = usePlainWords();
   const { selection, setSelection } = useMarketsSelection(lanes.laneSet, lanes.activeLane, nowMs);
+  // The open Room is held here, not inside the hero or a card — the reference's own
+  // reasoning (markets/page.tsx L893–895): mounted at the page, a cadence switch
+  // cannot leave it open on a Window the page is no longer showing.
+  const [roomMarket, setRoomMarket] = useState<EventMarket | null>(null);
+  const openHeroRoom = useCallback(() => setRoomMarket(selection.market), [selection.market]);
 
   return (
     <>
-      <MarketsHero selection={selection} lanes={lanes} onSelect={setSelection} renderTicket={renderTicket} />
+      <MarketsHero selection={selection} lanes={lanes} onSelect={setSelection} onOpenRoom={openHeroRoom} renderTicket={renderTicket} />
 
       <div className="markets-main">
         <div className="container">
@@ -56,6 +73,7 @@ export function MarketsScreen({ renderTicket, renderVerdict }: MarketsScreenProp
               plainWords={plainWords}
               selectedMarketId={selection.marketId}
               onSelect={setSelection}
+              onOpenRoom={setRoomMarket}
             />
           </section>
 
@@ -69,6 +87,20 @@ export function MarketsScreen({ renderTicket, renderVerdict }: MarketsScreenProp
 
       {/* The dock rides above the page, as the reference mounts it (markets/page.tsx L890). */}
       <SenseiDock laneSet={lanes.laneSet} nowMs={nowMs} />
+
+      {roomMarket && (
+        <MarketRoom
+          marketId={roomMarket.marketId}
+          callLabel={roomCallLabel(roomMarket)}
+          onClose={() => setRoomMarket(null)}
+          // What unlocks the Room is a position, so "place a bet" selects this
+          // Window rather than sending the reader somewhere to find it again.
+          onBet={() => {
+            setSelection(roomMarket.marketId);
+            setRoomMarket(null);
+          }}
+        />
+      )}
     </>
   );
 }

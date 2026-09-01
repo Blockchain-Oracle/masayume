@@ -1,6 +1,6 @@
 "use client";
 
-import type { Lane, MarketId, Side } from "@masayume/core/types";
+import type { EventMarket, Lane, MarketId, Side } from "@masayume/core/types";
 import { MarketCard } from "./MarketCard";
 
 interface LaneRowsProps {
@@ -8,6 +8,7 @@ interface LaneRowsProps {
   nowMs: number;
   selectedMarketId: MarketId | null;
   onSelect: (marketId: MarketId, side?: Side) => void;
+  onOpenRoom: (market: EventMarket) => void;
 }
 
 /**
@@ -15,7 +16,7 @@ interface LaneRowsProps {
  *
  * Soonest-to-expire first; keyed by marketId, never by the recycled pool.
  */
-export function LaneRows({ lane, nowMs, selectedMarketId, onSelect }: LaneRowsProps) {
+export function LaneRows({ lane, nowMs, selectedMarketId, onSelect, onOpenRoom }: LaneRowsProps) {
   return (
     <div className="markets-grid markets-grid-live">
       {lane.markets.map((market) => (
@@ -25,6 +26,7 @@ export function LaneRows({ lane, nowMs, selectedMarketId, onSelect }: LaneRowsPr
           nowMs={nowMs}
           selected={market.marketId === selectedMarketId}
           onSelect={onSelect}
+          onOpenRoom={onOpenRoom}
         />
       ))}
     </div>

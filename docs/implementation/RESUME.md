@@ -12,7 +12,8 @@ Start here, then read `parity-ledger.md`. The authority package is
 ## Where we are
 
 Branch **`feat/yosuku-source-led-shell`** off `main` (`497b43a`). **Stage 2 is complete; Stage 3 is
-underway — the Tutorial, the §02 word board, the §01 chart card and Sensei are in.**
+underway — all four `/markets` slots are closed: the Tutorial, the §02 word board, the §01 chart
+card, Sensei and the Room.**
 
 | Commit | What |
 |---|---|
@@ -28,12 +29,18 @@ underway — the Tutorial, the §02 word board, the §01 chart card and Sensei a
 | `f451f38` | Stage 3 — first-run Tutorial |
 | `aa3b3b8` | Stage 3 — `/markets` §02 word-market board |
 | `9de0a01` | Stage 3 — §01 as the reference's chart card |
-| *(this)* | Stage 3 — Sensei on Claude, honest without a key |
+| `c43819a` | Stage 3 — Sensei on Claude, honest without a key |
+| *(this)* | Stage 3 — the Room, position-gated over a real store |
 
 Everything is green: `pnpm typecheck`, `pnpm invariants` (12/12), `pnpm test` (41),
-`pnpm build` (52 routes). Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
+`pnpm build` (55 routes). Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
 
 **Never touch or commit** the untracked `context/screens/` and `prompt.md`. They are the user's.
+
+**Local dev state, not in the repo** (created 2026-09-01 to verify the Room, both safe to delete):
+a Postgres database `masayume_room_dev` on the local instance, and `web/.env.local` pointing at it
+with a throwaway `ROOM_TOKEN_SECRET`. `dropdb masayume_room_dev && rm web/.env.local` removes both;
+the Room then reverts to its honest "not connected" state.
 
 ## Facts you do not need to re-derive
 
@@ -75,8 +82,7 @@ watches, so the transport was never the duplicated part — do not rebuild that 
 ## Stage 3 — in progress
 
 Per `05-migration-and-agency-handoff.md`. Four slots were waiting on `/markets` and `/reels`.
-**Three of the four are done.** Only the Room remains, and it is the one with a real external
-dependency:
+**All four are done.** What each needed, kept because it explains the shape of what is there:
 
 1. ~~**The word-market board**~~ — **done**, `/markets` §02, and §01 is now the reference's chart
    card (`Market624Card`) on the user's call, so the two sections speak different languages the way
@@ -90,12 +96,18 @@ dependency:
    the one thing unverified** — no key exists on this machine and spending the user's credential
    uninvited was not this agent's call; the request shape is checked by the SDK's types. First run
    with a key should confirm a reply arrives, the typewriter fires, and the style rules hold.
-3. **The Room** (`MarketRoom`) — **genuinely credential-blocked.** The reference runs on Sui Seal +
-   a messaging SDK + an on-chain membership rule (`useCommentRoom.ts`); none has an equivalent here,
-   and `packages/db` is still a 5-line stub. Needs a Neon/Postgres URL from the user, which puts it
-   in the same class as `/fund`'s Paystack key. `hero/HeroChartFoot.tsx` renders it disabled.
+3. ~~**The Room**~~ — **done.** `packages/db` is real now (postgres.js, one table, schema applies
+   itself), and the gate is the server's: a wallet must prove its address by signature *and* hold a
+   position on that market, both checked in `api/room/join`. Set `DATABASE_URL` (and
+   `ROOM_TOKEN_SECRET` where there is more than one instance); without it the Room opens and says
+   it is not connected on this deployment. Verified against a local Postgres — 14 checks over the
+   live endpoints, including a valid signature from a wallet with no position getting 403.
+   **Two things to know**: comments are stored in the clear and the server can read them, so the
+   badge says "bettors only" and not the reference's "Bettors only · Encrypted"; and the gate is
+   *narrower* than the reference's `has_bet` — a wallet that redeemed a settled Window loses that
+   Room.
 
-Then the fill projection, which unblocks the largest pending set at once: settled history and
+**Next: the fill projection**, which unblocks the largest pending set at once: settled history and
 receipts on `/portfolio`, the equity curve, PnL, stats, reputation, badges, `/portfolio/edge`
 (Trader Edge), and `/leaderboard`. `portfolio/BetsPanel.tsx` names it as what it waits on.
 

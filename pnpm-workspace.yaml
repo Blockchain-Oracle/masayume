@@ -16,7 +16,7 @@ catalog:
   react-dom: 19.2.8
   "@types/react": ^19
   "@types/react-dom": ^19
-  "@types/node": ^22
+  "@types/node": ^22.20.1
   typescript: ^5.9.0
   zod: ^4.1.0
   viem: ^2.38.0
