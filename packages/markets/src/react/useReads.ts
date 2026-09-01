@@ -1,0 +1,68 @@
+import { CLOCK_RESYNC_MS, MARKETS_POLL_MS, ONCHAIN_POLL_MS, OPENING_PRINT_POLL_MS } from "@masayume/core/constants";
+import { isOk, type Reading } from "@masayume/core/schemas";
+import type { Address, BalanceSheet, Bytes32, ClaimableRow, ClockSync, EventMarket, LaneSet, MarketId, OnchainSnapshot, OpenPosition, PricePoint, Resolution } from "@masayume/core/types";
+import { getBalanceSheet } from "../provider/balances";
+import { listClaimables } from "../provider/claimables";
+import { syncClock } from "../provider/clock-sync";
+import { getMarket, listLiveLanes } from "../provider/markets";
+import { nextWindow } from "../provider/next-window";
+import { getOnchain } from "../provider/onchain";
+import { listOpenPositions } from "../provider/positions";
+import { getOpeningPrice, getPriceHistory } from "../provider/prices";
+import { getResolution } from "../provider/resolution";
+import { keys } from "./keys";
+import { useReadingQuery } from "./useReadingQuery";
+
+export function useLanes(venueId: Bytes32 | null): Reading<LaneSet> | null {
+  return useReadingQuery(keys.lanes(venueId), () => listLiveLanes(venueId as Bytes32), { pollMs: MARKETS_POLL_MS, enabled: venueId !== null });
+}
+
+export function useMarket(marketId: MarketId | null): Reading<EventMarket | null> | null {
+  return useReadingQuery(keys.market(marketId), () => getMarket(marketId as MarketId), { pollMs: MARKETS_POLL_MS, enabled: marketId !== null });
+}
+
+/** Polls only while the print is still pending; a print, once seen, never changes (FR-7). */
+export function useOpeningPrice(marketId: MarketId | null): Reading<bigint | null> | null {
+  return useReadingQuery(keys.openingPrice(marketId), () => getOpeningPrice(marketId as MarketId), {
+    enabled: marketId !== null,
+    pollMs: (reading) => (reading && isOk(reading) && reading.value !== null ? false : OPENING_PRINT_POLL_MS),
+  });
+}
+
+export function usePriceHistory(asset: string | null, fromSec: number, toSec: number): Reading<PricePoint[]> | null {
+  return useReadingQuery(keys.priceHistory(asset, fromSec, toSec), () => getPriceHistory(asset as string, fromSec, toSec), {
+    enabled: asset !== null,
+    staleTimeMs: Number.POSITIVE_INFINITY,
+  });
+}
+
+export function useOnchain(marketId: MarketId | null, pollMs: number | false = ONCHAIN_POLL_MS): Reading<OnchainSnapshot> | null {
+  return useReadingQuery(keys.onchain(marketId), () => getOnchain(marketId as MarketId), { enabled: marketId !== null, pollMs: pollMs || undefined });
+}
+
+export function useResolution(marketId: MarketId | null): Reading<Resolution> | null {
+  return useReadingQuery(keys.resolution(marketId), () => getResolution(marketId as MarketId), { enabled: marketId !== null });
+}
+
+export function usePositions(wallet: Address | null): Reading<OpenPosition[]> | null {
+  return useReadingQuery(keys.positions(wallet), () => listOpenPositions(wallet as Address), { pollMs: MARKETS_POLL_MS, enabled: wallet !== null });
+}
+
+export function useClaimables(wallet: Address | null, venueId: Bytes32 | null): Reading<ClaimableRow[]> | null {
+  return useReadingQuery(keys.claimables(wallet, venueId), () => listClaimables(wallet as Address, venueId as Bytes32), {
+    pollMs: MARKETS_POLL_MS,
+    enabled: wallet !== null && venueId !== null,
+  });
+}
+
+export function useBalanceSheet(wallet: Address | null): Reading<BalanceSheet> | null {
+  return useReadingQuery(keys.balanceSheet(wallet), () => getBalanceSheet(wallet as Address), { pollMs: MARKETS_POLL_MS, enabled: wallet !== null });
+}
+
+export function useNextWindow(market: EventMarket | null): Reading<EventMarket | null> | null {
+  return useReadingQuery(keys.nextWindow(market?.marketId ?? null), () => nextWindow(market as EventMarket), { enabled: market !== null });
+}
+
+export function useClock(): Reading<ClockSync> | null {
+  return useReadingQuery(keys.clock(), syncClock, { pollMs: CLOCK_RESYNC_MS });
+}
