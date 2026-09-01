@@ -53,8 +53,25 @@ order", never "optional" or "cut".
 | Disposed on disconnect / account switch / chain switch / expiry / revocation | `packages/markets/src/react/session.tsx` | **Done** — new wallet client disposes and rebuilds; disposed sessions reject |
 | Grant policy per session (`SESSION_TRADE`, `X_EXECUTOR`, …) | `EventVault` | Pending — Stage 4; the session already carries the authority it will be scoped by |
 
-Remaining Stage 2 work: port Yosuku's Toast presentation. `/fund` and `/claim` are **not** Stage 2
-reads — see §`/reels` for why.
+**Stage 2 is complete.** `/fund` and `/claim` are not Stage 2 reads — see §`/reels` for why.
+
+### Toast (Stage 2, done 2026-09-01)
+
+Ported from `reference/yosuku/components/Toast.tsx`. The reference's *behaviour* is thinner than what
+was already here — no portal, no live region, no swipe, and a close button with no handler (only the
+card's own `onClick` dismisses, L125–127) — so the Base UI primitive stayed and took the reference's
+presentation, rather than the reverse. Adopting the reference wholesale would have traded away
+accessibility for a visual match.
+
+| Element | Reference | Now | Status |
+|---|---|---|---|
+| Bottom-right stack, newest nearest | L69 | already the viewport's placement | **Done** |
+| `rounded-xl`, `bg-neutral-900/90`, `backdrop-blur-xl` | L120 | same utilities — `bg-neutral-900/90` is the reference's own, so `part-14.css` remaps it on cream with no second rule | **Done** |
+| `min-w-[280px] max-w-[400px]` | L120 | `styles/toast.css` (`design-literals` bans px in TSX); the floor drops below `sm`, where 280px would overflow the gutter | **Adapted** |
+| Border tinted by type (`emerald-500/20`, `rose-500/20`, neutral) | L93–97 | `.toast-plate[data-type]` — the tint is `--profit` / `--loss` at 20% | **Done** |
+| Icon coloured by type (`emerald-400`, `rose-400`, gray) | L87–91 | `text-profit` / `text-loss` / `text-ink-muted` — **the reference's hex values *are* these tokens**: `#34D399` and `#FB7185` | **Done** |
+| Spring entry/exit from the right (`x: 80`, damping 22 / stiffness 300) | L116–119 | `translateX(120%)` on the starting and non-swipe ending styles, on `--ease-bounce` — Yosuku's own overshooting curve | **Adapted** — no framer-motion added for one component |
+| Warning type | — | follows the same formula, so the fourth kind is not the only one whose border says nothing | **Additive** |
 
 ### Subscription coordinator (Stage 2, done 2026-09-01)
 
@@ -180,7 +197,7 @@ that read the market pipeline are connected here; everything else keeps a named 
 | Mobile floating pill bottom nav | `components/Header.tsx` `MOBILE_NAV` | `web/src/components/shell/header/MobileBottomNav.tsx` | Exact + Games | **Done** — verified at 390px |
 | Footer / grain / custom cursor | `Footer.tsx`, `GrainOverlay.tsx`, `CustomCursor.tsx` | `web/src/components/shell/*` | Exact; cursor honours reduced-motion + coarse pointer | **Done** |
 | Theme toggle | `components/ThemeToggle.tsx` (37 L) | `web/src/components/shell/ThemeToggle.tsx` | Exact | **Done** |
-| Toast / tx feedback | `components/Toast.tsx` (130 L) | `web/src/components/ui/toast.tsx` (existing) | Adapted | **Partial** — functional + themed; Yosuku presentation pending (Stage 2) |
+| Toast / tx feedback | `components/Toast.tsx` (130 L) | `web/src/components/ui/toast.tsx` + `styles/toast.css` | Adapted | **Done** — see §Toast |
 | First-run onboarding modal (5 steps, Skip/Next) | Live `yosuku.xyz/markets` 2026-09-01 | `web/src/features/onboarding/*` | Exact; adapted copy | Pending |
 | Sensei dock + contextual bubble | Live `yosuku.xyz/markets`; `app/api/sensei/route.ts` | `web/src/features/sensei/*` | Adapted (AI over typed read models) | Pending |
 | Error boundary | `app/error.tsx` | `web/src/app/error.tsx` | Exact | Partial (exists) |

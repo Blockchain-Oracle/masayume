@@ -11,17 +11,20 @@ Start here, then read `parity-ledger.md`. The authority package is
 
 ## Where we are
 
-Branch **`feat/yosuku-source-led-shell`** off `main` (`497b43a`):
+Branch **`feat/yosuku-source-led-shell`** off `main` (`497b43a`). **Stage 2 is complete.**
 
 | Commit | What |
 |---|---|
 | `1658ffc` | Stage 0–1 — source-led Yosuku shell, identity, 42 public routes |
-| `cd35292` | Stage 2 (part) — shared read runtime + isolated signing sessions |
+| `cd35292` | Stage 2 — shared read runtime + isolated signing sessions |
 | `2ad9237` | Ledger record of the signing architecture |
-| `d0dd6f5` | Resume point |
-| *(this)* | Stage 2 — `/markets` hero-as-ticket |
+| `0c12f98` | Stage 2 — `/markets` hero-as-ticket |
+| `315ddf0` | Stage 2 — one subscription coordinator for the live book |
+| `24ec4e2` | Stage 2 — `/reels` on the shared market stream |
+| `ac416b1` | Stage 2 — Portfolio's market portions |
+| *(this)* | Stage 2 — Toast presentation; Stage 2 closed |
 
-Everything is green: `pnpm typecheck`, `pnpm invariants` (12/12), `pnpm test` (18),
+Everything is green: `pnpm typecheck`, `pnpm invariants` (12/12), `pnpm test` (32),
 `pnpm build` (51 routes). Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
 
 **Never touch or commit** the untracked `context/screens/` and `prompt.md`. They are the user's.
@@ -33,74 +36,79 @@ Everything is green: `pnpm typecheck`, `pnpm invariants` (12/12), `pnpm test` (1
   tokens and assets **verbatim** — do not rebuild from screenshots or memory.
 - **Design system is already ported**: `web/src/styles/yosuku/part-01..18.css`, split from
   `app/globals.css` at brace-depth-zero, concatenation verified byte-identical. Regenerate the
-  split rather than hand-editing a part. Most Yosuku classes you will need already exist
-  (`.hero-chart`, `.hero-chart-head`, `.cadence-chip`, `.ramp`, `.hero-yesno`, `.crop`, …) —
-  **grep the parts before writing any new CSS.**
-- **Gold/Archivo theme is deleted**, not layered. `web/src/styles/bridge.css` maps the semantic
-  names old components use onto Yosuku values and holds no colour of its own.
+  split rather than hand-editing a part. Most Yosuku classes you will need already exist —
+  **grep the parts before writing any new CSS.** `/reels`' `.feed-snap` and `.feed-card` were
+  already in `part-16.css`; the toast's emerald/rose were already `--profit` / `--loss`.
+- **The pattern for porting a card**: the reference writes everything as inline Tailwind
+  arbitrary values, and `design-literals` bans hex and px in TSX. So the values go into a CSS
+  module with the source utility string named above each rule (`markets-hero.css`, `reel.css`,
+  `toast.css`) and the TSX carries semantic class names.
 - **Invariants matter**: no file over 400 lines under `web/src`, `packages`, `services`,
-  `scripts`; no raw hex or `px` literals in TS/TSX under `web/src/{app,components,features,providers}`
-  — *including inside comments*. Run `pnpm invariants` before claiming done.
+  `scripts` — **including `.css`** (`reel.css` had to be split); no raw hex or `px` literals in
+  TS/TSX under `web/src/{app,components,features,providers}`, *including inside comments*.
+  Run `pnpm invariants` before claiming done.
 
-## Done last session: `/markets` hero-as-ticket
+## The read pipeline, after the coordinator
 
-The hero is now the page — question, chart and ticket as one object, with the lanes below as the
-way to change it. Verified in the browser at 390 / 768 / 1024 / 1440, light and dark, no console
-errors and no horizontal overflow. Full parity table in `parity-ledger.md` §`/markets`
-hero-as-ticket. New surfaces: `features/markets/MarketsHero.tsx`, `features/markets/hero/Hero*`,
-`features/markets/ticket/{BetModes,LeverageChips}.tsx`, `styles/{markets-hero,ticket}.css`.
+`packages/markets/src/runtime/coordinator.ts` holds **one normalised book per market**, derived once
+at `CANONICAL_BOOK_DEPTH`, fanned out only when the resting liquidity or the connection actually
+moved. Three things it fixed are worth not re-introducing:
 
-Three adaptations worth knowing before you touch it:
+- **Never ask the live store for a second depth.** Its memo cache is keyed on the depth
+  (`bookynm:<market>:<depth>` over `book:<pool>:<depth>`), so each distinct depth makes it walk the
+  whole resting-order map again, per pool, per block. `useBook` has no `depth` argument on purpose —
+  slice what you display out of the reading.
+- **The store's version bumps every block**, so an unchanged book still arrives as a new object every
+  block. `sameBookDepth` is what stops that re-rendering every consumer.
+- **Do not pass an inline object to a data hook.** All three old `useBook` call sites built
+  `{ marketId, poolAddress, decimals }` fresh each render, so the memo inside never held.
 
-- **The line is the opening print.** Yosuku derives a strike from spot; these Windows settle at or
-  above the opening print, so that is what the headline asks about. Real on-chain number, not a
-  derived one.
-- **Cadence tabs come from live lanes.** `groupIntoLanes` forbids a hardcoded cadence list (FR-6),
-  so the tab row is whatever is live plus the pinned lane, which keeps its slot and its highlight
-  while it is between rounds.
-- **The ramp and UP/DOWN prices are real top-of-book** (`hero/useTopOfBook.ts`). An empty side is
-  "—" with no fill; the reference's 50% default would be an invented odd.
+`useTick` shares one timer per interval (`react/tick-clock.ts`). The SDK already ref-counts its pool
+watches, so the transport was never the duplicated part — do not rebuild that layer.
 
-Range and leverage are rendered, disabled, naming Stage 5 as what they wait on. The Room is
-rendered, disabled, naming Stage 3.
+## The next slice: Stage 3
 
-**Known, not fixed (pre-existing, not from this slice):** `PriceChart.client.tsx` reads its colours
-from CSS vars *at mount*, so toggling the theme leaves the chart line in the old theme's ink until
-the next reload. Worth fixing when Stage 7 touches motion and performance.
+Per `05-migration-and-agency-handoff.md`. The four things `/markets` and `/reels` are now visibly
+waiting on, all with their slots already on the page:
 
-## The next slice: one subscription coordinator (finishes Stage 2)
+1. **The Room** (`MarketRoom`) — `hero/HeroChartFoot.tsx` renders it disabled and names Stage 3.
+2. **The Sensei dock** — contextual bubble ("Coin-flip?" / "Up or down?"), live-only behaviour that
+   source-reading misses; see the plan's §Verified facts.
+3. **The first-run Tutorial** — a 5-step modal (Skip/Next), also live-only.
+4. **The word-market board** (`WordMarketBoard`).
 
-The hero surfaced the cost of per-route reads: `/markets` alone mounts `useLanes`, `useMarket`,
-`useOpeningPrice`, `useChartSeries` (history + live asset price) and `useBook` — and every lane
-card mounts its own `useBook` on top. React Query dedupes by key, but nothing normalises the
-readings or dedupes the *subscriptions* by market/account.
+Then the fill projection, which unblocks the largest pending set at once: settled history and
+receipts on `/portfolio`, the equity curve, PnL, stats, reputation, badges, `/portfolio/edge`
+(Trader Edge), and `/leaderboard`. `portfolio/BetsPanel.tsx` names it as what it waits on.
 
-Build the coordinator in `packages/markets/src/runtime/`: normalise market / book / candle /
-lifecycle / account readings once, fan out to subscribers, dedupe by market and account key. The
-read runtime from `cd35292` is where it belongs — it already owns the shared clients and caches
-and has no signer to worry about.
-
-Then, still in Stage 2:
-
-- Connect `/reels`, `/fund`, `/claim` and Portfolio's market portions to the same pipeline.
-- Port Yosuku's Toast presentation (currently ours; functional and themed).
-
-Then Stages 3→7 exactly as `05-migration-and-agency-handoff.md` sequences them. The first Stage 3
-items that `/markets` is now visibly waiting on: the Room (`MarketRoom`), the Sensei dock, the
-first-run Tutorial, and the word-market board — all four have their slots on the page already.
+Also Stage 3: Takes woven into the reel (`ReelsScreen.tsx` renders the composer pill disabled and
+says so), rooms/comments, sharing, alerts, news/ticker, and the real `/status`, `/docs`,
+`/how-it-works`, `/demo`, `/pitch`.
 
 **Honesty constraints that keep applying** (doc 05 §No fake-data, doc 00 §No-substitution):
 never an invented odd, balance, fill or payout; loading and unavailable are valid states; a
 capability that is not connected keeps its control and says what is missing.
 
+## Known, not fixed
+
+- `PriceChart.client.tsx` reads its colours from CSS vars *at mount*, so toggling the theme leaves
+  the chart line in the old theme's ink until the next reload. Pre-existing; worth fixing when
+  Stage 7 touches motion and performance. It now affects `/reels` as well as `/markets`.
+- `MarketsScreen.tsx` uses `aria-labelledby="section-lanes"`, but `SectionHeader` takes no `id`, so
+  the reference dangles. Newer sections use `aria-label` instead. One-line fix, not made mid-slice.
+
 ## Open blockers (unchanged)
 
 - **Native mobile — Blocked.** No native source exists. Responsive web/PWA is authoritative.
 - **Masayume X account — owner-only.** Architecture supports it; live creation needs the user.
+- **`/fund` — owner-only.** The reference's on-ramp needs a Paystack key and a funded treasury
+  signer; funding is outside this authorization. `/claim` is X-OAuth recovery, Stage 4. Neither was
+  reclassified; both keep their dependency state.
 - Nothing may be pushed, deployed, published or funded without separate authorization.
 
 ## User feedback carried forward
 
 - 2026-09-01: reviewed the running shell — "looks good", colours "getting there".
-- Flagged that the markets surface still needs work → done, hero-as-ticket ported. **Not yet
-  reviewed by the user.** Show them `/markets` before treating the presentation as settled.
+- **Not yet reviewed by the user:** `/markets` hero-as-ticket, `/reels`, `/portfolio`, the toast.
+  The user asked not to be shown browser automation and said they will flag UI problems themselves —
+  so these four went in verified by typecheck, invariants, tests and build, not by inspection.
