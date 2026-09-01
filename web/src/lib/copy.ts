@@ -145,6 +145,38 @@ export const HERO_HEAD = {
   betDown: "Bet DOWN",
 } as const;
 
+/**
+ * The reel, ported from Yosuku's /reels.
+ *
+ * Same card, same words where they still hold. Two of them could not be carried
+ * over as written: the reference asks about a strike derived from spot, and the
+ * line here is the opening print (as on /markets); and its cadence words are a
+ * fixed 1m/5m/1h table, while lanes here are whatever the venue actually lists,
+ * so `formatCadence` names the round instead.
+ */
+export const REELS = {
+  title: "Reels",
+  settlesOn: (asset: string) => `${asset} · settles on the price`,
+  round: (cadence: string, closesAt: string) => `${cadence} round · closes ${closesAt}`,
+  closesIn: "closes in",
+  noClock: "—",
+  holdsAbove: (asset: string) => `Will ${asset} be above`,
+  noLine: "—",
+  livePrice: "live price",
+  versusLine: "vs line",
+  chartHolding: "loading the chart…",
+  swipeToRead: "swipe to this market to read it live",
+  closing: "closing. the next round is already rolling",
+  up: "UP",
+  down: "DOWN",
+  reading: "reading the market…",
+  betweenRounds: "between rounds. a new one rolls on the next cadence.",
+  noVenue: "no live venue to read right now.",
+  swipeHint: "Swipe up for the next market",
+  /** Stage 3 weaves community takes between the market cards; the reel is markets-only until then. */
+  takesPending: "Community takes join the reel when the social layer is live — it is not connected yet.",
+} as const;
+
 export const BALANCE = {
   title: "Your money",
   spendable: "Spendable",

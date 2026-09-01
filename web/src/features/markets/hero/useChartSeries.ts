@@ -2,10 +2,9 @@
 
 import { mapReading, stale, type Reading } from "@masayume/core/schemas";
 import type { AssetPrice, EventMarket, PricePoint } from "@masayume/core/types";
-import { PRICE_BASIS } from "@masayume/markets/identity";
 import { useAssetPrice, usePriceHistory } from "@masayume/markets/react";
 import { useEffect, useMemo, useState } from "react";
-import { FEED_DECIMALS_DEFAULT, feedRawToOracleRaw } from "./units";
+import { basisRaw, FEED_DECIMALS_DEFAULT, feedRawToOracleRaw } from "./units";
 
 const HISTORY_LEAD_SEC = 60;
 
@@ -19,10 +18,6 @@ export interface ChartSeries {
   points: ChartPoint[];
   latest: ChartPoint | null;
   feedDecimals: number;
-}
-
-function basisRaw(point: Pick<PricePoint, "priceRaw" | "emaRaw">): bigint {
-  return PRICE_BASIS === "ema" ? point.emaRaw : point.priceRaw;
 }
 
 function toChartPoint(point: PricePoint | AssetPrice, feedDecimals: number): ChartPoint {

@@ -53,8 +53,8 @@ order", never "optional" or "cut".
 | Disposed on disconnect / account switch / chain switch / expiry / revocation | `packages/markets/src/react/session.tsx` | **Done** — new wallet client disposes and rebuilds; disposed sessions reject |
 | Grant policy per session (`SESSION_TRADE`, `X_EXECUTOR`, …) | `EventVault` | Pending — Stage 4; the session already carries the authority it will be scoped by |
 
-Remaining Stage 2 work: connect `/reels`, `/fund`, `/claim` and Portfolio's market portions to the
-same pipeline, and port Yosuku's Toast presentation.
+Remaining Stage 2 work: connect Portfolio's market portions to the same pipeline, and port Yosuku's
+Toast presentation. `/fund` and `/claim` are **not** Stage 2 reads — see §`/reels` for why.
 
 ### Subscription coordinator (Stage 2, done 2026-09-01)
 
@@ -107,6 +107,43 @@ Shell correction found in this slice: `.page-shell` reserved space for the fixed
 `.page-hero` reserved it again, leaving the hero under a band of dead page. `.page-shell` now
 yields that reservation to a route that leads with a `.page-hero` (`styles/shell.css`).
 
+### `/reels` (Stage 2, done 2026-09-01)
+
+Ported from `reference/yosuku/app/reels/page.tsx` over the same pipeline that feeds `/markets`, so a
+price cannot disagree between the two. `.feed-snap` / `.feed-card` were already ported verbatim in
+`yosuku/part-16.css`; the card's values live in `styles/reel.css` + `styles/reel-chrome.css` under
+the `markets-hero.css` convention (source utility named above each rule), because `design-literals`
+bans hex and px in TSX.
+
+| Element | Reference | Destination | Class | Status |
+|---|---|---|---|---|
+| `main.feed-snap` fixed between the chrome and the viewport bottom, `scroll-snap-type: y mandatory` | L297–301 | `reels/ReelsScreen.tsx` | Exact | **Done** — `.page-shell` yields its chrome reservation to `.reel-page`, and the Footer is hidden as the reference does on `/feed` |
+| Framed portrait card ≤460px, radial-gradient ground, film grain, vermilion top hairline | L119–125 | `reels/ReelCard.tsx` + `styles/reel.css` | Exact | **Done** — values copied, including the fractalNoise data URI |
+| Top meta: ₿ disc · "BTC · settles on the price" · "{cadence} round · closes HH:MM" | L128–135 | `reels/ReelHead.tsx` | Adapted | **Done** — the mark is keyed to the asset (`hero/asset-mark.ts`), and the cadence word comes from `formatCadence` because lanes here are whatever the venue lists, not a fixed 1m/5m/1h table |
+| "closes in" + countdown, flipping vermilion when closing | L136–141 | same | Adapted | **Done** — urgency from `countdown`/`urgentAtSec`, not the reference's flat threshold |
+| `Will BTC be above <span.vermilion>$X</span>?` | L146–150 | `reels/ReelQuestion.tsx` | Adapted | **Done** — the line is the **opening print**, as on `/markets`; the reference freezes a strike derived from spot, which a real on-chain number does not need |
+| Live price + `+$83 vs line` / `−$120 vs line` | L151–159 | same | Exact phrasing | **Done** — the branch comes from `neededMove` in core, so the reel and the hero cannot disagree about who is winning |
+| The chart as the card's hero | L162–169 | `reels/ReelChart.tsx` | Adapted | **Done** — the reference shares one series across all cards and gates only its rAF redraw; each Window here has its own history, so an `IntersectionObserver` gates the whole thing: only the card on screen and its two neighbours fetch a series or mount a chart |
+| One-tap UP/DOWN | L179–188 | `reels/ReelCall.tsx` | Improved | **Done** — the reference links to a bare `/markets`; these use the existing deep-link grammar (`/markets?m=…&dir=…`, UX-DR21) so the side you tapped arrives selected |
+| "closing. the next round is already rolling" | L173–176 | same | Exact | **Done** — shown once the Window is inside the no-entry buffer (`phase()`), which is the same rule the reference approximates with `minMintMs * 0.6` |
+| `EmptyReel` — framed holding card with three pulsing dots | L199–213 | `reels/ReelHolding.tsx` | Exact | **Done** — covers reading / no venue / between rounds |
+| Swipe-up hint pill, fading after a real scroll | L338–348 | `ReelsScreen.tsx` | Exact | **Done** — including the reference's own correction (60px, not the first stray pixel) |
+| Take pill (right rail, mid-card) | L320–331 | same | Present, disabled | **Done** — names the social layer (Stage 3) rather than opening onto a feed that does not exist |
+| Woven community takes, `TakeReelCard`, `TakeComposer624` | L44–53, L307–314 | — | — | Pending — Stage 3 |
+
+Two adaptations worth knowing: rounds come from **every** live cadence the venue lists (the reference
+is BTC + three fixed cadences), and membership derives from `phase()` like every other surface rather
+than a second copy of the entry cutoff. `useReelRounds` holds its array identity while the membership
+is unchanged — recomputing it on each clock tick would remount every card's chart once a second — but
+only for as long as it came from the lane set still in hand, so a refetched Window is never rendered
+from the previous poll's copy.
+
+**`/fund` and `/claim` are not Stage 2 reads.** `/fund` (reference L29–99) is a Paystack card on-ramp
+that charges NGN and credits testnet DUSDC from a treasury via `/api/fund-preview`: it needs a
+Paystack key and a funded treasury signer, both owner-only, and funding is outside this authorization.
+`/claim` (reference) is X-OAuth account recovery — Stage 4. Both keep their honest dependency state;
+neither was silently reclassified.
+
 ---
 
 ## Product shell
@@ -137,7 +174,7 @@ Portfolio and More all remain.
 | `/` | `app/page.tsx` | Exact shell; adapted identity/protocol copy | Static + real traction | **Shell** — honest dependency state |
 | `/markets` | `app/markets/page.tsx` | Adapted to DreamDEX | DreamDEX indexer + RPC | **Partial** — real lanes/book/lifecycle/ticket live, Yosuku hero-as-ticket ported (see Stage 2 above); Room, Sensei, Tutorial and the word-market board remain Stage 3 |
 | `/markets/[id]` | `app/markets/[id]/page.tsx` | Exact redirect intent | — | **Done** — redirect |
-| `/reels` | `app/reels/page.tsx` | Adapted | Shared market stream | **Shell** — honest dependency state |
+| `/reels` | `app/reels/page.tsx` | Adapted | Shared market stream | **Live** — see §`/reels` |
 | `/portfolio` | `app/portfolio/page.tsx` | Adapted | Chain/indexer projection | **Shell** — honest dependency state |
 | `/portfolio/edge` | `app/portfolio/edge/page.tsx` | Adapted | Real fills incl. losses/voids | **Shell** — honest dependency state |
 | `/leaderboard` | `app/leaderboard/page.tsx` | Adapted | DB projection from verified outcomes | **Shell** — honest dependency state |
@@ -190,8 +227,9 @@ Tracked separately so the route table cannot hide a missing capability.
 
 | Family | Status | Notes |
 |---|---|---|
-| Cadence-aware market discovery | **Partial** | Real 5m/15m/1h/4h/1d lanes live |
-| Hero-as-ticket trade flow | **Partial** | Ticket + quote + guarded write live; Yosuku presentation pending |
+| Cadence-aware market discovery | **Partial** | Real 5m/15m/1h/4h/1d lanes live, on `/markets` and in the reel |
+| Hero-as-ticket trade flow | **Partial** | Ticket + quote + guarded write live; Yosuku presentation ported |
+| Reel — snap feed of live Windows | **Partial** | Market cards live off the shared stream; woven community takes are Stage 3 |
 | Up/Down · stake · cash-out · claim · receipt | **Partial** | Up/Down, stake, claim, receipt live; cash-out pending |
 | Range · leverage · private | Pending | Stage 5 — needs `RangeReserve` + prefunded leverage + link-private service |
 | Social takes, rooms, sharing, alerts, news/ticker, X linking | Pending | Stage 3–4 |
