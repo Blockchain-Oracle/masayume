@@ -12,9 +12,10 @@ Start here, then read `parity-ledger.md`. The authority package is
 ## Where we are
 
 Branch **`feat/yosuku-source-led-shell`** off `main` (`497b43a`). **Stage 2 is complete; Stage 3 is
-underway — all four `/markets` slots are closed (Tutorial, §02 word board, §01 chart card, Sensei, the
-Room), and the fill projection now feeds settled history, the equity curve, PnL, stats, reputation,
-badges, CSV, `/portfolio/edge` and `/leaderboard`.**
+nearly closed — all four `/markets` slots (Tutorial, §02 word board, §01 chart card, Sensei, the Room),
+the fill projection (history, equity, PnL, reputation, badges, CSV, `/portfolio/edge`, `/leaderboard`),
+and now the social and public-proof slice: takes woven into the reel, the two share cards, price alerts
+with a live evaluator, `/news`, `/status`, `/docs`, `/how-it-works`, `/demo` and `/pitch`.**
 
 | Commit | What |
 |---|---|
@@ -33,10 +34,11 @@ badges, CSV, `/portfolio/edge` and `/leaderboard`.**
 | `c43819a` | Stage 3 — Sensei on Claude, honest without a key |
 | `9f86edc` | Stage 3 — the Room, position-gated over a real store |
 | `6f45a88` | Sensei's model as a setting |
-| *(this)* | Stage 3 — the fill projection: history, equity, Trader Edge, leaderboard |
+| `4f442d5` | Stage 3 — the fill projection: history, equity, Trader Edge, leaderboard |
+| *(this)* | Stage 3 — takes, share cards, alerts, news, status, docs, how-it-works, demo, pitch |
 
 Everything is green: `pnpm typecheck`, `pnpm invariants` (12/12), `pnpm test` (58),
-`pnpm build` (57 routes). Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
+`pnpm build`. Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
 
 **Never touch or commit** the untracked `context/screens/` and `prompt.md`. They are the user's.
 
@@ -111,7 +113,28 @@ Per `05-migration-and-agency-handoff.md`. Four slots were waiting on `/markets` 
    *narrower* than the reference's `has_bet` — a wallet that redeemed a settled Window loses that
    Room.
 
-4. ~~**The fill projection**~~ — **done 2026-09-02**, and it unblocked the whole pending set at
+4. ~~**Takes, sharing, alerts, news, status, docs, how-it-works, demo, pitch**~~ — **done 2026-09-02**,
+   split across six forks and the main session; every piece has a ledger section (§Takes, §Sharing,
+   §Alerts, §News and ticker, §Status, §Public proof). Things worth knowing before touching any of it:
+   - **Takes** are rows in `packages/db` (`takes` table, applied by the shared `ensureSchema`) whose
+     verifiable spine is the wallet's `personal_sign` over `takeMessage()` in `features/takes/protocol.ts`.
+     The route stores the caption **exactly as signed** and refuses one it would have had to normalise —
+     the composer normalises before signing. `backed` is the Room's `holdsPosition` read at post time.
+     `GET /api/takes` answers `{ configured:false, takes:[] }` with no store, never an error. Verified by
+     a scratch script signing with the demo wallet (12 checks); one real take from `0xd357…9358` is in
+     the store ("endpoint check — …") — delete it from `takes` if it should not stay in the reel.
+   - **Share cards** (`features/share/`): `canvas.ts` is the drawing kit both PNGs use; it reads
+     `--share-*` tokens off `share-card.css`, and `font()` builds canvas font strings, so no hex or px
+     lives in TSX. `/dev/share` renders every export as an `<img>` — the way to look at a card.
+   - **Alerts** fire only while a tab is open (browser-side evaluator in `AppProviders`); the popover
+     says so. Placement in the hero foot is ours and awaits the user's eye.
+   - **`/status`** is the probe; a stale last-good reading is reported as a failed probe on purpose.
+   - **`/demo`** and **`/pitch`** read `/api/leaderboard` live; a cold board takes ~35 s and both show a
+     reading state until it lands.
+   - **`/news`** exists because the feed and its RSS route survived in the pinned source; the page is the
+     reference's own from `93d09c1^`. Nav entry in the More menu.
+
+5. ~~**The fill projection**~~ — **done 2026-09-02**, and it unblocked the whole pending set at
    once: settled history with receipts, the equity curve, PnL, stats, reputation, badges and CSV on
    `/portfolio`; `/portfolio/edge`; `/leaderboard`. One derivation (`packages/core/src/projection/`)
    replays a wallet's indexed fills and complete-set router actions into one ledger per Window and
@@ -126,9 +149,11 @@ Per `05-migration-and-agency-handoff.md`. Four slots were waiting on `/markets` 
    four active wallets before any UI was written (`pnpm --filter @masayume/scripts
    spike:fill-projection-verify`); `spike:fill-projection-live` reads one wallet end to end.
 
-**Next**: Takes woven into the reel (`ReelsScreen.tsx` renders the composer pill disabled and says
-so), sharing, alerts, news/ticker, and the real `/status`, `/docs`, `/how-it-works`, `/demo`,
-`/pitch`. The Room and the projection between them cover rooms/comments.
+**Next**: `/stats` (traction, chain-derived — the reference's `api/traction` walks sponsored txs; ours
+would count wallets, fills and volume off the same venue replay the board uses), `/download` (PWA
+install; native stays Blocked), the error-recovery pass, then Stage 4 (`EventVault`, session trading,
+the X rail). Fear/Greed on the ticker still waits on a provider. `/social` (the reference's internal
+marketing-content board) is untouched and keeps its shell. Lifecycle alerts have no reference source.
 
 **Honesty constraints that keep applying** (doc 05 §No fake-data, doc 00 §No-substitution):
 never an invented odd, balance, fill or payout; loading and unavailable are valid states; a
@@ -210,8 +235,12 @@ value, and a clean load draws dark-on-cream).
   was invisible (the `--white` remap above), and the card's darkness was unwanted. **Decision: the
   reel card follows the theme.** Recorded as a deviation in the ledger. Verified in the browser at
   both themes after the change.
-- **Not yet reviewed by the user:** `/portfolio` (now with settled rows, §03 "Your record", the
-  Trader Edge link), `/portfolio/edge`, `/leaderboard`, the toast, the Tutorial. Two placements are
+- **Not yet reviewed by the user:** the whole social and public-proof slice (the woven reel and the
+  composer, The Call after a fill, the share button on receipts, the alert bell in the hero foot,
+  `/news`, `/status`, `/docs`, `/how-it-works`, `/demo`, `/pitch`), and before it `/portfolio` (settled
+  rows, §03 "Your record", the Trader Edge link), `/portfolio/edge`, `/leaderboard`, the toast, the
+  Tutorial. Decisions flagged for the user in the ledger's log: the alert bell's placement; `/news`
+  restored from the reference's history; `/docs` linking the GitHub repo; the pitch's drawn Somnia mark. Two placements are
   ours and flagged in the ledger's decision log for review: reputation/badges/equity/CSV mounted under
   `/portfolio` §03 (the reference computes them there but its pinned JSX never mounts them), and
   reputation without the reference's per-tier bonus/fee percentages (no contract pays either). The

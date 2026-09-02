@@ -36,6 +36,15 @@ order", never "optional" or "cut".
 | 2026-09-02 | Reputation tiers ported without the reference's per-tier bonus % and fee % | `lib/predictionContract.ts` TIERS | Tier, record and progress shown; no bonus or fee promised | **Needs user review** — no contract pays either |
 | 2026-09-02 | Reputation, badges, the equity curve and CSV export are mounted on `/portfolio` §03 "Your record" | The reference computes all four on its portfolio page (`computeBadges`, `fetchReputation`, `equityRef`, `positionsToCSV`) but its pinned JSX mounts none of them; `BadgeDisplay` has no render site | A surface the reference wrote but never showed | **Needs user review** — placement is ours, components are the reference's |
 | 2026-09-02 | `/leaderboard` is computed server-side from the indexer's fill tape over a rolling day, cached three minutes in memory; the doc-03 "DB projection" is deferred as an optimisation of the same derivation | doc 03 §Leaderboard; reference route's own 24h scope and cache | Venue-wide board, no credential needed | No approval needed — the derivation is unchanged, only the store |
+| 2026-09-02 | A take's verifiable spine is the wallet's `personal_sign` over the call, stored with the row; the reference's is an on-chain `TakePosted` event plus a Walrus blob | doc 02 §Data ownership ("Takes … Postgres, with signatures/receipts where claimed"); `lib/sui/takeBoard.ts` | "signed by the wallet · verify ↗" on every take card instead of "on Walrus · verify on Suiscan"; posting is a signature, not a transaction | No approval needed — the doc-02 rule, applied; 12 endpoint checks pass |
+| 2026-09-02 | The "✓ position" badge is a chain read the route makes at post time (the Room's `holdsPosition`), never a client claim | reference `TakeComposer624` posts open calls only; the badge came from an order id the bet flow hands over | A bettor's take is stamped from the chain; an unreadable chain refuses the post rather than stamping "open call" | No approval needed — strictly more honest than the source |
+| 2026-09-02 | The composer's strike is the Window's opening print, read-only; Range is present, disabled, and names RangeReserve (Stage 5) | `TakeComposer624.tsx` L59–63 (user-typed strike), L129–140 (three sides) | The call is on the number the Window settles against; no invented level; a control that does nothing says why | Truth correction (doc 00 allowed change 4) |
+| 2026-09-02 | Share cards are rendered in the browser and handed to the native share sheet or downloaded with a pre-filled X post — the reference's own mechanism; doc 03's "server-rendered/open-graph cards" (link unfurls) are a follow-on, not a substitute | `lib/shareCard.ts`, `lib/openBetShareCard.ts`, `ShareBetButton.tsx`, `ShareTradeButton.tsx` | Identical share behaviour; a pasted link does not yet unfurl into the card | No approval needed — user-visible behaviour is the reference's |
+| 2026-09-02 | The Call (on-screen) follows the theme; the exported PNG keeps its one dark design. No leverage caveat, no X handle: the footer prints the app's own host | `BetPlacedCard.tsx` L70 (`data-theme="dark"`), `openBetShareCard.ts` L101 (`@yosuku0`), L354–362 (leverage) | Cream ticket in light mode; the PNG is the same in both; nothing on a card claims an account or a product that does not exist | Deviation — the user's 2026-09-01 ruling on non-flipping surfaces; truth corrections |
+| 2026-09-02 | Price alerts get a live evaluator (the reference's `checkAlerts` has no caller and its button was cut in 8c7ecc1); mounted in the hero foot beside the Room | doc 03 §Alerts "market stream evaluator"; reference `PriceAlerts.tsx` orphaned | A threshold alert actually fires (toast, and a system notification when permitted) while the app is open; the popover says exactly that | **Needs user review** — placement is ours; the reference has no live mount |
+| 2026-09-02 | `/news` is restored from the reference's own history (`93d09c1^:app/news/page.tsx`); the feed component and RSS route survive in the pinned source. "Bitcoin News" → "Market News" because the venue lists BTC and ETH. A More-menu entry is added | doc 03 §News/ticker "real configured feed/provider" | A live wire (Cointelegraph + Decrypt, no credential) at `/news`; Fear/Greed still pending a provider | **Needs user review** — a route the pinned reference cut as "broken" |
+| 2026-09-02 | `/status` probes at read time: RPC head, indexer, price feed lag, social store, Sensei — each under its own timeout; a stale last-good reading counts as a failed probe | doc 03 §Status "derive dependency health at read time; do not keep a stale healthy claim" | Healthy / degraded / unreachable computed per load; optional capabilities listed truthfully without degrading the verdict | No approval needed |
+| 2026-09-02 | Public pages rewritten on real facts only: `/docs` (contracts from the pinned addresses, code from the repo), `/how-it-works` (the reference's 64/36 example kept and labelled an example; fees truth-corrected), `/pitch` (labels CONCEPT / NEXT / NO-OP / ILLUSTRATIVE; team = the one builder in `git log`; no revenue rate), `/demo` (live traction from `/api/leaderboard`, real screenshots, real tx links) | doc 03 §Public/support surfaces; doc 05 §No fake-data | No future behaviour as current; every number sourced | **Needs user review** — `/docs` links `github.com/Blockchain-Oracle/masayume` (drop if private); the pitch's Somnia mark is a drawn stand-in |
 | 2026-09-01 | `globals.css` split into <400-line modules, values byte-identical; `design-literals` rescoped for ported presentation | repo invariants vs doc 02 §Source-led shell | None — split verified by concatenation diff | **User approved** |
 | 2026-09-01 | Native mobile remains `Blocked` | doc 00 §Source and provenance gaps item 1 | `/download` native buttons show a truthful blocked state | Architecture default |
 | 2026-09-01 | **Truth correction** — AppStrip advertised "Yosuku is on iOS". Masayume has no native build, so the claim would be false. Mechanism kept (it owns `--appstrip`, which every fixed offset derives from); copy is now "Masayume installs as a web app" / "Somnia testnet — test funds only", both true | doc 00 allowed deviation 4 | Strip promises an installable PWA, which exists, instead of an iOS app, which does not | Deviation class pre-approved |
@@ -345,8 +354,8 @@ bans hex and px in TSX.
 | Dark island — the card stays black on cream in light mode | `part-14.css:124` | `styles/reel-theme.css` | **Deviation** | **Recorded, user's call 2026-09-01** — the card follows the theme like every other surface, so `/reels` is not an island. Light values are Yosuku's own light-card treatment, lifted from `.creator-studio` (`part-01.css:131`): surface `#fffaf2`, ink `#211c18`, `.cs-line` hairline, its raised shadow. One ink triplet per theme drives every step |
 | `EmptyReel` — framed holding card with three pulsing dots | L199–213 | `reels/ReelHolding.tsx` | Exact | **Done** — covers reading / no venue / between rounds |
 | Swipe-up hint pill, fading after a real scroll | L338–348 | `ReelsScreen.tsx` | Exact | **Done** — including the reference's own correction (60px, not the first stray pixel) |
-| Take pill (right rail, mid-card) | L320–331 | same | Present, disabled | **Done** — names the social layer (Stage 3) rather than opening onto a feed that does not exist |
-| Woven community takes, `TakeReelCard`, `TakeComposer624` | L44–53, L307–314 | — | — | Pending — Stage 3 |
+| Take pill (right rail, mid-card) | L320–331 | same | Exact | **Done** — opens the composer |
+| Woven community takes, `TakeReelCard`, `TakeComposer624` | L44–53, L307–314 | `features/takes/*` | Adapted | **Done** — see §Takes |
 
 Two adaptations worth knowing: rounds come from **every** live cadence the venue lists (the reference
 is BTC + three fixed cadences), and membership derives from `phase()` like every other surface rather
@@ -438,6 +447,140 @@ the board never claims a payout was collected (no live balance on a venue scan).
 **Known, not fixed:** the venue's PnL engine drops open shorts (above). Trading fees beyond the
 settlement skim are not shown. `/agents` still waits on the `StrategyRegistry` alone.
 
+### Takes — woven into the reel (Stage 3, done 2026-09-02)
+
+Ported from `app/reels/page.tsx` (`weaveReel`, the pill, the composer mount), `components/TakeReelCard.tsx`
+and `components/TakeComposer624.tsx` into `web/src/features/takes/`, over the social store (`packages/db`,
+`takes` table) and a route (`web/src/app/api/takes`). Read is public, as the reference's feed is; posting
+proves the wallet by `personal_sign` over `takeMessage()` — the same text the browser and the route build
+from the same fields — and stamps "✓ position" from the Room's own chain read. **Nothing about a take is a
+client claim**: the Window's facts (asset, cadence, expiry, the line) are snapshotted from the venue at
+post time, the caption is stored exactly as signed (the route refuses a caption it would have had to
+normalise), and the author is the recovered signer, lowercased.
+
+| Element | Reference | Destination | Class | Status |
+|---|---|---|---|---|
+| Weave: market, take, market, take… then the tail; a market first | `reels/page.tsx` L40–53 | `takes/weave.ts` | Exact | **Done** |
+| 20 s take poll, last feed kept on a failed refresh | L262–274 | `useTakes.ts` (react-query) | Exact | **Done** — `configured:false` from the route means "no store", never an empty feed |
+| Pill → composer | L320–331 | `ReelsScreen.tsx` | Exact | **Done** |
+| Card: hued author disc, short address ↗, `timeAgo · 5m Window`, `✓ position` / `open call` | `TakeReelCard.tsx` L57–76 | `TakeReelCard.tsx` + `take.css` | Exact | **Done** — the disc's hue is the reference's `hue()`, now `lib/address-hue.ts`, shared with the Room |
+| Call chip `▲ UP · BTC over $64,316` | L78–85, `callParts` | same | Adapted | **Done** — the band is the opening print; a take posted before the print says "vs the opening print"; no range glyph (no range markets) |
+| The voice, or "No note. The call speaks for itself." | L87–98 | same | Exact | **Done** |
+| Footer: `◆ on Walrus · verify ↗ · comments soon` | L100–106 | same | Adapted | **Done** — `◆ signed by the wallet · verify ↗` (author on the explorer); "comments soon" is a live link to the Window, where the Room is |
+| "Take the other side →" → bare `/markets` | L107–110 | same | Improved | **Done** — deep-links the opposite side; a closed Window's card says "See how it closed →" instead |
+| Dark island (`data-theme="dark"`) | L49 | `.reel-card` frame | Deviation | **Done** — follows the theme like the market card (user's 2026-09-01 ruling); verified light and dark at 390 |
+| Composer: sheet, hairline, title/close, "where your words go" line | `TakeComposer624.tsx` L108–125 | `TakeComposer.tsx` + `take-composer.css` | Adapted | **Done** — Base UI Dialog (focus trap, dialog role); shares the Room's surface tokens; the line says the words are stored by Masayume and the call signed by the wallet |
+| Side segments Up / Down / Range | L127–141 | same | Adapted | **Done** — Range disabled, titled "Range calls land with RangeReserve (Stage 5)" |
+| Strike input, defaulting to spot | L143–160 | `.take-line` | Truth correction | **Done** — read-only opening print with spot beside it; "waiting for the opening print" before it lands |
+| Horizon: 1m / 5m / 1h | L162–183 | `useComposerMarket.ts` | Adapted | **Done** — the venue's live lanes; default is the first cadence with an enterable Window; the market is the soonest enterable one (`phase()`) |
+| Caption, 240 cap, counter | L185–195 | same | Exact | **Done** — cap in the input, the schema and the `CHECK` |
+| Preview "You're calling ▼ BTC under $X · 5m Window" | L197–204 | same | Exact | **Done** |
+| Post: Connect / No live market / Post / Posting… | L206–213 | same | Exact | **Done** — plus the unconfigured state in the Room's grammar, and the core permanence line under the button |
+| Post = Walrus PUT + `post_take` tx via the sponsor | L76–106 | `usePostTake.ts` → `POST /api/takes` | Adapted | **Done** — one `personal_sign`; the server's own row is appended, never a local echo |
+| Fixtures | `app/dev/takes` | `/dev/takes` | — | **Done** |
+
+**Verified against the live endpoints** (scratch script signing with the demo wallet, 2026-09-02): empty
+body 400; forged signature 401; stale signature 400; a valid signature presented for another address 401,
+and for the other side 401; a settled Window 409; an unknown Window 404; caption over the cap 400; an
+un-normalised caption 400; then the happy path — 200, the row read back from `GET /api/takes` with the
+signer as author, `backed:false` (the demo wallet held nothing on that Window), the venue's opening print
+as the line. That take is real and stays in the store. Woven card, composer and both themes inspected in
+the browser at 390.
+
+### Sharing — The Call and Earned Heat (Stage 3, done 2026-09-02)
+
+Ported from `lib/openBetShareCard.ts` + `components/BetPlacedCard.tsx` + `ShareBetButton.tsx` (the
+just-placed call) and `lib/shareCard.ts` + `ShareTradeButton.tsx` (the settled trade) into
+`web/src/features/share/`. The two reference renderers each carry their own copy of the drawing kit;
+`canvas.ts` holds it once, and the kit reads its palette off `share-card.css` so no colour lives in code.
+
+| Element | Reference | Destination | Class | Status |
+|---|---|---|---|---|
+| The Call — 1200×1500 PNG: masthead, record line, direction eyebrow, hero band, stake → return, settle line, perforation, proof, footer, grain | `openBetShareCard.ts` L226–436 | `call-card.ts` | Adapted | **Done** — `MASAYUME`, `THE CALL · SOMNIA TESTNET`, return net of the settlement fee and labelled so; `TX 0x… · VERIFY ON SHANNON EXPLORER`; footer = the app's host |
+| Leverage caveat | L354–362 | — | Truth correction | Omitted, not printed as "1×" |
+| Earned Heat — P&L hero (win = vermilion heat, loss = ash), sub-line, kind line, proof pair | `shareCard.ts` L285–482 | `trade-card.ts` | Adapted | **Done** — win/loss `SETTLEMENT RECORD` with `ORACLE-SETTLED $print AT <expiry UTC>` only when the closing print is on record; void `VOID RECORD · BOTH SIDES PAID 0.5`; a close-out `CLOSE-OUT RECORD` never claims a settlement; no cost on record → hero is the payout, labelled `PAID OUT` |
+| Native share sheet with the file, else download + X intent, path decided inside the click | `ShareBetButton.tsx` L38–99 | `useShareCard.ts` | Exact | **Done** — once, for both buttons |
+| The Call on screen: grain, ticks, masthead, eyebrow, band, wager strip, live countdown + draining bar, verify, share CTA, Portfolio / Place another | `BetPlacedCard.tsx`, `Ticket624Drawer.tsx` L807–836 | `CallPlacedCard.tsx`, `ticket/PlacedCall.tsx` | Adapted | **Done** — the ticket body becomes The Call on a confirmed fill; "Place another" resets the composer |
+| Share slot on the receipt | `TradeReceipt.tsx` L321–325 | `VerdictCard.tsx` | Adapted | **Done** — replaces the earlier "Copy link"; the history receipt passes the entry tx and whether the round closed early |
+| Fixtures | `app/dev/receipt`, `app/dev/betplaced` | `/dev/share` | — | **Done** — the on-screen card and every export rendered from canned records |
+
+**Verified**: both exports rendered at 1200×1500 in the browser from the fixture page (six cards: the call,
+win, loss, void, close-out, payout-only) and read against the reference's layout. The live swap to The Call
+after a fill is exercised by types and the fixture, not by a wallet placing a bet in the automated browser.
+
+### Alerts (Stage 3, done 2026-09-02)
+
+Ported from `components/PriceAlerts.tsx` + `lib/priceAlerts.ts` into `web/src/features/alerts/`. In the
+pinned source the button is mounted nowhere and `checkAlerts` has no caller; doc 03 asks for "device
+permission + stored user rules + market stream evaluator", so the evaluator (`AlertsWatcher.tsx`) is ours:
+one hidden watch per asset with a pending rule, on `useAssetPrice`, marking a crossed rule triggered once,
+raising a toast, and a system notification when permitted.
+
+| Element | Reference | Destination | Class | Status |
+|---|---|---|---|---|
+| Rule store, permission request, notification | `priceAlerts.ts` L1–80 | `alerts/store.ts` | Exact + subscription | **Done** — key `masayume.priceAlerts`; `subscribeAlerts` (in-module + `storage` event) |
+| Bell button (tint + count once armed), popover, Above/Below, target defaulting to the rounded live price, add, list, remove | `PriceAlerts.tsx` L44–135 | `PriceAlertsButton.tsx` + `alerts.css` | Exact | **Done** — emerald/rose → `--profit`/`--loss`; outside-click/Escape via `useFloatingMenus` |
+| Popover anchor | `top-[calc(100%+8px)] right-0` | opens upward, anchored to the Room+Alert group | Adapted | **Done** — the hero clips downward overflow, and anchored to the bell it ran past a 390 viewport |
+| Evaluator | none | `AlertsWatcher.tsx` in `AppProviders` | Ours | **Done** — a real trigger fired in the browser (toast seen); the system notification path is the reference's, guarded |
+| Foot line | — | popover | Ours | "Fires while Masayume is open in a tab" / "Browser notifications are off — alerts show here as a toast…" |
+| Light theme | `bg-neutral-900/96` past part-14's ladder; `text-gray-*` | `alerts.css` | Deviation (invisible ≠ fidelity) | **Done** |
+| Mount | old market page's Share/Copy/Alert row, removed in 8c7ecc1 | hero foot, beside the Room | **Placement ours** | **Needs user review** |
+
+Doc 03's "lifecycle" notifications have no source in the reference — only thresholds exist there — and
+stay pending.
+
+### News and ticker (Stage 3, done 2026-09-02)
+
+The ticker was done in Stage 1 (real DreamDEX prices + next close; Fear/Greed pending a provider). The
+wire: `api/crypto-news/route.ts` (Cointelegraph + Decrypt RSS, the reference's keyword sentiment, 300 s
+revalidate) → `web/src/app/api/news/route.ts`; `components/NewsFeed.tsx` → `features/news/NewsFeed.tsx`
+(skeleton, "The wire is quiet. Headlines return shortly.", lead story, square-endpoint rule, numbered wire);
+the page from the reference's deleted `app/news/page.tsx` ("Market News", the Japanese line verbatim,
+`.page-title-jp` restored from that commit's globals.css into `news.css`). More-menu entry added.
+Verified live: 8 headlines; both themes at 1280 and 390.
+
+### Status (Stage 3, done 2026-09-02)
+
+`app/status/page.tsx` polled a predict server; there is none, so `web/src/app/api/status/route.ts` *is* the
+probe: RPC (block, rtt, head vs clock), indexer (venue source, lanes, live Windows, latency), the price feed
+per live asset (lag = now − print time), the social store (`select 1`), Sensei (`resolveModel`, never a
+key) — in parallel, each under a 10 s timeout; a port read holding a last-good value counts as failed.
+`features/status/*` keeps the page's structure exactly: loading, unreachable, the banner (healthy under the
+reference's 120 s rule / degraded / unreachable; "Checkpoint" → "Block"), the table with the 60 s / 300 s
+dot ladder and an "optional" chip for a capability not set up, "Last checked … Auto-refreshes every 30s".
+Verified live: healthy (5 lanes, 10 Windows, both prints fresh, store answered, Sensei unconfigured) and,
+during a recompile, a real degraded state.
+
+### Public proof — `/docs`, `/how-it-works`, `/pitch`, `/demo` (Stage 3, done 2026-09-02)
+
+All four keep the reference's structure element for element and replace every Sui/DeepBook fact with a
+sourced Masayume one. No framer-motion (not installed): CSS keyframes honouring reduced motion.
+
+- **`/docs`** (`features/docs/*`, `docs.css`): sidebar groups with scroll-spy and progress, masthead with
+  chips (`@somnia-chain/markets-sdk`, `v0.28.1` from `PINNED_TESTNET`), nine sections — overview, how a
+  Window works, ways in, the chain layer, the read runtime, signing sessions, the projection, verify on-chain
+  (every row a pinned address → explorer, chip `ADDR`), the cream disclosure plate — and the foot row
+  (`/markets`, source ↗, `/status`). Two code blocks are real excerpts. **Review**: the source link.
+- **`/how-it-works`** (`features/how-it-works/*`): steps, the 64/36 payout card kept and labelled a worked
+  example, mechanics (order book, live feed, no-entry buffer `max(30, min(300, 0.4×interval))`, ERC-6909),
+  "How a price is made" in place of SVI (`price(DOWN) = 1 − price(UP)`; real `Quote` fields), fees
+  truth-corrected (settlement fee read per market; no Bernoulli/utilisation fee), settlement, architecture,
+  seven FAQs (cash-out: the venue allows it, the app's control is pending), CTA. `sky-400` → off-blue.
+- **`/pitch`** (`features/pitch/*`, `pitch.css`, `pitch-slides.css`): the fifteen-slide folio, keyboard and
+  dots, paper in both themes as the reference; claims on the brief, `context/01`, `context/04`, `context/05`,
+  the ledger and RESUME; live usage from `/api/leaderboard`; labels CONCEPT (3), CONCEPT · NOT LIVE (5),
+  NEXT · NOT LIVE (7), MOCK · ILLUSTRATIVE (8, 15), NO-OP TODAY (11, the `AttributionHook` seam), no rate and
+  no dollar table (builder codes are documented spot-only); team = the one name in `git log`. Additive: a
+  stacked layout under 900 px and a scrolling stage on short viewports. **Review**: the drawn Somnia mark.
+- **`/demo`** (`features/demo/*`, `demo.css` + `demo-sections.css`): the sticky bar, hero, CTA row,
+  five sections and the closing CTA as the reference lays them out. The video slot holds an honest state
+  (no recording exists); the traction line reads `/api/leaderboard` live with reading / failed /
+  partial-day states; §01–03 carry real screenshots of `/markets`, `/reels` and the Sensei drawer captured
+  2026-09-02 and captioned as such; §04's cards and §05's list link the pinned contracts and six real
+  fills read from the indexer for a public venue wallet (`0xe118…aeb4`, named above the list — the demo
+  wallet had no fills). Follows the theme instead of the reference's own near-black ground. **Review**:
+  the screenshot choices and the third-party proof wallet.
+
 ## Product shell
 
 | Element | Reference evidence | Destination | Class | Status |
@@ -466,7 +609,7 @@ Portfolio and More all remain.
 | `/` | `app/page.tsx` | Exact shell; adapted identity/protocol copy | Static + real traction | **Shell** — honest dependency state |
 | `/markets` | `app/markets/page.tsx` | Adapted to DreamDEX | DreamDEX indexer + RPC | **Partial** — real lanes/book/lifecycle/ticket live, Yosuku hero-as-ticket ported (see Stage 2 above), first-run Tutorial, §02 word board, §01 chart card, Sensei and the Room live — all four Stage 3 slots closed |
 | `/markets/[id]` | `app/markets/[id]/page.tsx` | Exact redirect intent | — | **Done** — redirect |
-| `/reels` | `app/reels/page.tsx` | Adapted | Shared market stream | **Live** — see §`/reels` |
+| `/reels` | `app/reels/page.tsx` | Adapted | Shared market stream + social store | **Done** — Windows and takes woven; see §`/reels`, §Takes |
 | `/portfolio` | `app/portfolio/page.tsx` | Adapted | Chain/indexer projection | **Partial** — money, open bets, claimables, settled history, equity, reputation, badges and CSV live; creator earnings, X wallet and the vault pending |
 | `/portfolio/edge` | `app/portfolio/edge/page.tsx` | Adapted | Real fills incl. losses/voids | **Done** — see §Fill projection |
 | `/leaderboard` | `app/leaderboard/page.tsx` | Adapted | Fill projection over the venue tape (DB store deferred) | **Done** — see §Fill projection |
@@ -480,16 +623,17 @@ Portfolio and More all remain.
 | `/fund` | `app/fund/page.tsx` | Adapted | Faucet + approval/deposit | Partial (faucet exists) |
 | `/waitlist` | `app/waitlist/page.tsx` | Adapted | `Waitlist` contract or DB | **Shell** — honest dependency state |
 | `/stats` | `app/stats/page.tsx` | Adapted | Chain-derived + labeled off-chain | **Shell** — honest dependency state |
-| `/docs` | `app/docs/page.tsx` | Exact structure; adapted facts | Static | **Shell** — honest dependency state |
+| `/docs` | `app/docs/page.tsx` | Exact structure; adapted facts | Static + pinned addresses | **Done** — see §Public proof |
+| `/news` | `components/NewsFeed.tsx`, `api/crypto-news/route.ts`; page from `93d09c1^` | Adapted | RSS provider, no credential | **Done** — see §News and ticker |
 | `/creators` | `app/creators/page.tsx` | Adapted | DB profiles + on-chain receipts | **Shell** — honest dependency state |
 | `/creator/studio` | `app/creator/studio/page.tsx` | Adapted | Authenticated studio + registry | **Shell** — honest dependency state |
 | `/creator/recover` | `app/creator/recover/page.tsx` | Adapted | Signed-wallet recovery | **Shell** — honest dependency state |
 | `/studio` | `app/studio/page.tsx` | Adapted | DB/object storage | **Shell** — honest dependency state |
-| `/how-it-works` | `app/how-it-works/page.tsx` | Exact structure; adapted facts | Static | **Shell** — honest dependency state |
-| `/demo` | `app/demo/page.tsx` | Real behavior; no invented economics | Real connected data | **Shell** — honest dependency state |
-| `/pitch` | `app/pitch/page.tsx` | Exact grammar; adapted claims | Real evidence only | **Shell** — honest dependency state |
+| `/how-it-works` | `app/how-it-works/page.tsx` | Exact structure; adapted facts | Static | **Done** — see §Public proof |
+| `/demo` | `app/demo/page.tsx` | Real behavior; no invented economics | `/api/leaderboard` live + real screenshots + real tx links | **Done** — see §Public proof |
+| `/pitch` | `app/pitch/page.tsx` | Exact grammar; adapted claims | Real evidence only; `/api/leaderboard` live | **Done** — see §Public proof |
 | `/download` | `app/download/page.tsx` | Web/PWA exact | Static | **Shell** — honest dependency state |
-| `/status` | `app/status/page.tsx` | Adapted | Read-time dependency health | **Shell** — honest dependency state |
+| `/status` | `app/status/page.tsx` | Adapted | Read-time probes (`api/status`) | **Done** — see §Status |
 | `/social` | `app/social/page.tsx` | Adapted | Postgres + realtime | **Shell** — honest dependency state |
 | `/native-auth` | `app/native-auth/page.tsx` | Web auth adapted | — | **Shell** — honest dependency state |
 | `/bell` | `app/bell/page.tsx` | Exact redirect intent | — | **Done** — redirect |
@@ -521,17 +665,19 @@ Tracked separately so the route table cannot hide a missing capability.
 |---|---|---|
 | Cadence-aware market discovery | **Partial** | Real 5m/15m/1h/4h/1d lanes live, on `/markets`, in the reel, and across the §02 word board |
 | Hero-as-ticket trade flow | **Partial** | Ticket + quote + guarded write live; Yosuku presentation ported |
-| Reel — snap feed of live Windows | **Partial** | Market cards live off the shared stream; woven community takes are Stage 3 |
+| Reel — snap feed of live Windows and takes | **Done** | Market cards off the shared stream; community takes woven in from the social store, honest when unconfigured |
 | Up/Down · stake · cash-out · claim · receipt | **Partial** | Up/Down, stake, claim, receipt live; cash-out pending |
 | Range · leverage · private | Pending | Stage 5 — needs `RangeReserve` + prefunded leverage + link-private service |
 | Rooms / comments | **Done** | Position-gated, signature-authenticated, over `packages/db`; honest when unconfigured |
-| Social takes, sharing, alerts, news/ticker, X linking | Pending | Stage 3–4 |
+| Social takes, sharing, alerts, news/ticker | **Done** | Signed takes over Postgres; The Call and Earned Heat share cards; threshold price alerts with a live evaluator; the wire on `/news`; the ticker on real prices (Fear/Greed pending a provider) |
+| X linking | Pending | Stage 4 |
 | Trading Balance with labeled pools | **Partial** | Balance plate + labeled pools exist; `EventVault` pending |
 | Positions, PnL, history, equity, reputation, badges, Trader Edge | **Done** | Open positions off the venue's PnL; history, equity, PnL, reputation, badges, CSV and Trader Edge off the fill projection; the leaderboard off the same replay venue-wide |
 | Earn, parlays, strategies, creators, agents, playbooks | Pending | Stage 4–5 |
 | Assistant (Sensei) | **Done** | Claude-backed; honest unconfigured state, lights up on `ANTHROPIC_API_KEY` |
 | Faucet, account setup, recovery, smart-wallet session, revocation | **Partial** | Faucet live; rest Stage 4 |
-| Status, traction, docs, demo, pitch, download, error recovery | Pending | Stage 3 |
+| Status, docs, how-it-works, demo, pitch | **Done** | Read-time probes; every public page on real facts and live reads |
+| Traction, download, error recovery | Pending | Stage 3 — `/stats` is the next slice |
 | Game selection, progress, achievements, stats, matchmaking, MMR, sound/haptics | Pending | Stage 6 |
 
 ## Visual contract
