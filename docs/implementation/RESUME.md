@@ -255,6 +255,40 @@ live adapter run and the exits all passed on Shannon (ledger decision log, conte
 `pnpm contracts:export` and a commit of the regenerated module (AD-10 lockstep). Until then nothing on-chain in
 Stage 4 is verified live; the fork run is the evidence.
 
+**User review 2026-09-02 (end of the fourth session):** the portfolio plate was wrong — it was our dark
+`/markets` panel, not Yosuku's cream ledger plate — and is now the reference's, verbatim
+(`web/src/features/markets/portfolio/plate/`; ledger decision log). `/trade-from-x` is an island without the
+shell (`ShellChrome`, `ISLAND_ROUTES`). The header hangs under the ticker when the strip is dismissed (a
+reference defect). The user's standing rule, restated hard: **replicate from the reference SOURCE, and read
+it before anything else** — a recorded deviation on a surface he looks at is still a failure. He said
+"everything is looking okay so far" after these fixes.
+
+**Not yet looked at by the user:** the session-key sheet and manager on the Ticket, `/strategies` publish
+flow when connected, `/agents`, `/claim`, the X pages beyond the first screen, everything at 390.
+Still pending from the owner: the X app credentials (`X_CLIENT_ID`, `X_SESSION_SECRET`, bearer token,
+executor key) and a `SPONSOR_PRIVATE_KEY`; a `RUNNER_PRIVATE_KEY` + `STRATEGY_IDS` to run the strategy
+runner; STT for the demo user's own live runs (it holds 1 STT).
+
+## Next — Stage 5
+
+Per doc 05 §Stage 5, product contracts around DreamDEX, in this order (the vault and registry are the
+pattern: Foundry + fork test + `contracts/export.mjs` + a `packages/markets` adapter + the reference's
+surface ported from source):
+1. `ParlayReserve` — escrow, immutable legs, maximum payout, settlement, void/refund rules; `/parlay`
+   (reference `app/parlay/page.tsx`, Move `parlay624.move`, `lib/sui/parlayClient.ts`). Reads leg prices
+   from the on-chain book inside the opening tx (AD-10).
+2. `RangeReserve` — a fully funded range outcome, oracle basis, expiry and settlement; the Ticket's Range
+   side and `/games/range` connect only after it is real.
+3. `MarketMakerVault` for `/earn` — share accounting, the maker actor with bounded exposure, exit and
+   settlement.
+4. The prefunded, capped leverage model (the reference's `margin.move` / `leverage.move`) — the Ticket's
+   leverage chips stop being a "1×" that pretends to be a choice.
+5. The truthful private / link-reduction flow (the reference's `privateBet.ts` desk → an ephemeral
+   account or scoped session, described as link-private).
+6. `/surface` — replace the Yosuku SVI content with the real DreamDEX book/term structure.
+Remember Somnia's gas schedule when deploying (context/41 §Live on Shannon) and the faucet's one wallet a
+day. Deploy nothing without the owner's go.
+
 **Also open:** Fear/Greed on the ticker still waits on a provider. `/social` keeps its shell. Lifecycle alerts
 have no reference source.
 
