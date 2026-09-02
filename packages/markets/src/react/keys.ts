@@ -31,6 +31,11 @@ export const keys = {
   ranges: (wallet: string | null) => [QUERY_KEY_SCOPE, APP, "ranges", wallet] as const,
   rangeBasis: (marketId: string | null, asset: string | null) => [QUERY_KEY_SCOPE, APP, "rangeBasis", marketId, asset] as const,
   rangeQuote: (signature: string) => [QUERY_KEY_SCOPE, APP, "rangeQuote", signature] as const,
+  /** The maker vault's sheet, its open Windows and history, one wallet's shares. */
+  makerVault: () => [QUERY_KEY_SCOPE, APP, "makerVault"] as const,
+  makerWindows: () => [QUERY_KEY_SCOPE, APP, "makerVault", "windows"] as const,
+  makerHistory: (limit: number) => [QUERY_KEY_SCOPE, APP, "makerVault", "history", limit] as const,
+  makerShares: (wallet: string | null) => [QUERY_KEY_SCOPE, APP, "makerShares", wallet] as const,
   balanceSheet: (wallet: string | null) => [QUERY_KEY_SCOPE, APP, "balanceSheet", wallet] as const,
   nextWindow: (marketId: MarketId | null) => [QUERY_KEY_SCOPE, APP, "nextWindow", marketId] as const,
   clock: () => [QUERY_KEY_SCOPE, APP, "clock"] as const,

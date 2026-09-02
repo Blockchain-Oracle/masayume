@@ -14,8 +14,9 @@ Start here, then read `parity-ledger.md`. The authority package is
 Branch **`feat/yosuku-source-led-shell`** off `main` (`497b43a`). **Stages 2 and 3 are closed. Stage 4 is live
 on Shannon (`EventVault`, the forwarder, `StrategyRegistry` — §Stage 4 records what the user has and has not
 reviewed). Stage 5 is in progress (2026-09-02, seventh session): item 1, `ParlayReserve` + `/parlay`, is live on Shannon;
-item 2, `RangeReserve` + the Ticket's Range mode + `/games/range`, is built and fork-verified, awaiting the user's
-review and the owner's go to deploy — §Stage 5. Next is item 3, `MarketMakerVault` for `/earn`.**
+item 2, `RangeReserve` + the Ticket's Range mode + `/games/range`, and item 3, `MarketMakerVault` + the maker
+actor + `/earn`, are built and fork-verified, awaiting the user's review and the owner's go to deploy — §Stage 5.
+Next is item 4, capped leverage.**
 
 | Commit | What |
 |---|---|
@@ -44,8 +45,8 @@ review and the owner's go to deploy — §Stage 5. Next is item 3, `MarketMakerV
 | `58ed635` | Stage 5 — `ParlayReserve` contract, port, `/parlay` from source, fork-verified; deployed and supplied on Shannon, the adapter driven live (context/42) |
 | `9dfacae` | Stage 5 — the OracleHub spike (context/43), `RangeReserve` contract, port, the Ticket's Range mode and `/games/range`, fork-verified on Shannon; not deployed |
 
-Everything is green: `pnpm typecheck`, `pnpm invariants` (12/12, 0 warnings), `pnpm test` (120),
-`forge test --no-match-contract Fork` (100), `pnpm build`. Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
+Everything is green: `pnpm typecheck`, `pnpm invariants` (13/13, 0 warnings), `pnpm test` (128),
+`forge test --no-match-contract Fork` (118), `pnpm build`. Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
 
 **Never touch or commit** the untracked `context/screens/` and `prompt.md`. They are the user's.
 
@@ -352,8 +353,36 @@ session); deploy waits on the owner's go.** Read context/43 and the ledger's §R
   Ticket's range mode live on a Window whose book has depth and measure the `range` lane.
 
 Then, in order:
-3. `MarketMakerVault` for `/earn` — share accounting, the maker actor with bounded exposure, exit and
-   settlement.
+**3. `MarketMakerVault` + the maker actor + `/earn` — built and fork-verified 2026-09-02 (seventh session, same
+day); deploy waits on the owner's go.** Read context/44 and the ledger's §MarketMakerVault first. What is where:
+- `contracts/src/maker/` — `IMarketMakerVault`, `MakerGateway` (the venue seam: resolve by market id, post-only
+  rest, pull live + expired orders, merge, redeem, collect credit), `MarketMakerVault` (shares, `quote`, `pull`,
+  `merge`, `settle`, views incl. `unsettledExpired`, `windowsAt` paging). `IDreamDex.sol` grew `cancelOrder`,
+  `cancelExpiredOrders`, `getOwnOpenOrders`, `getOrder`, `mergeCompleteSet` and `placeBinaryOrder`'s
+  `(bool, uint128)` return (the mocks return it now). Tests: `MarketMakerVault.quoting.t.sol`,
+  `MarketMakerVault.lifecycle.t.sol` over `MockMakerVenue` (per-Window pools with resting orders, a `fill` knob,
+  the module + ERC-6909 in one) — `forge test --no-match-contract Fork`: **118** pass. Fork:
+  `SHANNON_FORK_URL=… FORK_MARKET_ID=<decimal> forge test --match-contract MarketMakerVaultFork -vv` (prices its
+  pair off the live book).
+- **The venue's `price` is the YES price for every order kind** (context/44): a `BUY_NO` at p rests as a YES ask
+  at p and escrows `one − p`. Post-only orders that would cross are refused (`PostOnlyWouldCross`).
+- `@masayume/core/maker` (types, the flow arithmetic, `pairAround` and the grids — 8 vitest),
+  `@masayume/markets/maker` (deployment with `MARKET_MAKER_VAULT_ADDRESS` override, reads, `readPoolTop`, the
+  lane), `MakerIntent` on the tx lane, a `maker` gas lane (8M, **unmeasured**), hooks, `market-maker-vault.abi.ts`.
+- `services/ops/src/actors/market-maker/` — the actor (`MAKER_PRIVATE_KEY`, `MM_HALF_SPREAD_RAW` 15000,
+  `MM_QUOTE_SIZE` 5, `MM_REFRESH_MS` 45000, `MM_QUOTE_TTL_SEC` 180, `MM_REQUOTE_TICKS` 3, `MM_ASSETS`,
+  `MM_INTERVALS` 300,900,3600; **dry-run unless `DRY_RUN=0`**): settles what the venue settled, merges pairs,
+  quotes around the book's mid on the tick grid, requotes only when the fair moved. Registered in `main.ts`.
+- `web/src/features/earn/` — the reference's page from source (hero + live panel, §01 supply and position) plus
+  §02 the Windows table (additive, flagged); fixtures on `/dev/earn`. **Not seen in a browser** — typecheck,
+  invariants (0 warnings), 128 vitest, 118 forge, build.
+- **Deploy (owner's go):** `DeployMarketMakerVault.s.sol` with `MAKER_ADDRESS=<the actor's key>` (or
+  `setMaker` after), the parlay's recipe; `approve` + `supply`; `pnpm contracts:export`; commit. Then run the
+  actor in dry run against the live vault, then `DRY_RUN=0` with a funded key (the `maker` lane's gate wants
+  0.576 STT), and measure the lane. Every book on the venue was empty on 2026-09-02 (makers offline); the actor
+  seeds them at even odds when so — small sizes by design.
+
+
 4. The prefunded, capped leverage model (the reference's `margin.move` / `leverage.move`) — the Ticket's
    leverage chips stop being a "1×" that pretends to be a choice.
 5. The truthful private / link-reduction flow (the reference's `privateBet.ts` desk → an ephemeral

@@ -115,7 +115,10 @@ contract MockVenue {
     }
 
     // pool
-    function placeBinaryOrder(uint8 kind, uint256 price, uint256 qty, uint64, uint8 orderType, uint8, address, uint96, uint64) external {
+    function placeBinaryOrder(uint8 kind, uint256 price, uint256 qty, uint64, uint8 orderType, uint8, address, uint96, uint64)
+        external
+        returns (bool, uint128)
+    {
         require(orderType == 2, "IOC only in mock");
         require(status == 1, "not trading");
         bool isBuy = kind == 0 || kind == 2;
@@ -142,6 +145,7 @@ contract MockVenue {
             proceeds -= proceeds * feeBps / 10_000;
             _payBack(proceeds);
         }
+        return (true, 0);
     }
 
     function _payBack(uint256 amount) internal {

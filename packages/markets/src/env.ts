@@ -34,6 +34,9 @@ export const marketsEnvSchema = z.object({
   /** Local-fork overrides for the RangeReserve, the same way. */
   rangeReserveAddress: addressSchema.optional(),
   rangeReserveFromBlock: z.coerce.bigint().optional(),
+  /** Local-fork overrides for the MarketMakerVault, the same way. */
+  marketMakerVaultAddress: addressSchema.optional(),
+  marketMakerVaultFromBlock: z.coerce.bigint().optional(),
 });
 
 export type MarketsEnv = z.infer<typeof marketsEnvSchema>;

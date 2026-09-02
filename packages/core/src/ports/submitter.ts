@@ -4,6 +4,7 @@ import type { Address, Hex } from "../types/primitives";
 import type { Quote } from "../types/trading";
 import type { ParlayIntent } from "../parlay/types";
 import type { RangeIntent } from "../range/types";
+import type { MakerIntent } from "../maker/types";
 import type { StrategyIntent } from "../strategies/types";
 import type { GrantKind, VaultCaps } from "../vault/types";
 
@@ -87,7 +88,8 @@ export type TxIntent =
   | VaultIntent
   | StrategyIntent
   | ParlayIntent
-  | RangeIntent;
+  | RangeIntent
+  | MakerIntent;
 
 export function isVaultIntent(intent: TxIntent): intent is VaultIntent {
   return intent.kind.startsWith("vault-");
@@ -103,6 +105,10 @@ export function isParlayIntent(intent: TxIntent): intent is ParlayIntent {
 
 export function isRangeIntent(intent: TxIntent): intent is RangeIntent {
   return intent.kind.startsWith("range-");
+}
+
+export function isMakerIntent(intent: TxIntent): intent is MakerIntent {
+  return intent.kind.startsWith("maker-");
 }
 
 export type TxOutcome =

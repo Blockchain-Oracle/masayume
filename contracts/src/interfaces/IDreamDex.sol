@@ -30,6 +30,9 @@ interface IBinaryModule {
 
     function redeem(uint32 operatorId, bytes32 venueId, bytes32 marketId, uint8 outcomeIdx, uint256 amount) external;
 
+    /// @dev Burns `amount` YES and `amount` NO held by the caller and returns the collateral that backed them.
+    function mergeCompleteSet(uint32 operatorId, bytes32 venueId, bytes32 marketId, uint256 amount) external;
+
     function finalizeMarket(bytes32 marketId) external;
 
     function settlement() external view returns (address);
@@ -56,7 +59,20 @@ interface IBinaryPool {
         uint256 quantity;
     }
 
-    /// @dev `kind`: BUY_YES(0) SELL_YES(1) BUY_NO(2) SELL_NO(3). `orderType`: 2 = ImmediateOrCancel.
+    /// @dev One resting order as the pool reports it (`getOrder`).
+    struct Order {
+        uint128 orderId;
+        bool isBid;
+        address owner;
+        uint64 userData;
+        uint256 price;
+        uint256 fullQuantity;
+        uint256 quantityRemaining;
+        uint64 expireTimestampNs;
+    }
+
+    /// @dev `kind`: BUY_YES(0) SELL_YES(1) BUY_NO(2) SELL_NO(3). `orderType`: 2 = ImmediateOrCancel, 3 = PostOnly.
+    ///      Returns the resting order's id (0 when nothing rested).
     function placeBinaryOrder(
         uint8 kind,
         uint256 price,
@@ -67,7 +83,18 @@ interface IBinaryPool {
         address builder,
         uint96 builderFeeBpsTimes1k,
         uint64 userData
-    ) external;
+    ) external returns (bool success, uint128 id);
+
+    /// @dev Cancels one of the caller's resting orders, returning its remaining escrow to the caller.
+    function cancelOrder(uint128 orderId) external;
+
+    /// @dev Permissionless: returns the escrow of every EXPIRED order named; live or stale ids are skipped silently.
+    function cancelExpiredOrders(uint128[] calldata orderIds) external;
+
+    /// @dev The caller's resting order ids on this pool.
+    function getOwnOpenOrders() external view returns (uint128[] memory);
+
+    function getOrder(uint128 orderId) external view returns (Order memory);
 
     /// @dev The resting book aggregated by price: bids highest first, asks lowest first, expired makers
     ///      skipped. A NO price is one collateral less the YES bid it rests against.

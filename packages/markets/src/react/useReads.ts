@@ -4,6 +4,7 @@ import { isOk, type Reading } from "@masayume/core/schemas";
 import type { Address, BalanceSheet, Bytes32, ClaimableRow, ClockSync, EventMarket, LaneSet, MarketId, OnchainSnapshot, OpenPosition, PricePoint, Resolution } from "@masayume/core/types";
 import type { ParlayReserveState, ParlayTicket } from "@masayume/core/parlay";
 import type { RangeReserveState, RangeRound } from "@masayume/core/range";
+import type { MakerVaultState, MakerWindowView } from "@masayume/core/maker";
 import type { VaultHoldings, VaultSnapshot } from "@masayume/core/vault";
 import { getBalanceSheet } from "../provider/balances";
 import { listWalletHistory } from "../provider/history";
@@ -17,6 +18,7 @@ import { getOpeningPrice, getPriceHistory } from "../provider/prices";
 import { getResolution } from "../provider/resolution";
 import { getParlayReserveState, listParlaysOf } from "../parlay/read";
 import { getRangeReserveState, listRangesOf } from "../range/read";
+import { getMakerSharesOf, getMakerVaultState, listMakerHistory, listMakerOpenWindows } from "../maker/read";
 import { getVaultHoldings, getVaultSnapshot } from "../vault/read";
 import { keys } from "./keys";
 import { useReadingQuery } from "./useReadingQuery";
@@ -103,6 +105,26 @@ export function useRangeReserve(): Reading<RangeReserveState | null> | null {
 /** One wallet's range rounds, live first; empty (never an error) without a reserve. */
 export function useMyRanges(wallet: Address | null): Reading<RangeRound[]> | null {
   return useReadingQuery(keys.ranges(wallet), () => listRangesOf(wallet as Address), { pollMs: MARKETS_POLL_MS, enabled: wallet !== null });
+}
+
+/** The maker vault's sheet and tunables; `null` inside the reading where no vault is deployed. */
+export function useMakerVault(): Reading<MakerVaultState | null> | null {
+  return useReadingQuery(keys.makerVault(), getMakerVaultState, { pollMs: MARKETS_POLL_MS });
+}
+
+/** The Windows the maker vault is quoting or holding; empty (never an error) without a vault. */
+export function useMakerWindows(): Reading<MakerWindowView[]> | null {
+  return useReadingQuery(keys.makerWindows(), listMakerOpenWindows, { pollMs: MARKETS_POLL_MS });
+}
+
+/** The maker vault's Windows, newest first, settled ones with their result. */
+export function useMakerHistory(limit = 20): Reading<MakerWindowView[]> | null {
+  return useReadingQuery(keys.makerHistory(limit), () => listMakerHistory(limit), { pollMs: MARKETS_POLL_MS });
+}
+
+/** One wallet's maker vault shares and their worth; zeros without a vault. */
+export function useMakerShares(wallet: Address | null): Reading<{ shares: bigint; worthBase: bigint }> | null {
+  return useReadingQuery(keys.makerShares(wallet), () => getMakerSharesOf(wallet as Address), { pollMs: MARKETS_POLL_MS, enabled: wallet !== null });
 }
 
 /** What the vault holds for the wallet on one Window; zeros without a vault. */

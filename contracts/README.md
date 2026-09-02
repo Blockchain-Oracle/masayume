@@ -9,7 +9,8 @@ Foundry workspace for Masayume's own contracts around DreamDEX Event Contracts.
 | `StrategyRegistry` (`src/strategy/`) | **Live** `0xAd5f…5FB4` | Who may copy-trade whom, under which caps envelope, for what fee; consent is a live vault grant |
 | `ParlayReserve` (`src/parlay/`) | **Live on Shannon** `0x50Ce…C151`, supplied 5,000 tUSDC | One ticket over many Windows: legs priced off the venue's book in-transaction, the whole payout escrowed at open, settled leg by leg on the venue's resolution, claim and void pay the owner only |
 | `RangeReserve` (`src/range/`) | **Built, fork-verified** (context/43); deploy waits on the owner's go | A band on one Window's closing print, inside or outside: the opening print and the asset proven through the OracleHub's key, the centre off the Window's book, the odds from the house's measured volatility, the whole payout escrowed at open, settled permissionlessly on the hub's answer |
-| `MarketMakerVault`, `GameArena` | pending (Stages 5–6) | — |
+| `MarketMakerVault` (`src/maker/`) | **Built, fork-verified** (context/44); deploy waits on the owner's go | The Earn vault as the venue's maker: a post-only YES bid and YES ask per quote under on-chain bounds, complete sets merged back for the spread, inventory settled on the venue's verdict, shares over `liquid + deployed`, withdrawals from idle capital once every closed Window is settled |
+| `GameArena` | pending (Stage 6) | — |
 
 `src/interfaces/IDreamDex.sol` declares only the venue functions the vault calls, copied from the
 pinned SDK's ABIs (`@somnia-chain/markets-sdk` 0.28.1).
@@ -38,6 +39,11 @@ checked against Shannon in context/43.
   that its gap. `previewOpen` is the same arithmetic as a view, so a client shows the number the
   chain will charge. Golden vectors in `packages/core/src/parlay/pricing.vectors.json` are asserted
   by forge (`ParlayVectors.t.sol`) and vitest alike.
+- **The maker only buys complete sets at a discount.** `MarketMakerVault.quote` rests a post-only YES bid and
+  YES ask at least `minSpreadRaw` apart, inside the price band, capped per quote, per Window, in aggregate and
+  in open Windows; it never takes, never sells and never quotes one side alone. The venue's `price` is the YES
+  price for every kind (a `BUY_NO` at p is a YES ask at p). Named tests: `MarketMakerVault.quoting.t.sol`,
+  the fork run in context/44.
 - **A range round's basis is the hub's own print.** A Window's closing price is `pullNumericAnswer` on the
   question `BinaryMarketsModule.markets(id)` names — in cents, pending under one selector (`0x25cd016c`)
   until two seconds after expiry, readable for good after that. Its opening price is the same read on the
@@ -52,14 +58,16 @@ forge test --no-match-contract Fork         # 72 unit tests on mock venues
 SHANNON_FORK_URL=<rpc> forge test --match-contract Fork -vv   # against Shannon's real contracts
 ```
 
-`forge test --no-match-contract Fork` runs 100 unit tests: the range reserve adds `RangeMath` (the table, its
+`forge test --no-match-contract Fork` runs 118 unit tests: the range reserve adds `RangeMath` (the table, its
 inverse, the band probability), `RangeVectors` (the shared golden rows), and the pricing and lifecycle suites over
-`MockOracleHub` + `MockWindows`.
+`MockOracleHub` + `MockWindows`; the maker vault adds its quoting and lifecycle suites over `MockMakerVenue`
+(per-Window pools with resting post-only orders and a taker `fill` knob).
 
 The fork tests need Windows that are `Trading` at the fork block; pass `FORK_MARKET_ID=<decimal id>`
 to pin one and skip the scan (context/41 for the vault run, context/42 for the parlay run, context/43 for
 the hub run, which also takes `FORK_RESOLVED_MARKET_ID` and `SETTLED_QUESTION_ID`; the range run takes
-`FORK_MARKET_ID` + `FORK_ASSET` and seeds a thin book itself).
+`FORK_MARKET_ID` + `FORK_ASSET` and seeds a thin book itself; the maker run, context/44, prices its pair off the
+live book).
 
 ## Deploy (owner-authorized)
 

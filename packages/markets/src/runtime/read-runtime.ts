@@ -14,9 +14,11 @@ import { SOMNIA_SHANNON } from "../chain";
 import type { MarketsEnv } from "../env";
 import { resolveParlayDeployment } from "../parlay/deployment";
 import { resolveRangeDeployment } from "../range/deployment";
+import { resolveMakerDeployment } from "../maker/deployment";
 import { resolveVaultDeployment } from "../vault/deployment";
 import type { ParlayDeployment } from "@masayume/core/parlay";
 import type { RangeDeployment } from "@masayume/core/range";
+import type { MakerDeployment } from "@masayume/core/maker";
 import type { VaultDeployment } from "@masayume/core/vault";
 
 type ExchangeConfig = ConstructorParameters<typeof SomniaMarkets>[0];
@@ -30,6 +32,7 @@ let exchange: SomniaMarkets | null = null;
 let vaultDeployment: VaultDeployment | null = null;
 let parlayDeployment: ParlayDeployment | null = null;
 let rangeDeployment: RangeDeployment | null = null;
+let makerDeployment: MakerDeployment | null = null;
 let version = 0;
 let wsIndex = 0;
 const listeners = new Set<() => void>();
@@ -57,6 +60,7 @@ export function configureMarkets(env: MarketsEnv, options: { wsIndex?: number } 
   vaultDeployment = resolveVaultDeployment(env);
   parlayDeployment = resolveParlayDeployment(env);
   rangeDeployment = resolveRangeDeployment(env);
+  makerDeployment = resolveMakerDeployment(env);
   version += 1;
   if (previous) void previous.close().catch(() => undefined);
   for (const listener of listeners) listener();
@@ -89,6 +93,11 @@ export function getParlayDeployment(): ParlayDeployment | null {
 /** The RangeReserve for the configured chain, or null where none is deployed — every range read branches on this. */
 export function getRangeDeployment(): RangeDeployment | null {
   return rangeDeployment;
+}
+
+/** The MarketMakerVault for the configured chain, or null where none is deployed — every maker read branches on this. */
+export function getMakerDeployment(): MakerDeployment | null {
+  return makerDeployment;
 }
 
 /** Bumps whenever the singleton is rebuilt so React providers can re-key. */

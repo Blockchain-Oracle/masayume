@@ -28,6 +28,9 @@ order", never "optional" or "cut".
 
 | Date | Decision | Reference | User-visible consequence | Approval |
 |---|---|---|---|---|
+| 2026-09-02 | **The Earn vault is the maker, not a house.** `MarketMakerVault` rests a post-only YES bid and YES ask on the venue's Windows under on-chain bounds (spread, price band, size, per-Window and aggregate caps); it can only buy complete sets at a discount. The reference's vault was the venue's counterparty, which DreamDEX does not have | `app/earn/page.tsx`; doc 03 §Earn/LP; context/44 | Suppliers earn the spread the maker captures and carry the inventory it is left with; both readable per Window on `/earn` §02 | **Needs user review** — a product where the reference had a dependency |
+| 2026-09-02 | Share price counts deployed capital at cost, floored per Window; withdrawals draw on idle capital and are refused while a closed Window is unsettled (the page sends the crank first, anyone may) | `MarketMakerVault.deployedOf` / `withdraw`; context/44 | The number on the panel never includes a spread before it is realized; "Withdraw N idle" names what is still out | No approval needed — the doc-05 no-fake-data rule applied to a valuation |
+| 2026-09-02 | The venue's `price` is the YES price for every order kind (a `BUY_NO` at p rests as a YES ask at p); the range fork test's book seeding is corrected to match | context/44 §What the vault is allowed to do | None visible; every maker quote is expressed in YES terms | Recorded |
 | 2026-09-02 | **A band's odds are the house's, from the Window's book and the venue's own prints.** `RangeReserve` centres a normal return where the Window's resting book puts the market (Φ⁻¹ of its P(close ≥ open) over the parlay's depth) and widens it by a per-asset σ measured from the venue's closing prints; a band opened mid-Window is therefore priced against the current price. The reference's venue priced bands with its own model; DreamDEX has none | `ticket624.core.ts` §range; `RangeMath.sol`, `RangePricing.sol`; context/43 §What this settles | The multiple on the button follows the market and the clock, and the chain charges exactly it or requotes | **Needs user review** — a pricing model where the reference had a venue; parameters are public and tunable |
 | 2026-09-02 | The reserve refuses a Window whose book is thinner than 20 contracts a side (`ThinBook`), wider than 0.20 (`WideBook`) or already decided (P(up) outside 3–97%) — the same doctrine as the parlay: the venue's data prices the product or nothing does. With the venue's makers offline every book was empty on 2026-09-02, so the live page would refuse until they return | `RangePricing._center`; context/43 | "No liquidity at this size" on an empty book rather than a guessed centre | No approval needed — the parlay's rule |
 | 2026-09-02 | `/games/range` is built on the parlay page's frame because the reference has no range page; the Ticket's range mode is the reference's own | ledger §RangeReserve | A game page in the app's grammar | **Needs user review** |
@@ -349,6 +352,49 @@ orders (the venue's makers were offline, so the test rests a maker's two bids fi
 P(inside ±0.05%) 0.368, an 8.25 stake for a 20 payout charged exactly as previewed, the asset proof cached, no market
 address in storage, `settle` refusing while the hub is pending, and after the grace a third party's `voidStale`
 refunding the stake to the cent. The hub itself is covered by `OracleHub.fork.t.sol` and the live spike (context/43).
+
+### MarketMakerVault and `/earn` (Stage 5, built and fork-verified 2026-09-02; deploy waits on the owner's go)
+
+The reference's Earn (`app/earn/page.tsx`) supplies a venue-run house vault — the counterparty to every bet — and
+shows its share price, value and utilization, with supply and withdraw-all. DreamDEX has no house; the other side
+of a bet is the order book. So `MarketMakerVault.sol` (`contracts/src/maker/`) IS the maker, bounded on-chain
+(context/44):
+
+| Requirement | Reference | Ours | Class | Status |
+|---|---|---|---|---|
+| What the capital does | backs the venue's payouts; the venue prices | rests a post-only YES bid and YES ask on the venue's live Windows, at least `minSpreadRaw` apart, inside price bounds, capped per quote, per Window, in aggregate and in Windows; the only thing it can buy is a complete set at a discount | Adapted — the maker where the reference had a house | **Done** — 25 unit tests, fork-verified: a pair rested inside the live ETH book, both sides filled by takers, 10 sets merged for 10.00 |
+| Who quotes | the venue | one key the admin names (`setMaker`); the actor is `services/ops/src/actors/market-maker` (dry-run by default, the bot kit's maker loop: fair = the book's mid, requote only when the fair moved, quotes carry their own TTL) | Adapted — the bounded maker actor doc 03 names | **Done** — not yet run live |
+| Share price | `vaultValue / totalPlpSupply`, `vaultValue = balance − mtm` | `(liquid + Σ deployed) / shares`, deployed at cost per Window, floored — never a spread before it is merged, never a mark on unpaired inventory | Adapted — conservative by construction | **Done** |
+| Utilization | `maxPayout / balance` | `deployed / totalValue` | Adapted | **Done** |
+| Withdraw | "withdraw anytime", the venue's own request cycle on the live pool | from `liquid` only; refused while a closed Window is unsettled (`UnsettledWindow`) — the page settles it first, anyone may | Strengthening — no exit ahead of an unbooked loss | **Done** |
+| Supply paused | `SUPPLY_CLOSED` hard-coded for a retired pool, the banner up front | the vault's own `paused` — the same banner, only when true; settlement, merges and withdrawals never pause | Truth correction | **Done** |
+| Exposure and return | not shown (the reference's history endpoints were dead) | §02 "Where the capital is": one row per Window the maker is on — deployed, inventory both sides, state (resting / paired / one-sided / closed), the realized result once settled; Merge and Settle on the row | Additive — the "real inventory and exit accounting" doc 03 asks for | **Needs user review** |
+
+**The port (`packages/core/src/maker`, `packages/markets/src/maker`).** The flow arithmetic (`deployedOf`,
+`realizedOf`) and the actor's pair construction (`fairYesRaw`, `pairAround`, `quantizeQuantity`, `quoteExpiryNs`)
+are pure and tested (8 vitest). `getMakerVaultState`, `listMakerOpenWindows` (books + live inventory),
+`listMakerHistory`, `getMakerSharesOf`, `getMakerUnsettledExpired`, `readPoolTop` (the book's top and grid in one
+multicall); `MakerIntent` on the tx lane — `maker` gas lane (8M, unmeasured) for quote/pull/settle, the vault lane
+for supply/withdraw/merge; hooks `useMakerVault` / `useMakerWindows` / `useMakerHistory` / `useMakerShares`.
+
+**`/earn` (`web/src/features/earn/`)** — the reference's page from source: the hero "Earn the *spread*." with the
+live panel (share price 4 dp, the delta chip above par, vault value, utilization + meter), §01 the deposit card
+(amount, Max, the wallet-scaled quick amounts, Supply) and your position (value, shares at the share price,
+Withdraw). Fixtures on `/dev/earn`. **Not seen in a browser.**
+
+| Reference | Ours | Class | Approval |
+|---|---|---|---|
+| Panel label "Closed pool · 4-16" / "Predict PLP" (its own truth correction for a retired pool) | "Live · maker vault" / "Paused · maker vault" / "No maker key · quotes off" · "Masayume MM" | Truth correction | No approval needed |
+| A decorative sparkline beside "Up from 1.0000 at launch" (drew no data; the reference's own comment: "No history source ⇒ no sparkline") | not drawn; "Below 1.0000 — the vault is carrying a loss" when so | Truth correction (doc 05 §No fake-data) | No approval needed |
+| §01 meta "withdraw anytime" | "withdraw what is idle, any time"; the Withdraw button takes what `liquid` covers and names what is still deployed | Truth correction | No approval needed |
+| "Withdraw all" | "Withdraw N idle" when capital is deployed; a closed unsettled Window is settled first (the page sends the permissionless crank) | Adapted | **Needs user review** |
+| — | §02 the Windows table with Merge / Settle | Additive | **Needs user review** |
+| The leverage-reserve handlers on the same page (`doSupplyReserve`, `doSettle`) | not ported — Stage 5 item 4 (capped leverage) | Pending | — |
+
+**Fork verification** — context/44: against Shannon's real contracts on Window 70978 (ETH 4h), a pair at
+0.311 / 0.337 rested (the venue refused a flat 0.48 bid as `PostOnlyWouldCross`, and the venue's `BUY_NO` price
+turned out to be the YES price — both recorded), two takers hit both sides, `merge` returned 10.00 for 10 sets
+with the credit collected in the same call, a second pair pulled to the cent.
 
 ### Toast (Stage 2, done 2026-09-01)
 
@@ -986,7 +1032,7 @@ Portfolio and More all remain.
 | `/portfolio` | `app/portfolio/page.tsx` | Adapted | Chain/indexer projection | **Partial** — money, open bets, claimables, settled history, equity, reputation, badges and CSV live; creator earnings, X wallet and the vault pending |
 | `/portfolio/edge` | `app/portfolio/edge/page.tsx` | Adapted | Real fills incl. losses/voids | **Done** — see §Fill projection |
 | `/leaderboard` | `app/leaderboard/page.tsx` | Adapted | Fill projection over the venue tape (DB store deferred) | **Done** — see §Fill projection |
-| `/earn` | `app/earn/page.tsx` | Adapted via `MarketMakerVault` | Masayume contract | **Shell** — honest dependency state (Stage 5) |
+| `/earn` | `app/earn/page.tsx` | Adapted via `MarketMakerVault` | Masayume contract | **Done** from source (Stage 5); live once the vault is deployed — §MarketMakerVault |
 | `/strategies` | `app/strategies/page.tsx` | Adapted | `StrategyRegistry` + DB | **Shell** — honest dependency state (Stage 4) |
 | `/agents` | `app/agents/page.tsx` | Adapted | Registry + fill projection | **Shell** — waits on the `StrategyRegistry` alone now (Stage 4) |
 | `/parlay` | `app/parlay/page.tsx` | Adapted via `ParlayReserve` | Masayume contract + the venue's books | **Done** — contract, port and page built, fork-verified, live on Shannon (`0x50Ce…C151`, 5,000 tUSDC supplied) and driven through the adapter on a fork and live (see §ParlayReserve); awaits the user's browser review |

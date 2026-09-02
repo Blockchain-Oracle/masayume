@@ -111,8 +111,8 @@ contract RangeReserveForkTest is Test {
         assertEq(reserve.liquid(), 5_000 * ONE);
     }
 
-    /// @dev Rests a YES bid and a NO bid at 0.48 (a YES ask at 0.52) for 50 contracts each when either side is
-    ///      thinner than the reserve's centre depth, exactly as a maker would through the venue.
+    /// @dev Rests a YES bid at 0.48 and a YES ask at 0.52 (a BUY_NO at YES price 0.52) for 50 contracts each when
+    ///      either side is thinner than the reserve's centre depth, exactly as a maker would through the venue.
     function _seedThinBook(address pool, uint64 expiry) internal {
         uint256 depth = 20 * ONE;
         (, uint256 askFilled) = _depth(pool, false, depth);
@@ -123,7 +123,7 @@ contract RangeReserveForkTest is Test {
         vm.startPrank(house);
         IERC20(COLLATERAL).approve(pool, type(uint256).max);
         IBinaryPool(pool).placeBinaryOrder(BUY_YES, 480_000, 50 * ONE, expireNs, NORMAL_ORDER, 0, address(0), 0, 0);
-        IBinaryPool(pool).placeBinaryOrder(BUY_NO, 480_000, 50 * ONE, expireNs, NORMAL_ORDER, 0, address(0), 0, 0);
+        IBinaryPool(pool).placeBinaryOrder(BUY_NO, 520_000, 50 * ONE, expireNs, NORMAL_ORDER, 0, address(0), 0, 0);
         vm.stopPrank();
     }
 
