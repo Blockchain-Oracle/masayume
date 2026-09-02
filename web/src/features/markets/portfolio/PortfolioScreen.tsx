@@ -4,6 +4,8 @@ import { isOk } from "@masayume/core/schemas";
 import { SectionHeader } from "@/components/chrome";
 import { EmptyState } from "@/components/states";
 import { TradingBalancePanel } from "@/features/vault";
+import { XWalletCard } from "@/features/x";
+import "@/features/x/x-card.css";
 import { BALANCE, CLAIM, PORTFOLIO } from "@/lib/copy";
 import { useWalletSession } from "@/lib/wallet-session";
 import { BalancePlate } from "../balance";
@@ -50,7 +52,7 @@ export function PortfolioScreen() {
   return (
     <div className="mx-auto flex w-full max-w-(--content-reading) flex-col gap-8 px-gutter py-8">
       {/* No page headline: the balance is the header (reference L266). The Trading Balance folds into its own row. */}
-      <BalancePlate panels={{ vault: <TradingBalancePanel inline /> }} />
+      <BalancePlate panels={{ vault: <TradingBalancePanel inline />, x: <XWalletCard compact /> }} />
 
       <TraderEdgeLink />
 

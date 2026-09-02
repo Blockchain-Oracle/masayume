@@ -145,6 +145,41 @@ reference's X-row shape ("… Only you can withdraw it."); a null amount prints 
 `/markets` would need `vaultPrivateBase` on the sheet (not added). Not seen in a browser; every state rendered
 through the real components on `/dev/vault`.
 
+**Session-key tap trading and the sponsor rail (fork B, 2026-09-02)** — `web/src/features/session/`,
+`packages/markets/src/sessions/session-key.ts`, `packages/markets/src/vault/sponsor.ts`, `/api/sponsor`;
+fixtures on `/dev/session`.
+
+| Reference | Ours | Class | Approval |
+|---|---|---|---|
+| One-tap bets were Enoki-sponsored (`Ticket624Drawer.tsx` L128–132, `useSmartSubmit.ts`); no sheet for a browser key exists | Enable sheet (caps editor, worked example, capability receipt, one signature via `depositAndGrant`), manager, chip — in the Ticket's ported grammar (`.tk-modes`, `.tk-lev`, `.tk-control-label`) | Adapted — no source | **Needs user review** |
+| Public / Private two-option control (`Ticket624Drawer.tsx` L1180–1205) | Wallet / Trading Balance route control in the same `.tk-modes` grammar; a tap routes to the grant when armed and `simulateCaps` passes, else to the chosen source with the reason in words | Adapted | No approval needed |
+| Sponsor when it can, wallet when it can't (`useSmartSubmit.ts` L79–144) | `/api/sponsor`: forwarder target, selector allowlist (`placeFor withdraw withdrawPrivate revoke crankSettle sweep`; never capital intake), per-address and per-device sliding-hour gates that refuse without a device id, then `forwarder.execute`; the key pays otherwise and the manager says who pays | Adapted | No approval needed — AD-15 |
+| — | The key's gas top-up at enable = the lane's own envelope (`GAS_CEILING["vault-order"]` × 60 gwei × 1.2 ≈ 0.72 STT); a measured `placeFor` ceiling would cut it tenfold | Ours | **Needs a decision** — a `constants/gas.ts` measurement once deployed |
+| — | Sponsor gates are per process; the store-backed `sponsor_gates` table is deferred (AD-7) | Ours | Recorded |
+| — | Only the session key is sponsored today; the owner's own withdraw / revoke / crank stay wallet-paid (a `sponsor` prop on `SubmitterSessionProvider` would extend it) | Ours | Recorded |
+
+**The X rail (fork D, 2026-09-02)** — `web/src/features/x/`, `/api/x/*`, `packages/core/src/x/` (parser with
+tests, the ported link messages), `packages/db` (`x_links`, `x_receipts`, `x_relay_state`), the `x-relay` ops
+actor; fixtures on `/dev/x`.
+
+| Reference | Ours | Class | Approval |
+|---|---|---|---|
+| Linking: `api/claim/x/link` (sign in with X, then a wallet signature over `xLinkMessage`); `trade-from-x`'s tweet-a-code flow calls an external connect worker whose source is not in the repo | The `api/claim` flow, ported; the tweet-a-code step says so | Adapted | **Needs user review** |
+| `lib/xLink.ts` signs only the pair | Link/unlink messages carry `Issued: <iso>` with a 5-minute TTL (doc 02's nonce-backed challenge) | Strengthening | No approval needed |
+| `/trade-from-x` L1–60, L139–156: "3x" leverage caps, two Suiscan proof links | The grant's real caps (per trade, per day, 8 open Windows, 30 days); the proof links point at `/docs` until real transactions exist; "settles back to you" kept because it is true | Truth correction | **Needs user review** |
+| `/claim`: sealed auto-accounts funded by strangers' tweets | What waits is the Trading Balance of the wallet the account routes to; the reveal is a public read of that vault; the claim is connecting that wallet, with a signed re-link otherwise | Adapted | **Needs user review** |
+| Tweet-vault cash-out to the wallet | The X betting balance is the EXECUTOR grant's budget; "Cash out" is `revoke`, returning the budget to the Trading Balance (copy says so) | Adapted | **Needs user review** |
+| `/trade-from-x` dark island | Kept dark (`data-theme="dark"`) beside Reels per doc 04; the sticky strip keeps only the brand and "open the app" | Adapted | **Needs user review** |
+| `alreadyLinkedOther` | Ported: an X account routed to another wallet is refused with that wallet named; only an unlink signed by the bound wallet moves it | Exact | No approval needed |
+| Free-text instruction | Grammar `<btc\|eth> <up\|down> <stake> <1m\|5m\|15m\|1h\|4h>` in any order, synonyms tolerated, any other digit-bearing token refused by name | Adapted | No approval needed |
+| Twitter bird icon | Lucide has no X glyph; an inline glyph | Deviation | Pre-approved class |
+
+**The adapter on the fork (2026-09-02, `scripts/spike/vault-fork.ts`)** — through the real lanes against
+Shannon's venue on Anvil: deposit with its absorbed approval, an owner UP from the Trading Balance filled at
+0.616, a STRATEGY grant read back, a delegated DOWN filled at 0.413 and booked to the owner under grant 1, a
+void, a third party's crank crediting the balance, the balance sheet reading it, the vault seat's round from
+the tally (`claim: paid`). The wallet seat's indexer read timed out during the run — unrelated to the vault.
+
 **Needs the owner.** Deployment: a funded deployer key (STT from the faucet) and the go —
 `forge script script/DeployEventVault.s.sol --rpc-url shannon --broadcast`; nothing is deployed, published or
 funded without it. Also for review: the private bucket's wording on the portfolio, and the sponsor allowlist.

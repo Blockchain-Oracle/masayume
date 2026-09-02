@@ -8,7 +8,7 @@ import { useBalancePlate } from "./useBalancePlate";
 
 interface BalancePlateProps {
   /** Pool controls folded into their rows — /portfolio mounts the Trading Balance here; /markets lists the row alone. */
-  panels?: { vault?: ReactNode };
+  panels?: { vault?: ReactNode; x?: ReactNode };
   className?: string;
 }
 
