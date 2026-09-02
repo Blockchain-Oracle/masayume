@@ -25,6 +25,8 @@ export {
   usePositions,
   usePriceHistory,
   useResolution,
+  useVaultHoldings,
+  useVaultSnapshot,
   useWalletHistory,
 } from "./useReads";
 export { invalidateAfterWrite, type WriteScope } from "./invalidate";

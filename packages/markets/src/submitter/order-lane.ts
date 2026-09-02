@@ -13,6 +13,8 @@ import { assertFunded } from "./steps/funding";
 import { freshQuote } from "./steps/quote";
 import { sendOrder } from "./steps/send";
 import { statusGate } from "./steps/status-gate";
+import { submitVaultOrder } from "../vault/order";
+import type { VaultContracts } from "../vault/write";
 
 export interface OrderLaneContext {
   journal: IntentJournal;
@@ -22,6 +24,7 @@ export interface OrderLaneContext {
   stopGate: StopGate;
   attribution: AttributionHook;
   nowMs: () => number;
+  contracts?: VaultContracts | undefined;
 }
 
 function refused(diag: Diagnosis): OrderOutcome {
@@ -63,6 +66,8 @@ async function sendFailure(journal: IntentJournal, id: string, error: unknown, o
  * reservation. A send that times out with no digest is journaled unknown and never auto-retried.
  */
 export async function submitOrder(ctx: OrderLaneContext, req: OrderRequest, onPhase?: PhaseListener): Promise<OrderOutcome> {
+  // The third dimension (AD-3): the same intent through the EventVault, never a second pipeline.
+  if (req.route && req.route.kind !== "wallet") return submitVaultOrder({ ...ctx, contracts: ctx.contracts }, req, onPhase);
   const { wallet } = ctx;
   const { market, side, stakeBase, displayedQuote } = req;
   const target = { marketId: market.marketId, poolAddress: market.poolAddress, decimals: market.decimals, intervalSec: market.intervalSec };

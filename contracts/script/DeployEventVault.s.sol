@@ -26,6 +26,7 @@ contract DeployEventVault is Script {
 
         string memory key = "deployment";
         vm.serializeUint(key, "chainId", block.chainid);
+        vm.serializeUint(key, "fromBlock", block.number);
         vm.serializeAddress(key, "collateral", collateral);
         vm.serializeAddress(key, "forwarder", address(forwarder));
         string memory json = vm.serializeAddress(key, "eventVault", address(vault));

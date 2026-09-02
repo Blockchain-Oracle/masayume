@@ -6,6 +6,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {ERC2771Context} from "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IBinaryModule, IOutcomeToken6909} from "../interfaces/IDreamDex.sol";
+import {VaultTally} from "./VaultTally.sol";
 import {VenueGateway} from "./VenueGateway.sol";
 
 /// @title EventVault — Masayume's Trading Balance and its only delegation framework.
@@ -16,7 +17,7 @@ import {VenueGateway} from "./VenueGateway.sol";
 /// @dev Ported from Yosuku's `trading_vault.move` buckets (available / private / agent budget)
 ///      and extended with typed grants. Sponsored actions arrive through an ERC-2771 forwarder;
 ///      capital intake is never sponsored.
-contract EventVault is VenueGateway, ERC2771Context, ReentrancyGuard {
+contract EventVault is VenueGateway, VaultTally, ERC2771Context, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     /// @dev `grantId` written on an owner's own action.
@@ -153,7 +154,8 @@ contract EventVault is VenueGateway, ERC2771Context, ReentrancyGuard {
         } else {
             _bookSale(owner, id, cashDelta, tokenDelta);
         }
-        emit Executed(owner, marketId, ATTENDED, outcomeIdx, isBuy, cashDelta, tokenDelta, owner);
+        _recordFill(owner, marketId, outcomeIdx, isBuy, cashDelta, tokenDelta);
+        emit Executed(owner, marketId, ATTENDED, outcomeIdx, isBuy, cashDelta, tokenDelta, owner, uint64(block.timestamp));
     }
 
     /// @notice A grant's actor trades for the owner, inside the grant's caps, from its budget.
@@ -180,7 +182,8 @@ contract EventVault is VenueGateway, ERC2771Context, ReentrancyGuard {
         (cashDelta, tokenDelta) = _placeIoc(ref, outcomeIdx, isBuy, priceRaw, quantityRaw, expireNs);
         if (isBuy) _bookDelegatedBuy(g, grantId, owner, id, cashDelta, tokenDelta);
         else _bookSale(owner, id, cashDelta, tokenDelta);
-        emit Executed(owner, marketId, grantId, outcomeIdx, isBuy, cashDelta, tokenDelta, actor);
+        _recordFill(owner, marketId, outcomeIdx, isBuy, cashDelta, tokenDelta);
+        emit Executed(owner, marketId, grantId, outcomeIdx, isBuy, cashDelta, tokenDelta, actor, uint64(block.timestamp));
     }
 
     // ------------------------------------------------------------------ settlement
@@ -197,7 +200,8 @@ contract EventVault is VenueGateway, ERC2771Context, ReentrancyGuard {
         if (yes != 0) payout += _settleSide(owner, ref, marketId, 0, ref.yesId, yes);
         if (no != 0) payout += _settleSide(owner, ref, marketId, 1, ref.noId, no);
         if (payout != 0) _accounts[owner].available += payout;
-        emit Settled(owner, marketId, payout, yes, no, msg.sender);
+        _recordSettlement(owner, marketId, payout);
+        emit Settled(owner, marketId, payout, yes, no, msg.sender, uint64(block.timestamp));
     }
 
     // ------------------------------------------------------------------ views

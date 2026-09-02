@@ -31,7 +31,7 @@ const dir = join(here, "deployments");
 if (existsSync(dir)) {
   for (const file of readdirSync(dir).filter((f) => f.endsWith(".json"))) {
     const record = JSON.parse(readFileSync(join(dir, file), "utf8"));
-    deployments[String(record.chainId)] = { eventVault: record.eventVault, forwarder: record.forwarder, collateral: record.collateral };
+    deployments[String(record.chainId)] = { eventVault: record.eventVault, forwarder: record.forwarder, collateral: record.collateral, fromBlock: record.fromBlock ?? 0 };
   }
 }
 writeFileSync(join(target, "addresses.masayume.json"), `${JSON.stringify({ generatedBy: "contracts/export.mjs", deployments }, null, 2)}\n`);

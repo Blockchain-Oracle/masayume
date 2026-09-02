@@ -13,6 +13,7 @@ export async function invalidateAfterWrite(queryClient: QueryClient, { wallet, m
   const claimablesForWallet = keys.claimables(wallet, null).slice(0, -1);
   const families = [
     keys.balanceSheet(wallet),
+    keys.vault(wallet),
     keys.positions(wallet),
     keys.history(wallet),
     claimablesForWallet,

@@ -22,6 +22,7 @@ import { settlementFeeBps } from "./fees";
 import { SETTLED_STATUSES } from "./markets";
 import { resolveOutcomeToken } from "./outcome-token";
 import { withReading, type Unwrap } from "./reading";
+import { listVaultTallies, tallyToLedger, vaultRound } from "../vault/history";
 
 /** The indexer's page ceiling; five pages is 5,000 fills, past which the reading says it is a prefix. */
 const PAGE = 1_000;
@@ -164,19 +165,33 @@ export async function listWalletHistory(wallet: Address): Promise<Reading<Wallet
       const round = settleRound({ ledger: ledgers.get(marketId) as MarketLedger, market: toRoundMarket(row), feeBps: fees[i] as number, liveHoldings: holdings?.get(marketId) ?? null });
       if (round) rounds.push(round);
     });
-    rounds.sort((a, b) => roundSettledAtMs(b) - roundSettledAtMs(a));
-
     let openCount = 0;
     for (const [id, ledger] of ledgers) {
       const row = rowById.get(id);
       if (row && !SETTLED_STATUSES.has(row.status) && ledger.heldUpRaw + ledger.heldDownRaw > 0n) openCount += 1;
     }
 
+    // The vault's seat (AD-1's second event source): what the vault traded for this wallet, from its own tally.
+    const vault = await listVaultTallies(wallet);
+    const vaultRows = await mapPool(vault.tallies, CONCURRENCY, async (t) => rowById.get(t.marketId) ?? (await marketRow(t.marketId)));
+    for (const [i, tally] of vault.tallies.entries()) {
+      const row = vaultRows[i];
+      if (!row) continue;
+      if (SETTLED_STATUSES.has(row.status)) {
+        const round = vaultRound(tally, toRoundMarket(row), await feeFor(inner, tally.marketId));
+        if (round) rounds.push(round);
+      } else {
+        const ledger = tallyToLedger(tally);
+        if (ledger.heldUpRaw + ledger.heldDownRaw > 0n) openCount += 1;
+      }
+    }
+    rounds.sort((a, b) => roundSettledAtMs(b) - roundSettledAtMs(a));
+
     return {
       rounds,
       openCount,
-      fillCount: fillPages.rows.length,
-      complete: fillPages.complete && actionPages.complete && attributed.length === fills.length,
+      fillCount: fillPages.rows.length + vault.tallies.reduce((sum, t) => sum + t.fillCount, 0),
+      complete: fillPages.complete && actionPages.complete && attributed.length === fills.length && vault.complete,
       decimals: fallbackDecimals,
     };
   });

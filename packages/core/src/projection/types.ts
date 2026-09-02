@@ -2,6 +2,9 @@ import type { MarketId, OutcomeIdx } from "../types/market";
 import type { Address, Hex } from "../types/primitives";
 import type { ClaimLeg, VerdictOutcome } from "../types/trading";
 
+/** Where a round's fills came from: the wallet's own orders, or the EventVault trading for it. */
+export type LedgerSource = "wallet" | "vault";
+
 /** The venue's four order sides as the indexer names them — YES is UP, NO is DOWN. */
 export type LedgerSide = "BUY_YES" | "SELL_YES" | "BUY_NO" | "SELL_NO";
 
@@ -42,6 +45,8 @@ export interface MarketLedger {
   firstAtMs: number;
   lastAtMs: number;
   entryTxHash: Hex;
+  /** Whose seat the fills sat in: the wallet's own venue orders, or the vault trading for it. */
+  source?: LedgerSource;
 }
 
 /** `closed` — nothing was held at expiry; the round's whole result was realised on the book. */
@@ -89,6 +94,8 @@ export interface SettledRound {
   pnlBase: bigint;
   feeBps: number;
   claim: ClaimState;
+  /** Whose seat the round was traded from; vault rounds link no single transaction. */
+  source: LedgerSource;
   settledAtMs: number | null;
   openedAtMs: number;
   entryTxHash: Hex;

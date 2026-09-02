@@ -10,6 +10,7 @@ import { createMemoryJournal } from "./journal-memory";
 import { submitOrder } from "./order-lane";
 import { allowAllStopGate } from "./stop-gate";
 import { submitTx } from "./tx-lane";
+import type { VaultContracts } from "../vault/write";
 
 export interface SubmitterDeps {
   /** The owning session's bound trader. It cannot be replaced for the life of the session. */
@@ -22,6 +23,8 @@ export interface SubmitterDeps {
   journal?: IntentJournal;
   attribution?: AttributionHook;
   nowMs?: () => number;
+  /** The session's viem clients for Masayume's contracts; absent in a read-only context. */
+  contracts?: VaultContracts;
 }
 
 /** The core Submitter plus the pre-send checks a surface needs before it opens a wallet popup. */
@@ -42,7 +45,7 @@ export interface MarketsSubmitter extends Submitter {
  * constantly true here by construction.
  */
 export function createSubmitter(deps: SubmitterDeps): MarketsSubmitter {
-  const { trader, wallet, enqueue } = deps;
+  const { trader, wallet, enqueue, contracts } = deps;
   const nowMs = deps.nowMs ?? chainNowMs;
   const journal = deps.journal ?? createMemoryJournal(nowMs);
   const stopGate = deps.stopGate ?? allowAllStopGate;
@@ -54,9 +57,9 @@ export function createSubmitter(deps: SubmitterDeps): MarketsSubmitter {
     attribution,
     wallet,
     hasSigner: () => true,
-    submitTx: (intent, onPhase) => enqueue(() => submitTx({ journal, trader, wallet }, intent, onPhase)),
+    submitTx: (intent, onPhase) => enqueue(() => submitTx({ journal, trader, wallet, contracts }, intent, onPhase)),
     submitOrder: (request, onPhase) =>
-      enqueue(() => submitOrder({ journal, stopGate, attribution, nowMs, trader, wallet }, request, onPhase)),
+      enqueue(() => submitOrder({ journal, stopGate, attribution, nowMs, trader, wallet, contracts }, request, onPhase)),
     checkGas: (lane) => checkGas(wallet, lane),
   };
 }

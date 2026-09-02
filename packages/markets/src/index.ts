@@ -9,4 +9,5 @@ export * from "./provider";
 export * from "./runtime";
 export * from "./sessions";
 export * from "./submitter";
+export * from "./vault";
 export * from "./venue";

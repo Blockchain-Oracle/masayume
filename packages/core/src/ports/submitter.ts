@@ -2,11 +2,19 @@ import type { Diagnosis } from "../types/diagnosis";
 import type { EventMarket, MarketId, OutcomeIdx, Side } from "../types/market";
 import type { Address, Hex } from "../types/primitives";
 import type { Quote } from "../types/trading";
+import type { GrantKind, VaultCaps } from "../vault/types";
 
 /** The write-path state machine every surface renders (EXPERIENCE.md). */
 export type WritePhase = "composing" | "submitted" | "confirming" | "confirmed" | "reverted" | "unknown";
 
 export type PhaseListener = (phase: WritePhase, detail?: { txHash?: Hex }) => void;
+
+/**
+ * The order lane's third dimension (AD-3): the wallet signs its own venue order, or the same
+ * intent goes through the EventVault — from the owner's Trading Balance, or from a grant's
+ * budget by the grant's actor. One interface, neither route implemented twice.
+ */
+export type OrderRoute = { kind: "wallet" } | { kind: "vault" } | { kind: "vault-grant"; grantId: bigint };
 
 export interface OrderRequest {
   market: EventMarket;
@@ -15,6 +23,8 @@ export interface OrderRequest {
   /** The quote the user confirmed; its `maxCostBase` is the cap — a fresh quote whose `maxCostBase` exceeds it is surfaced as a requote, never silently accepted. */
   displayedQuote: Quote;
   wallet: Address;
+  /** Defaults to the wallet route. */
+  route?: OrderRoute;
 }
 
 export interface BookedOrder {
@@ -37,6 +47,29 @@ export type OrderOutcome =
   | { status: "reverted"; diagnosis: Diagnosis; txHash: Hex }
   | { status: "unknown"; diagnosis: Diagnosis; txHash?: Hex };
 
+export interface GrantTerms {
+  kind: GrantKind;
+  actor: Address;
+  caps: VaultCaps;
+  expiresAtSec: number;
+  budgetBase: bigint;
+}
+
+/** EventVault writes: every one journals, simulates, sends and books through the same lane as a redeem. */
+export type VaultIntent =
+  | { kind: "vault-deposit"; amountBase: bigint }
+  | { kind: "vault-withdraw"; amountBase: bigint }
+  | { kind: "vault-move-private"; amountBase: bigint }
+  | { kind: "vault-withdraw-private"; amountBase: bigint }
+  | { kind: "vault-grant"; terms: GrantTerms }
+  /** Deposit and grant in one transaction, so no grant ever exists without its budget (Story 6.1). */
+  | { kind: "vault-deposit-and-grant"; amountBase: bigint; terms: GrantTerms }
+  | { kind: "vault-fund-grant"; grantId: bigint; amountBase: bigint }
+  | { kind: "vault-revoke"; grantId: bigint }
+  /** Permissionless: anyone may crank a settled Window into its owner's balance. */
+  | { kind: "vault-crank-settle"; owner: Address; marketId: MarketId }
+  | { kind: "vault-sweep"; pool: Address };
+
 export type TxIntent =
   | { kind: "faucet"; amountBase: bigint }
   | { kind: "approve"; token: Address; spender: Address; amountBase: bigint }
@@ -47,7 +80,12 @@ export type TxIntent =
       amountRaw: bigint;
       marketAddress: Address;
       outcomeToken: Address;
-    };
+    }
+  | VaultIntent;
+
+export function isVaultIntent(intent: TxIntent): intent is VaultIntent {
+  return intent.kind.startsWith("vault-");
+}
 
 export type TxOutcome =
   | { status: "confirmed"; txHash: Hex }

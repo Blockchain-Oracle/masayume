@@ -13,6 +13,7 @@ import { getHoldings, listOpenPositions } from "./positions";
 import { getAssetPrice, getOpeningPrice, getPriceHistory } from "./prices";
 import { freshQuoteStake } from "./quotes";
 import { getResolution } from "./resolution";
+import { getVaultHoldings, getVaultSnapshot } from "../vault/read";
 
 /** The one read port every surface plugs into (AD-1). */
 export const marketsProvider: MarketsProvider = {
@@ -36,6 +37,8 @@ export const marketsProvider: MarketsProvider = {
   nowMs,
   nextWindow,
   getResolution,
+  getVaultSnapshot,
+  getVaultHoldings,
 };
 
 export { bootMarkets, type MarketsBoot } from "./boot";

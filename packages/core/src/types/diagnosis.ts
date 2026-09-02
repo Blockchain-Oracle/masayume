@@ -19,6 +19,8 @@ export const DIAGNOSIS_KINDS = [
   "not-settled",
   "already-claimed",
   "faucet-refused",
+  "grant-refused",
+  "not-deployed",
   "indexer-down",
   "rpc-down",
   "contract-revert",

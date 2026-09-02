@@ -14,7 +14,7 @@ const HOUR = 3_600_000;
 const round = (i: number, pnl: bigint, outcome: SettledRound["outcome"], stake = 5n * ONE): SettledRound => ({
   marketId: toMarketId(`0x${i.toString(16).padStart(64, "0")}`), asset: "BTC", intervalSec: 300, expirySec: i * 3_600, decimals: 6,
   outcome, legs: outcome === "closed" ? [] : [{ outcomeIdx: 0, amountRaw: stake * 2n, payoutBase: outcome === "win" ? stake * 2n : 0n }], sidesTraded: [0],
-  stakeBase: stake, proceedsBase: 0n, payoutBase: outcome === "win" ? stake * 2n : 0n, feeBase: 0n, pnlBase: pnl, feeBps: 0, claim: "paid",
+  stakeBase: stake, proceedsBase: 0n, payoutBase: outcome === "win" ? stake * 2n : 0n, feeBase: 0n, pnlBase: pnl, feeBps: 0, claim: "paid", source: "wallet",
   settledAtMs: i * HOUR, openedAtMs: i * HOUR - 60_000, entryTxHash: "0x1", fillCount: 1, shortCount: 0,
 });
 

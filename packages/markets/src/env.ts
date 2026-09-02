@@ -1,4 +1,4 @@
-import { bytes32Schema } from "@masayume/core/types";
+import { addressSchema, bytes32Schema } from "@masayume/core/types";
 import { z } from "zod";
 import { RPC_HTTP_URLS, RPC_WS_URLS, SOMNIA_SHANNON_ID } from "./chain";
 
@@ -24,6 +24,10 @@ export const marketsEnvSchema = z.object({
   venueId: bytes32Schema.default(SHANNON_DEFAULTS.venueId),
   priceFeedUrl: z.url().optional(),
   priceFeedQuote: z.string().default(SHANNON_DEFAULTS.priceFeedQuote),
+  /** Local-fork overrides for the EventVault; production reads the generated addresses module (AD-10). */
+  eventVaultAddress: addressSchema.optional(),
+  forwarderAddress: addressSchema.optional(),
+  eventVaultFromBlock: z.coerce.bigint().optional(),
 });
 
 export type MarketsEnv = z.infer<typeof marketsEnvSchema>;

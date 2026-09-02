@@ -1,7 +1,10 @@
 import type { AttributionHook, IntentJournal, StopGate } from "@masayume/core/ports";
 import type { Address } from "@masayume/core/types";
 import { SomniaMarkets } from "@somnia-chain/markets-sdk";
-import type { Account, Hex, WalletClient } from "viem";
+import { createWalletClient, http, type Account, type Hex, type PublicClient, type WalletClient } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { resolveVaultDeployment } from "../vault/deployment";
+import type { VaultContracts } from "../vault/write";
 import { resolveAddresses } from "../addresses";
 import { SOMNIA_SHANNON } from "../chain";
 import type { MarketsEnv } from "../env";
@@ -33,6 +36,13 @@ export interface SubmitterSession {
   readonly disposed: boolean;
   /** Releases the session's own SDK instance. A disposed session can never sign again. */
   dispose(): Promise<void>;
+}
+
+/** The same signer, as a viem wallet client, for Masayume's own contracts. */
+function walletClientFor(signer: SessionSigner, env: MarketsEnv): WalletClient {
+  if ("walletClient" in signer) return signer.walletClient;
+  const account = "privateKey" in signer ? privateKeyToAccount(signer.privateKey) : signer.account;
+  return createWalletClient({ account, chain: SOMNIA_SHANNON, transport: http(env.rpcHttpUrls[0]) });
 }
 
 export class SessionDisposedError extends Error {
@@ -80,10 +90,17 @@ export async function createSubmitterSession(config: SubmitterSessionConfig): Pr
       return task();
     });
 
+  const contracts: VaultContracts = {
+    walletClient: walletClientFor(signer, env),
+    publicClient: exchange.client.getViemClient() as PublicClient,
+    deployment: resolveVaultDeployment(env),
+  };
+
   const submitter = createSubmitter({
     trader: exchange.trader,
     wallet: address as Address,
     enqueue: guardedEnqueue,
+    contracts,
     ...(config.journal ? { journal: config.journal } : {}),
     ...(config.stopGate ? { stopGate: config.stopGate } : {}),
     ...(config.attribution ? { attribution: config.attribution } : {}),

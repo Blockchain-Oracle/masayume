@@ -4,6 +4,7 @@ import type { AssetPrice, ClockSync, PricePoint, Resolution } from "../types/fee
 import type { EventMarket, LaneSet, MarketId, OnchainSnapshot, Side } from "../types/market";
 import type { Address, Bytes32 } from "../types/primitives";
 import type { BalanceSheet, BookDepth, BookParams, ClaimableRow, Holdings, OpenPosition, Quote } from "../types/trading";
+import type { VaultHoldings, VaultSnapshot } from "../vault/types";
 
 /** What a book read needs to address a market: the id for recycle-safety plus the pool the book physically lives on. */
 export interface BookTarget {
@@ -41,4 +42,8 @@ export interface MarketsProvider {
   nowMs(): number;
   nextWindow(market: EventMarket): Promise<Reading<EventMarket | null>>;
   getResolution(marketId: MarketId): Promise<Reading<Resolution>>;
+  /** The Trading Balance and its live grants; `null` on a network with no EventVault deployment. */
+  getVaultSnapshot(wallet: Address): Promise<Reading<VaultSnapshot | null>>;
+  /** What the vault holds for the wallet on one Window; zeros (not an error) when there is no vault. */
+  getVaultHoldings(wallet: Address, onchain: OnchainSnapshot): Promise<Reading<VaultHoldings>>;
 }

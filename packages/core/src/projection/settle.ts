@@ -1,7 +1,7 @@
 import { estPayoutBase } from "../claims/payout";
 import type { OutcomeIdx } from "../types/market";
 import type { ClaimLeg, Holdings, Verdict } from "../types/trading";
-import type { ClaimState, MarketLedger, RoundMarket, RoundOutcome, SettledRound } from "./types";
+import type { ClaimState, LedgerSource, MarketLedger, RoundMarket, RoundOutcome, SettledRound } from "./types";
 
 export interface SettleInput {
   ledger: MarketLedger;
@@ -9,6 +9,7 @@ export interface SettleInput {
   feeBps: number;
   /** Head-fresh balances for this market, or null when the read failed — never a guessed zero. */
   liveHoldings: Holdings | null;
+  source?: LedgerSource;
 }
 
 function legPayout(market: RoundMarket, outcomeIdx: OutcomeIdx, amountRaw: bigint, feeBps: number): bigint {
@@ -46,7 +47,7 @@ function claimStateOf(legs: ClaimLeg[], live: Holdings | null): ClaimState {
 }
 
 /** One settled round, or null while the Window is still open — every figure is fills plus the settlement rule. */
-export function settleRound({ ledger, market, feeBps, liveHoldings }: SettleInput): SettledRound | null {
+export function settleRound({ ledger, market, feeBps, liveHoldings, source }: SettleInput): SettledRound | null {
   if (!market.settled) return null;
   const legs = heldLegs(ledger, market, feeBps);
   const payoutBase = legs.reduce((sum, leg) => sum + leg.payoutBase, 0n);
@@ -68,6 +69,7 @@ export function settleRound({ ledger, market, feeBps, liveHoldings }: SettleInpu
     pnlBase,
     feeBps,
     claim: claimStateOf(legs, liveHoldings),
+    source: source ?? ledger.source ?? "wallet",
     settledAtMs: market.resolvedAtMs,
     openedAtMs: ledger.firstAtMs,
     entryTxHash: ledger.entryTxHash,

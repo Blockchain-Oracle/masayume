@@ -62,9 +62,12 @@ interface IEventVault {
         bool isBuy,
         uint256 cashDelta,
         uint256 tokenDelta,
-        address actor
+        address actor,
+        uint64 atSec
     );
-    event Settled(address indexed owner, bytes32 indexed marketId, uint256 payout, uint256 yesRedeemed, uint256 noRedeemed, address by);
+    event Settled(
+        address indexed owner, bytes32 indexed marketId, uint256 payout, uint256 yesRedeemed, uint256 noRedeemed, address by, uint64 atSec
+    );
     event Swept(uint256 amount);
 
     error ZeroAmount();

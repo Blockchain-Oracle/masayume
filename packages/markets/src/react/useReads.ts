@@ -2,6 +2,7 @@ import { CLOCK_RESYNC_MS, MARKETS_POLL_MS, ONCHAIN_POLL_MS, OPENING_PRINT_POLL_M
 import type { WalletHistory } from "@masayume/core/projection";
 import { isOk, type Reading } from "@masayume/core/schemas";
 import type { Address, BalanceSheet, Bytes32, ClaimableRow, ClockSync, EventMarket, LaneSet, MarketId, OnchainSnapshot, OpenPosition, PricePoint, Resolution } from "@masayume/core/types";
+import type { VaultHoldings, VaultSnapshot } from "@masayume/core/vault";
 import { getBalanceSheet } from "../provider/balances";
 import { listWalletHistory } from "../provider/history";
 import { listClaimables } from "../provider/claimables";
@@ -12,6 +13,7 @@ import { getOnchain } from "../provider/onchain";
 import { listOpenPositions } from "../provider/positions";
 import { getOpeningPrice, getPriceHistory } from "../provider/prices";
 import { getResolution } from "../provider/resolution";
+import { getVaultHoldings, getVaultSnapshot } from "../vault/read";
 import { keys } from "./keys";
 import { useReadingQuery } from "./useReadingQuery";
 
@@ -72,4 +74,17 @@ export function useNextWindow(market: EventMarket | null): Reading<EventMarket |
 
 export function useClock(): Reading<ClockSync> | null {
   return useReadingQuery(keys.clock(), syncClock, { pollMs: CLOCK_RESYNC_MS });
+}
+
+/** The Trading Balance and the live grant per kind; `null` inside the reading where no vault is deployed. */
+export function useVaultSnapshot(wallet: Address | null): Reading<VaultSnapshot | null> | null {
+  return useReadingQuery(keys.vault(wallet), () => getVaultSnapshot(wallet as Address), { pollMs: MARKETS_POLL_MS, enabled: wallet !== null });
+}
+
+/** What the vault holds for the wallet on one Window; zeros without a vault. */
+export function useVaultHoldings(wallet: Address | null, onchain: OnchainSnapshot | null): Reading<VaultHoldings> | null {
+  return useReadingQuery(keys.vaultHoldings(wallet, onchain?.marketId ?? null), () => getVaultHoldings(wallet as Address, onchain as OnchainSnapshot), {
+    pollMs: MARKETS_POLL_MS,
+    enabled: wallet !== null && onchain !== null,
+  });
 }

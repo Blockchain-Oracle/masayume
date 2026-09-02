@@ -3,7 +3,8 @@ import type { Address, BalanceSheet, VenueCredit } from "@masayume/core/types";
 import { oneUnit, ownTermsPriceRaw } from "@masayume/core/units";
 import type { Portfolio, VaultPayoutFallback } from "@somnia-chain/markets-sdk";
 import { getCollateral } from "../collateral";
-import { getClient } from "../runtime/read-runtime";
+import { getClient, getVaultDeployment } from "../runtime/read-runtime";
+import { getVaultSnapshot } from "../vault/read";
 import { bigintOrZero, lowerAddress } from "../mappers/scalars";
 import { isBuy } from "../mappers/side";
 import { withReading } from "./reading";
@@ -42,7 +43,7 @@ async function venueCredits(wallet: Address, token: Address, pools: readonly Add
 
 /** Every pool of money labeled separately; nothing is silently summed (FR-5). The venue spends per-pool credit first on the next buy. */
 export async function getBalanceSheet(wallet: Address): Promise<Reading<BalanceSheet>> {
-  return withReading(`balances:${wallet}`, async () => {
+  return withReading(`balances:${wallet}`, async (inner) => {
     const { address: collateral, decimals } = getCollateral();
     const client = getClient();
     const [spendableBase, nativeWei, portfolio, fallbacks] = await Promise.all([
@@ -52,6 +53,7 @@ export async function getBalanceSheet(wallet: Address): Promise<Reading<BalanceS
       client.getVaultPayoutFallbacks(wallet, { token: collateral, limit: FALLBACKS_LIMIT }),
     ]);
     const credits = await venueCredits(wallet, collateral, await poolsWithCredits(portfolio, fallbacks));
+    const vault = getVaultDeployment() ? inner(await getVaultSnapshot(wallet)) : null;
     return {
       decimals,
       spendableBase,
@@ -59,7 +61,7 @@ export async function getBalanceSheet(wallet: Address): Promise<Reading<BalanceS
       orderEscrowBase: orderEscrow(portfolio, decimals),
       venueCreditBase: credits.reduce((sum, c) => sum + c.amountBase, 0n),
       venueCreditByPool: credits,
-      vaultBase: null,
+      vaultBase: vault ? vault.account.availableBase : null,
     };
   });
 }

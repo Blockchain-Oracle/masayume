@@ -222,6 +222,47 @@ contract EventVaultTradingTest is VaultTestBase {
         vault.crankSettle(owner, market);
     }
 
+    // --- the on-chain tally the portfolio reads ---
+
+    function test_tally_recordsFillsAndSettlement() public {
+        uint256 id = grantStrategy(200 * ONE, caps(50 * ONE, 100 * ONE, 5, 0));
+        vm.prank(owner);
+        vault.place(market, 0, true, 700_000, 100 * ONE, EXPIRE_NS); // 60
+        vm.prank(actor);
+        vault.placeFor(id, market, 1, true, 500_000, 50 * ONE, EXPIRE_NS); // 20
+        vm.prank(owner);
+        vault.place(market, 0, false, 500_000, 40 * ONE, EXPIRE_NS); // +24
+        (uint128 cost, uint128 proceeds, uint128 payout, uint128 bUp, uint128 bDown, uint128 sUp,, uint64 first, uint64 last, uint64 settledAt, uint32 fills) =
+            vault.tallyOf(owner, market);
+        assertEq(cost, 80 * ONE);
+        assertEq(proceeds, 24 * ONE);
+        assertEq(bUp, 100 * ONE);
+        assertEq(bDown, 50 * ONE);
+        assertEq(sUp, 40 * ONE);
+        assertEq(fills, 3);
+        assertEq(first, uint64(block.timestamp), "first");
+        assertEq(last, uint64(block.timestamp), "last");
+        assertEq(payout, 0);
+        assertEq(settledAt, 0);
+        assertEq(vault.marketCountOf(owner), 1);
+        assertEq(vault.marketsOf(owner, 0, 10)[0], market);
+        assertEq(vault.marketsOf(owner, 1, 10).length, 0);
+
+        venue.resolve(0);
+        vm.warp(block.timestamp + 100);
+        vault.crankSettle(owner, market);
+        (,, payout,,,,,,, settledAt,) = vault.tallyOf(owner, market);
+        assertEq(payout, 60 * ONE, "the surviving 60 UP paid one each");
+        // via-IR may cache TIMESTAMP within this frame across the warp; the cheatcode reads the live clock.
+        assertEq(uint256(settledAt), vm.getBlockTimestamp(), "settledAt");
+    }
+
+    function test_tally_nothingFilledLeavesNoTrace() public {
+        vm.prank(owner);
+        vault.place(market, 0, true, 500_000, 100 * ONE, EXPIRE_NS);
+        assertEq(vault.marketCountOf(owner), 0);
+    }
+
     // --- the two named invariants from the spine ---
 
     /// @dev A compromised delegate key can at worst open in-cap positions for the rightful owner.
