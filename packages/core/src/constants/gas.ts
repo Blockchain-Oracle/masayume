@@ -14,7 +14,8 @@ export const GAS_CEILING: Record<GasLane, bigint> = {
   faucet: SDK_GAS_LIMIT,
   redeem: SDK_GAS_LIMIT,
   approve: SDK_GAS_LIMIT,
-  // measured: pending — EventVault writes carry the SDK ceiling until Shannon usage is recorded.
-  vault: SDK_GAS_LIMIT,
-  "vault-order": SDK_GAS_LIMIT,
+  // Measured on Shannon 2026-09-02 (EventVault 0x84Ec…CD7A): first deposit 688,494; a vault IOC order 2,562,772;
+  // faucet 253,138; approve 259,745; a grant ran past 2,000,000. Somnia's schedule runs ~10× the standard EVM.
+  vault: 4_000_000n,
+  "vault-order": 6_000_000n,
 };

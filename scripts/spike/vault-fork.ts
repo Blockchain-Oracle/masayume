@@ -19,15 +19,33 @@ import {
  * warp + void → crank → history and balance sheet. Every step goes through the port's own lanes.
  *
  * Env: RPC_HTTP_URLS / RPC_WS_URLS (the fork), EVENT_VAULT_ADDRESS, FORWARDER_ADDRESS, FORK_MARKET_ID
- * (bytes32 or decimal), OWNER_KEY, ACTOR_KEY (funded fork keys).
+ * (bytes32 or decimal), OWNER_KEY, ACTOR_KEY (funded fork keys; defaults to OWNER_KEY — the owner then grants
+ * to itself and the grant route runs from the one session, one key one writer).
+ * LIVE=1 runs against the real network: no time travel — the Window settles by the oracle and the crank waits for it.
  */
-const RPC = process.env.RPC_HTTP_URLS ?? "http://127.0.0.1:8546";
+const LIVE = process.env.LIVE === "1";
+const RPC = process.env.RPC_HTTP_URLS ?? (LIVE ? undefined : "http://127.0.0.1:8546");
 const json = (value: unknown) => JSON.stringify(value, (_k, v: unknown) => (typeof v === "bigint" ? v.toString() : v), 2);
 const rpc = (method: string, ...params: string[]) => execSync(`cast rpc ${method} ${params.join(" ")} --rpc-url ${RPC}`, { encoding: "utf8" }).trim();
 const call = (to: string, sig: string) => execSync(`cast call ${to} "${sig}" --rpc-url ${RPC}`, { encoding: "utf8" }).trim();
 
 function marketIdOf(raw: string) {
   return toMarketId(raw.startsWith("0x") ? raw : `0x${BigInt(raw).toString(16).padStart(64, "0")}`);
+}
+
+/** The soonest Trading Window with room for four writes before its no-entry buffer. */
+async function pickLiveWindow() {
+  const { resolveVenueId } = await import("@masayume/markets");
+  const venue = unwrap(await resolveVenueId(env.venueId));
+  if (!venue.venueId) throw new Error("no venue");
+  const lanes = unwrap(await marketsProvider.listLiveLanes(venue.venueId));
+  const nowSec = Math.floor(marketsProvider.nowMs() / 1000);
+  const pick = lanes.lanes
+    .flatMap((lane) => lane.markets)
+    .filter((m) => m.status === "Trading" && m.expirySec - nowSec >= 240)
+    .sort((a, b) => a.expirySec - b.expirySec)[0];
+  if (!pick) throw new Error("no Trading Window with four minutes left");
+  return pick.marketId;
 }
 
 function expectStatus<T extends { status: string }>(label: string, outcome: T, ...ok: string[]): T {
@@ -38,7 +56,7 @@ function expectStatus<T extends { status: string }>(label: string, outcome: T, .
 
 const env = parseMarketsEnv({
   rpcHttpUrls: RPC,
-  rpcWsUrls: process.env.RPC_WS_URLS ?? "ws://127.0.0.1:8546",
+  rpcWsUrls: process.env.RPC_WS_URLS ?? (LIVE ? undefined : "ws://127.0.0.1:8546"),
   venueId: process.env.VENUE_ID,
   eventVaultAddress: process.env.EVENT_VAULT_ADDRESS,
   forwarderAddress: process.env.FORWARDER_ADDRESS,
@@ -49,7 +67,7 @@ configureMarkets(env);
 try {
   unwrap(await loadCollateral());
   await marketsProvider.syncClock();
-  const marketId = marketIdOf(process.env.FORK_MARKET_ID ?? "69641");
+  const marketId = process.env.FORK_MARKET_ID ? marketIdOf(process.env.FORK_MARKET_ID) : await pickLiveWindow();
   const market = unwrap(await marketsProvider.getMarket(marketId));
   if (!market) throw new Error(`indexer has no row for ${marketId}`);
   const onchain = unwrap(await marketsProvider.getOnchain(marketId));
@@ -57,7 +75,8 @@ try {
   const one = oneUnit(market.decimals);
 
   const owner = await createSubmitterSession({ env, authority: "user-wallet", signer: { privateKey: process.env.OWNER_KEY as Hex }, journal: createMemoryJournal() });
-  const actor = await createSubmitterSession({ env, authority: "strategy-runner", signer: { privateKey: process.env.ACTOR_KEY as Hex }, journal: createMemoryJournal() });
+  const actorKey = (process.env.ACTOR_KEY ?? process.env.OWNER_KEY) as Hex;
+  const actor = actorKey === process.env.OWNER_KEY ? owner : await createSubmitterSession({ env, authority: "strategy-runner", signer: { privateKey: actorKey }, journal: createMemoryJournal() });
   console.log("owner", owner.address, "actor", actor.address);
 
   if (!process.env.SKIP_FAUCET) expectStatus("faucet", await owner.submitter.submitTx({ kind: "faucet", amountBase: 10_000n * one }), "confirmed");
@@ -114,13 +133,27 @@ try {
     console.log("over-cap order:", refused.status, "diagnosis" in refused ? refused.diagnosis.kind : "", "diagnosis" in refused ? refused.diagnosis.technical : "");
   }
 
-  // Past the settlement window with no oracle answer, anyone voids; then anyone cranks.
-  const settlementWindow = Number(call(onchain.marketAddress, "settlementWindow()(uint64)").split(" ")[0]);
-  const target_ts = onchain.expirySec + settlementWindow + 5;
-  rpc("evm_setNextBlockTimestamp", String(target_ts));
-  rpc("evm_mine");
-  execSync(`cast send ${onchain.marketAddress} "voidExpired()" --private-key ${process.env.ACTOR_KEY} --rpc-url ${RPC}`, { stdio: "ignore" });
-  console.log("voided:", call(onchain.marketAddress, "isVoided()(bool)"));
+  if (LIVE) {
+    // The oracle settles the Window after expiry; wait for the chain to say so (canon #1), then crank.
+    const deadline = Date.now() + 15 * 60_000;
+    for (;;) {
+      const now = unwrap(await marketsProvider.getOnchain(marketId));
+      if (now.isResolved || now.isVoided) {
+        console.log("settled on-chain:", now.isVoided ? "void" : `winner ${now.winningOutcome}`);
+        break;
+      }
+      if (Date.now() > deadline) throw new Error("the Window did not settle within 15 minutes");
+      console.log(`waiting for settlement… status ${now.status}, ${Math.max(0, now.expirySec - Math.floor(marketsProvider.nowMs() / 1000))}s to expiry`);
+      await new Promise((r) => setTimeout(r, 20_000));
+    }
+  } else {
+    // On a fork: past the settlement window with no oracle answer, anyone voids; then anyone cranks.
+    const settlementWindow = Number(call(onchain.marketAddress, "settlementWindow()(uint64)").split(" ")[0]);
+    rpc("evm_setNextBlockTimestamp", String(onchain.expirySec + settlementWindow + 5));
+    rpc("evm_mine");
+    execSync(`cast send ${onchain.marketAddress} "voidExpired()" --private-key ${actorKey} --rpc-url ${RPC}`, { stdio: "ignore" });
+    console.log("voided:", call(onchain.marketAddress, "isVoided()(bool)"));
+  }
   expectStatus("crank by the actor", await actor.submitter.submitTx({ kind: "vault-crank-settle", owner: owner.address as Address, marketId }), "confirmed");
 
   const settled = unwrap(await marketsProvider.getVaultSnapshot(owner.address));
@@ -131,7 +164,7 @@ try {
   console.log("history rounds", json(history.rounds.map((r) => ({ source: r.source, outcome: r.outcome, stake: r.stakeBase, payout: r.payoutBase, pnl: r.pnlBase, claim: r.claim, fills: r.fillCount }))));
   expectStatus("withdraw all", await owner.submitter.submitTx({ kind: "vault-withdraw", amountBase: settled?.account.availableBase ?? 0n }), "confirmed");
   await owner.dispose();
-  await actor.dispose();
+  if (actor !== owner) await actor.dispose();
 } catch (error) {
   console.error(error);
   process.exitCode = 1;
