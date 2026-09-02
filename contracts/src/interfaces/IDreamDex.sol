@@ -101,6 +101,9 @@ interface IBinaryPool {
     function getBookLevels(bool isBid, uint64 numLevels) external view returns (Level[] memory);
 
     /// @dev The pool's internal per-owner credit for `token` (refunds and payouts can land here).
+    /// @dev The grid every order sits on: prices in `tickSize` steps, quantities in `lotSize` multiples above `minQuantity`.
+    function getOrderBookParameters() external view returns (uint256 tickSize, uint256 minQuantity, uint256 lotSize);
+
     function getWithdrawableBalance(address owner, address token) external view returns (uint256);
     function withdraw(address token, uint256 amount) external;
     function marketNonce() external view returns (uint64);

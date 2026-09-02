@@ -18,10 +18,12 @@ import { drawStub, encodeQr } from "./stub";
  *    a "settles in ~Xm" that goes stale the moment it is shared.
  *  · Every number is what the wallet actually staked, and the return is net of the
  *    settlement fee when the fee is known.
- *  · Leverage does not exist here, so the reference's leverage caveat is gone rather
- *    than printed as "1×".
+ *  · A boost carries the reference's knock-out caveat, exactly as it prints it; a
+ *    plain call prints nothing rather than "1×".
  */
 export interface CallCard {
+  /** A boost: the multiple and the reserve's claim, repaid before the return; null for a plain call. */
+  leverage: { leverageBps: number; frontedBase: bigint } | null;
   asset: string;
   side: Side;
   intervalSec: number;
@@ -50,9 +52,15 @@ const SETTLES_Y = 728;
 const fmt = (value: bigint, decimals: number) => formatBaseUnits(value, decimals);
 const usd0 = (raw: bigint) => `$${formatOracleRaw(raw, ORACLE_SCALE, 0)}`;
 
-/** What a win returns — one unit per contract less the settlement fee when it is known. */
+/** What a win returns — one unit per contract less the settlement fee when it is known, less the reserve's claim on a boost. */
 export function callWinBase(card: CallCard): bigint {
-  return card.feeBps === null ? card.contractsRaw : estPayoutBase(card.contractsRaw, "win", card.feeBps);
+  const net = card.feeBps === null ? card.contractsRaw : estPayoutBase(card.contractsRaw, "win", card.feeBps);
+  if (!card.leverage) return net;
+  return net > card.leverage.frontedBase ? net - card.leverage.frontedBase : 0n;
+}
+
+export function callMultiple(card: CallCard): number {
+  return card.leverage ? card.leverage.leverageBps / 10_000 : 1;
 }
 
 /** "BTC OVER $64,316" / "BTC UNDER $64,316" / "BTC VS THE OPENING PRINT". */
@@ -143,7 +151,8 @@ export async function renderCallShareCard(card: CallCard): Promise<Blob> {
 
   ctx.font = font(500, 17, fonts.mono);
   ctx.fillStyle = "rgba(255,255,255,0.45)";
-  drawTracked(ctx, card.feeBps === null ? card.symbol : `${card.symbol} · ${SHARE.call.afterFee.toUpperCase()}`, CARD_MARGIN, FEE_NOTE_Y, 5, "left");
+  const feeNote = card.feeBps === null ? card.symbol : `${card.symbol} · ${SHARE.call.afterFee.toUpperCase()}`;
+  drawTracked(ctx, card.leverage ? `${SHARE.call.leverageLine(callMultiple(card))} · ${feeNote}` : feeNote, CARD_MARGIN, FEE_NOTE_Y, 5, "left");
 
   // settle line (real expiry, absolute UTC)
   const settles = SHARE.call.settlesLine(formatUtc(secToMs(card.expirySec)));

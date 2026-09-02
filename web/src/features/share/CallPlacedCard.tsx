@@ -3,7 +3,7 @@
 import { formatBaseUnits, formatClock, formatUtc, remainingSec, secToMs } from "@masayume/core/units";
 import { txUrl } from "@masayume/core/urls";
 import type { ReactNode } from "react";
-import { callBandLabel, callDirLabel, callWinBase, shortCallId, type CallCard } from "./call-card";
+import { callBandLabel, callDirLabel, callMultiple, callWinBase, shortCallId, type CallCard } from "./call-card";
 import { SHARE } from "./copy";
 import { ShareCallButton } from "./ShareCallButton";
 
@@ -67,9 +67,13 @@ export function CallPlacedCard({ card, nowMs, actions }: CallPlacedCardProps) {
             </div>
             <div className="min-w-0 text-right">
               <div className="call-label">{SHARE.call.winIfLands}</div>
-              <div className="call-figure heat">{formatBaseUnits(callWinBase(card), card.decimals)}</div>
+              <div className="call-figure heat">
+                {formatBaseUnits(callWinBase(card), card.decimals)}
+                {card.leverage && <span className="call-lev-mark"> ✦</span>}
+              </div>
             </div>
           </div>
+          {card.leverage && <p className="call-lev-note">{SHARE.call.leverageNote(callMultiple(card))}</p>}
           <p className="call-fee-note">
             {card.symbol}
             {card.feeBps !== null ? ` · ${SHARE.call.afterFee}` : ""}

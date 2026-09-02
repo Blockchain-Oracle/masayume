@@ -380,3 +380,18 @@
   flex-wrap: wrap;
   gap: 16px;
 }
+
+/* ── the boosted call's caveat (BetPlacedCard L118, L123–127) ──
+   align-super text-[0.6em] text-vermilion/70 · mt-2 font-mono text-[8.5px] leading-relaxed text-white/40 */
+.call-lev-mark {
+  vertical-align: super;
+  font-size: 0.6em;
+  color: color-mix(in srgb, var(--vermilion) 70%, transparent);
+}
+.call-lev-note {
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  line-height: 1.625;
+  color: rgb(var(--call-ink-rgb) / 0.4);
+}

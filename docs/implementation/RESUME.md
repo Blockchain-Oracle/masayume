@@ -14,9 +14,10 @@ Start here, then read `parity-ledger.md`. The authority package is
 Branch **`feat/yosuku-source-led-shell`** off `main` (`497b43a`). **Stages 2 and 3 are closed. Stage 4 is live
 on Shannon (`EventVault`, the forwarder, `StrategyRegistry` — §Stage 4 records what the user has and has not
 reviewed). Stage 5 is in progress (2026-09-02, seventh session): item 1, `ParlayReserve` + `/parlay`, is live on Shannon;
-item 2, `RangeReserve` + the Ticket's Range mode + `/games/range`, and item 3, `MarketMakerVault` + the maker
-actor + `/earn`, are built and fork-verified, awaiting the user's review and the owner's go to deploy — §Stage 5.
-Next is item 4, capped leverage.**
+item 2, `RangeReserve` + the Ticket's Range mode + `/games/range`, item 3, `MarketMakerVault` + the maker
+actor + `/earn`, and item 4, `LeverageReserve` + the Ticket's live leverage chips + the portfolio's boosts, are
+built and fork-verified, awaiting the user's review and the owner's go to deploy — §Stage 5.
+Next is item 5, the truthful private / link-reduction flow.**
 
 | Commit | What |
 |---|---|
@@ -45,9 +46,10 @@ Next is item 4, capped leverage.**
 | `58ed635` | Stage 5 — `ParlayReserve` contract, port, `/parlay` from source, fork-verified; deployed and supplied on Shannon, the adapter driven live (context/42) |
 | `9dfacae` | Stage 5 — the OracleHub spike (context/43), `RangeReserve` contract, port, the Ticket's Range mode and `/games/range`, fork-verified on Shannon; not deployed |
 | `15c2dda` | Stage 5 — `MarketMakerVault` contract, port, the maker actor and `/earn` from source, fork-verified on Shannon (context/44); not deployed |
+| _(pending)_ | Stage 5 — `LeverageReserve` contract, port, the Ticket's live leverage, the portfolio's boosts, the keeper, fork-verified on Shannon (context/45); not deployed |
 
-Everything is green: `pnpm typecheck`, `pnpm invariants` (13/13, 0 warnings), `pnpm test` (128),
-`forge test --no-match-contract Fork` (118), `pnpm build`. Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
+Everything is green: `pnpm typecheck`, `pnpm invariants` (14/14, 0 warnings), `pnpm test` (141),
+`forge test --no-match-contract Fork` (154), `pnpm build`. Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
 
 **Never touch or commit** the untracked `context/screens/` and `prompt.md`. They are the user's.
 
@@ -353,7 +355,6 @@ session); deploy waits on the owner's go.** Read context/43 and the ledger's §R
   ran ~37M gas for the parlay; the range reserve carries two definition builders, so expect more. Then drive the
   Ticket's range mode live on a Window whose book has depth and measure the `range` lane.
 
-Then, in order:
 **3. `MarketMakerVault` + the maker actor + `/earn` — built and fork-verified 2026-09-02 (seventh session, same
 day); deploy waits on the owner's go.** Read context/44 and the ledger's §MarketMakerVault first. What is where:
 - `contracts/src/maker/` — `IMarketMakerVault`, `MakerGateway` (the venue seam: resolve by market id, post-only
@@ -384,8 +385,33 @@ day); deploy waits on the owner's go.** Read context/44 and the ledger's §Marke
   seeds them at even odds when so — small sizes by design.
 
 
-4. The prefunded, capped leverage model (the reference's `margin.move` / `leverage.move`) — the Ticket's
-   leverage chips stop being a "1×" that pretends to be a choice.
+**4. `LeverageReserve` + the Ticket's live leverage + the portfolio's boosts + the keeper — built and fork-verified
+2026-09-02 (eighth session); deploy waits on the owner's go.** Read context/45 and the ledger's §LeverageReserve first.
+What is where:
+- `contracts/src/leverage/` — `ILeverageReserve`, `LeverageMath` (pure: the book walks, the terms behind a fill, the
+  line), `LeverageGateway` (the venue seam: resolve by market id, IOC buy/sell by delta, redeem, the book reads,
+  `sizeForStake` / `previewOpen`), `LeverageReserve` (shares, `open`, `close`, `knockOut`, `settle`, views incl.
+  `markOf`, `openPositions`, `unsettledExpired`, `positionsOf` paging). `IDreamDex.sol` grew `getOrderBookParameters`.
+  Tests: `LeverageReserve.open.t.sol`, `LeverageReserve.lifecycle.t.sol` over `MockLeverageVenue` (a walkable book that
+  IOC takers consume), `LeverageVectors.t.sol` over the shared `sizing.vectors.json` — `forge test --no-match-contract
+  Fork`: **154** pass. Fork: `SHANNON_FORK_URL=… FORK_MARKET_ID=<decimal> forge test --match-contract
+  LeverageReserveFork -vv`; `pnpm --filter @masayume/scripts spike:live-windows` lists the ids that are Trading now.
+- **A boost is a knock-out certificate** (context/45): the reserve fronts `(L−1)·stake` for a flat premium, buys the
+  contracts off the book as a taker, holds them, and is repaid first at settlement, cash-out or the permissionless
+  knock-out under `fronted × maintenance`. The stake is charged from the fill: `stake + fronted − premium == cost`.
+  A fairly priced boost with no knock-out would be a no-op on a binary payoff — the knock-out is the product.
+- `@masayume/core/leverage` (types, the mirror — 13 vitest over the vectors), `@masayume/markets/leverage` (deployment
+  with `LEVERAGE_RESERVE_ADDRESS` override, reads, the chain quote, `submitLeverageOpen` with the requote guard),
+  `LeverageIntent` on the tx lane, a `leverage` gas lane (8M, **unmeasured**), hooks, `leverage-reserve.abi.ts`.
+- `web/src/features/leverage/` — the strip, the quote and write hooks, the portfolio rows; `ticket/LeverageChips.tsx`
+  live; `Ticket.tsx` branches on the multiple; The Call and its PNG carry the reference's caveat; `/dev/leverage`.
+  **Not seen in a browser.** Ledger rows flagged for review: the model itself, wallet-only funding, the strip's
+  numbers, the multiple on boosted rows only, the row's health words, the unpaid knock-out.
+- `services/ops/src/actors/leverage-keeper/` — dry-run unless `DRY_RUN=0`; `LEVERAGE_KEEPER_PRIVATE_KEY`, `LK_REFRESH_MS`.
+- **Deploy (owner's go):** `DeployLeverageReserve.s.sol` (the parlay's recipe), `approve` + `supply`, `pnpm
+  contracts:export`, commit; then drive the Ticket's 2× live on a Window with a book, measure the `leverage` lane, run
+  the keeper in dry run then live.
+
 5. The truthful private / link-reduction flow (the reference's `privateBet.ts` desk → an ephemeral
    account or scoped session, described as link-private).
 6. `/surface` — replace the Yosuku SVI content with the real DreamDEX book/term structure.

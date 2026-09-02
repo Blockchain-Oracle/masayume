@@ -23,6 +23,7 @@ export const BLOCKER_KINDS = [
   "outside-band-high",
   "stale-quote",
   "quote-refused",
+  "boost-refused",
   "daily-stop",
   "stop-unverified",
   "no-exit",
@@ -49,6 +50,8 @@ export function blockerLabel(kind: BlockerKind, ctx: BlockerContext = {}): strin
   switch (kind) {
     case "quote-refused":
       return "The reserve refused this band — see why above";
+    case "boost-refused":
+      return "The reserve refused this boost — see why above";
     case "disconnected":
       return "Connect a wallet to bet";
     case "connecting":

@@ -21,6 +21,8 @@ export type AuthorityKind =
   | "game-session"
   /** The market-making actor for the Earn vault. */
   | "market-maker"
+  /** The leverage reserve's keeper: settles and knocks out boosts. Cannot redirect a payout. */
+  | "leverage-keeper"
   /** Claim/settlement advancement. Cannot redirect a payout. */
   | "claim-actor"
   /** Pays policy-approved gas. Never has user-fund authority. */
@@ -33,6 +35,7 @@ const DELEGATED: ReadonlySet<AuthorityKind> = new Set<AuthorityKind>([
   "strategy-runner",
   "game-session",
   "market-maker",
+  "leverage-keeper",
   "claim-actor",
   "sponsor",
 ]);

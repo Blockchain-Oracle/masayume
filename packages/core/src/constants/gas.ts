@@ -6,7 +6,7 @@ export const SDK_GAS_ENVELOPE_WEI = SDK_GAS_LIMIT * SDK_MAX_FEE_PER_GAS_WEI;
 /** Native balance must cover the envelope times this factor before we let a wallet sign. */
 export const GAS_SAFETY_BPS = 12_000;
 
-export type GasLane = "order" | "faucet" | "redeem" | "approve" | "vault" | "vault-order" | "parlay" | "range" | "maker";
+export type GasLane = "order" | "faucet" | "redeem" | "approve" | "vault" | "vault-order" | "parlay" | "range" | "maker" | "leverage";
 
 /** Gas ceiling per write lane, passed to the SDK per call. measured: pending Story 1.5b — every lane uses the SDK default until real usage is recorded on Shannon. */
 export const GAS_CEILING: Record<GasLane, bigint> = {
@@ -28,4 +28,7 @@ export const GAS_CEILING: Record<GasLane, bigint> = {
   // Not yet measured on Shannon: a quote is two post-only placements plus the module read (a vault IOC order
   // measured 2,562,772); a settle is the cancels plus two redeems. Same envelope as the range lane.
   maker: 8_000_000n,
+  // Not yet measured on Shannon: an open is one book walk, the module read, one IOC and the credit sweep — the
+  // shape of a vault IOC order (2,562,772) plus the walk; a knock-out or close is the same on the exit side.
+  leverage: 8_000_000n,
 };

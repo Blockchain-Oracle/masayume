@@ -14,6 +14,8 @@ interface PlacedCallProps {
   nowMs: number;
   decimals: number;
   symbol: string;
+  /** A boost's multiple and the reserve's claim; null for a plain call. */
+  boost: { leverageBps: number; frontedBase: bigint } | null;
   onAnother: () => void;
 }
 
@@ -23,7 +25,7 @@ interface PlacedCallProps {
  * under it. Every field on it is the booked order and the Window as the chain has
  * them; the return is net of the settlement fee once that read lands.
  */
-export function PlacedCall({ booked, market, nowMs, decimals, symbol, onAnother }: PlacedCallProps) {
+export function PlacedCall({ booked, market, nowMs, decimals, symbol, boost, onAnother }: PlacedCallProps) {
   // The moment the confirmation arrived, held for the life of the card so the
   // draining bar measures the holding window rather than resetting every render.
   const [placedAtMs] = useState(() => (nowMs > 0 ? nowMs : Date.now()));
@@ -47,6 +49,7 @@ export function PlacedCall({ booked, market, nowMs, decimals, symbol, onAnother 
     expirySec: placedIn.expirySec,
     txHash: booked.txHash,
     placedAtMs,
+    leverage: boost,
   };
 
   return (

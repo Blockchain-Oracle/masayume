@@ -19,7 +19,8 @@
     "spike:fill-projection-live": "tsx spike/fill-projection-live.ts",
     "spike:endpoint-ids": "tsx spike/endpoint-ids.ts",
     "spike:parlay-fork": "tsx spike/parlay-fork.ts",
-    "spike:range-oracle": "tsx spike/range-oracle.ts"
+    "spike:range-oracle": "tsx spike/range-oracle.ts",
+    "spike:live-windows": "tsx spike/live-windows.ts"
   },
   "dependencies": {
     "@masayume/core": "workspace:*",

@@ -37,6 +37,9 @@ export const marketsEnvSchema = z.object({
   /** Local-fork overrides for the MarketMakerVault, the same way. */
   marketMakerVaultAddress: addressSchema.optional(),
   marketMakerVaultFromBlock: z.coerce.bigint().optional(),
+  /** A local fork's LeverageReserve; production reads the generated module (AD-10). */
+  leverageReserveAddress: addressSchema.optional(),
+  leverageReserveFromBlock: z.coerce.bigint().optional(),
 });
 
 export type MarketsEnv = z.infer<typeof marketsEnvSchema>;

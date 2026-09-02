@@ -30,7 +30,11 @@ const CALL: CallCard = {
   expirySec: FIXED_NOW_SEC + 252,
   txHash: TX_HASH,
   placedAtMs: FIXED_NOW_MS - 48_000,
+  leverage: null,
 };
+
+/** The same call at 2×: 32 contracts on a 10 stake, the reserve's 10 repaid first, the reference's caveat printed. */
+const BOOSTED_CALL: CallCard = { ...CALL, stakeBase: 10_000_000n, contractsRaw: 32_000_000n, leverage: { leverageBps: 20_000, frontedBase: 10_000_000n } };
 
 const BASE: TradeCard = {
   asset: "BTC",
@@ -88,11 +92,15 @@ export default function DevSharePage() {
         <div className="mx-auto w-full max-w-(--content-reading)">
           <CallPlacedCard card={CALL} nowMs={FIXED_NOW_MS} />
         </div>
+        <div className="mx-auto w-full max-w-(--content-reading)">
+          <CallPlacedCard card={BOOSTED_CALL} nowMs={FIXED_NOW_MS} />
+        </div>
       </section>
 
       <section className="flex flex-col gap-4">
         <SectionHeader index="02" title={DEV.pngCall} />
         <Png render={() => renderCallShareCard(CALL)} />
+        <Png render={() => renderCallShareCard(BOOSTED_CALL)} />
       </section>
 
       <section className="flex flex-col gap-4">

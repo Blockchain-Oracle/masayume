@@ -1,16 +1,23 @@
 "use client";
 
 import { formatCadence, type BlockerContext } from "@masayume/core/copy";
+import { BPS_PER_X, leverageBpsOf } from "@masayume/core/leverage";
+import type { BookedOrder } from "@masayume/core/ports";
 import { minStakeBase } from "@masayume/core/sizing";
-import { formatBaseUnits } from "@masayume/core/units";
+import { formatBaseUnits, priceRawToBps } from "@masayume/core/units";
 import { collateralOrNull } from "@masayume/markets";
-import { useBalanceSheet, useOnchain, useRangeReserve, useSigner } from "@masayume/markets/react";
-import { useEffect, useState } from "react";
+import { useBalanceSheet, useLeverageReserve, useOnchain, useRangeReserve, useSigner } from "@masayume/markets/react";
+import { useCallback, useEffect, useState } from "react";
+import { Money } from "@/components/data";
+import { BlockedButton } from "@/components/states";
+import { LEVERAGE, LeverageStrip, useLeverageQuote, useLeverageWrites } from "@/features/leverage";
 import { RangeTicketBody } from "@/features/range";
 import { RouteControl, SESSION, SessionControl, useTicketRoute, type FundingSource } from "@/features/session";
-import { TICKET } from "@/lib/copy";
+import { diagnosisCopy, TICKET } from "@/lib/copy";
+import { notify } from "@/lib/toast";
 import { useWalletSession } from "@/lib/wallet-session";
 import { FaucetCard } from "../faucet";
+import { SIDE_WORD } from "../side-styles";
 import { AutoAdvanceNote } from "./AutoAdvanceNote";
 import { BetModes, type BetMode } from "./BetModes";
 import { FundingNote } from "./FundingNote";
@@ -21,7 +28,7 @@ import { QuickChips } from "./QuickChips";
 import { QuoteStrip } from "./QuoteStrip";
 import { SideSegments } from "./SideSegments";
 import { StakeInput } from "./StakeInput";
-import { deriveBlocker } from "./ticket-guards";
+import { deriveBlocker, deriveBoostBlocker, type TicketBlockerInput } from "./ticket-guards";
 import { TicketCta } from "./TicketCta";
 import { TicketHeader } from "./TicketHeader";
 import type { TicketSelection } from "./types";
@@ -32,6 +39,11 @@ import { useTicket } from "./useTicket";
 import { WalkLine } from "./WalkLine";
 
 const FALLBACK_SYMBOL = "tUSDC";
+
+interface PlacedBoost {
+  booked: BookedOrder;
+  leverage: { leverageBps: number; frontedBase: bigint };
+}
 
 /** The stake-first Ticket: exactly the deal shown, or a named refusal (FR-8, FR-9, UX-DR4). */
 export function Ticket({ selection }: { selection: TicketSelection }) {
@@ -53,9 +65,24 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
   const [mode, setMode] = useState<BetMode>("dir");
   const rangeReading = useRangeReserve();
   const rangeReserve = rangeReading?.ok ? rangeReading.value : null;
-  const quoteState = useQuote({ market, side, stakeBase, nowMs: t.nowMs, enabled: hasSigner && phase === "trading" });
+  // 1× is a plain order; above it the LeverageReserve buys the boost, from the wallet only (Stage 5).
+  const [multiple, setMultiple] = useState(1);
+  const leverageReading = useLeverageReserve();
+  const leverageReserve = leverageReading?.ok ? leverageReading.value : null;
+  const boosted = multiple > 1 && leverageReserve !== null;
+  const leverageBps = leverageBpsOf(multiple);
+
+  const quoteState = useQuote({ market, side, stakeBase, nowMs: t.nowMs, enabled: hasSigner && phase === "trading" && !boosted });
   const routing = useTicketRoute({ market, side, stakeBase, quote: quoteState.quote, onchain: onchain?.ok ? onchain.value : null, source, walletAvailableBase, symbol });
   const availableBase = routing.availableBase;
+  // The reference locks the higher chips for a private bet ("placed at 1x"); ours lock off the wallet route and under a pause.
+  const leverageLock = leverageReserve?.paused ? LEVERAGE.paused : source !== "wallet" || routing.armed ? LEVERAGE.lockedForRoute : null;
+  useEffect(() => {
+    if (leverageLock && multiple !== 1) setMultiple(1);
+  }, [leverageLock, multiple]);
+  const boost = useLeverageQuote({ market, side, stakeBase, leverageBps, params: leverageReserve?.params ?? null, enabled: boosted && hasSigner && phase === "trading" && leverageLock === null });
+  const leverageWrites = useLeverageWrites();
+  const [placedBoost, setPlacedBoost] = useState<PlacedBoost | null>(null);
 
   const bet = usePlaceBet({ submitter: routing.submitter, wallet: routing.wallet });
   const displayed = bet.requoted ?? quoteState.quote;
@@ -63,13 +90,16 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
   const funding = useFundingCheck(walletRoute ? address : null, onchain?.ok ? onchain.value : null, displayed);
 
   // A new stake or side starts a new composition; the previous outcome no longer describes it.
-  useEffect(() => bet.reset(), [stakeBase, side, bet.reset]);
+  useEffect(() => {
+    bet.reset();
+    setPlacedBoost(null);
+  }, [stakeBase, side, bet.reset]);
 
-  const blocker = deriveBlocker({
+  const base: TicketBlockerInput = {
     session,
     hasSigner,
     phase,
-    placing: bet.placing,
+    placing: bet.placing || leverageWrites.busy === "open",
     side,
     availableBase,
     stakeBase,
@@ -78,7 +108,8 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
     quoting: quoteState.pending,
     quoteStale: quoteState.stale,
     funding: walletRoute ? funding : null,
-  });
+  };
+  const blocker = boosted ? deriveBoostBlocker({ ...base, funding: null }, boost) : deriveBlocker(base);
   const ctx: BlockerContext = {
     cadence: formatCadence(market.intervalSec),
     minStakeText: `${formatBaseUnits(minStakeBase(decimals), decimals, { minDp: 0 })} ${symbol}`,
@@ -94,9 +125,33 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
     void bet.place({ market, side, stakeBase, displayedQuote: displayed, route: routing.route });
   };
 
+  /** The boost's open: the size the reserve quoted, its stake as the cap; a moved book comes back as a requote, never a popup. */
+  const placeBoost = useCallback(async () => {
+    if (!side || !boost.quote || !leverageReserve) return;
+    const q = boost.quote;
+    const outcome = await leverageWrites.open({ marketId: market.marketId, side, quantityRaw: q.quantityRaw, leverageBps, maxStakeBase: q.stakeBase, maintenanceBps: leverageReserve.params.maintenanceBps });
+    if (!outcome) return;
+    if (outcome.status === "confirmed") {
+      const avgPriceBps = priceRawToBps(q.priceRaw, decimals);
+      setPlacedBoost({
+        booked: { marketId: market.marketId, side, contractsRaw: outcome.quantityRaw, costBase: outcome.stakeBase, avgPriceBps, txHash: outcome.txHash, fillCount: 1 },
+        leverage: { leverageBps, frontedBase: outcome.frontedBase },
+      });
+      notify.neutral(TICKET.booked(formatBaseUnits(outcome.quantityRaw, decimals, { minDp: 0 }), SIDE_WORD[side], avgPriceBps));
+      return;
+    }
+    if (outcome.status === "requote") {
+      notify.warning(diagnosisCopy("requote").headline, LEVERAGE.strip.requote(formatBaseUnits(outcome.stakeBase, decimals), symbol));
+      boost.retry();
+      return;
+    }
+    const copy = diagnosisCopy(outcome.diagnosis.kind);
+    notify.warning(copy.headline, outcome.diagnosis.technical || copy.body);
+  }, [side, boost, leverageReserve, leverageWrites, market.marketId, leverageBps, decimals, symbol]);
+
   // The Call: once the fill is confirmed the ticket body is the shareable card, with
   // "Place another" bringing the composer back (reference Ticket624Drawer L807–836).
-  const booked = bet.state.outcome?.status === "confirmed" ? bet.state.outcome.booked : null;
+  const booked = placedBoost?.booked ?? (bet.state.outcome?.status === "confirmed" ? bet.state.outcome.booked : null);
 
   return (
     <section
@@ -115,8 +170,10 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
           nowMs={t.nowMs}
           decimals={decimals}
           symbol={symbol}
+          boost={placedBoost?.leverage ?? null}
           onAnother={() => {
             bet.reset();
+            setPlacedBoost(null);
             t.setStakeText("");
           }}
         />
@@ -154,7 +211,7 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
         />
       )}
       <SideSegments side={side} onSelect={t.selectSide} />
-      <StakeInput value={t.stakeText} onChange={t.setStakeText} decimals={decimals} symbol={symbol} costBase={displayed?.expectedCostBase ?? null} />
+      <StakeInput value={t.stakeText} onChange={t.setStakeText} decimals={decimals} symbol={symbol} costBase={boosted ? (boost.quote?.stakeBase ?? null) : (displayed?.expectedCostBase ?? null)} />
       {routing.sourceLabel && <p className="tk-control-label">{routing.sourceLabel}</p>}
       {routing.fallbackReason && (
         <p role="status" className="type-caption text-warning">
@@ -162,18 +219,28 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
         </p>
       )}
       <QuickChips availableBase={availableBase} decimals={decimals} onPick={t.setStakeBase} />
-      <LeverageChips />
-      <QuoteStrip
-        reading={quoteState.reading}
-        quote={displayed}
-        stale={quoteState.stale}
-        pending={quoteState.pending}
-        stakeBase={stakeBase}
-        side={side}
-        decimals={decimals}
-        symbol={symbol}
+      <LeverageChips
+        value={multiple}
+        onChange={setMultiple}
+        available={leverageReserve !== null}
+        maxMultiple={leverageReserve ? leverageReserve.params.maxLeverageBps / BPS_PER_X : 1}
+        lockedReason={leverageLock}
       />
-      {walletRoute && funding?.ok && <FundingNote funding={funding} decimals={decimals} symbol={symbol} />}
+      {boosted ? (
+        <LeverageStrip quote={boost.quote} loading={boost.loading} error={boost.error} retry={boost.retry} stakeBase={stakeBase} side={side} multiple={multiple} decimals={decimals} symbol={symbol} />
+      ) : (
+        <QuoteStrip
+          reading={quoteState.reading}
+          quote={displayed}
+          stale={quoteState.stale}
+          pending={quoteState.pending}
+          stakeBase={stakeBase}
+          side={side}
+          decimals={decimals}
+          symbol={symbol}
+        />
+      )}
+      {!boosted && walletRoute && funding?.ok && <FundingNote funding={funding} decimals={decimals} symbol={symbol} />}
       {routing.route.kind === "vault" && routing.vaultAvailableBase !== null && (
         <p className="type-caption text-ink-secondary">{SESSION.route.vaultNote(`${formatBaseUnits(routing.vaultAvailableBase, decimals)} ${symbol}`)}</p>
       )}
@@ -181,6 +248,16 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
       <OutcomeNote state={bet.state} decimals={decimals} symbol={symbol} onDismiss={bet.reset} />
       {showFaucet ? (
         <FaucetCard />
+      ) : boosted ? (
+        <BlockedButton blocker={blocker} ctx={ctx} tone={side ?? "primary"} size="lg" className="w-full" onClick={() => void placeBoost()}>
+          {side && boost.quote ? (
+            <>
+              {LEVERAGE.cta.buy(SIDE_WORD[side], multiple)} <Money value={boost.quote.stakeBase} decimals={decimals} symbol={symbol} />
+            </>
+          ) : (
+            TICKET.buyPlain
+          )}
+        </BlockedButton>
       ) : (
         <TicketCta blocker={blocker} ctx={ctx} side={side} costBase={displayed?.maxCostBase ?? null} decimals={decimals} symbol={symbol} onClick={place} />
       )}

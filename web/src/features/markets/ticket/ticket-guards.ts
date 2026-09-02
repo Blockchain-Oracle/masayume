@@ -1,8 +1,9 @@
 import type { BlockerKind } from "@masayume/core/copy";
+import type { LeverageQuote } from "@masayume/core/leverage";
 import type { MarketPhase } from "@masayume/core/lifecycle";
 import type { Reading } from "@masayume/core/schemas";
 import { admissibilityBlocker, belowMinStake } from "@masayume/core/sizing";
-import type { Quote, Side } from "@masayume/core/types";
+import type { Diagnosis, Quote, Side } from "@masayume/core/types";
 import type { FundingCheck } from "@masayume/markets";
 import type { WalletSession } from "@/lib/wallet-session";
 
@@ -20,6 +21,13 @@ export interface TicketBlockerInput {
   quoting: boolean;
   quoteStale: boolean;
   funding: FundingCheck | null;
+}
+
+/** What the reserve said about the boost this stake asks for. */
+export interface BoostState {
+  quote: LeverageQuote | null;
+  loading: boolean;
+  error: Diagnosis | null;
 }
 
 const PHASE_BLOCKERS: Partial<Record<MarketPhase, BlockerKind>> = {
@@ -40,8 +48,8 @@ function fundingBlocker(funding: FundingCheck | null): BlockerKind | null {
   return null;
 }
 
-/** Ordered so the first fixable reason is the one the CTA names; the label IS the blocker (UX-DR3/UX-DR4). */
-export function deriveBlocker(i: TicketBlockerInput): BlockerKind | null {
+/** Everything before the quote: the session, the Window, the stake against what can back it. */
+function commonBlocker(i: TicketBlockerInput): BlockerKind | null {
   if (!i.session.isConnected) return i.session.isConnecting ? "connecting" : "disconnected";
   if (!i.session.isRightChain) return "wrong-chain";
   // The signer binds one effect after the session settles; treat the gap as still connecting.
@@ -55,13 +63,27 @@ export function deriveBlocker(i: TicketBlockerInput): BlockerKind | null {
   if (i.stakeBase === 0n) return "no-stake";
   if (belowMinStake(i.stakeBase, i.decimals)) return "below-min-stake";
   if (i.availableBase !== null && i.stakeBase > i.availableBase) return "over-balance";
-  const funding = fundingBlocker(i.funding);
-  if (funding) return funding;
+  return fundingBlocker(i.funding);
+}
+
+/** Ordered so the first fixable reason is the one the CTA names; the label IS the blocker (UX-DR3/UX-DR4). */
+export function deriveBlocker(i: TicketBlockerInput): BlockerKind | null {
+  const common = commonBlocker(i);
+  if (common) return common;
   if (i.quoting || i.quote === null) return "quoting";
   if (!i.quote.ok) return "stale-quote";
   if (i.quote.value === null) return "no-liquidity-at-size";
   const band = admissibilityBlocker(i.quote.value.avgPriceBps);
   if (band) return band;
   if (i.quoteStale) return "stale-quote";
+  return null;
+}
+
+/** The same order for a boost, whose quote is the reserve's own answer: its refusal is named, never a stale book. */
+export function deriveBoostBlocker(i: TicketBlockerInput, boost: BoostState): BlockerKind | null {
+  const common = commonBlocker(i);
+  if (common) return common;
+  if (boost.error) return "boost-refused";
+  if (boost.loading || !boost.quote) return "quoting";
   return null;
 }

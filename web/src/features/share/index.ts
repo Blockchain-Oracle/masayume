@@ -1,4 +1,4 @@
-export { buildCallTweetText, callBandLabel, callDirLabel, callWinBase, renderCallShareCard, shortCallId, type CallCard } from "./call-card";
+export { buildCallTweetText, callBandLabel, callDirLabel, callMultiple, callWinBase, renderCallShareCard, shortCallId, type CallCard } from "./call-card";
 export { CallPlacedCard } from "./CallPlacedCard";
 export { SHARE } from "./copy";
 export { ShareCallButton } from "./ShareCallButton";

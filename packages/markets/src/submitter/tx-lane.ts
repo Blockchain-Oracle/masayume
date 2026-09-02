@@ -1,12 +1,14 @@
 import type { GasLane } from "@masayume/core/constants";
-import { isMakerIntent, isParlayIntent, isRangeIntent, isStrategyIntent, isVaultIntent, type IntentJournal, type PhaseListener, type TxIntent, type TxOutcome, type VaultIntent } from "@masayume/core/ports";
+import { isLeverageIntent, isMakerIntent, isParlayIntent, isRangeIntent, isStrategyIntent, isVaultIntent, type IntentJournal, type PhaseListener, type TxIntent, type TxOutcome, type VaultIntent } from "@masayume/core/ports";
 import type { ParlayIntent } from "@masayume/core/parlay";
 import type { RangeIntent } from "@masayume/core/range";
 import type { MakerIntent } from "@masayume/core/maker";
+import type { LeverageIntent } from "@masayume/core/leverage";
 import type { StrategyIntent } from "@masayume/core/strategies";
 import { submitParlayTx } from "../parlay/write";
 import { submitRangeTx } from "../range/write";
 import { submitMakerTx } from "../maker/write";
+import { submitLeverageTx } from "../leverage/write";
 import { submitStrategyTx } from "../strategies/write";
 import { diagnosis, type Diagnosis } from "@masayume/core/types";
 import type { TxResult } from "@somnia-chain/markets-sdk";
@@ -25,7 +27,7 @@ export interface TxLaneContext {
   contracts?: VaultContracts | undefined;
 }
 
-type VenueIntent = Exclude<TxIntent, VaultIntent | StrategyIntent | ParlayIntent | RangeIntent | MakerIntent>;
+type VenueIntent = Exclude<TxIntent, VaultIntent | StrategyIntent | ParlayIntent | RangeIntent | MakerIntent | LeverageIntent>;
 
 const LANE_OF: Record<VenueIntent["kind"], GasLane> = { faucet: "faucet", redeem: "redeem", approve: "approve" };
 
@@ -89,6 +91,7 @@ export async function submitTx(ctx: TxLaneContext, intent: TxIntent, onPhase?: P
   if (isParlayIntent(intent)) return submitParlayTx({ journal: ctx.journal, wallet, contracts: ctx.contracts }, intent, onPhase);
   if (isRangeIntent(intent)) return submitRangeTx({ journal: ctx.journal, wallet, contracts: ctx.contracts }, intent, onPhase);
   if (isMakerIntent(intent)) return submitMakerTx({ journal: ctx.journal, wallet, contracts: ctx.contracts }, intent, onPhase);
+  if (isLeverageIntent(intent)) return submitLeverageTx({ journal: ctx.journal, wallet, contracts: ctx.contracts }, intent, onPhase);
   if (intent.kind === "approve") return refused(diagnosis("unknown", NO_STANDALONE_APPROVE));
 
   const record = await ctx.journal.record({ kind: intent.kind, wallet, summary: summarize(intent) });

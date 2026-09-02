@@ -9,6 +9,7 @@
     "./chain": "./src/chain.ts",
     "./env": "./src/env.ts",
     "./identity": "./src/identity.ts",
+    "./leverage": "./src/leverage/index.ts",
     "./maker": "./src/maker/index.ts",
     "./parlay": "./src/parlay/index.ts",
     "./range": "./src/range/index.ts",

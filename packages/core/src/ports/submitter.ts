@@ -5,6 +5,7 @@ import type { Quote } from "../types/trading";
 import type { ParlayIntent } from "../parlay/types";
 import type { RangeIntent } from "../range/types";
 import type { MakerIntent } from "../maker/types";
+import type { LeverageIntent } from "../leverage/types";
 import type { StrategyIntent } from "../strategies/types";
 import type { GrantKind, VaultCaps } from "../vault/types";
 
@@ -89,7 +90,8 @@ export type TxIntent =
   | StrategyIntent
   | ParlayIntent
   | RangeIntent
-  | MakerIntent;
+  | MakerIntent
+  | LeverageIntent;
 
 export function isVaultIntent(intent: TxIntent): intent is VaultIntent {
   return intent.kind.startsWith("vault-");
@@ -109,6 +111,10 @@ export function isRangeIntent(intent: TxIntent): intent is RangeIntent {
 
 export function isMakerIntent(intent: TxIntent): intent is MakerIntent {
   return intent.kind.startsWith("maker-");
+}
+
+export function isLeverageIntent(intent: TxIntent): intent is LeverageIntent {
+  return intent.kind.startsWith("leverage-");
 }
 
 export type TxOutcome =

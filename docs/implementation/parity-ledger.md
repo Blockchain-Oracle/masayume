@@ -28,6 +28,10 @@ order", never "optional" or "cut".
 
 | Date | Decision | Reference | User-visible consequence | Approval |
 |---|---|---|---|---|
+| 2026-09-02 | **Leverage is a knock-out certificate on the venue's own contracts.** `LeverageReserve` fronts `(L−1)·stake` for a premium, buys the boost off the resting book as the venue's taker and holds it; its claim is repaid first at settlement, at the owner's cash-out, or at the knock-out anyone may trigger once the book's mark is under the maintenance line. The owner's loss is capped at the stake; the reserve's is gap risk at the line, under public caps. The reference's Ticket arithmetic (`ticket624.core.ts`) and its "L× can knock out before expiry" made explicit; a fairly priced boost with no knock-out would be cosmetic on a binary payoff | `ticket624.core.ts` `qtyForStake`/`winForQty`; `underwrite.move`; `margin.move`; doc 03 §Leverage; context/45 | 2× and 3× on the Ticket are real: the chain sizes and prices the boost, the strip shows the front, the fee and the line | **Needs user review** |
+| 2026-09-02 | A boost is placed from the wallet only: the reserve buys and custodies the contracts, and `EventVault` has no outbound path by design (AD-5). The higher chips lock off the wallet route with the reference's own treatment for a private bet ("placed at 1x") | `Ticket624Drawer.tsx` L1079–1081; doc 03 "from one Trading Balance" | Choose Wallet to bet at 2× or 3×; the chip's title says so | **Needs user review** — the promise names the Trading Balance |
+| 2026-09-02 | The premium is the reference's flat 8% of the fronted amount (`underwrite.move`), the maintenance line its 120% (`margin.move`); entry only inside 0.05–0.95 and never in the last 90 s of a Window; a boost that could not beat the plain bet when right is refused (`Underpriced`, the reference's "leverage loses even if right" guard) | `DeployLeverageReserve.s.sol`; `TradePanel.tsx` L424 | The reserve's terms are public params; the Ticket refuses what the reserve refuses | No approval needed — tunable without a redeploy |
+| 2026-09-02 | The knock-out is permissionless and unpaid (the reference's margin desk paid its liquidator 5% of proceeds); the house keeper cranks it, and an owner may cash out any time at the bids with a 3% slippage floor under the mark | `margin.move` `liq_penalty_bps`; `LeverageBetRow.tsx` | Nothing leaves a position to anyone but its owner | **Needs user review** |
 | 2026-09-02 | **The Earn vault is the maker, not a house.** `MarketMakerVault` rests a post-only YES bid and YES ask on the venue's Windows under on-chain bounds (spread, price band, size, per-Window and aggregate caps); it can only buy complete sets at a discount. The reference's vault was the venue's counterparty, which DreamDEX does not have | `app/earn/page.tsx`; doc 03 §Earn/LP; context/44 | Suppliers earn the spread the maker captures and carry the inventory it is left with; both readable per Window on `/earn` §02 | **Needs user review** — a product where the reference had a dependency |
 | 2026-09-02 | Share price counts deployed capital at cost, floored per Window; withdrawals draw on idle capital and are refused while a closed Window is unsettled (the page sends the crank first, anyone may) | `MarketMakerVault.deployedOf` / `withdraw`; context/44 | The number on the panel never includes a spread before it is realized; "Withdraw N idle" names what is still out | No approval needed — the doc-05 no-fake-data rule applied to a valuation |
 | 2026-09-02 | The venue's `price` is the YES price for every order kind (a `BUY_NO` at p rests as a YES ask at p); the range fork test's book seeding is corrected to match | context/44 §What the vault is allowed to do | None visible; every maker quote is expressed in YES terms | Recorded |
@@ -389,12 +393,69 @@ Withdraw). Fixtures on `/dev/earn`. **Not seen in a browser.**
 | §01 meta "withdraw anytime" | "withdraw what is idle, any time"; the Withdraw button takes what `liquid` covers and names what is still deployed | Truth correction | No approval needed |
 | "Withdraw all" | "Withdraw N idle" when capital is deployed; a closed unsettled Window is settled first (the page sends the permissionless crank) | Adapted | **Needs user review** |
 | — | §02 the Windows table with Merge / Settle | Additive | **Needs user review** |
-| The leverage-reserve handlers on the same page (`doSupplyReserve`, `doSettle`) | not ported — Stage 5 item 4 (capped leverage) | Pending | — |
+| The leverage-reserve handlers on the same page (`doSupplyReserve`, `doSettle`) | their JSX is gone from the pinned source (orphaned handlers); the leverage reserve has no supplier UI and is supplied by the house — §LeverageReserve | Adapted | No approval needed |
 
 **Fork verification** — context/44: against Shannon's real contracts on Window 70978 (ETH 4h), a pair at
 0.311 / 0.337 rested (the venue refused a flat 0.48 bid as `PostOnlyWouldCross`, and the venue's `BUY_NO` price
 turned out to be the YES price — both recorded), two takers hit both sides, `merge` returned 10.00 for 10 sets
 with the credit collected in the same call, a second pair pulled to the cent.
+
+### LeverageReserve, the Ticket's leverage and the portfolio's boosts (Stage 5, built and fork-verified 2026-09-02; deploy waits on the owner's go)
+
+The reference offers leverage three ways: the Ticket's own arithmetic (`lib/sui/ticket624.core.ts`: `qty = stake·L/prob`,
+a win pays `qty − stake·(L−1)`, "L× can knock out before expiry"), an underwriting reserve that fronts the rest of the
+notional for an 8% premium with no liquidation (`underwrite.move`, the "v4" its constants name), and a borrow-and-
+liquidate margin desk at a 120% maintenance line (`margin.move`, the path its web ticket actually takes). Doc 03's row
+asks for a "prefunded reserve/underwriter with capped loss and explicit maximum payout; never a cosmetic multiplier".
+`LeverageReserve.sol` (`contracts/src/leverage/`) is the Ticket's arithmetic made a contract on DreamDEX (context/45):
+
+| Requirement | Reference | Ours | Class | Status |
+|---|---|---|---|---|
+| The boost | `qtyForStake`: `stake·L / prob` contracts; `winForQty`: less the financed `stake·(L−1)` | `sizeForStake` walks the live book for what `stake + fronted − premium` buys, on the venue's lot; the open buys exactly that as an IOC taker and charges the stake the fill implies; a win pays `quantity − fronted` | Adapted — the book prices it, in-transaction | **Done** — 34 unit tests, the shared vectors, fork-verified |
+| Who fronts | the venue (624) / the yolev reserve's suppliers / the lending pool | the reserve's suppliers, shares of `liquid + outstanding`; the front counted at cost, the premium as income | Adapted | **Done** |
+| The knock-out | "can knock out before expiry" (624); the margin desk liquidates under `debt × maintenance`, keeper-executed, 5% to the liquidator; the underwriting reserve has none | anyone may sell the position at the resting bids once the book's mark is under `fronted × maintenance`; the reserve repaid first, the rest to the owner, nothing to the cranker; a thin book sells what it can and leaves the position live with a smaller claim | Adapted — permissionless, unpaid | **Done** — fork-verified against live bids |
+| Cash-out | mid-round close disabled on the reference's testnet ("thin AMM spread misprices an early exit") | the owner's `close` at the bids with their own `minProceeds`; the row floors it 3% under the mark | Adapted | **Done** — not seen in a browser |
+| Settlement | keeper-cranked `settle`/`close`, permissionless fallback in the client | `settle` redeems through the module, repays the reserve, pays the owner; permissionless; a void pays half a contract | Adapted | **Done** — void fork-verified, won/lost in the unit suite |
+| Caps | max leverage (3×), premium 8% of fronted, maintenance 120%, exposure 60% | the same, plus an entry band (0.05–0.95), a cap per position and per Window, a cap on open positions, no opens in the last 90 s, and `Underpriced` for a boost that cannot beat 1× when right | Strengthening | **Done** |
+| Funding source | the Trading Balance with a wallet top-up in the same PTB | the wallet only (the vault has no outbound path, AD-5); the chips lock off the wallet route | Deviation | **Needs user review** |
+| Withdraw | suppliers redeem any time from idle capital | from `liquid` only; refused while a position past its Window's expiry is unsettled (`UnsettledPosition`) | Strengthening | **Done** |
+
+**The port (`packages/core/src/leverage`, `packages/markets/src/leverage`).** The arithmetic is pure and mirrored line for
+line (`walkQuantity`, `walkBudget`, `terms`, `winIfRight`, `isKnockable`, `split`, `markOverLevels`; 13 vitest over
+`sizing.vectors.json`, the same rows forge asserts in `LeverageVectors.t.sol`). `getLeverageReserveState`,
+`listLeveragePositionsOf` (paged), `listLeverageOpenPositions`, `getLeverageMark`, `sizeLeverageForStake` /
+`previewLeverageOpen` (the chain's own quote), `getLeverageSharesOf`; `LeverageIntent` on the tx lane, a `leverage`
+gas lane (8M, **unmeasured**), `submitLeverageOpen` with the requote guard; hooks `useLeverageReserve` /
+`useMyLeveragePositions` / `useLeverageMark`; `leverage-reserve.abi.ts` exported.
+
+**The Ticket (`ticket/LeverageChips.tsx`, `features/leverage/`)** — the reference's 1×/2×/3× chips
+(`Ticket624Drawer.tsx` L1074–1090), live: 1× is the plain order; a higher multiple swaps the book quote for the
+reserve's (`LeverageStrip`: cost, exposure, payout if right, max loss, odds), prints the reference's one sentence
+("2× can knock out before expiry.") and, under it, what the reference never showed — the front, the fee and the
+line — then the CTA "Buy UP 2× for <stake>". The Call carries the reference's caveat ("✦ 2× leverage. It can knock
+out before close.", `BetPlacedCard.tsx` L123–127) on screen and its PNG line (`openBetShareCard.ts` L360) in the
+export. `/portfolio` lists the wallet's boosts under its open bets (`LeverageBetRow`: the multiple, your equity at
+the mark, the line, Cash out / Settle) and the last five that settled, knocked out or cashed out. Fixtures on
+`/dev/leverage`; a boosted Call on `/dev/share`. **Not seen in a browser** — typecheck, invariants (0 warnings),
+141 vitest, 154 forge, build.
+
+| Reference | Ours | Class | Approval |
+|---|---|---|---|
+| Chips disabled for a private bet, title "Private bets are placed at 1x." | Chips disabled off the wallet route, under a pause, or above the reserve's ceiling; the title says which | Adapted | No approval needed |
+| One sentence under the strip: "L× can knock out before expiry." | The sentence, then the front, the fee and the line in numbers | Additive (truth) | **Needs user review** |
+| Leverage column `1.0×` on every open bet (`Portfolio624Section` L452) | The multiple only on boosted rows; plain rows say nothing | Adapted — the recorded Stage 2 deviation, resolved | **Needs user review** |
+| `LeveragePortfolioPanel`: value, cashout, live P&L, health % | "Yours now" (mark − front), the line or "at the knock-out line"; no percentage health | Adapted | **Needs user review** |
+| Earn page reserve handlers (`doSupplyReserve`, `doSettle`) with no JSX in the pinned source | No supplier UI; the reserve is supplied by the house like the parlay and range reserves | Adapted | No approval needed |
+
+**The keeper (`services/ops/src/actors/leverage-keeper`)** — one key, dry-run by default: settles what the venue
+settled, knocks out what is under the line and has bids to sell into; both permissionless, both pay the owner.
+Env: `LEVERAGE_KEEPER_PRIVATE_KEY`, `LK_REFRESH_MS` (20 s), `DRY_RUN`, `VENUE_ID`. Registered in `main.ts`.
+
+**Fork verification** — context/45: on Window 70978 (ETH 4h) with live makers at 0.679 / 0.707, a 2× boost on 10
+bought 27.157 contracts for a 9.999999 stake, 10.00 fronted and 0.80 premium; the mark at the bid was 18.44 against a
+12.00 line; with the line raised over the mark (the reference's own proof-script move) a stranger's knock-out sold
+into the live bids for 18.44, the reserve repaid 10.00 and the owner paid 8.44; a second boost voided through the
+venue's `voidExpired` settled at half a contract; the house withdrew its 5,000 plus the two premiums.
 
 ### Toast (Stage 2, done 2026-09-01)
 
@@ -645,7 +706,7 @@ DreamDEX pipeline — a presentation change, not a data change.
 | `.hero-yesno` mobile UP/DOWN with live cents | L790–813 | `hero/HeroYesNo.tsx` | Exact | **Done** — verified 79¢/24¢ matching the lane card at 390 |
 | Ticket rail (desktop) / drawer (mobile) | `Ticket624Drawer` | `ticket/TicketDock.tsx` | Adapted | **Done** — rail above 900px, drawer below; the drawer has no trigger of its own, the UP/DOWN buttons are it |
 | Bet type Up/Down · **Range** | `Ticket624Drawer` L858–869 | `ticket/BetModes.tsx` | Present, disabled | **Done** — Range names `RangeReserve` (Stage 5) as the missing piece; never wired to an ordinary Up/Down order |
-| **Leverage chips** | `Ticket624Drawer` L1075–1090 | `ticket/LeverageChips.tsx` | Present, disabled | **Done** — 1× is real and selected; 2×/3× say they need the prefunded reserve (Stage 5) |
+| **Leverage chips** | `Ticket624Drawer` L1075–1090 | `ticket/LeverageChips.tsx`, `features/leverage/*` | Adapted | **Done** — live where `LeverageReserve` is deployed (§LeverageReserve); without it 2×/3× say what is missing |
 | Live-now card grid below the hero (`Market624Card`) | L251–400, L847–875 | `lanes/MarketCard.tsx`, `lanes/CardSpark.tsx` | Adapted | **Done** — see §§01 rail card |
 | Tutorial | L905 | `features/onboarding/*` | Exact shape | **Done** — see §First-run Tutorial |
 | `WordMarketBoard` §02 | L878–881 | `features/markets/word-board/*` | Adapted | **Done** — see §Word-market board |
@@ -707,13 +768,13 @@ that read the market pipeline are connected here; everything else keeps a named 
 | Open bets: status · market · countdown · stake · value | `Portfolio624Section` L431–455 | `portfolio/BetsPanel.tsx`, `portfolio/BetRow.tsx` | Adapted | **Done** — off `getOpenPositionsWithPnL`, so cost basis, mark value and unrealised PnL are the venue's own numbers, not recomputed here |
 | Silent status while a bet is live (pulsing dot + countdown say it twice already) | L440 | `BetRow.tsx` | Exact | **Done** |
 | Row links back to its market | — | `BetRow.tsx` | Improved | **Done** — the deep-link grammar, as on the reel |
-| Leverage column (`1.0×`) | L452 | — | Deviation | **Recorded** — Stage 5; a `1×` on every row is a number pretending to be a choice |
+| Leverage column (`1.0×`) | L452 | `features/leverage/LeverageBetRow.tsx` | Adapted | **Done** — the multiple on boosted rows only (§LeverageReserve); a `1×` on every row would be a number pretending to be a choice |
 | Claimables / "collect now" | L457–470 | existing `claims/LiveClaimPlate` | Adapted | **Done** — already live on `/claims`, mounted here as §02 |
 | Settled history, receipts, equity curve, reputation, badges, CSV export | L486–512 | `features/markets/history/*` | Adapted | **Done** — see §Fill projection |
 | Trader Edge link | `TraderEdgeLink` | `history/TraderEdgeLink.tsx` | Exact | **Done** |
 | Creator earnings, X wallet card | L318–329 | — | — | Pending — Stage 3–4 |
 | Trading Balance vault (deposit/withdraw/sweep, private withdrawal) | L51–58 | — | — | Pending — Stage 4 (`EventVault`) |
-| Copy-trading desk, leverage panel | L520+, `LeveragePortfolioPanel` | — | — | Pending — Stage 5 |
+| Copy-trading desk, leverage panel | L520+, `LeveragePortfolioPanel` | `features/leverage/LeverageBetRows.tsx` | Adapted | **Done** for the leverage panel (§LeverageReserve); the copy-trading desk is `/strategies` |
 
 ---
 
@@ -1086,7 +1147,7 @@ Tracked separately so the route table cannot hide a missing capability.
 | Hero-as-ticket trade flow | **Partial** | Ticket + quote + guarded write live; Yosuku presentation ported |
 | Reel — snap feed of live Windows and takes | **Done** | Market cards off the shared stream; community takes woven in from the social store, honest when unconfigured |
 | Up/Down · stake · cash-out · claim · receipt | **Partial** | Up/Down, stake, claim, receipt live; cash-out pending |
-| Range · leverage · private | Pending | Stage 5 — needs `RangeReserve` + prefunded leverage + link-private service |
+| Range · leverage · private | **Partial** | `RangeReserve` and `LeverageReserve` built and fork-verified, not deployed; private needs the link-private service |
 | Rooms / comments | **Done** | Position-gated, signature-authenticated, over `packages/db`; honest when unconfigured |
 | Social takes, sharing, alerts, news/ticker | **Done** | Signed takes over Postgres; The Call and Earned Heat share cards; threshold price alerts with a live evaluator; the wire on `/news`; the ticker on real prices (Fear/Greed pending a provider) |
 | X linking | **Partial** | OAuth/PKCE + signed wallet binding, parser, `/trade-from-x`, `/claim`, the relay actor and receipts built; the live X account, credentials and posting stay with the owner; on-chain execution needs the vault deployed |

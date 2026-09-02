@@ -8,6 +8,7 @@ export * from "./mappers";
 export * from "./parlay";
 export * from "./range";
 export * from "./maker";
+export * from "./leverage";
 export * from "./provider";
 export * from "./runtime";
 export * from "./sessions";

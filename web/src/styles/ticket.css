@@ -126,3 +126,15 @@
   justify-content: space-between;
   gap: 12px;
 }
+
+/* ── the boost's caveat under the quote strip ──
+   font-mono text-[8.5px] text-white/35 leading-relaxed -mt-1 mb-3 (Ticket624Drawer L1117–1121) */
+.tk-lev-note {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  line-height: 1.625;
+  color: rgba(255, 255, 255, 0.35);
+}
+[data-theme="light"] .tk-lev-note {
+  color: rgba(20, 18, 16, 0.55);
+}

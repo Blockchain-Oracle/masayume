@@ -1,36 +1,46 @@
 "use client";
 
+import { LEVERAGE_MULTIPLES } from "@masayume/core/leverage";
+import { LEVERAGE } from "@/features/leverage";
 import { TICKET_PENDING } from "@/lib/copy";
 
-/** The multiples the reference offers; everything above 1× waits on Stage 5's prefunded reserve. */
-const MULTIPLES = ["1×", "2×", "3×"] as const;
+interface LeverageChipsProps {
+  value: number;
+  onChange: (multiple: number) => void;
+  /** The LeverageReserve is deployed on this network; without it the higher chips stay and say what is missing. */
+  available: boolean;
+  /** The reserve's own ceiling, in multiples. */
+  maxMultiple: number;
+  /** Why the higher multiples cannot be chosen right now (the route, a pause); null when they can. */
+  lockedReason: string | null;
+}
 
 /**
- * Leverage, shown at the size every bet here actually is.
- *
- * 1× is selected and real. The higher multiples stay visible — they are part of
- * the product — but they are disabled and say why, because a chip that changes
- * nothing about the order would be a claim about payout that the venue would not
- * honour.
+ * The reference's 1×/2×/3× chips (`Ticket624Drawer.tsx` L1074–1090), live. 1× is a plain order. A
+ * higher multiple is a boost the reserve buys; where it cannot be placed — no reserve, a route that is
+ * not the wallet, a paused reserve — the chip stays, disabled, and its title says why, exactly as the
+ * reference disables them for a private bet ("Private bets are placed at 1x.").
  */
-export function LeverageChips() {
+export function LeverageChips({ value, onChange, available, maxMultiple, lockedReason }: LeverageChipsProps) {
   return (
     <div className="tk-lev-row">
-      <span className="tk-control-label">{TICKET_PENDING.leverageLabel}</span>
-      <div className="tk-levs" role="group" aria-label={TICKET_PENDING.leverageLabel}>
-        {MULTIPLES.map((multiple) => {
-          const live = multiple === TICKET_PENDING.leverageOne;
+      <span className="tk-control-label">{LEVERAGE.label}</span>
+      <div className="tk-levs" role="group" aria-label={LEVERAGE.label}>
+        {LEVERAGE_MULTIPLES.map((multiple) => {
+          const label = LEVERAGE.multiple(multiple);
+          const reason = multiple === 1 ? null : !available ? TICKET_PENDING.leveragePending(label) : (lockedReason ?? (multiple > maxMultiple ? TICKET_PENDING.leveragePending(label) : null));
           return (
             <button
               key={multiple}
               type="button"
               className="tk-lev"
-              aria-pressed={live}
-              disabled={!live}
-              title={live ? undefined : TICKET_PENDING.leveragePending(multiple)}
+              aria-pressed={value === multiple}
+              disabled={reason !== null}
+              title={reason ?? undefined}
+              onClick={() => onChange(multiple)}
               data-cursor="hover"
             >
-              {multiple}
+              {label}
             </button>
           );
         })}

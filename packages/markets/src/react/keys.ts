@@ -36,6 +36,11 @@ export const keys = {
   makerWindows: () => [QUERY_KEY_SCOPE, APP, "makerVault", "windows"] as const,
   makerHistory: (limit: number) => [QUERY_KEY_SCOPE, APP, "makerVault", "history", limit] as const,
   makerShares: (wallet: string | null) => [QUERY_KEY_SCOPE, APP, "makerShares", wallet] as const,
+  /** The leverage reserve's sheet, one wallet's boosts, a boost's live mark and a stake's quote. */
+  leverageReserve: () => [QUERY_KEY_SCOPE, APP, "leverageReserve"] as const,
+  leveragePositions: (wallet: string | null) => [QUERY_KEY_SCOPE, APP, "leverage", wallet] as const,
+  leverageMark: (positionId: string | null) => [QUERY_KEY_SCOPE, APP, "leverageMark", positionId] as const,
+  leverageQuote: (signature: string) => [QUERY_KEY_SCOPE, APP, "leverageQuote", signature] as const,
   balanceSheet: (wallet: string | null) => [QUERY_KEY_SCOPE, APP, "balanceSheet", wallet] as const,
   nextWindow: (marketId: MarketId | null) => [QUERY_KEY_SCOPE, APP, "nextWindow", marketId] as const,
   clock: () => [QUERY_KEY_SCOPE, APP, "clock"] as const,

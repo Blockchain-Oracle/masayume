@@ -5,6 +5,7 @@ import type { Address, BalanceSheet, Bytes32, ClaimableRow, ClockSync, EventMark
 import type { ParlayReserveState, ParlayTicket } from "@masayume/core/parlay";
 import type { RangeReserveState, RangeRound } from "@masayume/core/range";
 import type { MakerVaultState, MakerWindowView } from "@masayume/core/maker";
+import type { LeverageMark, LeveragePosition, LeverageReserveState } from "@masayume/core/leverage";
 import type { VaultHoldings, VaultSnapshot } from "@masayume/core/vault";
 import { getBalanceSheet } from "../provider/balances";
 import { listWalletHistory } from "../provider/history";
@@ -19,6 +20,7 @@ import { getResolution } from "../provider/resolution";
 import { getParlayReserveState, listParlaysOf } from "../parlay/read";
 import { getRangeReserveState, listRangesOf } from "../range/read";
 import { getMakerSharesOf, getMakerVaultState, listMakerHistory, listMakerOpenWindows } from "../maker/read";
+import { getLeverageMark, getLeverageReserveState, listLeveragePositionsOf } from "../leverage/read";
 import { getVaultHoldings, getVaultSnapshot } from "../vault/read";
 import { keys } from "./keys";
 import { useReadingQuery } from "./useReadingQuery";
@@ -133,4 +135,19 @@ export function useVaultHoldings(wallet: Address | null, onchain: OnchainSnapsho
     pollMs: MARKETS_POLL_MS,
     enabled: wallet !== null && onchain !== null,
   });
+}
+
+/** The leverage reserve's sheet; null (never an error) where none is deployed. */
+export function useLeverageReserve(): Reading<LeverageReserveState | null> | null {
+  return useReadingQuery(keys.leverageReserve(), getLeverageReserveState, { pollMs: MARKETS_POLL_MS });
+}
+
+/** One wallet's boosts, live first; empty without a reserve. */
+export function useMyLeveragePositions(wallet: Address | null): Reading<LeveragePosition[]> | null {
+  return useReadingQuery(keys.leveragePositions(wallet), () => listLeveragePositionsOf(wallet as Address), { pollMs: MARKETS_POLL_MS, enabled: wallet !== null });
+}
+
+/** A live boost's mark off the book, against its knock-out line. */
+export function useLeverageMark(positionId: bigint | null): Reading<LeverageMark> | null {
+  return useReadingQuery(keys.leverageMark(positionId === null ? null : positionId.toString()), () => getLeverageMark(positionId as bigint), { pollMs: ONCHAIN_POLL_MS, enabled: positionId !== null });
 }
