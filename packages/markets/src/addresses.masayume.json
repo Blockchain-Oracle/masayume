@@ -1,4 +1,11 @@
 {
   "generatedBy": "contracts/export.mjs",
-  "deployments": {}
+  "deployments": {
+    "50312": {
+      "collateral": "0x70a86D8842FB63C4Ad2b7cdddF530eBf1BB25d8E",
+      "eventVault": "0x84Ec824D89ee78d5728545CE0B40EC968aa7CD7A",
+      "forwarder": "0x82bb75b8aE663abC73308Ce42ca00d701cFb50d3",
+      "fromBlock": 477731559
+    }
+  }
 }
