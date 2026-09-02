@@ -6,6 +6,7 @@ import {
   GalleryVerticalEnd,
   Gamepad2,
   MessageSquare,
+  Newspaper,
   Sparkles,
   Trophy,
   X as XLogo,
@@ -44,6 +45,9 @@ export const SECONDARY_NAV: NavLink[] = [
   { name: "Sensei", href: "/markets?sensei=1", icon: MessageSquare },
   { name: "X-trade", href: "/trade-from-x", icon: XLogo },
   { name: "Parlay", href: "/parlay", icon: ChartNoAxesCombined },
+  // The reference cut its /news route as "broken" (93d09c1) but kept the feed component and
+  // its RSS route; here the wire is live, so it gets the More slot the reference once gave it.
+  { name: "News", href: "/news", icon: Newspaper },
   { name: "Docs", href: "/docs", icon: BookOpen },
 ];
 
