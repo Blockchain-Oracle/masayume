@@ -131,7 +131,7 @@ no code change. **The live reply path is therefore unverified** — see the note
 | `SenseiTape` — the real chart, not a hairline | `SenseiTape.tsx` | `CardSpark` | Adapted | **Done** — the reference polls its own price history; this reads the series `/markets` already streams, so Sensei's price cannot disagree with the card behind the drawer. Same picture, one implementation |
 | Typewriter reveal, word by word, with a caret | L42–58 | `Typewriter.tsx` | Exact | **Done** — splits on `(\s+)` as the reference does, so the paragraph does not jump as it reflows |
 | Contextual follow-up chips, sit-it-out branch first | L61–67 | `copy.ts` `chipsFor` | Exact | **Done** — rules verbatim |
-| Brain | DeepSeek `deepseek-chat`, temp 0.4 | Claude `claude-opus-5` | **Substituted** | **Done** — `effort: low` (a market read is short and latency-sensitive), adaptive thinking, refusal fallback to `claude-opus-4-8`, the stable system prompt cached and the per-turn figures placed after it |
+| Brain | DeepSeek `deepseek-chat`, temp 0.4 | Vercel AI SDK 7, default `anthropic/claude-opus-5` | **Substituted + made provider-agnostic** | **Done, revised 2026-09-02** — see §Sensei's model layer |
 | System prompt: voice, three-part read, ground-truth-only, style bans, never say "bell" | L42–58 | `prompt.ts` | Exact | **Done** — carried whole, including the reason the word "bell" has to be banned by name |
 | **THE BRAKE** | L54 | same | Exact | **Done** — verbatim. The one voice in the product allowed to say do not take this one |
 | Pricing instruction | — | `prompt.ts` | **Additive** | **Done** — Yosuku prices off a house model, so its two sides sum to a dollar. DreamDEX has a real book on each side and they do not. A model left to assume otherwise would quietly do `100 - x` and state it as the market's price, so the prompt forbids it explicitly |
@@ -141,12 +141,41 @@ no code change. **The live reply path is therefore unverified** — see the note
 | `SenseiTradeCards` — stake chips + Place, calling `placeMint624` directly | `SenseiTradeCards.tsx` | `SenseiTradeCards.tsx` | **Adapted — one write path** | **Done** — a second signing path inside a chat drawer is exactly what doc 02 §"do not scatter DreamDEX calls through components" exists to prevent, and every other surface here hands off to the one Ticket. The cards keep the job and drop the mechanism: tap a side and the Window opens in the ticket with that side chosen. Its `probAbove`/`payoutX` odds are the real book |
 | Cards appear only once a read exists | L320 | `SenseiDrawer.tsx` | **Corrected** | **Done** — first cut counted any assistant turn, so an *unreachable brain* opened the trade cards and offered "Why?" as a follow-up to a configuration error. Failure notices are flagged and count as neither |
 
-**Not verified: the live reply.** Every gate passes and the unconfigured path was exercised in the
-browser, but no request has been made to Claude — there is no key on this machine and spending the
-user's credential without asking is not this agent's call. The request *shape* is checked by the
-SDK's own types at compile time (`output_config`, `thinking`, `betas`, `fallbacks`, cached
-`system`). First run with a real key should confirm: a reply arrives, the typewriter fires, the
-trade cards open, and the style rules hold (no em dashes, no "bell").
+**Not verified: the live reply.** Every gate passes and every *un*configured path was exercised
+against the running route, but no request has reached a model — there is no credential on this
+machine and spending the user's without asking is not this agent's call. First run with one should
+confirm: a reply arrives, the typewriter fires, the trade cards open, and the style rules hold (no
+em dashes, no "bell").
+
+### Sensei's model layer (revised 2026-09-02, user's call)
+
+The first cut called the Anthropic SDK directly, which made the provider a code change rather than
+a setting. **On the user's request it now runs on the Vercel AI SDK (`ai` 7.0.87)**, which the
+project's own earlier stack review had already landed on (`_bmad-output/.../review-versions.md`
+line 21: AI SDK 7 + Gateway, default `anthropic/claude-opus-5`, reasoning-effort through v7's
+top-level option). Claude remains the default; the point is that it is now configuration.
+
+`AI_MODEL` (default `anthropic/claude-opus-5`) names the model, and `model.server.ts` takes
+whichever route the available credential allows, in this order:
+
+| Order | Credential | Route | Why this order |
+|---|---|---|---|
+| 1 | `AI_BASE_URL` + `AI_API_KEY` | any OpenAI-compatible endpoint | Covers OpenRouter, Together, Groq, vLLM, a local Ollama — none needs a package of its own. An explicit endpoint is the most specific instruction, so it wins |
+| 2 | `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GOOGLE_GENERATIVE_AI_API_KEY` | that provider directly | A key you already hold should not require a gateway account to be useful |
+| 3 | `AI_GATEWAY_API_KEY` | Vercel AI Gateway, `creator/model` string | One key, every provider |
+| — | none | honest 503 **naming the variable that would fix it** | The provider is configurable now, so "the key" no longer identifies one |
+
+| Element | Before | Now | Note |
+|---|---|---|---|
+| Reasoning effort | Anthropic `output_config.effort: "low"` | top-level `reasoning: "low"` | **Portable in AI SDK 7** (`'minimal'`…`'xhigh'`), mapped by each provider onto its own knob — no per-provider branch |
+| Error mapping | `instanceof` per Anthropic error class | structural `statusCode`, plus a name check | A swappable-provider layer should not need a new branch per provider. The name check earns its place: a bad `AI_GATEWAY_API_KEY` is rejected **before any request goes out**, so its `GatewayAuthenticationError` carries no status — verified against the real error, not assumed. Without it that read as "unreachable", pointing at the network instead of the key |
+| Refusal fallbacks (`betas` + `fallbacks`) | present | **dropped** | Anthropic-only server-side routing with no portable equivalent |
+| Explicit `cache_control` breakpoint | present | **dropped** | Provider-specific. The stable prefix is still first and the volatile figures still sit in their own later turn, so a provider that caches a prefix can still do so |
+
+Verified against the running route, all four paths: no credential names `ANTHROPIC_API_KEY`;
+`AI_MODEL=openai/gpt-5.4` names `OPENAI_API_KEY`; `AI_MODEL=meta/llama-4-maverick` (no direct
+package) names the gateway or a custom endpoint; and with a gateway key present the call is
+actually attempted and a bad key reports as a rejected credential rather than a network fault.
 
 ### §01 rail card (Stage 3, done 2026-09-01)
 

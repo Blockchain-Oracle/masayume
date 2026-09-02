@@ -9,6 +9,9 @@
     "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.46",
+    "@ai-sdk/google": "^4.0.59",
+    "@ai-sdk/openai": "^4.0.53",
     "@anthropic-ai/sdk": "^0.122.0",
     "@base-ui/react": "^1.7.0",
     "@masayume/core": "workspace:*",
@@ -16,6 +19,7 @@
     "@masayume/markets": "workspace:*",
     "@rainbow-me/rainbowkit": "catalog:",
     "@tanstack/react-query": "catalog:",
+    "ai": "^7.0.87",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lightweight-charts": "catalog:",

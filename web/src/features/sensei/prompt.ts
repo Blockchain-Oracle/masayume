@@ -12,7 +12,9 @@ import type { SenseiRequest } from "./protocol";
  * do not, and a model left to assume otherwise would quietly do `100 - x`
  * arithmetic and state the answer as fact.
  *
- * This string is the cached prefix, so it must not carry anything per-turn.
+ * This string is the stable prefix, so it must not carry anything per-turn — a
+ * provider that caches a prompt prefix can only do so while the prefix is
+ * byte-identical between turns.
  */
 export const SENSEI_SYSTEM = [
   "You are Sensei, the trading companion inside Masayume, a prediction market on DreamDEX (Somnia Shannon testnet).",
@@ -30,8 +32,8 @@ export const SENSEI_SYSTEM = [
   "THE BRAKE, your most important job: you are the one voice in this app allowed to say do not take this one. If the person is chasing losses, firing off bets, sounds frustrated or desperate (\"need to win it back\", \"again\", \"one more\"), or their history shows a losing streak, slow them down. Name it plainly and kindly. Offer to sit the next round out together. Never encourage chasing or making it back. Talking someone down beats another bet. That is the whole point of you.",
 ].join(" ");
 
-/** The per-turn block: live figures and the tilt cue, kept out of the cached prefix. */
-export function senseiSystemPrompt({ snapshot, restless }: SenseiRequest): string {
+/** The per-turn block: live figures and the tilt cue, kept out of the stable prefix. */
+export function senseiTurnContext({ snapshot, restless }: SenseiRequest): string {
   const lines: string[] = [];
 
   if (restless) {
@@ -62,16 +64,17 @@ export function senseiSystemPrompt({ snapshot, restless }: SenseiRequest): strin
 /**
  * Every way this can fail, said in Sensei's own register.
  *
- * `notConfigured` is the one that matters most: it is the reference's own wording
- * for a missing key, and the reason the whole dock can ship before the credential
- * exists. It states what is missing rather than failing silently or pretending.
+ * `notConfigured` is the one that matters most: it is the reason the whole dock can
+ * ship before a credential exists. It states what is missing — by variable name,
+ * since the provider is now configurable and "the key" no longer identifies one —
+ * rather than failing silently or pretending.
  */
 export const SENSEI_ERRORS = {
-  notConfigured: "Sensei isn't switched on yet. The brain key isn't configured on the server.",
-  badKey: "Sensei's key was rejected by the server. That's a configuration problem, not you.",
+  /** Names the variable that would switch it on, so the fix does not need the source. */
+  notConfigured: (hint: string) => `Sensei isn't switched on yet. No model credential is configured on the server — set ${hint}.`,
+  badKey: (provider: string) => `Sensei's ${provider || "model"} credential was rejected. That's a configuration problem, not you.`,
   badRequest: "Bad request.",
   saySomething: "Say something first.",
-  declined: "I'm going to pass on that one. Ask me about the market instead.",
   wentQuiet: "Sensei went quiet. Try again.",
   rateLimited: "Too many questions at once. Give it a moment.",
   upstream: (status: number) => `Sensei's brain hiccuped (${status}).`,

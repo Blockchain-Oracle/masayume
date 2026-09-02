@@ -37,10 +37,10 @@ Everything is green: `pnpm typecheck`, `pnpm invariants` (12/12), `pnpm test` (4
 
 **Never touch or commit** the untracked `context/screens/` and `prompt.md`. They are the user's.
 
-**Local dev state, not in the repo** (created 2026-09-01 to verify the Room, both safe to delete):
-a Postgres database `masayume_room_dev` on the local instance, and `web/.env.local` pointing at it
-with a throwaway `ROOM_TOKEN_SECRET`. `dropdb masayume_room_dev && rm web/.env.local` removes both;
-the Room then reverts to its honest "not connected" state.
+**Local state, not in the repo**: `web/.env.local` (gitignored) holds the user's Neon
+`DATABASE_URL` and a random `ROOM_TOKEN_SECRET`. The temporary local `masayume_room_dev` database
+used to verify the Room on 2026-09-01 has been dropped. **The Neon credential was pasted into a
+chat transcript** — worth rotating in the Neon console once the hackathon is over.
 
 ## Facts you do not need to re-derive
 
@@ -88,20 +88,21 @@ Per `05-migration-and-agency-handoff.md`. Four slots were waiting on `/markets` 
    card (`Market624Card`) on the user's call, so the two sections speak different languages the way
    the reference's do. Both invented numbers are gone: the `probAbove` logistic is the book's real
    asks, the spot-derived `strike624` line is the opening print.
-2. ~~**The Sensei dock**~~ — **done**, on Claude (`claude-opus-5`). The whole surface runs with no
-   credential: ring, teaser, drawer, meter, tape and trade cards all read the market stream the page
-   already holds, and with no key the route returns the reference's own 503 wording, which the dock
-   says in the thread. **Set `ANTHROPIC_API_KEY` in `web/.env.local`** (documented in
-   `.env.example`, never `NEXT_PUBLIC_`) and it lights up with no code change. **The live reply is
-   the one thing unverified** — no key exists on this machine and spending the user's credential
-   uninvited was not this agent's call; the request shape is checked by the SDK's types. First run
-   with a key should confirm a reply arrives, the typewriter fires, and the style rules hold.
-3. ~~**The Room**~~ — **done.** `packages/db` is real now (postgres.js, one table, schema applies
-   itself), and the gate is the server's: a wallet must prove its address by signature *and* hold a
-   position on that market, both checked in `api/room/join`. Set `DATABASE_URL` (and
-   `ROOM_TOKEN_SECRET` where there is more than one instance); without it the Room opens and says
-   it is not connected on this deployment. Verified against a local Postgres — 14 checks over the
-   live endpoints, including a valid signature from a wallet with no position getting 403.
+2. ~~**The Sensei dock**~~ — **done, and provider-agnostic** (revised 2026-09-02 on the user's
+   call). Runs on the Vercel AI SDK 7; `AI_MODEL` picks the model, default
+   `anthropic/claude-opus-5`. The whole surface runs with no credential at all — ring, teaser,
+   drawer, meter, tape and trade cards read the market stream the page already holds — and with
+   none set the route says so **and names the variable that would fix it**. Set any one of:
+   a direct key (`ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GOOGLE_GENERATIVE_AI_API_KEY`),
+   `AI_GATEWAY_API_KEY`, or `AI_BASE_URL` + `AI_API_KEY` for anything OpenAI-shaped. See the
+   ledger's §Sensei's model layer for the resolution order and what the abstraction cost.
+   **The live reply is still the one thing unverified** — no credential on this machine.
+3. ~~**The Room**~~ — **done and live on Neon** (the user supplied a `DATABASE_URL` on
+   2026-09-02; schema self-applied, round-trip verified against it). `packages/db` is real
+   (postgres.js, one table), and the gate is the server's: a wallet must prove its address by
+   signature *and* hold a position on that market, both checked in `api/room/join`. Without a
+   `DATABASE_URL` the Room opens and says it is not connected on this deployment. 14 checks over
+   the live endpoints, including a valid signature from a wallet with no position getting 403.
    **Two things to know**: comments are stored in the clear and the server can read them, so the
    badge says "bettors only" and not the reference's "Bettors only · Encrypted"; and the gate is
    *narrower* than the reference's `has_bet` — a wallet that redeemed a settled Window loses that

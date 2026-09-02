@@ -1,36 +1,65 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { APICallError, generateText, InvalidPromptError } from "ai";
 import { NextResponse } from "next/server";
-import { SENSEI_ERRORS, SENSEI_SYSTEM, senseiSystemPrompt } from "@/features/sensei/prompt";
+import { missingCredentialHint, resolveModel } from "@/features/sensei/model.server";
+import { SENSEI_ERRORS, SENSEI_SYSTEM, senseiTurnContext } from "@/features/sensei/prompt";
 import { type SenseiRequest, senseiRequestSchema } from "@/features/sensei/protocol";
 
 /**
  * Sensei's brain — ported from `reference/yosuku/app/api/sensei/route.ts`.
  *
  * Server-side only: the key never reaches the browser, which is the whole reason
- * this is a route and not a client call. The reference calls DeepSeek; Masayume
- * runs on Claude.
+ * this is a route and not a client call.
  *
- * The reference's honest-degradation path is kept exactly: with no key configured
- * the route says so rather than pretending, and the dock renders in full either
- * way. That is what lets the whole surface ship before the credential exists.
+ * **Provider-agnostic.** The reference hardcodes DeepSeek. This goes through the
+ * Vercel AI SDK, so the model is configuration (`AI_MODEL`) rather than code —
+ * Claude by default, GPT or Gemini or a local endpoint by changing one string. See
+ * `model.server.ts` for how a credential is chosen.
+ *
+ * The reference's honest-degradation path is kept exactly: with no credential the
+ * route says so, names what is missing, and the dock renders in full either way.
  *
  * No trade is placed here. Sensei reads and recommends; the user places the trade.
  */
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const MODEL = "claude-opus-5";
-/** Two to four sentences, with adaptive thinking's own tokens on top of them. */
-const MAX_TOKENS = 4096;
-const REQUEST_TIMEOUT_MS = 55_000;
+/** Two to four sentences, with the model's own reasoning tokens on top of them. */
+const MAX_OUTPUT_TOKENS = 4096;
+/**
+ * A market read is short and latency-sensitive, not a research task. Portable in
+ * AI SDK 7: this is reasoning *effort*, mapped by each provider onto its own knob.
+ */
+const REASONING = "low" as const;
 
 function bad(error: string, status: number) {
   return NextResponse.json({ error }, { status });
 }
 
+/**
+ * The upstream HTTP status, whichever provider produced the failure.
+ *
+ * Deliberately structural rather than a chain of `instanceof` checks: a layer whose
+ * whole point is that the provider is swappable should not need a new branch each
+ * time one is swapped in. `APICallError` from the direct providers and
+ * `GatewayError` from the Gateway both carry `statusCode`.
+ *
+ * The name check is not redundant. A bad `AI_GATEWAY_API_KEY` is rejected *before*
+ * any request goes out, so the `GatewayAuthenticationError` it throws has a name and
+ * a message but no status at all — checked against the real error, not assumed. Left
+ * to the status alone it read as "unreachable", which points at the network instead
+ * of at the key.
+ */
+function statusOf(error: unknown): number | null {
+  if (APICallError.isInstance(error)) return error.statusCode ?? null;
+  const code = (error as { statusCode?: unknown })?.statusCode;
+  if (typeof code === "number") return code;
+  const name = (error as { name?: unknown })?.name;
+  return typeof name === "string" && /authentication|unauthor/i.test(name) ? 401 : null;
+}
+
 export async function POST(req: Request) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return bad(SENSEI_ERRORS.notConfigured, 503);
+  const resolved = resolveModel();
+  if (!resolved) return bad(SENSEI_ERRORS.notConfigured(missingCredentialHint()), 503);
 
   let body: SenseiRequest;
   try {
@@ -42,40 +71,29 @@ export async function POST(req: Request) {
   }
   if (body.messages.length === 0) return bad(SENSEI_ERRORS.saySomething, 400);
 
-  const client = new Anthropic({ apiKey, timeout: REQUEST_TIMEOUT_MS });
-
   try {
-    const response = await client.beta.messages.create({
-      model: MODEL,
-      max_tokens: MAX_TOKENS,
-      // A market read is a short, latency-sensitive answer, not a research task.
-      output_config: { effort: "low" },
-      // Opus 5 thinks by default; naming it keeps the intent visible.
-      thinking: { type: "adaptive" },
-      // A policy decline would otherwise just stop the turn with nothing to show.
-      betas: ["server-side-fallback-2026-06-01"],
-      fallbacks: [{ model: "claude-opus-4-8" }],
-      system: [{ type: "text", text: SENSEI_SYSTEM, cache_control: { type: "ephemeral" } }],
+    const { text } = await generateText({
+      model: resolved.model,
+      system: SENSEI_SYSTEM,
+      reasoning: REASONING,
+      maxOutputTokens: MAX_OUTPUT_TOKENS,
       messages: [
-        // Volatile per-turn context sits after the cached prefix, never inside it.
-        { role: "user", content: senseiSystemPrompt(body) },
+        // The volatile per-turn figures sit in their own user turn, after the stable
+        // system prompt, so a provider that caches a prefix can still do so.
+        { role: "user", content: senseiTurnContext(body) },
         ...body.messages.map((message) => ({ role: message.role, content: message.content })),
       ],
     });
 
-    if (response.stop_reason === "refusal") return bad(SENSEI_ERRORS.declined, 200);
-
-    const reply = response.content
-      .filter((block): block is Anthropic.Beta.BetaTextBlock => block.type === "text")
-      .map((block) => block.text)
-      .join("")
-      .trim();
-
+    const reply = text.trim();
     return reply ? NextResponse.json({ reply }) : bad(SENSEI_ERRORS.wentQuiet, 502);
   } catch (error) {
-    if (error instanceof Anthropic.AuthenticationError) return bad(SENSEI_ERRORS.badKey, 503);
-    if (error instanceof Anthropic.RateLimitError) return bad(SENSEI_ERRORS.rateLimited, 429);
-    if (error instanceof Anthropic.APIError) return bad(SENSEI_ERRORS.upstream(error.status ?? 0), 502);
+    if (error instanceof InvalidPromptError) return bad(SENSEI_ERRORS.badRequest, 400);
+    const status = statusOf(error);
+    // 401/403 is a credential problem and not the reader's fault; say which.
+    if (status === 401 || status === 403) return bad(SENSEI_ERRORS.badKey(resolved.providerName), 503);
+    if (status === 429) return bad(SENSEI_ERRORS.rateLimited, 429);
+    if (status !== null) return bad(SENSEI_ERRORS.upstream(status), 502);
     return bad(SENSEI_ERRORS.unreachable, 502);
   }
 }
