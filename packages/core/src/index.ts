@@ -5,6 +5,7 @@ export * from "./lifecycle";
 export * from "./market";
 export * from "./parlay";
 export * from "./ports";
+export * from "./private";
 export * from "./projection";
 export * from "./schemas";
 export * from "./sizing";

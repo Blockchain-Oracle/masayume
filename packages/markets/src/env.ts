@@ -40,6 +40,9 @@ export const marketsEnvSchema = z.object({
   /** A local fork's LeverageReserve; production reads the generated module (AD-10). */
   leverageReserveAddress: addressSchema.optional(),
   leverageReserveFromBlock: z.coerce.bigint().optional(),
+  /** A local fork's PrivateDesk; production reads the generated module (AD-10). */
+  privateDeskAddress: addressSchema.optional(),
+  privateDeskFromBlock: z.coerce.bigint().optional(),
 });
 
 export type MarketsEnv = z.infer<typeof marketsEnvSchema>;

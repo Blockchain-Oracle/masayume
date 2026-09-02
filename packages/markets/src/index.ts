@@ -9,6 +9,7 @@ export * from "./parlay";
 export * from "./range";
 export * from "./maker";
 export * from "./leverage";
+export * from "./private";
 export * from "./provider";
 export * from "./runtime";
 export * from "./sessions";

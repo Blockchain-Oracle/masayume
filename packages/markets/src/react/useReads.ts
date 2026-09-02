@@ -6,6 +6,7 @@ import type { ParlayReserveState, ParlayTicket } from "@masayume/core/parlay";
 import type { RangeReserveState, RangeRound } from "@masayume/core/range";
 import type { MakerVaultState, MakerWindowView } from "@masayume/core/maker";
 import type { LeverageMark, LeveragePosition, LeverageReserveState } from "@masayume/core/leverage";
+import type { PrivateBudget, PrivateDeskState, PrivateSlot } from "@masayume/core/private";
 import type { VaultHoldings, VaultSnapshot } from "@masayume/core/vault";
 import { getBalanceSheet } from "../provider/balances";
 import { listWalletHistory } from "../provider/history";
@@ -21,6 +22,7 @@ import { getParlayReserveState, listParlaysOf } from "../parlay/read";
 import { getRangeReserveState, listRangesOf } from "../range/read";
 import { getMakerSharesOf, getMakerVaultState, listMakerHistory, listMakerOpenWindows } from "../maker/read";
 import { getLeverageMark, getLeverageReserveState, listLeveragePositionsOf } from "../leverage/read";
+import { getPrivateBudget, getPrivateDeskState, getPrivateSlot } from "../private/read";
 import { getVaultHoldings, getVaultSnapshot } from "../vault/read";
 import { keys } from "./keys";
 import { useReadingQuery } from "./useReadingQuery";
@@ -150,4 +152,19 @@ export function useMyLeveragePositions(wallet: Address | null): Reading<Leverage
 /** A live boost's mark off the book, against its knock-out line. */
 export function useLeverageMark(positionId: bigint | null): Reading<LeverageMark> | null {
   return useReadingQuery(keys.leverageMark(positionId === null ? null : positionId.toString()), () => getLeverageMark(positionId as bigint), { pollMs: ONCHAIN_POLL_MS, enabled: positionId !== null });
+}
+
+/** The private desk's sheet and pinned signer; null (never an error) where none is deployed. */
+export function usePrivateDesk(): Reading<PrivateDeskState | null> | null {
+  return useReadingQuery(keys.privateDesk(), getPrivateDeskState, { pollMs: MARKETS_POLL_MS });
+}
+
+/** One wallet's private balance and the desk's allowance on it; zeros without a desk. */
+export function usePrivateBudget(wallet: Address | null): Reading<PrivateBudget> | null {
+  return useReadingQuery(keys.privateBudget(wallet), () => getPrivateBudget(wallet as Address), { pollMs: MARKETS_POLL_MS, enabled: wallet !== null });
+}
+
+/** One slot as the contract records it — no owner on it. */
+export function usePrivateSlot(slotId: Bytes32 | null): Reading<PrivateSlot | null> | null {
+  return useReadingQuery(keys.privateSlot(slotId), () => getPrivateSlot(slotId as Bytes32), { pollMs: MARKETS_POLL_MS, enabled: slotId !== null });
 }

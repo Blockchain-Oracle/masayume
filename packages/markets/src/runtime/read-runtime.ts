@@ -16,11 +16,13 @@ import { resolveParlayDeployment } from "../parlay/deployment";
 import { resolveRangeDeployment } from "../range/deployment";
 import { resolveMakerDeployment } from "../maker/deployment";
 import { resolveLeverageDeployment } from "../leverage/deployment";
+import { resolvePrivateDeployment } from "../private/deployment";
 import { resolveVaultDeployment } from "../vault/deployment";
 import type { ParlayDeployment } from "@masayume/core/parlay";
 import type { RangeDeployment } from "@masayume/core/range";
 import type { MakerDeployment } from "@masayume/core/maker";
 import type { LeverageDeployment } from "@masayume/core/leverage";
+import type { PrivateDeployment } from "@masayume/core/private";
 import type { VaultDeployment } from "@masayume/core/vault";
 
 type ExchangeConfig = ConstructorParameters<typeof SomniaMarkets>[0];
@@ -36,6 +38,7 @@ let parlayDeployment: ParlayDeployment | null = null;
 let rangeDeployment: RangeDeployment | null = null;
 let makerDeployment: MakerDeployment | null = null;
 let leverageDeployment: LeverageDeployment | null = null;
+let privateDeployment: PrivateDeployment | null = null;
 let version = 0;
 let wsIndex = 0;
 const listeners = new Set<() => void>();
@@ -65,6 +68,7 @@ export function configureMarkets(env: MarketsEnv, options: { wsIndex?: number } 
   rangeDeployment = resolveRangeDeployment(env);
   makerDeployment = resolveMakerDeployment(env);
   leverageDeployment = resolveLeverageDeployment(env);
+  privateDeployment = resolvePrivateDeployment(env);
   version += 1;
   if (previous) void previous.close().catch(() => undefined);
   for (const listener of listeners) listener();
@@ -187,4 +191,9 @@ export function rotateRpc(env: MarketsEnv): void {
 /** The LeverageReserve for the configured chain, or null where none is deployed — every boost read branches on this. */
 export function getLeverageDeployment(): LeverageDeployment | null {
   return leverageDeployment;
+}
+
+/** The PrivateDesk for the configured chain, or null where none is deployed — every private read branches on this. */
+export function getPrivateDeployment(): PrivateDeployment | null {
+  return privateDeployment;
 }

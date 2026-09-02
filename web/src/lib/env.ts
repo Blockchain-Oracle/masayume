@@ -31,6 +31,10 @@ export const webEnv: WebEnv = {
     rangeReserveFromBlock: process.env.NEXT_PUBLIC_RANGE_RESERVE_FROM_BLOCK,
     marketMakerVaultAddress: process.env.NEXT_PUBLIC_MARKET_MAKER_VAULT_ADDRESS,
     marketMakerVaultFromBlock: process.env.NEXT_PUBLIC_MARKET_MAKER_VAULT_FROM_BLOCK,
+    leverageReserveAddress: process.env.NEXT_PUBLIC_LEVERAGE_RESERVE_ADDRESS,
+    leverageReserveFromBlock: process.env.NEXT_PUBLIC_LEVERAGE_RESERVE_FROM_BLOCK,
+    privateDeskAddress: process.env.NEXT_PUBLIC_PRIVATE_DESK_ADDRESS,
+    privateDeskFromBlock: process.env.NEXT_PUBLIC_PRIVATE_DESK_FROM_BLOCK,
   }),
   ...webOnlySchema.parse({
     walletConnectProjectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || undefined,

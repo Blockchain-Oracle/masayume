@@ -6,7 +6,7 @@ export const SDK_GAS_ENVELOPE_WEI = SDK_GAS_LIMIT * SDK_MAX_FEE_PER_GAS_WEI;
 /** Native balance must cover the envelope times this factor before we let a wallet sign. */
 export const GAS_SAFETY_BPS = 12_000;
 
-export type GasLane = "order" | "faucet" | "redeem" | "approve" | "vault" | "vault-order" | "parlay" | "range" | "maker" | "leverage";
+export type GasLane = "order" | "faucet" | "redeem" | "approve" | "vault" | "vault-order" | "parlay" | "range" | "maker" | "leverage" | "private";
 
 /** Gas ceiling per write lane, passed to the SDK per call. measured: pending Story 1.5b — every lane uses the SDK default until real usage is recorded on Shannon. */
 export const GAS_CEILING: Record<GasLane, bigint> = {
@@ -31,4 +31,7 @@ export const GAS_CEILING: Record<GasLane, bigint> = {
   // Measured on Shannon 2026-09-02 (LeverageReserve 0x5484…2D23): a 2x open on the 15m BTC lane 5,071,986 (the book
   // walk, the module read, one IOC across a live maker's levels, the credit sweep); the keeper's knock-out 1,367,150.
   leverage: 8_000_000n,
+  // The private desk: a mint is one book walk, one IOC and the credit sweep — the vault order's shape; the
+  // owner's deposit, allow and withdraw are plain storage. Not measured on Shannon yet.
+  private: 6_000_000n,
 };

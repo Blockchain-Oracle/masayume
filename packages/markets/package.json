@@ -12,6 +12,7 @@
     "./leverage": "./src/leverage/index.ts",
     "./maker": "./src/maker/index.ts",
     "./parlay": "./src/parlay/index.ts",
+    "./private": "./src/private/index.ts",
     "./range": "./src/range/index.ts",
     "./react": "./src/react/index.ts",
     "./runtime": "./src/runtime/index.ts",
