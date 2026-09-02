@@ -136,3 +136,12 @@
 [data-theme="light"] .capability-pending .cp-meta {
   border-top-color: rgba(20, 18, 16, 0.12);
 }
+
+/* With the install strip dismissed the reference drops the header to the top (`[data-strip="off"] .header
+   { top: 0 }`, part-02) on the assumption that the ticker went with it — but the ticker stays, so the
+   header covers it and the page's first line hides under the header. Verified on yosuku.xyz itself
+   (2026-09-02). The header hangs under the ticker instead; the ticker's height is the reference's own. */
+[data-strip="off"] .header { top: 28px; }
+@media (max-width: 720px) {
+  [data-strip="off"] .header { top: 20px; }
+}

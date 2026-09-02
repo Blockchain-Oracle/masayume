@@ -29,3 +29,6 @@ reference/
 
 # agent worktrees
 .claude/worktrees/
+
+# UI review screenshots (local)
+.review/

@@ -46,7 +46,7 @@ export function AgentsScreen() {
   const refresh = useRefreshStrategies();
   const nowMs = useChainNowMs();
   return (
-    <div className="container pt-30 pb-12">
+    <div className="container pt-7 pb-12">
       <div className="strat-mono-11 mb-7 flex items-center gap-3 tracking-[0.18em] uppercase text-gray-500">
         <a href="/" className="transition-colors hover:text-ink">
           {AGENTS.crumb.root}

@@ -31,7 +31,7 @@ export function StrategiesScreen({ houseRunner }: StrategiesScreenProps) {
   const reading = useStrategies();
   const refresh = useRefreshStrategies();
   return (
-    <div className="container pt-30 pb-12">
+    <div className="container pt-7 pb-12">
       <ReadingBoundary reading={reading} shape="plate" retry={refresh}>
         {(payload) => (payload.deployed ? <Catalogue payload={payload} houseRunner={houseRunner} /> : <NotDeployed />)}
       </ReadingBoundary>
