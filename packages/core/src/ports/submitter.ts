@@ -2,6 +2,7 @@ import type { Diagnosis } from "../types/diagnosis";
 import type { EventMarket, MarketId, OutcomeIdx, Side } from "../types/market";
 import type { Address, Hex } from "../types/primitives";
 import type { Quote } from "../types/trading";
+import type { StrategyIntent } from "../strategies/types";
 import type { GrantKind, VaultCaps } from "../vault/types";
 
 /** The write-path state machine every surface renders (EXPERIENCE.md). */
@@ -81,10 +82,15 @@ export type TxIntent =
       marketAddress: Address;
       outcomeToken: Address;
     }
-  | VaultIntent;
+  | VaultIntent
+  | StrategyIntent;
 
 export function isVaultIntent(intent: TxIntent): intent is VaultIntent {
   return intent.kind.startsWith("vault-");
+}
+
+export function isStrategyIntent(intent: TxIntent): intent is StrategyIntent {
+  return intent.kind.startsWith("strategy-");
 }
 
 export type TxOutcome =

@@ -1,2 +1,3 @@
-// Barrel owned by its feature; the root index re-exports it.
-export {};
+export { resolveRegistryDeployment } from "./deployment";
+export { getStrategy, listLiveSubscribers, listStrategies, listSubscriptionsOf, toStrategyRecord } from "./read";
+export { sendStrategyIntent, specHashOf, submitStrategyTx, summarizeStrategy, writeRegistry, type StrategyTxContext } from "./write";

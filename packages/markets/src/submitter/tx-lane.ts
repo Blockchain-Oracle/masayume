@@ -1,5 +1,7 @@
 import type { GasLane } from "@masayume/core/constants";
-import { isVaultIntent, type IntentJournal, type PhaseListener, type TxIntent, type TxOutcome, type VaultIntent } from "@masayume/core/ports";
+import { isStrategyIntent, isVaultIntent, type IntentJournal, type PhaseListener, type TxIntent, type TxOutcome, type VaultIntent } from "@masayume/core/ports";
+import type { StrategyIntent } from "@masayume/core/strategies";
+import { submitStrategyTx } from "../strategies/write";
 import { diagnosis, type Diagnosis } from "@masayume/core/types";
 import type { TxResult } from "@somnia-chain/markets-sdk";
 import type { Address } from "@masayume/core/types";
@@ -17,7 +19,7 @@ export interface TxLaneContext {
   contracts?: VaultContracts | undefined;
 }
 
-type VenueIntent = Exclude<TxIntent, VaultIntent>;
+type VenueIntent = Exclude<TxIntent, VaultIntent | StrategyIntent>;
 
 const LANE_OF: Record<VenueIntent["kind"], GasLane> = { faucet: "faucet", redeem: "redeem", approve: "approve" };
 
@@ -77,6 +79,7 @@ export async function submitTx(ctx: TxLaneContext, intent: TxIntent, onPhase?: P
   const { wallet } = ctx;
   // The vault's writes ride the same lane shape against Masayume's own contract.
   if (isVaultIntent(intent)) return submitVaultTx({ journal: ctx.journal, wallet, contracts: ctx.contracts }, intent, onPhase);
+  if (isStrategyIntent(intent)) return submitStrategyTx({ journal: ctx.journal, wallet, contracts: ctx.contracts }, intent, onPhase);
   if (intent.kind === "approve") return refused(diagnosis("unknown", NO_STANDALONE_APPROVE));
 
   const record = await ctx.journal.record({ kind: intent.kind, wallet, summary: summarize(intent) });

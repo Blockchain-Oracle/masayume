@@ -1,14 +1,10 @@
 import type { Metadata } from "next";
-import { CapabilityPending } from "@/components/shell";
+import { StrategiesScreen } from "@/features/strategies";
 
 export const metadata: Metadata = { title: "Strategies" };
 
+/** The house runner's key is the server's to know; the studio names it when a creator picks "Let Masayume run it". */
 export default function Page() {
-  return (
-    <div className="container">
-      <CapabilityPending eyebrow="Desk" title="Strategies" dependency="the StrategyRegistry contract and runner (Stage 4)">
-        <p>Discover, inspect, and subscribe to strategies, with the verified trade history behind each one. A strategy executes only inside limits you set and can revoke.</p>
-      </CapabilityPending>
-    </div>
-  );
+  const houseRunner = process.env.STRATEGY_RUNNER_ADDRESS && /^0x[0-9a-fA-F]{40}$/.test(process.env.STRATEGY_RUNNER_ADDRESS) ? process.env.STRATEGY_RUNNER_ADDRESS.toLowerCase() : null;
+  return <StrategiesScreen houseRunner={houseRunner} />;
 }

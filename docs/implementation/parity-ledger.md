@@ -174,6 +174,29 @@ actor; fixtures on `/dev/x`.
 | Free-text instruction | Grammar `<btc\|eth> <up\|down> <stake> <1m\|5m\|15m\|1h\|4h>` in any order, synonyms tolerated, any other digit-bearing token refused by name | Adapted | No approval needed |
 | Twitter bird icon | Lucide has no X glyph; an inline glyph | Deviation | Pre-approved class |
 
+**Strategies and agents (fork C, 2026-09-02)** — `contracts/src/strategy/StrategyRegistry.sol` (10 forge
+tests, incl. `test_AD10_no_pool_address_in_storage`, `test_AD5_registry_never_touches_subscriber_funds`),
+`@masayume/core/strategies` (spec, the momentum model, record scoring, health — tested), `@masayume/markets/strategies`,
+`packages/db` (`strategies`, `runner_heartbeats`, `strategy_fills`), the `strategy-runner` ops actor,
+`web/src/features/strategies/`, `/strategies`, `/agents`, `/api/strategies/*`; fixtures on `/dev/strategies`.
+
+| Reference | Ours | Class | Approval |
+|---|---|---|---|
+| Join in ONE signature (`LiveDesk.tsx`, one PTB) | Two signatures: vault `depositAndGrant`, then registry `subscribe` (which verifies the grant on the vault and pulls the fee to the creator; the registry never holds funds); the copy says so | Truth correction | **Needs user review** |
+| Creator studio wears "Coming soon" and never lists (`app/strategies/page.tsx` L720–733) | Same markup, live: publish a spec the house runner honours | Adapted | **Needs user review** |
+| Memory Market sells Seal-encrypted passes (L889–1030) | Headline and "More minds soon" capsule only; a sentence says playbooks are plain text stored by Masayume | Truth correction | No approval needed |
+| Withdraw the desk balance without pausing (L376–390) | "Desk balance" is the grant's budget; withdrawing revokes first, so it pauses copying | Adapted | **Needs user review** |
+| One hard-coded enclave agent as the featured desk | The active strategy with the most subscribers | Adapted | No approval needed |
+| Leverage risk tiers | Caps: guarded = 1 open, price ≤ 0.70; balanced = 1 open, ≤ 0.85; active = 2 open, any price | Adapted — DreamDEX has no leverage | **Needs user review** |
+| DiceBear portraits | Paper tile + glyph (the image host is outside the CSP) | Deviation | Pre-approved class |
+| `/api/claim/x/me` on the X bar | Links to `/claim`; never claims a link | Adapted | No approval needed |
+
+Runner health on the cards is derived at render (alive = now − lastTick < max(180 s, 3×interval);
+"never started" is its own state; ops unreachable renders "status unknown", never alive). The runner
+executes through `submitOrder` route `vault-grant` under a `strategy-runner` session, so the caps pre-check is
+the lane's; `DRY_RUN` exercises the loop without sending. Not deployed: `/strategies` and `/agents` say
+"StrategyRegistry is not deployed on this network yet".
+
 **The adapter on the fork (2026-09-02, `scripts/spike/vault-fork.ts`)** — through the real lanes against
 Shannon's venue on Anvil: deposit with its absorbed approval, an owner UP from the Trading Balance filled at
 0.616, a STRATEGY grant read back, a delegated DOWN filled at 0.413 and booked to the owner under grant 1, a
@@ -877,12 +900,12 @@ Tracked separately so the route table cannot hide a missing capability.
 | Range · leverage · private | Pending | Stage 5 — needs `RangeReserve` + prefunded leverage + link-private service |
 | Rooms / comments | **Done** | Position-gated, signature-authenticated, over `packages/db`; honest when unconfigured |
 | Social takes, sharing, alerts, news/ticker | **Done** | Signed takes over Postgres; The Call and Earned Heat share cards; threshold price alerts with a live evaluator; the wire on `/news`; the ticker on real prices (Fear/Greed pending a provider) |
-| X linking | Pending | Stage 4 |
-| Trading Balance with labeled pools | **Partial** | `EventVault` written, fork-verified and ported into the chain port; surfaces in flight; not deployed (owner) |
+| X linking | **Partial** | OAuth/PKCE + signed wallet binding, parser, `/trade-from-x`, `/claim`, the relay actor and receipts built; the live X account, credentials and posting stay with the owner; on-chain execution needs the vault deployed |
+| Trading Balance with labeled pools | **Partial** | `EventVault` written, fork-verified (contract and adapter), ported and surfaced on `/portfolio`, the plate, bets, history and `/claims`; not deployed (owner) |
 | Positions, PnL, history, equity, reputation, badges, Trader Edge | **Done** | Open positions off the venue's PnL; history, equity, PnL, reputation, badges, CSV and Trader Edge off the fill projection; the leaderboard off the same replay venue-wide |
-| Earn, parlays, strategies, creators, agents, playbooks | Pending | Stage 4–5 |
+| Earn, parlays, strategies, creators, agents, playbooks | **Partial** | `StrategyRegistry`, the runner and `/strategies` + `/agents` built (not deployed); Earn, parlays, creators, playbooks stay Stage 5 |
 | Assistant (Sensei) | **Done** | Claude-backed; honest unconfigured state, lights up on `ANTHROPIC_API_KEY` |
-| Faucet, account setup, recovery, smart-wallet session, revocation | **Partial** | Faucet live; rest Stage 4 |
+| Faucet, account setup, recovery, smart-wallet session, revocation | **Partial** | Faucet live; session-key tap trading with the enable sheet, manager, revoke, grant-without-key recovery and the sponsor rail built; all on-chain steps wait on the deployment |
 | Status, docs, how-it-works, demo, pitch | **Done** | Read-time probes; every public page on real facts and live reads |
 | Traction, download, error recovery | **Done** | `/stats` off the board's scan (24h, floors labelled); `/download` as the PWA install surface with a real capture; journal reconciliation on session start, reference boundary words, root boundary |
 | Game selection, progress, achievements, stats, matchmaking, MMR, sound/haptics | Pending | Stage 6 |

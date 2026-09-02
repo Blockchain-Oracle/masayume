@@ -229,6 +229,14 @@ every on-chain path shows its not-deployed state today:
   and `/claim` truth-corrected, receipts of every status, the relay that polls mentions and executes through
   `submitOrder` route `vault-grant` under an `x-executor` session; everything names its missing variable;
   `/dev/x`. The live account, credentials and posting stay with the owner.
+- **Strategies and agents** (`contracts/src/strategy/StrategyRegistry.sol`, `@masayume/core/strategies`,
+  `@masayume/markets/strategies`, the `strategy-runner` ops actor, `web/src/features/strategies/`): publish /
+  subscribe (vault `depositAndGrant` then registry `subscribe`, two signatures, said so) / unsubscribe, the
+  momentum model and record scoring tested, runner heartbeats and fills in `packages/db`, health derived at
+  render; `/strategies` and `/agents` ported; `/dev/strategies`. Env: `RUNNER_PRIVATE_KEY`, `STRATEGY_IDS`,
+  `RUNNER_INTERVAL_MS`, `DRY_RUN`, `STRATEGY_RUNNER_ADDRESS`. Deploy with
+  `forge script script/DeployStrategyRegistry.s.sol` after the vault (its record merges into the same
+  `deployments/<chainId>.json`).
 - **The adapter, driven on the fork** (`scripts/spike/vault-fork.ts`, `vault-fork-read.ts`): deposit, an owner
   order from the balance (0.616), a grant, a delegated order (0.413) booked to the owner, void, a third-party
   crank, the balance sheet and the vault seat's round — all through the real lanes. Recorded in context/41 and
