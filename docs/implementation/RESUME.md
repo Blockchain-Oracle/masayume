@@ -49,9 +49,10 @@ pass the user asked for (same colours, better animation and breakdowns), startin
 | `38f5e65` | Stage 5 — `LeverageReserve` contract, port, the Ticket's live leverage, the portfolio's boosts, the keeper, fork-verified on Shannon (context/45); not deployed |
 | `8679953` | Stage 5 — `RangeReserve`, `MarketMakerVault` and `LeverageReserve` deployed and supplied on Shannon; the module regenerated |
 | `0879bf7` | Stage 5 — the boost stake-first and the reserve redeployed at `0x5484…2D23`; the leverage surfaces redesigned with 21st.dev; range headroom; the actors load the collateral |
+| _(pending)_ | Stage 5 — the maker vault books the venue's exact escrow (its lazy refund panicked the first vault) and is redeployed at `0xc904…9e79`; the maker lane measured |
 
 Everything is green: `pnpm typecheck`, `pnpm invariants` (14/14, 0 warnings), `pnpm test` (141),
-`forge test --no-match-contract Fork` (155), `pnpm build`.
+`forge test --no-match-contract Fork` (156), `pnpm build`.
 
 **The live actors** (`pnpm --filter @masayume/ops start` with `DRY_RUN=0 MAKER_PRIVATE_KEY=… LEVERAGE_KEEPER_PRIVATE_KEY=…`,
 keys in `~/.config/masayume/market-maker.env` / `leverage-keeper.env`) ran on Shannon on 2026-09-02: the maker quoted
@@ -385,10 +386,13 @@ day); deploy waits on the owner's go.** Read context/44 and the ledger's §Marke
 - `web/src/features/earn/` — the reference's page from source (hero + live panel, §01 supply and position) plus
   §02 the Windows table (additive, flagged); fixtures on `/dev/earn`. **Not seen in a browser** — typecheck,
   invariants (0 warnings), 128 vitest, 118 forge, build.
-- **Live on Shannon (2026-09-02, eighth session):** `MarketMakerVault` `0x3F6a9D3DF15134328b4928bAf39d41647A8E48cA`,
-  block 478033625, creation **47,192,303** gas, `setMaker` 241,256; `approve` 259,745, `supply(5,000)` 898,239.
-  The maker key is `0xE0fEa37ae5af4e7F25A2345254476a3B524eae9d` (`~/.config/masayume/market-maker.env`, 1.5 STT
-  from the deployer). The venue's makers were back on the books by the evening of 2026-09-02.
+- **Live on Shannon (2026-09-02, eighth session):** `MarketMakerVault` `0xc904F38f38eF96E8741C7D9218a7899504B99e79`,
+  block 478055022, creation **48,373,981** gas, maker set, supplied 5,000. (The first vault, `0x3F6a…48cA`, panicked
+  on the venue's lazy refund of an expired quote — context/44 — and was drained to its 24.855 of inventory, which
+  settles with Windows 71513/71514/71647/71648/71649: `settle` each, then the deployer's 24.977587 shares withdraw
+  the rest.) The maker key is `0xE0fEa37ae5af4e7F25A2345254476a3B524eae9d` (`~/.config/masayume/market-maker.env`).
+  **Measured live:** quote 526,880, pull 325,500, merge 1,018,744 (`maker` lane 8M holds); the actor quoted, was
+  filled and merged live; ~0.0034 STT a transaction, ~0.5 STT an hour at a 45 s refresh over six Windows.
 
 
 **4. `LeverageReserve` + the Ticket's live leverage + the portfolio's boosts + the keeper — built and fork-verified

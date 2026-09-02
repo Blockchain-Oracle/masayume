@@ -159,14 +159,18 @@ contract MarketMakerVault is MakerGateway, ReentrancyGuard {
         uint256 expected = (bidYesRaw + (one - askYesRaw)) * quantityRaw / one;
         if (liquid < expected) revert InsufficientLiquidity(expected, liquid);
         _ensureAllowance(ref.pool);
-        (uint256 escrowBid, uint128 bidId) = _rest(ref, BUY_YES, bidYesRaw, quantityRaw, expireNs);
-        (uint256 escrowAsk, uint128 askId) = _rest(ref, BUY_NO, askYesRaw, quantityRaw, expireNs);
+        (uint256 escrowBid, uint256 backBid, uint128 bidId) = _rest(ref, BUY_YES, bidYesRaw, quantityRaw, expireNs);
+        (uint256 escrowAsk, uint256 backAsk, uint128 askId) = _rest(ref, BUY_NO, askYesRaw, quantityRaw, expireNs);
         escrow = escrowBid + escrowAsk;
-        if (liquid < escrow) revert InsufficientLiquidity(escrow, liquid);
+        uint256 returned = backBid + backAsk;
+        _collect(ref.pool);
+        if (liquid + returned < escrow) revert InsufficientLiquidity(escrow, liquid + returned);
 
+        // The venue's lazy refund of this Window's expired quotes lands inside the placement; it is booked as such.
+        b.escrowBack += uint128(returned);
         b.escrowOut += uint128(escrow);
         b.quoteCount += 1;
-        liquid -= escrow;
+        liquid = liquid + returned - escrow;
         uint256 windowDeployed = deployedOf(marketId);
         if (windowDeployed > p.maxWindowDeployed) revert OverWindowCap(marketId, windowDeployed, p.maxWindowDeployed);
         uint256 tv = totalValue();

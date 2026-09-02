@@ -75,3 +75,31 @@ on each (`maker-merge`), pulled and requoted Window 71513 around a moved fair (0
 vault after: liquid 4,981.82, deployed 18.18, four Windows open. One `maker-merge` receipt timed out in viem's
 wait and was logged `unknown`; the `maker` lane's gas is read off the receipts, not yet tabulated. The actor's
 boot lacked `loadCollateral()` (found on this run, fixed).
+
+## The venue's lazy refund, and the redeploy it forced (2026-09-02, later)
+
+The actor's requote on Window 71513 was refused `Panic(17)`. The trace: inside `placeBinaryOrder` the venue first
+transferred 4.565 tUSDC *to* the vault — the escrow of the vault's own earlier quote on that pool, expired by its
+TTL and refunded lazily inside the owner's next placement (expired orders leave `getOwnOpenOrders`, so a `pull`
+finds nothing to cancel) — and only then took the 0.37 escrow. `MakerGateway._rest` measured the escrow as a
+cash delta, which went negative and underflowed. The gateway now books the venue's exact escrow
+(`quantity × price`, or `quantity × (one − price)` for a NO buy — the figure the fork verified to the unit) and
+whatever came back beyond it as that Window's `escrowBack`; `quote` collects the credit and nets it against the
+new escrow. `MockMakerPool.setLazyRefunds` models it; `test_quote_booksTheVenuesLazyRefundOfAnExpiredQuote`
+pins it (forge 156).
+
+The vault was redeployed at `0xc904F38f38eF96E8741C7D9218a7899504B99e79` (block 478055022, creation 48,373,981
+gas, maker set, supplied 5,000). The first vault (`0x3F6a…48cA`) had its quotes pulled on all six Windows and
+its idle 4,950.805 withdrawn to the deployer; 24.855 of filled inventory (YES on 71514, 71513, 71649, 71647; NO on
+71648) settles with those Windows — `settle` each (anyone), then the deployer's remaining 24.977587 shares
+withdraw the rest.
+
+| The `maker` lane, live | Gas |
+|---|---|
+| `quote` (a pair of post-only orders) | **526,880** |
+| `pull` (two cancels) | **325,500** |
+| `merge` (5 complete sets) | **1,018,744** |
+| creation | 47,192,303 / 48,373,981 |
+
+The actor spent ~0.0034 STT per transaction at the network's base fee; at a 45 s refresh over six Windows the
+maker key drains about 0.5 STT an hour.

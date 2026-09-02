@@ -63,6 +63,13 @@ contract MockMakerPool {
     }
 
     // pool
+    /// @dev The venue refunds the caller's expired orders on the pool lazily, inside its next placement; on when set.
+    bool public lazyRefunds;
+
+    function setLazyRefunds(bool on) external {
+        lazyRefunds = on;
+    }
+
     function placeBinaryOrder(uint8 kind, uint256 price, uint256 qty, uint64 expireNs, uint8 orderType, uint8, address, uint96, uint64)
         external
         returns (bool, uint128)
@@ -71,6 +78,7 @@ contract MockMakerPool {
         require(status == 1, "not trading");
         require(kind == 0 || kind == 2, "the maker only buys");
         require(expireNs > uint64(block.timestamp) * 1e9, "OrderAlreadyExpired");
+        if (lazyRefunds) _refundExpiredOf(msg.sender);
         // The venue's price is the YES price for every kind: a NO buy at `price` escrows the rest of a set.
         uint256 escrow = qty * (kind == 0 ? price : 1e6 - price) / 1e6;
         uint256 fromCredit = credit[msg.sender] < escrow ? credit[msg.sender] : escrow;
@@ -101,14 +109,15 @@ contract MockMakerPool {
     }
 
     function getOwnOpenOrders() external view returns (uint128[] memory out) {
+        uint64 nowNs = uint64(block.timestamp) * 1e9;
         uint256 n;
         for (uint256 i = 0; i < _open.length; i++) {
-            if (_orders[_open[i]].owner == msg.sender) n++;
+            if (_orders[_open[i]].owner == msg.sender && (!lazyRefunds || _orders[_open[i]].expireTimestampNs > nowNs)) n++;
         }
         out = new uint128[](n);
         uint256 k;
         for (uint256 i = 0; i < _open.length; i++) {
-            if (_orders[_open[i]].owner == msg.sender) out[k++] = _open[i];
+            if (_orders[_open[i]].owner == msg.sender && (!lazyRefunds || _orders[_open[i]].expireTimestampNs > nowNs)) out[k++] = _open[i];
         }
     }
 
@@ -123,6 +132,20 @@ contract MockMakerPool {
     function withdraw(address, uint256 amount) external {
         credit[msg.sender] -= amount;
         coll.transfer(msg.sender, amount);
+    }
+
+    function _refundExpiredOf(address owner) internal {
+        uint64 nowNs = uint64(block.timestamp) * 1e9;
+        for (uint256 i = 0; i < _open.length;) {
+            IBinaryPool.Order storage o = _orders[_open[i]];
+            if (o.owner == owner && o.expireTimestampNs <= nowNs) {
+                uint128 id = o.orderId;
+                _refund(o);
+                _drop(id);
+            } else {
+                i++;
+            }
+        }
     }
 
     function _refund(IBinaryPool.Order storage o) internal {

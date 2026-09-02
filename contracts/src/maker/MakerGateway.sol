@@ -76,17 +76,24 @@ abstract contract MakerGateway is IMarketMakerVault {
         if (collateral.allowance(address(this), pool) < type(uint128).max) collateral.forceApprove(pool, type(uint256).max);
     }
 
-    /// @dev Rests one post-only order as the vault and reports the escrow the venue took for it. The venue's
-    ///      `price` is always the YES price: a BUY_NO at `p` rests as a YES ask at `p` and escrows `one − p` a contract.
+    /// @dev Rests one post-only order as the vault and reports the escrow the venue took for it and anything it
+    ///      handed back in the same call. The venue's `price` is always the YES price: a BUY_NO at `p` rests as a
+    ///      YES ask at `p` and escrows `one − p` a contract — exactly, so the escrow is that figure, not a cash
+    ///      delta: the venue refunds the caller's own expired orders on the pool lazily, inside the next placement
+    ///      (seen live on Shannon 2026-09-02: 4.565 back, then 0.37 taken), and a delta would underflow.
     function _rest(MarketRef memory ref, uint8 kind, uint256 priceRaw, uint256 quantityRaw, uint64 expireNs)
         internal
-        returns (uint256 escrow, uint128 orderId)
+        returns (uint256 escrow, uint256 returned, uint128 orderId)
     {
         uint256 cash0 = _cash(ref.pool);
         (bool ok, uint128 id) =
             IBinaryPool(ref.pool).placeBinaryOrder(kind, priceRaw, quantityRaw, expireNs, ORDER_TYPE_POST_ONLY, SELF_MATCH_CANCEL_TAKER, address(0), 0, 0);
         if (!ok || id == 0) revert OrderNotRested(bytes32(0));
-        escrow = cash0 - _cash(ref.pool);
+        uint256 cash1 = _cash(ref.pool);
+        escrow = quantityRaw * (kind == BUY_YES ? priceRaw : one - priceRaw) / one;
+        // What came back beyond the escrow is the vault's own expired escrow on this pool, refunded by the venue.
+        if (cash1 + escrow >= cash0) returned = cash1 + escrow - cash0;
+        else escrow = cash0 - cash1;
         orderId = id;
     }
 

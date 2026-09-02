@@ -10,8 +10,8 @@
   "parlayReserveFromBlock": 477800945,
   "rangeReserve": "0x1F8dB9B0913cB09e5CfDe44Adfa7Ff22b0868386",
   "rangeReserveFromBlock": 478033175,
-  "marketMakerVault": "0x3F6a9D3DF15134328b4928bAf39d41647A8E48cA",
-  "marketMakerVaultFromBlock": 478033625,
+  "marketMakerVault": "0xc904F38f38eF96E8741C7D9218a7899504B99e79",
+  "marketMakerVaultFromBlock": 478055022,
   "leverageReserve": "0x5484fF06F4B6a8108fABb2511385985D933a2D23",
   "leverageReserveFromBlock": 478043822
 }

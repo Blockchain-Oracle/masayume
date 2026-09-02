@@ -162,4 +162,28 @@ contract MarketMakerVaultQuotingTest is MakerTestBase {
         vault.setAdmin(stranger);
         assertEq(vault.admin(), stranger);
     }
+
+    /// @dev Seen live on Shannon 2026-09-02: the venue refunds the caller's expired quote inside the next placement, so
+    ///      a cash-delta escrow underflowed (Panic 0x11). The escrow is the venue's exact figure and the refund is booked.
+    function test_quote_booksTheVenuesLazyRefundOfAnExpiredQuote() public {
+        poolA.setLazyRefunds(true);
+        uint64 shortNs = uint64(NOW + 60) * 1e9;
+        vm.prank(maker);
+        uint256 first = vault.quote(marketA, BID_YES, ASK_YES, QTY, shortNs);
+        vm.warp(NOW + 61);
+        // The expired pair is gone from the venue's open list: a pull finds nothing to cancel.
+        vm.prank(maker);
+        (uint256 orders,) = vault.pull(marketA);
+        assertEq(orders, 0, "expired quotes leave the venue's open list");
+        uint256 liquidBefore = vault.liquid();
+        vm.prank(maker);
+        uint256 second = vault.quote(marketA, BID_YES, ASK_YES, QTY, expireNs());
+        assertEq(second, first, "the escrow is the venue's exact figure");
+        IMarketMakerVault.WindowBook memory b = vault.bookOf(marketA);
+        assertEq(b.escrowBack, first, "the lazy refund is booked as this Window's return");
+        assertEq(b.escrowOut, first * 2);
+        assertEq(vault.liquid(), liquidBefore + first - second, "liquid nets the refund against the new escrow");
+        assertEq(vault.deployedOf(marketA), second, "only the live pair is deployed");
+        assertBooksBalance();
+    }
 }
