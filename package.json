@@ -12,7 +12,9 @@
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
     "invariants": "node scripts/invariants/run.mjs",
-    "ci": "pnpm typecheck && pnpm invariants && pnpm test"
+    "ci": "pnpm typecheck && pnpm invariants && pnpm test",
+    "contracts:export": "node contracts/export.mjs",
+    "contracts:test": "forge test --root contracts --no-match-contract Fork"
   },
   "devDependencies": {
     "tsx": "catalog:",

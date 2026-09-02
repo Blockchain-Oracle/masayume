@@ -11,11 +11,11 @@ Start here, then read `parity-ledger.md`. The authority package is
 
 ## Where we are
 
-Branch **`feat/yosuku-source-led-shell`** off `main` (`497b43a`). **Stage 2 is complete; Stage 3 is
-nearly closed — all four `/markets` slots (Tutorial, §02 word board, §01 chart card, Sensei, the Room),
-the fill projection (history, equity, PnL, reputation, badges, CSV, `/portfolio/edge`, `/leaderboard`),
-and now the social and public-proof slice: takes woven into the reel, the two share cards, price alerts
-with a live evaluator, `/news`, `/status`, `/docs`, `/how-it-works`, `/demo` and `/pitch`.**
+Branch **`feat/yosuku-source-led-shell`** off `main` (`497b43a`). **Stages 2 and 3 are closed. Stage 4 is
+in progress (2026-09-02, fourth session): `EventVault` is written, fork-verified against Shannon's real
+contracts and ported into the chain port; the four surface slices (Trading Balance on `/portfolio`,
+session-key tap trading + sponsor relay, `StrategyRegistry` + runner + `/strategies` `/agents`, the X
+rail) were built by parallel forks — see §Stage 4 below for what landed and what waits on the owner.**
 
 | Commit | What |
 |---|---|
@@ -37,7 +37,10 @@ with a live evaluator, `/news`, `/status`, `/docs`, `/how-it-works`, `/demo` and
 | `4f442d5` | Stage 3 — the fill projection: history, equity, Trader Edge, leaderboard |
 | `9a76900` | Stage 3 — takes, share cards, alerts, news, status, docs, how-it-works, demo, pitch |
 | `04ce0eb` | Stage 3 — the share cards as an X banner with a QR stub (user's call) |
-| *(this)* | Stage 3 — `/stats`, `/download`, error recovery; Stage 3 closed |
+| `5597738` | Stage 3 — `/stats`, `/download`, error recovery; Stage 3 closed |
+| `a970be7` | Stage 4 — `EventVault` contract, fork-verified on Shannon (context/41) |
+| `bb1180a` | Stage 4 — the vault in the chain port: reads, second write lane, the order route's third dimension |
+| `cd069c7`, `ec32a7e` | Stage 4 — seams for the parallel slices; caps golden vectors beside `simulateCaps` |
 
 Everything is green: `pnpm typecheck`, `pnpm invariants` (12/12), `pnpm test` (58),
 `pnpm build`. Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
@@ -178,11 +181,40 @@ Per `05-migration-and-agency-handoff.md`. Four slots were waiting on `/markets` 
      absent / unverifiable after 24h / still checking). Order records now carry `pool` and `marketId`.
      `app/error.tsx` uses the reference's words again; `app/global-error.tsx` is new and additive.
 
-**Next**: Stage 4 (`EventVault` and the Unified Trading Balance, embedded session trading and the
-gas-sponsorship policy, the strategy registry/runner and agent/creator surfaces, X OAuth linking and the
-mention rail — the live X account itself needs the owner). Fear/Greed on the ticker still waits on a
-provider. `/social` (the reference's internal marketing-content board) is untouched and keeps its shell.
-Lifecycle alerts have no reference source.
+## Stage 4 — in progress
+
+**The contract (`contracts/src/vault/`)** — `EventVault` ports Yosuku's `trading_vault.move` buckets
+(available / private / grant budget), owner-only exits with no destination parameter anywhere, three typed
+grants (`SESSION` / `EXECUTOR` / `STRATEGY`) with independent caps (per-trade, UTC-day, open positions, price)
+and one-call revocation, delegated **IOC-only** execution placed by the vault itself and attributed by balance
+delta, permissionless `crankSettle`, and a per-owner per-Window **storage tally** (`VaultTally`) because
+Shannon's RPC caps `eth_getLogs` at 1,000 blocks. Sponsored calls come through OpenZeppelin's
+`ERC2771Forwarder`; deposits refuse it. No admin, no pause. 37 forge tests + the shared caps vectors; the fork
+test (`SHANNON_FORK_URL=… FORK_MARKET_ID=<decimal> forge test --match-contract Fork`) filled, delegated,
+voided, cranked and withdrew against the real venue — numbers in `context/41-…`. Things worth knowing:
+- **via-IR caches `block.timestamp` inside a test frame across `vm.warp`** — assert against
+  `vm.getBlockTimestamp()`, not `block.timestamp`, after a warp in the same function.
+- The fork clock is frozen at the fork block; pick a Window that is `Trading` *at that block* (ids near the
+  fork's newest markets, not the live indexer's), and `FORK_MARKET_ID` skips a slow scan.
+- A local fork is `anvil --fork-url https://dream-rpc.somnia.network --port 8546 --chain-id 50312`; the venue
+  also runs 1-minute Windows.
+- `contracts/export.mjs` (`pnpm contracts:export`) is the only bridge to the app: ABIs one entry per line into
+  `packages/markets/src/contracts/*.abi.ts`, deployments into `addresses.masayume.json`. Nothing else reads
+  `out/` or `deployments/`.
+
+**The port** — `@masayume/core/vault` (types, `simulateCaps` mirroring `placeFor` check for check, golden
+vectors `caps.vectors.json` asserted by forge and vitest), `@masayume/markets/vault` (deployment resolution
+with a local-fork env override, two-multicall reads, the tx lane's vault intents, the order lane's
+`route: wallet | vault | vault-grant`, the tally as the history's second seat with `SettledRound.source`).
+Every read and write says **"EventVault is not deployed on this network yet"** until a deployment exists.
+
+**Waits on the owner:** a funded deployer key (STT from https://testnet.somnia.network/) and the go to run
+`forge script script/DeployEventVault.s.sol --rpc-url shannon --broadcast --private-key …`, then
+`pnpm contracts:export` and a commit of the regenerated module (AD-10 lockstep). Until then nothing on-chain in
+Stage 4 is verified live; the fork run is the evidence.
+
+**Also open:** Fear/Greed on the ticker still waits on a provider. `/social` keeps its shell. Lifecycle alerts
+have no reference source.
 
 **Honesty constraints that keep applying** (doc 05 §No fake-data, doc 00 §No-substitution):
 never an invented odd, balance, fill or payout; loading and unavailable are valid states; a

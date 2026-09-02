@@ -28,6 +28,11 @@ order", never "optional" or "cut".
 
 | Date | Decision | Reference | User-visible consequence | Approval |
 |---|---|---|---|---|
+| 2026-09-02 | `EventVault` is the venue's trader with a per-owner ledger (Yosuku's buckets), not a venue operator over the user's wallet; delegated orders are IOC only and attributed by balance delta | `trading_vault.move`; AD-3 "delegated route", AD-5; SDK `placeBinaryOrderFor` considered (§EventVault) | Deposit once; a delegate can only open in-cap positions that are yours; no resting vault orders, so no self-match | Architecture default; fork-verified on Shannon (context/41) |
+| 2026-09-02 | The vault keeps a per-owner, per-Window tally in storage (`VaultTally`) because Shannon's RPC serves `eth_getLogs` over at most 1,000 blocks | RPC probe 2026-09-02: "block range exceeds 1000" at every span tried | Vault history reads in two multicalls; a vault round links no single transaction and says so | No approval needed — a read the browser can actually make |
+| 2026-09-02 | Sponsored calls use OpenZeppelin's `ERC2771Forwarder`; the relayer's allowlist is the policy; deposits refuse the forwarder | doc 03 §Sponsored actions; NFR-7 "capital intake never sponsored"; reference `useSmartSubmit` (sponsor when it can, wallet when it can't) | A tap can be gas-free where a sponsor runs and says who pays where none does | No approval needed — the architecture's own rule |
+| 2026-09-02 | The vault has no admin, no pause and no owner; the reference's admin-only `write_off_locked_for` has no counterpart | `trading_vault.move` L36, L336; doc 02 "pause does not trap owner exits" | Nothing can freeze a withdrawal; a lost position simply settles to what the chain pays | **Needs user review** — a deliberate removal |
+| 2026-09-02 | Nothing is deployed: `EventVault` waits on a funded deployer key and the owner's go; every vault surface says so | RESUME.md "Nothing may be pushed, deployed, published or funded without separate authorization" | The Trading Balance is visible in shape and honest in state | **Blocked on the owner** |
 | 2026-09-01 | Pin confirmed at `3c56ef5`; upstream fetched, zero drift | doc 00 §Pinned reference basis | None — no version mixing | Verified, no approval needed |
 | 2026-09-01 | Yosuku source, CSS, tokens and assets reused verbatim | doc 00 §Source and provenance gaps item 2 | Exact visual fidelity | **User approved** (owns/has permission) |
 | 2026-09-02 | The fill projection is derived in the browser from the wallet's indexed fills and complete-set actions, settled by the chain's own rule; no database, no credential | doc 03 §Equity/PnL "rebuildable event/fill projection", doc 02 §Data ownership | Settled history, equity, PnL, Trader Edge and badges all read one reading | Verified against chain balances (see §Fill projection), no approval needed |
@@ -74,9 +79,55 @@ order", never "optional" or "cut".
 | Own journal, attribution, stop gate | `packages/markets/src/submitter/create.ts` | **Done** — bound to one account |
 | Authority types enumerated | `packages/markets/src/sessions/authority.ts` | **Done** — 9 roles, delegated ones marked |
 | Disposed on disconnect / account switch / chain switch / expiry / revocation | `packages/markets/src/react/session.tsx` | **Done** — new wallet client disposes and rebuilds; disposed sessions reject |
-| Grant policy per session (`SESSION_TRADE`, `X_EXECUTOR`, …) | `EventVault` | Pending — Stage 4; the session already carries the authority it will be scoped by |
+| Grant policy per session (`SESSION`, `EXECUTOR`, `STRATEGY`) | `contracts/src/vault/EventVault.sol` | **Done in code** — typed grants with independent caps, expiry and one-call revocation; the session's viem clients carry the vault beside the SDK trader (`VaultContracts`). Not deployed: owner-authorized |
 
 **Stage 2 is complete.** `/fund` and `/claim` are not Stage 2 reads — see §`/reels` for why.
+
+### EventVault and the Trading Balance (Stage 4, contract and port done 2026-09-02; surfaces in flight)
+
+The reference's Trading Balance is `yolev::trading_vault` (`contracts/leverage-pkg/sources/trading_vault.move`):
+deposit once into buckets — `available`, `private_available`, `agent_available`, `locked_margin` — withdraw only
+to the owner, and let one agent spend an allocation inside a policy. `EventVault.sol` ports the buckets and the
+owner-only exits verbatim in shape, and replaces the single agent policy with the three typed grants the
+architecture requires (AD-5). What DreamDEX changes, and what was decided:
+
+| Requirement | Reference | Ours | Class | Status |
+|---|---|---|---|---|
+| Deposit / withdraw / private bucket / private withdraw | `trading_vault.move` `deposit`, `withdraw`, `move_to_private`, `withdraw_private` | `EventVault.deposit`, `withdraw`, `moveToPrivate`, `withdrawPrivate` — pay `_msgSender()` only; no function takes a destination | Exact (shape) | **Done** — 34 unit tests |
+| Credit from an external flow | `credit_available_for`, `credit_private_for` ("anyone may call because the caller contributes the coin") | `creditFor`, `creditPrivateFor` pull from the caller | Exact | **Done** |
+| Agent allocation with caps | one `AgentPolicy` per user: `max_trade`, `max_leverage_bps`, `max_daily_loss`, `expires_at_ms` | one live grant **per kind** (`SESSION` / `EXECUTOR` / `STRATEGY`) with `maxStakePerTrade`, `maxDailySpend` (UTC day), `maxOpenPositions`, `maxPriceRaw`, expiry, budget; replacing a grant returns the old budget first | Adapted — AD-5 | **Done** |
+| Agent executes inside the policy | `agent_open_leverage` → `margin::request_open_for` (owner hard-wired) | `placeFor(grantId, …)` → an IOC on the venue pool **placed by the vault**, attributed by balance delta, booked to `g.owner`; sale proceeds go to the owner's `available`, never back to the budget | Adapted — the venue has no per-owner order placement we can trust for binaries | **Done**, fork-verified |
+| Owner trades from the balance | `open_leverage` | `place(...)` from `available`, same IOC path | Adapted | **Done** |
+| Settlement returns funds to the balance | `return_locked_for` (anyone contributes the coin) | `crankSettle(owner, marketId)` — permissionless; redeems both sides through the module and credits the owner (FR-31) | Adapted | **Done**, fork-verified on a void |
+| Admin write-off of a lost margin | `write_off_locked_for` (admin only) | **none** — the vault has no admin, no pause, no owner; nothing can trap an exit | Deviation (removal) | **Recorded** |
+| History readable without an indexer | Sui events | `VaultTally`: per-owner, per-Window storage tally (bought/sold per side, cost, proceeds, payout, first/last/settled) + `marketsOf` paging | Adapted — Shannon's RPC caps `eth_getLogs` at 1,000 blocks and blocks are sub-second, so events cannot rebuild a portfolio in a browser | **Done** |
+| Sponsored transactions | Onara gas station: user signs, sponsor co-signs and pays, policy allowlist (`lib/sponsor.ts`, `useSmartSubmit.ts`) | OpenZeppelin `ERC2771Forwarder` + the relayer's per-function allowlist; `deposit` / `depositAndGrant` refuse the forwarder (capital intake is never sponsored) | Adapted | Contract **done**; relay in flight |
+
+**The alternative considered and not taken.** The pinned SDK exposes `placeBinaryOrderFor(owner, …)` and an
+operator registry (`setOperatorApprovalForPool`), which would let the vault place orders in the user's own name
+with escrow from the user's wallet — no deposit, wallet-only projection. Not taken because: the SDK documents
+the operator grants as SpotPool features and the spine ruled "no venue operator-registry dependency (spot-only
+risk)"; a session key would need every pool pre-approved for collateral, which defeats popup-free; and the
+reference's product is a deposit-once balance. Recorded here so it is a decision, not an oversight.
+
+**Fork verification (Story 6.1's build-phase check)** — `context/41-eventvault-fork-verification-2026-09-02.md`:
+against Shannon's real contracts at block 477647519 the vault filled YES at 0.434 and NO at 0.595 on the same
+15m Window, refunds landed in the wallet balance (pool credit 0), a void redeemed exactly ½ per token on both
+sides through the vault's operator approvals, `withdraw` paid the owner in full, and no storage write equalled
+the pool address. Self-match between two owners of one vault cannot occur: the vault only ever sends IOC, so it
+never rests an order to match against.
+
+**The port (`packages/core/src/vault`, `packages/markets/src/vault`).** `simulateCaps` mirrors `placeFor`'s
+checks in the contract's order and is golden-tested on `caps.vectors.json` by forge and vitest alike. Reads are
+two multicalls (`getVaultSnapshot`, `getVaultHoldings`); the tally is the history's second seat
+(`SettledRound.source: "vault"`, no transaction to link); vault intents ride the tx lane and vault orders ride the
+order lane's third dimension (`OrderRequest.route`). Everything answers "EventVault is not deployed on this
+network yet" until `contracts/deployments/50312.json` exists and `pnpm contracts:export` regenerates
+`addresses.masayume.json` (AD-10 lockstep).
+
+**Needs the owner.** Deployment: a funded deployer key (STT from the faucet) and the go —
+`forge script script/DeployEventVault.s.sol --rpc-url shannon --broadcast`; nothing is deployed, published or
+funded without it. Also for review: the private bucket's wording on the portfolio, and the sponsor allowlist.
 
 ### Toast (Stage 2, done 2026-09-01)
 
@@ -772,7 +823,7 @@ Tracked separately so the route table cannot hide a missing capability.
 | Rooms / comments | **Done** | Position-gated, signature-authenticated, over `packages/db`; honest when unconfigured |
 | Social takes, sharing, alerts, news/ticker | **Done** | Signed takes over Postgres; The Call and Earned Heat share cards; threshold price alerts with a live evaluator; the wire on `/news`; the ticker on real prices (Fear/Greed pending a provider) |
 | X linking | Pending | Stage 4 |
-| Trading Balance with labeled pools | **Partial** | Balance plate + labeled pools exist; `EventVault` pending |
+| Trading Balance with labeled pools | **Partial** | `EventVault` written, fork-verified and ported into the chain port; surfaces in flight; not deployed (owner) |
 | Positions, PnL, history, equity, reputation, badges, Trader Edge | **Done** | Open positions off the venue's PnL; history, equity, PnL, reputation, badges, CSV and Trader Edge off the fill projection; the leaderboard off the same replay venue-wide |
 | Earn, parlays, strategies, creators, agents, playbooks | Pending | Stage 4–5 |
 | Assistant (Sensei) | **Done** | Claude-backed; honest unconfigured state, lights up on `ANTHROPIC_API_KEY` |
