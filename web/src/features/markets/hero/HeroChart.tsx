@@ -64,7 +64,7 @@ export function HeroChart({
           </ReadingBoundary>
         </div>
       </div>
-      <HeroChartFoot book={book} onOpenRoom={onOpenRoom} />
+      <HeroChartFoot book={book} asset={market.asset} currentRaw={latestRaw} onOpenRoom={onOpenRoom} />
       <HeroYesNo marketId={market.marketId} upCents={book.upCents} downCents={book.downCents} onSelect={onSelect} />
     </div>
   );

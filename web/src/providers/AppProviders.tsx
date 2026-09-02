@@ -7,6 +7,7 @@ import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { WagmiProvider } from "wagmi";
+import { AlertsWatcher } from "@/features/alerts";
 import { BRAND } from "@/lib/copy";
 import { webEnv } from "@/lib/env";
 import { MarketsBoot } from "./MarketsBoot";
@@ -24,7 +25,11 @@ export function AppProviders({ children }: { children: ReactNode }) {
         <RainbowKitProvider theme={rainbowKitTheme} initialChain={SOMNIA_SHANNON} modalSize="compact" appInfo={{ appName: BRAND.name }}>
           <MarketsProvider env={webEnv.markets}>
             <UserSessionProvider>
-              <MarketsBoot>{children}</MarketsBoot>
+              <MarketsBoot>
+                {/* The price-alert evaluator: one watch per asset with a pending rule, on the shared read runtime. */}
+                <AlertsWatcher />
+                {children}
+              </MarketsBoot>
             </UserSessionProvider>
           </MarketsProvider>
         </RainbowKitProvider>
