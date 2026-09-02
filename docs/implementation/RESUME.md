@@ -212,6 +212,28 @@ with a local-fork env override, two-multicall reads, the tx lane's vault intents
 `route: wallet | vault | vault-grant`, the tally as the history's second seat with `SettledRound.source`).
 Every read and write says **"EventVault is not deployed on this network yet"** until a deployment exists.
 
+**The surfaces (parallel forks, 2026-09-02)** — each ran its own gates and never touched another's files;
+every on-chain path shows its not-deployed state today:
+- **Trading Balance** (`web/src/features/vault/`): the `/portfolio` block restored from the reference's own
+  history (`1a36ffa^` L416–466), the plate's vault row, open vault bets under Your bets, vault rounds in history
+  ("via Trading Balance", a crank instead of a proof link), vault credits on `/claims`; `/dev/vault`.
+- **Session-key tap trading + the sponsor rail** (`web/src/features/session/`, `sessions/session-key.ts`,
+  `vault/sponsor.ts`, `/api/sponsor`): an ephemeral key in IndexedDB per owner, the enable sheet with caps and
+  the capability receipt (one signature via `depositAndGrant`), the chip and manager, `navigator.locks` as the
+  single writer, grant-without-key recovery, the forwarder relay with its allowlist and gates, the key pays
+  where no `SPONSOR_PRIVATE_KEY` runs (≈0.72 STT top-up at the lane's envelope — measure `placeFor` once
+  deployed and cut it); the Ticket's Wallet / Trading Balance route control; `/dev/session`.
+- **The X rail** (`web/src/features/x/`, `/api/x/*`, `@masayume/core/x`, `packages/db` x tables, the `x-relay`
+  actor): OAuth 2.0 + PKCE, an HMAC session (`X_SESSION_SECRET` required, as the reference), the ported signed
+  link/unlink messages with a 5-minute TTL, the deterministic grammar with refusals (tested), `/trade-from-x`
+  and `/claim` truth-corrected, receipts of every status, the relay that polls mentions and executes through
+  `submitOrder` route `vault-grant` under an `x-executor` session; everything names its missing variable;
+  `/dev/x`. The live account, credentials and posting stay with the owner.
+- **The adapter, driven on the fork** (`scripts/spike/vault-fork.ts`, `vault-fork-read.ts`): deposit, an owner
+  order from the balance (0.616), a grant, a delegated order (0.413) booked to the owner, void, a third-party
+  crank, the balance sheet and the vault seat's round — all through the real lanes. Recorded in context/41 and
+  the ledger.
+
 **Waits on the owner:** a funded deployer key (STT from https://testnet.somnia.network/) and the go to run
 `forge script script/DeployEventVault.s.sol --rpc-url shannon --broadcast --private-key …`, then
 `pnpm contracts:export` and a commit of the regenerated module (AD-10 lockstep). Until then nothing on-chain in
