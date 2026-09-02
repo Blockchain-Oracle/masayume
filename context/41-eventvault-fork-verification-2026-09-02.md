@@ -50,6 +50,31 @@ against a local Anvil fork of Shannon at block 477647519 (`contracts/test/EventV
   `getBalanceSheet.vaultBase`, `listWalletHistory` (empty, complete) — `scripts/spike/vault-fork-read.ts`.
   The write path through the adapter (`scripts/spike/vault-fork.ts`) waits on the receipt-poll change.
 
+## Live on Shannon (2026-09-02, later)
+
+Deployed by `0xdD7ae7c43e87Fae3eaE13c23C01eCa6D5bE8Bf9a`: `ERC2771Forwarder` at
+`0x82bb75b8aE663abC73308Ce42ca00d701cFb50d3`, `EventVault` at `0x84Ec824D89ee78d5728545CE0B40EC968aa7CD7A`
+(block 477731559). What Shannon taught that the fork could not:
+
+- **Somnia's gas schedule is ~10× the standard EVM for calls and ~20× for creations.** The forwarder creation
+  used 10.8M gas (local replay 735k); the vault 47M (Somnia's own `eth_estimateGas` said 70.5M; local ~3.2M).
+  Three creations failed first because forge's *local* estimate (×1.3, then ×2) is nowhere near — every
+  failed receipt shows `gasUsed == gas limit`. Deploy with explicit limits from Somnia's `eth_estimateGas`
+  (`cast rpc eth_estimateGas '{"from":…,"data":<creation bytecode>}'`) and mind the up-front envelope:
+  the node refuses a tx whose `gas × maxFeePerGas` exceeds the balance (`insufficient balance, data: "0x03"`),
+  so use `--legacy --gas-price 7000000000` and a tight limit when the balance is small.
+- Somnia supports the Cancun opcodes: the venue's own pool bytecode carries PUSH0, MCOPY and TLOAD, so keep
+  `evm_version = "cancun"` (OpenZeppelin 5.7 needs `mcopy` anyway).
+- Measured calls: faucet 253,138; approve 259,745; first `deposit` 688,494; a vault IOC `place` 2,562,772;
+  `grant` ran out of gas at a 2,000,000 limit (a struct push is many cold slots). Ceilings in
+  `packages/core/src/constants/gas.ts`: `vault` 4M, `vault-order` 6M. At 6 gwei that is thousandths of an STT
+  per write; the app's envelope (`ceiling × 60 gwei × 1.2`) is what a signing key must hold.
+- `forge create` swallows flags that follow `--constructor-args`; put the constructor arguments last.
+- The adapter on Shannon (`LIVE=1 scripts/spike/vault-fork.ts`, the deployer as owner and actor): deposit,
+  an owner UP from the Trading Balance filled at 0.167, a STRATEGY grant, a delegated DOWN from it, and an
+  over-cap order refused by `simulateCaps` before any signature ("would spend 536.84 against a per-trade cap
+  of 500.00"); the crank ran after the oracle settled the Window (see the ledger for the tail).
+
 ## Not covered
 
 - A resolved (non-void) settlement on the fork — the oracle callback does not run in a fork;
