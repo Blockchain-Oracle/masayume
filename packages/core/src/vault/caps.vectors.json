@@ -1,5 +1,5 @@
 {
-  "note": "Shared golden vectors for EventVault's delegated-buy checks. ONE = 1e6; the mock book fills YES at 0.60 and NO at 0.40. `order.priceRaw` is the YES-terms limit the caller passes; both forge (CapsVectors.t.sol) and vitest (packages/core/src/vault/caps.test.ts) assert every row.",
+  "note": "Shared golden vectors for EventVault's delegated-buy checks. ONE = 1e6; the mock book fills YES at 0.60 and NO at 0.40. `order.priceRaw` is the YES-terms limit the caller passes; both forge (contracts/test/CapsVectors.t.sol) and vitest (caps.test.ts beside this file) assert every row.",
   "count": 10,
   "vectors": [
     { "name": "in-cap buy fills", "caps": { "maxStakePerTrade": "50000000", "maxDailySpend": "100000000", "maxOpenPositions": 5, "maxPriceRaw": "0" }, "budget": "200000000", "expired": false, "prior": null, "order": { "outcomeIdx": 0, "priceRaw": "700000", "quantityRaw": "50000000" }, "expect": { "ok": true, "spendBase": "30000000" } },

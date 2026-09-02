@@ -4,7 +4,7 @@ pragma solidity ^0.8.30;
 import {IEventVault} from "../src/vault/IEventVault.sol";
 import {VaultTestBase} from "./VaultTestBase.sol";
 
-/// @notice Every row of `test/vectors/caps.json`, applied to the real contract over the mock book.
+/// @notice Every row of `packages/core/src/vault/caps.vectors.json`, applied to the real contract over the mock book.
 ///         `packages/core/src/vault/caps.test.ts` asserts the same rows against `simulateCaps`, so
 ///         the browser's pre-check and the chain's verdict can never quietly diverge (AD-5).
 contract CapsVectorsTest is VaultTestBase {
@@ -12,7 +12,7 @@ contract CapsVectorsTest is VaultTestBase {
 
     function setUp() public override {
         super.setUp();
-        json = vm.readFile("test/vectors/caps.json");
+        json = vm.readFile("../packages/core/src/vault/caps.vectors.json");
         depositAs(owner, 5_000 * ONE);
     }
 

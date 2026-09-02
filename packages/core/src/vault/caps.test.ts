@@ -1,6 +1,3 @@
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import type { Address } from "../types/primitives";
 import { simulateCaps, utcDayOf } from "./caps";
@@ -20,8 +17,9 @@ interface Vector {
   expect: { ok: true; spendBase: string } | { ok: false; refusal: string; error: string };
 }
 
-const here = dirname(fileURLToPath(import.meta.url));
-const { vectors } = JSON.parse(readFileSync(join(here, "../../../../contracts/test/vectors/caps.json"), "utf8")) as { vectors: Vector[] };
+import golden from "./caps.vectors.json";
+
+const { vectors } = golden as unknown as { vectors: Vector[] };
 
 const sidePrice = (outcomeIdx: 0 | 1, yesPriceRaw: bigint) => (outcomeIdx === 0 ? yesPriceRaw : ONE - yesPriceRaw);
 /** The mock book: a buy fills in full when the limit reaches the fill price, at the fill price. */
