@@ -13,9 +13,9 @@ Start here, then read `parity-ledger.md`. The authority package is
 
 Branch **`feat/yosuku-source-led-shell`** off `main` (`497b43a`). **Stages 2 and 3 are closed. Stage 4 is live
 on Shannon (`EventVault`, the forwarder, `StrategyRegistry` — §Stage 4 records what the user has and has not
-reviewed). Stage 5 is in progress (2026-09-02, sixth session): item 1, `ParlayReserve` + `/parlay`, is deployed,
-supplied with 5,000 tUSDC and driven through the adapter on a fork and live — §Stage 5. Next is item 2,
-`RangeReserve`.**
+reviewed). Stage 5 is in progress (2026-09-02, seventh session): item 1, `ParlayReserve` + `/parlay`, is live on Shannon;
+item 2, `RangeReserve` + the Ticket's Range mode + `/games/range`, is built and fork-verified, awaiting the user's
+review and the owner's go to deploy — §Stage 5. Next is item 3, `MarketMakerVault` for `/earn`.**
 
 | Commit | What |
 |---|---|
@@ -42,9 +42,10 @@ supplied with 5,000 tUSDC and driven through the adapter on a fork and live — 
 | `bb1180a` | Stage 4 — the vault in the chain port: reads, second write lane, the order route's third dimension |
 | `cd069c7`, `ec32a7e` | Stage 4 — seams for the parallel slices; caps golden vectors beside `simulateCaps` |
 | `58ed635` | Stage 5 — `ParlayReserve` contract, port, `/parlay` from source, fork-verified; deployed and supplied on Shannon, the adapter driven live (context/42) |
+| `9dfacae` | Stage 5 — the OracleHub spike (context/43), `RangeReserve` contract, port, the Ticket's Range mode and `/games/range`, fork-verified on Shannon; not deployed |
 
-Everything is green: `pnpm typecheck`, `pnpm invariants` (12/12, 0 warnings), `pnpm test` (99),
-`forge test --no-match-contract Fork` (72), `pnpm build`. Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
+Everything is green: `pnpm typecheck`, `pnpm invariants` (12/12, 0 warnings), `pnpm test` (120),
+`forge test --no-match-contract Fork` (100), `pnpm build`. Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
 
 **Never touch or commit** the untracked `context/screens/` and `prompt.md`. They are the user's.
 
