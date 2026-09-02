@@ -1,14 +1,9 @@
 import type { Metadata } from "next";
-import { CapabilityPending } from "@/components/shell";
+import { PitchDeck } from "@/features/pitch";
 
 export const metadata: Metadata = { title: "Pitch" };
 
+/** The folio — the reference's presentation grammar, every claim on real Masayume evidence. */
 export default function Page() {
-  return (
-    <div className="container">
-      <CapabilityPending eyebrow="Narrative" title="Pitch" dependency="verified Masayume evidence (Stage 3)">
-        <p>The case for Masayume, built only from evidence that exists — real receipts, real integrations, current facts.</p>
-      </CapabilityPending>
-    </div>
-  );
+  return <PitchDeck />;
 }

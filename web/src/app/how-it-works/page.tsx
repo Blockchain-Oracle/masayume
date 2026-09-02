@@ -1,14 +1,8 @@
 import type { Metadata } from "next";
-import { CapabilityPending } from "@/components/shell";
+import { HOW_IT_WORKS, HowItWorksPage } from "@/features/how-it-works";
 
-export const metadata: Metadata = { title: "How it works" };
+export const metadata: Metadata = { title: HOW_IT_WORKS.title };
 
 export default function Page() {
-  return (
-    <div className="container">
-      <CapabilityPending eyebrow="Explainer" title="How it works" dependency="the explainer pass over shipped mechanics (Stage 3)">
-        <p>The mechanism end to end: how a window opens, how a price becomes a position, who settles it, and who can move your money.</p>
-      </CapabilityPending>
-    </div>
-  );
+  return <HowItWorksPage />;
 }
