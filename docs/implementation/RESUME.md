@@ -41,7 +41,7 @@ supplied with 5,000 tUSDC and driven through the adapter on a fork and live — 
 | `a970be7` | Stage 4 — `EventVault` contract, fork-verified on Shannon (context/41) |
 | `bb1180a` | Stage 4 — the vault in the chain port: reads, second write lane, the order route's third dimension |
 | `cd069c7`, `ec32a7e` | Stage 4 — seams for the parallel slices; caps golden vectors beside `simulateCaps` |
-| (this session) | Stage 5 — `ParlayReserve` contract, port, `/parlay` from source, fork-verified; deployed and supplied on Shannon, the adapter driven live (context/42) |
+| `58ed635` | Stage 5 — `ParlayReserve` contract, port, `/parlay` from source, fork-verified; deployed and supplied on Shannon, the adapter driven live (context/42) |
 
 Everything is green: `pnpm typecheck`, `pnpm invariants` (12/12, 0 warnings), `pnpm test` (99),
 `forge test --no-match-contract Fork` (72), `pnpm build`. Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
