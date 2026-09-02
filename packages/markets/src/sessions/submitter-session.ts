@@ -4,6 +4,7 @@ import { SomniaMarkets } from "@somnia-chain/markets-sdk";
 import { createWalletClient, http, type Account, type Hex, type PublicClient, type WalletClient } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { resolveVaultDeployment } from "../vault/deployment";
+import type { SponsorTransport } from "../vault/sponsor";
 import type { VaultContracts } from "../vault/write";
 import { resolveAddresses } from "../addresses";
 import { SOMNIA_SHANNON } from "../chain";
@@ -25,6 +26,8 @@ export interface SubmitterSessionConfig {
   stopGate?: StopGate;
   attribution?: AttributionHook;
   nowMs?: () => number;
+  /** A relayer that pays for this session's allowlisted vault calls (the sponsorship policy). */
+  sponsor?: SponsorTransport;
 }
 
 export interface SubmitterSession {
@@ -94,6 +97,7 @@ export async function createSubmitterSession(config: SubmitterSessionConfig): Pr
     walletClient: walletClientFor(signer, env),
     publicClient: exchange.client.getViemClient() as PublicClient,
     deployment: resolveVaultDeployment(env),
+    ...(config.sponsor ? { sponsor: config.sponsor } : {}),
   };
 
   const submitter = createSubmitter({

@@ -7,14 +7,13 @@ import { parseEventLogs } from "viem";
 import { eventVaultAbi } from "../contracts/event-vault.abi";
 import { outcomeIdxOf } from "../mappers/side";
 import { OrderRefusedError, RequoteError } from "../submitter/errors";
-import { checkGas } from "../submitter/gas";
 import type { OrderLaneContext } from "../submitter/order-lane";
 import { diagnoseWrite } from "../submitter/steps/assert-tx-ok";
 import { orderExpiryNs } from "../submitter/steps/expiry";
 import { freshQuote } from "../submitter/steps/quote";
 import { statusGate } from "../submitter/steps/status-gate";
 import { getVaultHoldings, getVaultSnapshot, toVaultGrant } from "./read";
-import { settleVaultFailure, writeVault, type Sent, type VaultContracts } from "./write";
+import { checkVaultGas, settleVaultFailure, writeVault, type Sent, type VaultContracts } from "./write";
 
 type VaultRoute = Exclude<OrderRoute, { kind: "wallet" }>;
 
@@ -127,7 +126,7 @@ export async function submitVaultOrder(ctx: OrderLaneContext & { contracts: Vaul
     const quote = await freshQuote({ target, side, stakeBase, displayed: displayedQuote });
     const expireNs = orderExpiryNs(ctx.nowMs(), onchain, market.intervalSec);
     await assertVaultFunded(contracts, route, req, quote, ctx.nowMs());
-    const gas = await checkGas(wallet, "vault-order");
+    const gas = await checkVaultGas(contracts, wallet, "vault-order", route.kind === "vault" ? "place" : "placeFor");
     if (!gas.ok) throw new OrderRefusedError(gas.diagnosis);
 
     const record = await ctx.journal.record({ kind: "order", wallet, summary: summarize(req), pool: market.poolAddress, marketId: market.marketId });

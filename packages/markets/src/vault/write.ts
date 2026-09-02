@@ -2,20 +2,33 @@ import type { IntentJournal, PhaseListener, TxOutcome, VaultIntent } from "@masa
 import { diagnosis, type Address, type Diagnosis, type Hex } from "@masayume/core/types";
 import { GRANT_KIND_INDEX, VAULT_NOT_DEPLOYED, type VaultDeployment } from "@masayume/core/vault";
 import { formatBaseUnits } from "@masayume/core/units";
-import { erc20Abi, maxUint256, type ContractFunctionArgs, type ContractFunctionName, type PublicClient, type TransactionReceipt, type WalletClient } from "viem";
+import {
+  encodeFunctionData,
+  erc20Abi,
+  maxUint256,
+  WaitForTransactionReceiptTimeoutError,
+  type ContractFunctionArgs,
+  type ContractFunctionName,
+  type PublicClient,
+  type TransactionReceipt,
+  type WalletClient,
+} from "viem";
 import { SOMNIA_SHANNON } from "../chain";
 import { getCollateral } from "../collateral";
 import { eventVaultAbi } from "../contracts/event-vault.abi";
 import { isTimeoutError } from "../submitter/failure";
-import { checkGas, gasLimitFor } from "../submitter/gas";
+import { checkGas, gasLimitFor, type GasCheck } from "../submitter/gas";
 import { TxRevertedError } from "../submitter/steps/assert-tx-ok";
 import { diagnoseVault } from "./errors";
+import type { SponsorTransport } from "./sponsor";
 
 /** The session's own viem clients for Masayume's contracts — bound once, beside the SDK trader. */
 export interface VaultContracts {
   walletClient: WalletClient;
   publicClient: PublicClient;
   deployment: VaultDeployment | null;
+  /** A relayer that pays for allowlisted calls the signer signed; absent, the signer pays its own gas. */
+  sponsor?: SponsorTransport;
 }
 
 export interface VaultTxContext {
@@ -25,6 +38,28 @@ export interface VaultTxContext {
 }
 
 const RECEIPT_TIMEOUT_MS = 90_000;
+const RECEIPT_POLL_MS = 700;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
+ * The receipt, by direct poll. viem's `waitForTransactionReceipt` watches for new blocks through
+ * the SDK's client and missed an instantly-mined transaction on a fork for the full 90 s; asking
+ * for the receipt itself cannot. A timeout still reads as one, so the lane journals it unknown.
+ */
+export async function awaitReceipt(publicClient: PublicClient, hash: Hex, label: string): Promise<TransactionReceipt> {
+  const startedAt = Date.now();
+  for (;;) {
+    const receipt = await publicClient.getTransactionReceipt({ hash }).catch(() => null);
+    if (receipt) {
+      if (receipt.status !== "success") throw new TxRevertedError(label, hash);
+      return receipt;
+    }
+    if (Date.now() - startedAt > RECEIPT_TIMEOUT_MS) throw new WaitForTransactionReceiptTimeoutError({ hash });
+    await sleep(RECEIPT_POLL_MS);
+  }
+}
+
 type VaultFn = ContractFunctionName<typeof eventVaultAbi, "nonpayable">;
 type Args<F extends VaultFn> = ContractFunctionArgs<typeof eventVaultAbi, "nonpayable", F>;
 
@@ -39,7 +74,17 @@ function account(contracts: VaultContracts): Address {
   return acct.address as Address;
 }
 
-/** Simulate first — that is where viem decodes the vault's custom errors — then sign, then wait for the receipt. */
+/** A sponsored function needs no STT from the signer; everything else must clear the lane's own gas envelope. */
+export async function checkVaultGas(contracts: VaultContracts | undefined, wallet: Address, lane: "vault" | "vault-order", functionName: VaultFn): Promise<GasCheck> {
+  if (contracts?.sponsor?.covers(functionName)) return { ok: true, lane, balanceWei: 0n, requiredWei: 0n };
+  return checkGas(wallet, lane);
+}
+
+/**
+ * Simulate first — that is where viem decodes the vault's custom errors — then send, then wait for
+ * the receipt. With a sponsor bound, the signer signs an ERC-2771 request and the relayer sends; a
+ * refusal falls back to the signer's own transaction, so a sponsor that is down never blocks a write.
+ */
 export async function writeVault<F extends VaultFn>(contracts: VaultContracts, functionName: F, args: Args<F>, label: string): Promise<Sent> {
   const deployment = contracts.deployment;
   if (!deployment) throw new Error(VAULT_NOT_DEPLOYED);
@@ -51,10 +96,14 @@ export async function writeVault<F extends VaultFn>(contracts: VaultContracts, f
     account: contracts.walletClient.account,
     chain: SOMNIA_SHANNON,
   } as never);
-  const hash = await contracts.walletClient.writeContract({ ...(request as object), gas: gasLimitFor("vault") } as never);
-  const receipt = await contracts.publicClient.waitForTransactionReceipt({ hash, timeout: RECEIPT_TIMEOUT_MS });
-  if (receipt.status !== "success") throw new TxRevertedError(label, hash);
-  return { hash, receipt };
+  const gas = gasLimitFor("vault");
+  let hash: Hex | null = null;
+  if (contracts.sponsor?.covers(functionName)) {
+    const data = encodeFunctionData({ abi: eventVaultAbi, functionName, args } as never);
+    hash = await contracts.sponsor.send({ functionName, to: deployment.eventVault, data, gas });
+  }
+  if (!hash) hash = await contracts.walletClient.writeContract({ ...(request as object), gas } as never);
+  return { hash, receipt: await awaitReceipt(contracts.publicClient, hash, label) };
 }
 
 /** The vault's first ERC-20 allowance is absorbed into the deposit that needs it (Approvals convention). */
@@ -74,8 +123,7 @@ export async function ensureVaultAllowance(contracts: VaultContracts, amountBase
     chain: SOMNIA_SHANNON,
     gas: gasLimitFor("approve"),
   });
-  const receipt = await contracts.publicClient.waitForTransactionReceipt({ hash, timeout: RECEIPT_TIMEOUT_MS });
-  if (receipt.status !== "success") throw new TxRevertedError("approve", hash);
+  await awaitReceipt(contracts.publicClient, hash, "approve");
   return hash;
 }
 
@@ -113,6 +161,31 @@ export async function sendVaultIntent(contracts: VaultContracts, intent: VaultIn
       return writeVault(contracts, "crankSettle", [intent.owner, intent.marketId], intent.kind);
     case "vault-sweep":
       return writeVault(contracts, "sweep", [intent.pool], intent.kind);
+  }
+}
+
+function vaultFunctionOf(intent: VaultIntent): VaultFn {
+  switch (intent.kind) {
+    case "vault-deposit":
+      return "deposit";
+    case "vault-withdraw":
+      return "withdraw";
+    case "vault-move-private":
+      return "moveToPrivate";
+    case "vault-withdraw-private":
+      return "withdrawPrivate";
+    case "vault-grant":
+      return "grant";
+    case "vault-deposit-and-grant":
+      return "depositAndGrant";
+    case "vault-fund-grant":
+      return "fundGrant";
+    case "vault-revoke":
+      return "revoke";
+    case "vault-crank-settle":
+      return "crankSettle";
+    case "vault-sweep":
+      return "sweep";
   }
 }
 
@@ -170,7 +243,7 @@ export async function submitVaultTx(ctx: VaultTxContext, intent: VaultIntent, on
   const { wallet, contracts } = ctx;
   if (!contracts?.deployment) return refused(diagnosis("not-deployed", VAULT_NOT_DEPLOYED));
   const record = await ctx.journal.record({ kind: intent.kind, wallet, summary: summarizeVault(intent, getCollateral().decimals) });
-  const gas = await checkGas(wallet, "vault");
+  const gas = await checkVaultGas(contracts, wallet, "vault", vaultFunctionOf(intent));
   if (!gas.ok) {
     await ctx.journal.markFailed(record.id, gas.diagnosis.technical);
     return refused(gas.diagnosis);

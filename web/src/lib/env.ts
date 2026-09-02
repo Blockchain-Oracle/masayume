@@ -21,6 +21,10 @@ export const webEnv: WebEnv = {
     venueId: process.env.NEXT_PUBLIC_VENUE_ID,
     priceFeedUrl: process.env.NEXT_PUBLIC_PRICE_FEED_URL,
     priceFeedQuote: process.env.NEXT_PUBLIC_PRICE_FEED_QUOTE,
+    // Local-fork overrides for the EventVault; production reads the generated addresses module (AD-10).
+    eventVaultAddress: process.env.NEXT_PUBLIC_EVENT_VAULT_ADDRESS,
+    forwarderAddress: process.env.NEXT_PUBLIC_FORWARDER_ADDRESS,
+    eventVaultFromBlock: process.env.NEXT_PUBLIC_EVENT_VAULT_FROM_BLOCK,
   }),
   ...webOnlySchema.parse({
     walletConnectProjectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || undefined,

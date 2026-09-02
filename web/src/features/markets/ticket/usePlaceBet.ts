@@ -1,7 +1,7 @@
 "use client";
 
 import type { OrderOutcome, OrderRequest, WritePhase } from "@masayume/core/ports";
-import type { Hex, Quote } from "@masayume/core/types";
+import type { Address, Hex, Quote } from "@masayume/core/types";
 import { formatBaseUnits } from "@masayume/core/units";
 import { invalidateAfterWrite, useSigner, useSubmitter } from "@masayume/markets/react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -38,11 +38,21 @@ function txHashOf(outcome: OrderOutcome): Hex | null {
   return null;
 }
 
-/** The write-path state machine for one bet; a second tap while one is in flight is absorbed, never doubled. */
-export function usePlaceBet() {
-  const submitter = useSubmitter();
+export interface PlaceBetSigner {
+  submitter: ReturnType<typeof useSubmitter>;
+  wallet: Address | null;
+}
+
+/**
+ * The write-path state machine for one bet; a second tap while one is in flight is absorbed, never doubled.
+ * By default the user's own session signs; a route may hand in another signer (the session key for taps).
+ */
+export function usePlaceBet(signer?: PlaceBetSigner) {
+  const userSubmitter = useSubmitter();
   const queryClient = useQueryClient();
-  const { address } = useSigner();
+  const user = useSigner();
+  const submitter = signer ? signer.submitter : userSubmitter;
+  const address = signer ? signer.wallet : user.address;
   const [state, setState] = useState<PlaceBetState>(IDLE);
   const inFlight = useRef(false);
 
@@ -56,7 +66,9 @@ export function usePlaceBet() {
           setState((s) => ({ ...s, phase, txHash: detail?.txHash ?? s.txHash })),
         );
         if (outcome.status === "confirmed" || outcome.status === "nothingFilled") {
-          await invalidateAfterWrite(queryClient, { wallet: address, marketId: request.market.marketId });
+          // A delegated fill lands on the owner's books, not the key's — refresh the owner too.
+          await invalidateAfterWrite(queryClient, { wallet: user.address ?? address, marketId: request.market.marketId });
+          if (user.address && user.address !== address) await invalidateAfterWrite(queryClient, { wallet: address });
         }
         setState({ phase: phaseOf(outcome), outcome, txHash: txHashOf(outcome) });
         if (outcome.status === "confirmed") {
@@ -67,7 +79,7 @@ export function usePlaceBet() {
         inFlight.current = false;
       }
     },
-    [address, queryClient, submitter],
+    [address, queryClient, submitter, user.address],
   );
 
   const reset = useCallback(() => setState(IDLE), []);

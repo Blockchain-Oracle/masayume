@@ -9,6 +9,7 @@ import { useState, type ReactNode } from "react";
 import { WagmiProvider } from "wagmi";
 import { AlertsWatcher } from "@/features/alerts";
 import { WriteRecovery } from "@/features/recovery";
+import { SessionKeyProvider, SessionRecovery } from "@/features/session";
 import { BRAND } from "@/lib/copy";
 import { webEnv } from "@/lib/env";
 import { MarketsBoot } from "./MarketsBoot";
@@ -17,7 +18,7 @@ import { rainbowKitTheme } from "./rainbowkit-theme";
 import { UserSessionProvider } from "./UserSessionProvider";
 import { wagmiConfig } from "./wagmi";
 
-/** Client composition root: wallet session → query cache → wallet UI → shared read runtime → isolated signing session → boot gate. */
+/** Client composition root: wallet session → query cache → wallet UI → shared read runtime → isolated signing session → boot gate → session key. */
 export function AppProviders({ children }: { children: ReactNode }) {
   const [queryClient] = useState(createQueryClient);
   return (
@@ -27,11 +28,15 @@ export function AppProviders({ children }: { children: ReactNode }) {
           <MarketsProvider env={webEnv.markets}>
             <UserSessionProvider>
               <MarketsBoot>
-                {/* The price-alert evaluator: one watch per asset with a pending rule, on the shared read runtime. */}
-                <AlertsWatcher />
-                {/* Writes the journal still holds open are asked about once per session; nothing is re-sent. */}
-                <WriteRecovery />
-                {children}
+                {/* The browser-held session key: alive only while the owner's SESSION grant is, and this browser holds the key. */}
+                <SessionKeyProvider>
+                  {/* The price-alert evaluator: one watch per asset with a pending rule, on the shared read runtime. */}
+                  <AlertsWatcher />
+                  {/* Writes the journal still holds open are asked about once per session; nothing is re-sent. */}
+                  <WriteRecovery />
+                  <SessionRecovery />
+                  {children}
+                </SessionKeyProvider>
               </MarketsBoot>
             </UserSessionProvider>
           </MarketsProvider>

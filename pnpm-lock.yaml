@@ -153,6 +153,9 @@ importers:
       '@masayume/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@masayume/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@masayume/markets':
         specifier: workspace:*
         version: link:../../packages/markets
@@ -208,6 +211,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      idb-keyval:
+        specifier: ^6.3.0
+        version: 6.3.0
       lightweight-charts:
         specifier: 'catalog:'
         version: 5.2.1
