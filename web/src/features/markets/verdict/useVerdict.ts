@@ -29,7 +29,8 @@ function useSettledResolution(marketId: MarketId | null, settled: boolean): Read
   });
 }
 
-function useSettlementFee(marketId: MarketId | null, settled: boolean): Reading<number> | null {
+/** The venue's settlement fee for one Window, read once it is needed — the receipt and The Call both print net of it. */
+export function useSettlementFee(marketId: MarketId | null, settled: boolean): Reading<number> | null {
   return useReadingQuery([...keys.fee(marketId), "bps"], () => marketsProvider.settlementFeeBps(marketId as MarketId), {
     enabled: marketId !== null && settled,
   });

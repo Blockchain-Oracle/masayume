@@ -76,10 +76,6 @@ export const WALLET_DEV = {
   credit: "Venue payout credit",
 } as const;
 
-export const TOASTS = {
-  copied: "Copied",
-} as const;
-
 export const DEV = {
   title: "Fixtures",
   intro: "Every card, receipt, and state from canned data — no wallet, no database.",
@@ -267,8 +263,6 @@ export const VERDICT_UI = {
   oracleGraph: "Oracle graph",
   question: (id: string) => `question ${id}`,
   noQuestion: "not on record",
-  share: "Copy link",
-  shareFailed: "Couldn't copy — use the address bar instead.",
   settling: "the closing print lands a few seconds after expiry.",
   noPosition: { why: "You held nothing in this window — nothing to stamp." },
   connect: { why: "Connect a wallet to see your verdict." },

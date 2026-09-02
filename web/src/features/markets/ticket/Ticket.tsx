@@ -14,6 +14,7 @@ import { BetModes } from "./BetModes";
 import { FundingNote } from "./FundingNote";
 import { LeverageChips } from "./LeverageChips";
 import { OutcomeNote } from "./OutcomeNote";
+import { PlacedCall } from "./PlacedCall";
 import { QuickChips } from "./QuickChips";
 import { QuoteStrip } from "./QuoteStrip";
 import { SideSegments } from "./SideSegments";
@@ -80,12 +81,30 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
     void bet.place({ market, side, stakeBase, displayedQuote: displayed });
   };
 
+  // The Call: once the fill is confirmed the ticket body is the shareable card, with
+  // "Place another" bringing the composer back (reference Ticket624Drawer L807–836).
+  const booked = bet.state.outcome?.status === "confirmed" ? bet.state.outcome.booked : null;
+
   return (
     <section
       aria-label={TICKET.title}
       className="flex flex-col gap-4 rounded-(--ticket-radius) border border-(--ticket-border) bg-(--ticket-surface) p-4"
     >
       <TicketHeader market={market} phase={phase} nowMs={t.nowMs} />
+      {booked ? (
+        <PlacedCall
+          booked={booked}
+          market={market}
+          nowMs={t.nowMs}
+          decimals={decimals}
+          symbol={symbol}
+          onAnother={() => {
+            bet.reset();
+            t.setStakeText("");
+          }}
+        />
+      ) : (
+        <>
       <WalkLine />
       <BetModes />
       <SideSegments side={side} onSelect={t.selectSide} />
@@ -109,6 +128,8 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
         <FaucetCard />
       ) : (
         <TicketCta blocker={blocker} ctx={ctx} side={side} costBase={displayed?.maxCostBase ?? null} decimals={decimals} symbol={symbol} onClick={place} />
+      )}
+        </>
       )}
     </section>
   );
