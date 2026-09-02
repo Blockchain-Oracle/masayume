@@ -3,6 +3,7 @@
 import { Dialog } from "@base-ui/react/dialog";
 import { LockIcon, SendIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { addressHue } from "@/lib/address-hue";
 import { ROOM } from "./copy";
 import { ROOM_BODY_MAX, type RoomComment, type RoomGate } from "./protocol";
 import { RoomMark, RoomStates } from "./RoomStates";
@@ -31,13 +32,6 @@ function timeAgo(ms: number): string {
   if (minutes < 60) return `${minutes}m`;
   const hours = Math.floor(minutes / 60);
   return hours < 24 ? `${hours}h` : `${Math.floor(hours / 24)}d`;
-}
-
-/** A stable hue per address, so one wallet is one colour with no profile store behind it (reference L35–39). */
-function hue(address: string): number {
-  let value = 0;
-  for (let i = 2; i < Math.min(address.length, 12); i += 1) value = (value * 31 + address.charCodeAt(i)) % 360;
-  return value;
 }
 
 /**
@@ -113,7 +107,7 @@ export function CommentRoom({ callLabel, gate, comments, busy, error, onClose, o
                 {comments.length === 0 && <p className="room-empty">{ROOM.empty}</p>}
                 {comments.map((comment) => (
                   <div key={comment.id} className="room-line" data-mine={comment.mine}>
-                    <span className="room-avatar" style={{ "--room-hue": hue(comment.author) } as CSSProperties} aria-hidden>
+                    <span className="room-avatar" style={{ "--room-hue": addressHue(comment.author) } as CSSProperties} aria-hidden>
                       {comment.author.slice(2, 4).toUpperCase()}
                     </span>
                     <div className="room-bubble">

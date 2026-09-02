@@ -1,7 +1,8 @@
 "use client";
 
 import { ChevronUpIcon, FeatherIcon } from "lucide-react";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { TakeComposer, TakeReelCard, useTakes, weaveReel } from "@/features/takes";
 import { REELS } from "@/lib/copy";
 import { useChainNowMs } from "../useChainNow";
 import { useLanesState } from "../lanes";
@@ -15,18 +16,20 @@ import { useReelRounds } from "./useReelRounds";
 const SCROLLED_PX = 60;
 
 /**
- * The reel — a full-screen vertical snap feed of live Windows.
+ * The reel — a full-screen vertical snap feed of live Windows and community takes.
  *
  * Ported from `reference/yosuku/app/reels/page.tsx` over the same DreamDEX pipeline
- * that feeds `/markets`, so a price never disagrees between the two. Three
+ * that feeds `/markets`, so a price never disagrees between the two. Two
  * differences from the reference are deliberate:
  *
  *  - Rounds come from the live lanes across every cadence the venue lists, not a
  *    fixed 1m/5m/1h table, and membership derives from `phase()` like every other
  *    surface rather than a second copy of the entry cutoff.
  *  - The line is the on-chain opening print, as on `/markets`.
- *  - Community takes are not woven in yet; the composer names Stage 3 rather than
- *    opening onto a feed that does not exist.
+ *
+ * Takes are woven in as the reference weaves them — market, take, market, take —
+ * and read from the social store; with no store configured the reel carries
+ * Windows alone and the composer says what is missing.
  */
 export function ReelsScreen() {
   const venue = useVenue();
@@ -34,11 +37,17 @@ export function ReelsScreen() {
   const lanes = useLanesState(venue.venueId);
   const rounds = useReelRounds(lanes.laneSet, nowMs);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { register, isNear } = useActiveReel(scrollRef, rounds.length);
   const [scrolled, setScrolled] = useState(false);
+  const [composerOpen, setComposerOpen] = useState(false);
 
   const waiting = lanes.reading === null || nowMs === 0;
-  const hasReel = rounds.length > 0;
+  const feed = useTakes(!waiting);
+  const reel = useMemo(() => weaveReel(rounds, feed?.takes ?? []), [rounds, feed]);
+  const { register, isNear } = useActiveReel(scrollRef, reel.length);
+
+  // The Take pill only makes sense once there is a live card to attach to — the
+  // reference's own rule (L286–289): UP/DOWN stays the first action a viewer meets.
+  const hasReel = reel.length > 0;
 
   return (
     <>
@@ -56,21 +65,27 @@ export function ReelsScreen() {
         ) : !hasReel ? (
           <ReelHolding>{REELS.betweenRounds}</ReelHolding>
         ) : (
-          rounds.map((market, index) => (
-            <section key={market.marketId} ref={register(index)} className="feed-card reel-slot">
-              <ReelCard market={market} nowMs={nowMs} near={isNear(index)} />
-            </section>
-          ))
+          reel.map((item, index) =>
+            item.kind === "market" ? (
+              <section key={item.market.marketId} ref={register(index)} className="feed-card reel-slot">
+                <ReelCard market={item.market} nowMs={nowMs} near={isNear(index)} />
+              </section>
+            ) : (
+              <section key={`take-${item.take.id}`} ref={register(index)} className="feed-card reel-slot">
+                <TakeReelCard take={item.take} nowMs={nowMs} />
+              </section>
+            ),
+          )
         )}
       </div>
 
       {hasReel && (
         <>
-          {/* The social entry point. Stage 3 stands the take board up; until then the
-              control is here and says what it waits on rather than opening onto nothing. */}
-          <button type="button" disabled className="reel-take" aria-label={REELS.takesPending} title={REELS.takesPending}>
+          {/* The social entry point, anchored on the right rail mid-card so it never
+              covers a card's action row (reference L317–331). */}
+          <button type="button" className="reel-take" onClick={() => setComposerOpen(true)} aria-label={REELS.postTake} data-cursor="hover">
             <FeatherIcon size={24} aria-hidden />
-            <span>Take</span>
+            <span>{REELS.take}</span>
           </button>
 
           {/* Nothing else on screen says this is a snap scroll, so a viewer who does not
@@ -81,6 +96,8 @@ export function ReelsScreen() {
           </div>
         </>
       )}
+
+      {composerOpen && <TakeComposer laneSet={lanes.laneSet} nowMs={nowMs} configured={feed?.configured ?? null} onClose={() => setComposerOpen(false)} />}
     </>
   );
 }

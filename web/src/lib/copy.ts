@@ -195,8 +195,9 @@ export const REELS = {
   betweenRounds: "between rounds. a new one rolls on the next cadence.",
   noVenue: "no live venue to read right now.",
   swipeHint: "Swipe up for the next market",
-  /** Stage 3 weaves community takes between the market cards; the reel is markets-only until then. */
-  takesPending: "Community takes join the reel when the social layer is live — it is not connected yet.",
+  /** The right-rail pill (reference L321–330): icon + label, opens the composer. */
+  take: "Take",
+  postTake: "Post a take",
 } as const;
 
 /**

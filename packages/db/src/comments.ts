@@ -1,5 +1,5 @@
 import { getDb } from "./client";
-import { ROOM_SCHEMA_SQL } from "./schema";
+import { ensureSchema } from "./migrate";
 
 export interface RoomComment {
   id: string;
@@ -24,25 +24,6 @@ const toComment = (row: CommentRow): RoomComment => ({
   body: row.body,
   createdAtMs: row.created_at.getTime(),
 });
-
-let migrated = false;
-
-/**
- * Applies the schema once per process.
- *
- * The schema is idempotent, so this is safe to call on every request and there is
- * no migration tool to run before the Room works — a fresh `DATABASE_URL` is
- * enough. That holds while there is one table; the moment a change has to alter
- * existing rows, this becomes a real migration story and not a `CREATE IF NOT
- * EXISTS`.
- */
-async function ensureSchema(): Promise<void> {
-  if (migrated) return;
-  const db = getDb();
-  if (!db) return;
-  await db.unsafe(ROOM_SCHEMA_SQL);
-  migrated = true;
-}
 
 /** Newest first, capped. `null` means no database is configured — never an empty room. */
 export async function listComments(marketId: string, limit: number): Promise<RoomComment[] | null> {

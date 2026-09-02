@@ -9,4 +9,6 @@ export const DB_PACKAGE = "@masayume/db" as const;
 
 export * from "./client";
 export * from "./comments";
+export * from "./migrate";
 export * from "./schema";
+export * from "./takes";
