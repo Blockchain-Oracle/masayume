@@ -18,6 +18,9 @@ contract MockCollateral is ERC20 {
 /// @dev One contract plays the module, the market, the pool, the settlement and the ERC-6909
 ///      singleton, with knobs for the behaviours the vault's accounting must survive: partial
 ///      fills, fees, refunds landing as pool credit, and the three settlement outcomes.
+/// @dev The venue reverts an IOC that crosses nothing (`ImmediateOrCancelNoFill`, verified on Shannon 2026-09-02).
+error ImmediateOrCancelNoFill();
+
 contract MockVenue {
     uint256 internal constant ONE = 1e6;
     bytes32 public constant MARKET = bytes32(uint256(0x11019));
@@ -122,7 +125,7 @@ contract MockVenue {
         uint256 filled = qty * fillBps / 10_000;
 
         if (isBuy) {
-            if (limit < sidePrice) filled = 0;
+            if (limit < sidePrice) revert ImmediateOrCancelNoFill();
             uint256 escrow = qty * limit / ONE;
             uint256 fromCredit = credit[msg.sender] < escrow ? credit[msg.sender] : escrow;
             credit[msg.sender] -= fromCredit;
@@ -133,7 +136,7 @@ contract MockVenue {
             balanceOf[msg.sender][id] += filled;
         } else {
             require(isOperator[msg.sender][address(this)], "pool not operator");
-            if (limit > sidePrice) filled = 0;
+            if (limit > sidePrice) revert ImmediateOrCancelNoFill();
             balanceOf[msg.sender][id] -= filled;
             uint256 proceeds = filled * sidePrice / ONE;
             proceeds -= proceeds * feeBps / 10_000;

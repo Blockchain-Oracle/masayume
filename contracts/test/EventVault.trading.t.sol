@@ -2,6 +2,7 @@
 pragma solidity ^0.8.30;
 
 import {IEventVault} from "../src/vault/IEventVault.sol";
+import {ImmediateOrCancelNoFill} from "./mocks/MockVenue.sol";
 import {VaultTestBase} from "./VaultTestBase.sol";
 
 contract EventVaultTradingTest is VaultTestBase {
@@ -46,11 +47,11 @@ contract EventVaultTradingTest is VaultTestBase {
         assertEq(spent, 15 * ONE);
     }
 
-    function test_place_nothingFilledIsANoOp() public {
+    /// @dev The venue reverts an IOC that crosses nothing; the vault lets that surface, so nothing is booked.
+    function test_place_nothingFilledRevertsWithTheVenue() public {
         vm.prank(owner);
-        (uint256 spent, uint256 gained) = vault.place(market, 0, true, 500_000, 100 * ONE, EXPIRE_NS);
-        assertEq(spent, 0);
-        assertEq(gained, 0);
+        vm.expectRevert(ImmediateOrCancelNoFill.selector);
+        vault.place(market, 0, true, 500_000, 100 * ONE, EXPIRE_NS);
         assertEq(available(owner), DEPOSIT);
     }
 
@@ -259,6 +260,7 @@ contract EventVaultTradingTest is VaultTestBase {
 
     function test_tally_nothingFilledLeavesNoTrace() public {
         vm.prank(owner);
+        vm.expectRevert(ImmediateOrCancelNoFill.selector);
         vault.place(market, 0, true, 500_000, 100 * ONE, EXPIRE_NS);
         assertEq(vault.marketCountOf(owner), 0);
     }

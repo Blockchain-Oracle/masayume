@@ -197,7 +197,11 @@ voided, cranked and withdrew against the real venue — numbers in `context/41-�
 - The fork clock is frozen at the fork block; pick a Window that is `Trading` *at that block* (ids near the
   fork's newest markets, not the live indexer's), and `FORK_MARKET_ID` skips a slow scan.
 - A local fork is `anvil --fork-url https://dream-rpc.somnia.network --port 8546 --chain-id 50312`; the venue
-  also runs 1-minute Windows.
+  also runs 1-minute Windows. On a fork: hold the clock (`anvil_setBlockTimestampInterval 0`) or the makers'
+  short-lived resting orders expire within ~20 s and every IOC reverts `ImmediateOrCancelNoFill`; fund
+  *fresh* keys by impersonating the OracleHub (`cast send --unlocked`) before any read — Anvil caches an
+  account it once saw empty; deploy with `DEPLOY_TAG=anvil` so the record never becomes a real one. Details in
+  context/41.
 - `contracts/export.mjs` (`pnpm contracts:export`) is the only bridge to the app: ABIs one entry per line into
   `packages/markets/src/contracts/*.abi.ts`, deployments into `addresses.masayume.json`. Nothing else reads
   `out/` or `deployments/`.

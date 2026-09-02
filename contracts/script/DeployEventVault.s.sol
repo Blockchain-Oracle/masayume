@@ -30,6 +30,9 @@ contract DeployEventVault is Script {
         vm.serializeAddress(key, "collateral", collateral);
         vm.serializeAddress(key, "forwarder", address(forwarder));
         string memory json = vm.serializeAddress(key, "eventVault", address(vault));
-        vm.writeJson(json, string.concat("deployments/", vm.toString(block.chainid), ".json"));
+        // A tagged run (DEPLOY_TAG=anvil) writes beside the real record; export.mjs reads only `<chainId>.json`.
+        string memory tag = vm.envOr("DEPLOY_TAG", string(""));
+        string memory suffix = bytes(tag).length == 0 ? "" : string.concat("-", tag);
+        vm.writeJson(json, string.concat("deployments/", vm.toString(block.chainid), suffix, ".json"));
     }
 }

@@ -59,6 +59,10 @@ describe("simulateCaps mirrors EventVault.placeFor on the shared vectors", () =>
       if (v.expect.ok) {
         expect(verdict.ok, `expected ok, got ${JSON.stringify(verdict, (_, x) => (typeof x === "bigint" ? x.toString() : x))}`).toBe(true);
         expect(spendBase).toBe(BigInt(v.expect.spendBase));
+      } else if (v.expect.refusal === "venue") {
+        // Every cap passes; it is the venue that refuses an IOC with nothing to cross, and the charge would be 0.
+        expect(verdict.ok).toBe(true);
+        expect(spendBase).toBe(0n);
       } else {
         expect(verdict.ok).toBe(false);
         if (!verdict.ok) expect(verdict.refusal.kind).toBe(v.expect.refusal);

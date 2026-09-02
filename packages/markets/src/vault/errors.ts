@@ -24,6 +24,8 @@ const VAULT_REVERT_KINDS: Record<string, DiagnosisKind> = {
   OverPriceCap: "grant-refused",
   OverPositionCap: "grant-refused",
   NoDepositViaForwarder: "contract-revert",
+  // The venue's own refusal of an IOC that crosses nothing, surfaced through the vault (verified on Shannon 2026-09-02).
+  ImmediateOrCancelNoFill: "no-liquidity",
 };
 
 function revertedWith(error: unknown): ContractFunctionRevertedError | null {

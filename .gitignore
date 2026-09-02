@@ -8,6 +8,8 @@ dist/
 build/
 contracts/out/
 contracts/cache/
+# tagged (local-fork) deployment records never ship
+contracts/deployments/*-*.json
 
 # env — the app boots with none; only .env.example is ever committed
 .env

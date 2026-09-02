@@ -32,6 +32,24 @@ against a local Anvil fork of Shannon at block 477647519 (`contracts/test/EventV
   quote kernel's `maxCostBase` remains the right pre-check figure for the vault route.
 - The venue also runs **1-minute Windows** (ids 69639/69640 here) beside the 5m/15m/1h/4h lanes.
 
+## Learned while driving the TypeScript adapter on Anvil (later the same day)
+
+- **The venue reverts an empty IOC** with `ImmediateOrCancelNoFill()` (selector `0xd48c4403`) instead of
+  returning quietly. The vault lets it surface; the adapter maps it to `no-liquidity`; the mock venue and
+  the caps vectors model it.
+- **A fork's book dies in seconds.** Makers rest with dead-man's-switch expiries just past their requote
+  interval, so once Anvil's clock is ~20 s past the fork block the resting orders are expired and every IOC
+  finds nothing. Hold the clock: `anvil_setBlockTimestampInterval 0` is accepted (a mined block keeps the
+  previous timestamp), or run the whole scenario inside a forge test frame where time does not move.
+- **Anvil caches an account it saw empty.** Accounts read before they were funded stay "insufficient
+  funds" for signed sends even after `anvil_setBalance`; fund *fresh* keys first (impersonate a real
+  funded address — the OracleHub holds STT — and `cast send --unlocked`), then read.
+- **The SDK's read client stalls viem's `waitForTransactionReceipt`** on the fork (a mined approve was
+  reported timed out after 90 s); the vault writer polls `getTransactionReceipt` directly instead.
+- Adapter reads verified on the fork: `getVaultSnapshot` (deposit visible), `getVaultHoldings`,
+  `getBalanceSheet.vaultBase`, `listWalletHistory` (empty, complete) — `scripts/spike/vault-fork-read.ts`.
+  The write path through the adapter (`scripts/spike/vault-fork.ts`) waits on the receipt-poll change.
+
 ## Not covered
 
 - A resolved (non-void) settlement on the fork — the oracle callback does not run in a fork;

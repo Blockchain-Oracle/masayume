@@ -1,6 +1,7 @@
 import type { Address } from "@masayume/core/types";
 import type { VaultDeployment } from "@masayume/core/vault";
 import type { MarketsEnv } from "../env";
+import { resolveAddresses } from "../addresses";
 import masayume from "../addresses.masayume.json";
 
 interface DeploymentRecord {
@@ -24,6 +25,7 @@ export function resolveVaultDeployment(env: Pick<MarketsEnv, "chainId" | "eventV
   const forwarder = (env.forwarderAddress ?? record?.forwarder) as Address | undefined;
   if (!eventVault || !forwarder) return null;
   const fromBlock = env.eventVaultFromBlock ?? (record ? BigInt(record.fromBlock) : 0n);
-  const collateral = (record?.collateral ?? "") as Address;
+  // An env override has no record; the venue's collateral is the vault's collateral by construction.
+  const collateral = (record?.collateral ?? resolveAddresses().collateral ?? "") as Address;
   return { chainId: env.chainId, eventVault, forwarder, collateral, fromBlock };
 }

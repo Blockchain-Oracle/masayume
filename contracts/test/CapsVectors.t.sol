@@ -2,6 +2,7 @@
 pragma solidity ^0.8.30;
 
 import {IEventVault} from "../src/vault/IEventVault.sol";
+import {ImmediateOrCancelNoFill} from "./mocks/MockVenue.sol";
 import {VaultTestBase} from "./VaultTestBase.sol";
 
 /// @notice Every row of `packages/core/src/vault/caps.vectors.json`, applied to the real contract over the mock book.
@@ -84,6 +85,7 @@ contract CapsVectorsTest is VaultTestBase {
         if (h == keccak256("OverPositionCap")) return IEventVault.OverPositionCap.selector;
         if (h == keccak256("GrantExpired")) return IEventVault.GrantExpired.selector;
         if (h == keccak256("GrantIsRevoked")) return IEventVault.GrantIsRevoked.selector;
+        if (h == keccak256("ImmediateOrCancelNoFill")) return ImmediateOrCancelNoFill.selector;
         revert(string.concat("unknown error name in vector: ", errorName));
     }
 }

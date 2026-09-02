@@ -35,7 +35,7 @@ for (const { name, artifact, exportName, optional } of contracts) {
 const deployments = {};
 const dir = join(here, "deployments");
 if (existsSync(dir)) {
-  for (const file of readdirSync(dir).filter((f) => f.endsWith(".json"))) {
+  for (const file of readdirSync(dir).filter((f) => /^\d+\.json$/.test(f))) {
     const record = JSON.parse(readFileSync(join(dir, file), "utf8"));
     const chain = String(record.chainId);
     deployments[chain] = { ...(deployments[chain] ?? {}), ...record, chainId: undefined };
