@@ -44,6 +44,7 @@ Next is item 4, capped leverage.**
 | `cd069c7`, `ec32a7e` | Stage 4 — seams for the parallel slices; caps golden vectors beside `simulateCaps` |
 | `58ed635` | Stage 5 — `ParlayReserve` contract, port, `/parlay` from source, fork-verified; deployed and supplied on Shannon, the adapter driven live (context/42) |
 | `9dfacae` | Stage 5 — the OracleHub spike (context/43), `RangeReserve` contract, port, the Ticket's Range mode and `/games/range`, fork-verified on Shannon; not deployed |
+| `15c2dda` | Stage 5 — `MarketMakerVault` contract, port, the maker actor and `/earn` from source, fork-verified on Shannon (context/44); not deployed |
 
 Everything is green: `pnpm typecheck`, `pnpm invariants` (13/13, 0 warnings), `pnpm test` (128),
 `forge test --no-match-contract Fork` (118), `pnpm build`. Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
