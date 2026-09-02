@@ -28,6 +28,7 @@ order", never "optional" or "cut".
 
 | Date | Decision | Reference | User-visible consequence | Approval |
 |---|---|---|---|---|
+| 2026-09-02 | **`RangeReserve`, `MarketMakerVault` and `LeverageReserve` deployed on Shannon and supplied 5,000 tUSDC each** on the owner's standing go ("do any deployments you want"): `0x1F8dB9B0913cB09e5CfDe44Adfa7Ff22b0868386` (block 478033175, 60.9M gas), `0x3F6a9D3DF15134328b4928bAf39d41647A8E48cA` (478033625, 47.2M; maker `0xE0fE…ae9d`), `0x0F4f2C66917D03D2B31c3c5730E6Fae28d9BB575` (478033747, 55.5M); deployer `0xdD7a…Bf9a`, admin of all three; the module regenerated (AD-10 lockstep) | `contracts/deployments/50312.json`; the parlay's recipe (context/42) | The Ticket's Range mode, its 2×/3× chips, `/games/range`, `/earn` and the portfolio's boosts are live against real contracts | Owner-authorized 2026-09-02 |
 | 2026-09-02 | **Leverage is a knock-out certificate on the venue's own contracts.** `LeverageReserve` fronts `(L−1)·stake` for a premium, buys the boost off the resting book as the venue's taker and holds it; its claim is repaid first at settlement, at the owner's cash-out, or at the knock-out anyone may trigger once the book's mark is under the maintenance line. The owner's loss is capped at the stake; the reserve's is gap risk at the line, under public caps. The reference's Ticket arithmetic (`ticket624.core.ts`) and its "L× can knock out before expiry" made explicit; a fairly priced boost with no knock-out would be cosmetic on a binary payoff | `ticket624.core.ts` `qtyForStake`/`winForQty`; `underwrite.move`; `margin.move`; doc 03 §Leverage; context/45 | 2× and 3× on the Ticket are real: the chain sizes and prices the boost, the strip shows the front, the fee and the line | **Needs user review** |
 | 2026-09-02 | A boost is placed from the wallet only: the reserve buys and custodies the contracts, and `EventVault` has no outbound path by design (AD-5). The higher chips lock off the wallet route with the reference's own treatment for a private bet ("placed at 1x") | `Ticket624Drawer.tsx` L1079–1081; doc 03 "from one Trading Balance" | Choose Wallet to bet at 2× or 3×; the chip's title says so | **Needs user review** — the promise names the Trading Balance |
 | 2026-09-02 | The premium is the reference's flat 8% of the fronted amount (`underwrite.move`), the maintenance line its 120% (`margin.move`); entry only inside 0.05–0.95 and never in the last 90 s of a Window; a boost that could not beat the plain bet when right is refused (`Underpriced`, the reference's "leverage loses even if right" guard) | `DeployLeverageReserve.s.sol`; `TradePanel.tsx` L424 | The reserve's terms are public params; the Ticket refuses what the reserve refuses | No approval needed — tunable without a redeploy |
@@ -301,7 +302,7 @@ on two 1-minute Windows sharing an instant, the UP leg at 0.115 lost on the orac
 settled the ticket `lost` and released the 36.17 the house had locked (context/42 §Live on Shannon). The four
 review rows above were approved by the user the same day.
 
-### RangeReserve, the Ticket's Range mode and `/games/range` (Stage 5, built and fork-verified 2026-09-02; deploy waits on the owner's go)
+### RangeReserve, the Ticket's Range mode and `/games/range` (Stage 5, built and fork-verified 2026-09-02; live on Shannon the same day)
 
 The reference's Range is the Ticket's second mode (`Ticket624Drawer.tsx` L203–333, L857–1030, L1257–1280): a
 both-ends-finite band around spot, a width preset scaled per cadence, a draggable centre in five-dollar steps,
@@ -357,7 +358,7 @@ P(inside ±0.05%) 0.368, an 8.25 stake for a 20 payout charged exactly as previe
 address in storage, `settle` refusing while the hub is pending, and after the grace a third party's `voidStale`
 refunding the stake to the cent. The hub itself is covered by `OracleHub.fork.t.sol` and the live spike (context/43).
 
-### MarketMakerVault and `/earn` (Stage 5, built and fork-verified 2026-09-02; deploy waits on the owner's go)
+### MarketMakerVault and `/earn` (Stage 5, built and fork-verified 2026-09-02; live on Shannon the same day)
 
 The reference's Earn (`app/earn/page.tsx`) supplies a venue-run house vault — the counterparty to every bet — and
 shows its share price, value and utilization, with supply and withdraw-all. DreamDEX has no house; the other side
@@ -400,7 +401,7 @@ Withdraw). Fixtures on `/dev/earn`. **Not seen in a browser.**
 turned out to be the YES price — both recorded), two takers hit both sides, `merge` returned 10.00 for 10 sets
 with the credit collected in the same call, a second pair pulled to the cent.
 
-### LeverageReserve, the Ticket's leverage and the portfolio's boosts (Stage 5, built and fork-verified 2026-09-02; deploy waits on the owner's go)
+### LeverageReserve, the Ticket's leverage and the portfolio's boosts (Stage 5, built and fork-verified 2026-09-02; live on Shannon the same day)
 
 The reference offers leverage three ways: the Ticket's own arithmetic (`lib/sui/ticket624.core.ts`: `qty = stake·L/prob`,
 a win pays `qty − stake·(L−1)`, "L× can knock out before expiry"), an underwriting reserve that fronts the rest of the
@@ -1147,7 +1148,7 @@ Tracked separately so the route table cannot hide a missing capability.
 | Hero-as-ticket trade flow | **Partial** | Ticket + quote + guarded write live; Yosuku presentation ported |
 | Reel — snap feed of live Windows and takes | **Done** | Market cards off the shared stream; community takes woven in from the social store, honest when unconfigured |
 | Up/Down · stake · cash-out · claim · receipt | **Partial** | Up/Down, stake, claim, receipt live; cash-out pending |
-| Range · leverage · private | **Partial** | `RangeReserve` and `LeverageReserve` built and fork-verified, not deployed; private needs the link-private service |
+| Range · leverage · private | **Partial** | `RangeReserve` and `LeverageReserve` live on Shannon; private needs the link-private service |
 | Rooms / comments | **Done** | Position-gated, signature-authenticated, over `packages/db`; honest when unconfigured |
 | Social takes, sharing, alerts, news/ticker | **Done** | Signed takes over Postgres; The Call and Earned Heat share cards; threshold price alerts with a live evaluator; the wire on `/news`; the ticker on real prices (Fear/Greed pending a provider) |
 | X linking | **Partial** | OAuth/PKCE + signed wallet binding, parser, `/trade-from-x`, `/claim`, the relay actor and receipts built; the live X account, credentials and posting stay with the owner; on-chain execution needs the vault deployed |

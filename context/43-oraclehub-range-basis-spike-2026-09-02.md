@@ -105,3 +105,12 @@ maker's YES bid and NO bid at 0.48 for 50 contracts each through the venue's own
 Gas for the whole scenario on the fork: 1,220,462 (forge's report — indicative only; Somnia's schedule runs ~10× the
 standard EVM, context/41). A first open on a Window rebuilds two question definitions for the hub's key; later opens on
 the same Window skip the rebuild.
+
+
+## Live on Shannon (2026-09-02, eighth session)
+
+`RangeReserve` at `0x1F8dB9B0913cB09e5CfDe44Adfa7Ff22b0868386`, block 478033175, deployed by
+`0xdD7ae7c43e87Fae3eaE13c23C01eCa6D5bE8Bf9a` with the parlay's recipe. Creation **60,919,875** gas (0.366 STT at
+6 gwei — the two `WindowQuestion` builders make it the largest of the reserves), `setVolatility(BTC)` and
+`setVolatility(ETH)` 275,924 each in the same broadcast, then `approve` 259,745 and `supply(5,000 tUSDC)` 897,978.
+`deployments/50312.json` carries `rangeReserve` / `rangeReserveFromBlock` (pinned by hand to the creation block).

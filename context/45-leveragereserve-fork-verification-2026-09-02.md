@@ -65,3 +65,11 @@ the reserve's loss) and on a thin book (partial: the position stays live with a 
   line, which this does not model. The rate is a param to set from observed knock-out shortfalls.
 - Venue taker fees: the fill's cost is measured by delta, so a fee would land in the stake; none showed at
   today's parameters.
+
+
+## Live on Shannon (2026-09-02, eighth session)
+
+`LeverageReserve` at `0x0F4f2C66917D03D2B31c3c5730E6Fae28d9BB575`, block 478033747, deployed by
+`0xdD7ae7c43e87Fae3eaE13c23C01eCa6D5bE8Bf9a` with the parlay's recipe. Creation **55,456,358** gas, then `approve`
+259,745 and `supply(5,000 tUSDC)` 897,933. The keeper key is `0xD5604E6cCf575bD690814fA4eF8E4F59E2583D7F`
+(`~/.config/masayume/leverage-keeper.env`, 1.5 STT from the deployer).

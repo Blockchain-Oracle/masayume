@@ -14,10 +14,10 @@ Start here, then read `parity-ledger.md`. The authority package is
 Branch **`feat/yosuku-source-led-shell`** off `main` (`497b43a`). **Stages 2 and 3 are closed. Stage 4 is live
 on Shannon (`EventVault`, the forwarder, `StrategyRegistry` — §Stage 4 records what the user has and has not
 reviewed). Stage 5 is in progress (2026-09-02, seventh session): item 1, `ParlayReserve` + `/parlay`, is live on Shannon;
-item 2, `RangeReserve` + the Ticket's Range mode + `/games/range`, item 3, `MarketMakerVault` + the maker
-actor + `/earn`, and item 4, `LeverageReserve` + the Ticket's live leverage chips + the portfolio's boosts, are
-built and fork-verified, awaiting the user's review and the owner's go to deploy — §Stage 5.
-Next is item 5, the truthful private / link-reduction flow.**
+items 2, 3 and 4 — `RangeReserve`, `MarketMakerVault` and `LeverageReserve` — are **live on Shannon and supplied**
+(deployed 2026-09-02, eighth session, on the owner's standing go; §Stage 5 has the addresses). The user has not yet
+reviewed their surfaces. Next is item 5, the truthful private / link-reduction flow, and a 21st.dev-led redesign
+pass the user asked for (same colours, better animation and breakdowns), starting with the leverage surfaces.**
 
 | Commit | What |
 |---|---|
@@ -47,6 +47,7 @@ Next is item 5, the truthful private / link-reduction flow.**
 | `9dfacae` | Stage 5 — the OracleHub spike (context/43), `RangeReserve` contract, port, the Ticket's Range mode and `/games/range`, fork-verified on Shannon; not deployed |
 | `15c2dda` | Stage 5 — `MarketMakerVault` contract, port, the maker actor and `/earn` from source, fork-verified on Shannon (context/44); not deployed |
 | `38f5e65` | Stage 5 — `LeverageReserve` contract, port, the Ticket's live leverage, the portfolio's boosts, the keeper, fork-verified on Shannon (context/45); not deployed |
+| `8679953` | Stage 5 — `RangeReserve`, `MarketMakerVault` and `LeverageReserve` deployed and supplied on Shannon; the module regenerated |
 
 Everything is green: `pnpm typecheck`, `pnpm invariants` (14/14, 0 warnings), `pnpm test` (141),
 `forge test --no-match-contract Fork` (154), `pnpm build`. Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
@@ -349,11 +350,10 @@ session); deploy waits on the owner's go.** Read context/43 and the ledger's §R
   `RangeCard`), fixtures on `/dev/range`. **Not seen in a browser** — verified by typecheck, invariants (0
   warnings), 120 vitest, 100 forge, build. Five ledger rows are flagged "Needs user review" (the pricing model, the
   page's frame, the chart band not drawn, the OUTSIDE side and the slip's pills).
-- **Deploy (owner's go):** `contracts/script/DeployRangeReserve.s.sol` — the parlay's recipe (context/42 §Live:
-  `--skip-simulation --legacy --with-gas-price 6000000000 --gas-estimate-multiplier 105`); `setVolatility` for BTC
-  and ETH is in the same broadcast; then `approve` + `supply`, `pnpm contracts:export`, commit. A creation this size
-  ran ~37M gas for the parlay; the range reserve carries two definition builders, so expect more. Then drive the
-  Ticket's range mode live on a Window whose book has depth and measure the `range` lane.
+- **Live on Shannon (2026-09-02, eighth session):** `RangeReserve` `0x1F8dB9B0913cB09e5CfDe44Adfa7Ff22b0868386`,
+  block 478033175, creation **60,919,875** gas (0.366 STT at 6 gwei — the two definition builders), `setVolatility`
+  275,924 each; `approve` 259,745, `supply(5,000)` 897,978; admin = deployer. The `range` lane is measured by the
+  live spike (`spike:stage5-live`).
 
 **3. `MarketMakerVault` + the maker actor + `/earn` — built and fork-verified 2026-09-02 (seventh session, same
 day); deploy waits on the owner's go.** Read context/44 and the ledger's §MarketMakerVault first. What is where:
@@ -378,11 +378,10 @@ day); deploy waits on the owner's go.** Read context/44 and the ledger's §Marke
 - `web/src/features/earn/` — the reference's page from source (hero + live panel, §01 supply and position) plus
   §02 the Windows table (additive, flagged); fixtures on `/dev/earn`. **Not seen in a browser** — typecheck,
   invariants (0 warnings), 128 vitest, 118 forge, build.
-- **Deploy (owner's go):** `DeployMarketMakerVault.s.sol` with `MAKER_ADDRESS=<the actor's key>` (or
-  `setMaker` after), the parlay's recipe; `approve` + `supply`; `pnpm contracts:export`; commit. Then run the
-  actor in dry run against the live vault, then `DRY_RUN=0` with a funded key (the `maker` lane's gate wants
-  0.576 STT), and measure the lane. Every book on the venue was empty on 2026-09-02 (makers offline); the actor
-  seeds them at even odds when so — small sizes by design.
+- **Live on Shannon (2026-09-02, eighth session):** `MarketMakerVault` `0x3F6a9D3DF15134328b4928bAf39d41647A8E48cA`,
+  block 478033625, creation **47,192,303** gas, `setMaker` 241,256; `approve` 259,745, `supply(5,000)` 898,239.
+  The maker key is `0xE0fEa37ae5af4e7F25A2345254476a3B524eae9d` (`~/.config/masayume/market-maker.env`, 1.5 STT
+  from the deployer). The venue's makers were back on the books by the evening of 2026-09-02.
 
 
 **4. `LeverageReserve` + the Ticket's live leverage + the portfolio's boosts + the keeper — built and fork-verified
@@ -408,9 +407,10 @@ What is where:
   **Not seen in a browser.** Ledger rows flagged for review: the model itself, wallet-only funding, the strip's
   numbers, the multiple on boosted rows only, the row's health words, the unpaid knock-out.
 - `services/ops/src/actors/leverage-keeper/` — dry-run unless `DRY_RUN=0`; `LEVERAGE_KEEPER_PRIVATE_KEY`, `LK_REFRESH_MS`.
-- **Deploy (owner's go):** `DeployLeverageReserve.s.sol` (the parlay's recipe), `approve` + `supply`, `pnpm
-  contracts:export`, commit; then drive the Ticket's 2× live on a Window with a book, measure the `leverage` lane, run
-  the keeper in dry run then live.
+- **Live on Shannon (2026-09-02, eighth session):** `LeverageReserve` `0x0F4f2C66917D03D2B31c3c5730E6Fae28d9BB575`,
+  block 478033747, creation **55,456,358** gas; `approve` 259,745, `supply(5,000)` 897,933; admin = deployer. The
+  keeper key is `0xD5604E6cCf575bD690814fA4eF8E4F59E2583D7F` (`~/.config/masayume/leverage-keeper.env`, 1.5 STT).
+  The `leverage` lane is measured by the live spike (`spike:stage5-live`).
 
 5. The truthful private / link-reduction flow (the reference's `privateBet.ts` desk → an ephemeral
    account or scoped session, described as link-private).

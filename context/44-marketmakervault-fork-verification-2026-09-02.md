@@ -58,3 +58,11 @@ there — and is covered by the unit suite (won, lost, void, the dead ask draine
 - Maker fees: the venue charges `makerFeeBpsTimes1k` on fills; the fork run's merge returned exactly 10.00 for
   10 pairs and the escrow matched the prices, so at today's parameters the fee did not show in these figures.
   The book's flow accounting absorbs any fee as cost either way.
+
+
+## Live on Shannon (2026-09-02, eighth session)
+
+`MarketMakerVault` at `0x3F6a9D3DF15134328b4928bAf39d41647A8E48cA`, block 478033625, deployed by
+`0xdD7ae7c43e87Fae3eaE13c23C01eCa6D5bE8Bf9a` with `MAKER_ADDRESS=0xE0fEa37ae5af4e7F25A2345254476a3B524eae9d` (a key
+made for the actor, `~/.config/masayume/market-maker.env`, funded 1.5 STT from the deployer). Creation
+**47,192,303** gas, `setMaker` 241,256, then `approve` 259,745 and `supply(5,000 tUSDC)` 898,239.
