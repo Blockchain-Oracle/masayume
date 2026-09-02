@@ -32,3 +32,6 @@ reference/
 
 # UI review screenshots (local)
 .review/
+
+# forge broadcast receipts: the essentials are recorded in context/4x and deployments/<chainId>.json
+contracts/broadcast/

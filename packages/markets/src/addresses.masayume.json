@@ -9,7 +9,13 @@
       "strategyRegistry": "0xAd5f37B0f3d0f6030B9d9c0f4985AFb184A85FB4",
       "strategyRegistryFromBlock": 477738374,
       "parlayReserve": "0x50Ced768C80d499bA4FB956C7DF0c2beB078C151",
-      "parlayReserveFromBlock": 477800945
+      "parlayReserveFromBlock": 477800945,
+      "rangeReserve": "0x1F8dB9B0913cB09e5CfDe44Adfa7Ff22b0868386",
+      "rangeReserveFromBlock": 478033175,
+      "marketMakerVault": "0x3F6a9D3DF15134328b4928bAf39d41647A8E48cA",
+      "marketMakerVaultFromBlock": 478033625,
+      "leverageReserve": "0x0F4f2C66917D03D2B31c3c5730E6Fae28d9BB575",
+      "leverageReserveFromBlock": 478033747
     }
   }
 }
