@@ -1,7 +1,7 @@
 import type { AttributionHook, IntentJournal, StopGate } from "@masayume/core/ports";
 import type { Address } from "@masayume/core/types";
 import { SomniaMarkets } from "@somnia-chain/markets-sdk";
-import { createWalletClient, http, type Account, type Hex, type PublicClient, type WalletClient } from "viem";
+import { createPublicClient, createWalletClient, http, type Account, type Hex, type WalletClient } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { resolveVaultDeployment } from "../vault/deployment";
 import type { SponsorTransport } from "../vault/sponsor";
@@ -95,7 +95,9 @@ export async function createSubmitterSession(config: SubmitterSessionConfig): Pr
 
   const contracts: VaultContracts = {
     walletClient: walletClientFor(signer, env),
-    publicClient: exchange.client.getViemClient() as PublicClient,
+    // Our own HTTP client on the configured RPC: the SDK's viem client is WebSocket-only and, with no
+    // socket configured, would answer from the chain's default endpoint — and a session opens no socket.
+    publicClient: createPublicClient({ chain: SOMNIA_SHANNON, transport: http(env.rpcHttpUrls[0]) }),
     deployment: resolveVaultDeployment(env),
     ...(config.sponsor ? { sponsor: config.sponsor } : {}),
   };

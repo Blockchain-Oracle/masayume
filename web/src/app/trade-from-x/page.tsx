@@ -1,14 +1,10 @@
 import type { Metadata } from "next";
-import { CapabilityPending } from "@/components/shell";
+import { TRADE_FROM_X, TradeFromXScreen } from "@/features/x";
+import "@/features/x/x.css";
+import "@/features/x/x-card.css";
 
-export const metadata: Metadata = { title: "Trade from X" };
+export const metadata: Metadata = { title: TRADE_FROM_X.title };
 
 export default function Page() {
-  return (
-    <div className="container">
-      <CapabilityPending eyebrow="Social rail" title="Trade from X" dependency="EventVault X_EXECUTOR grants and the relay service (Stage 4)">
-        <p>Link X to your wallet, create a bounded executor grant, then place a call by mentioning Masayume. Every execution returns a receipt linking the instruction, the grant, the market, and the transaction.</p>
-      </CapabilityPending>
-    </div>
-  );
+  return <TradeFromXScreen />;
 }

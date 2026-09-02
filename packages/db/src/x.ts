@@ -1,0 +1,176 @@
+import { getDb } from "./client";
+import { ensureSchema } from "./migrate";
+
+export interface XLinkRecord {
+  authorId: string;
+  handle: string | null;
+  wallet: string;
+  signature: string;
+  issuedAtMs: number;
+  createdAtMs: number;
+}
+
+export type XReceiptStatusRow = "refused" | "submitted" | "filled" | "nothing-filled" | "reverted" | "unknown";
+
+export interface XReceiptRecord {
+  mentionId: string;
+  authorId: string;
+  handle: string | null;
+  wallet: string | null;
+  grantId: string | null;
+  marketId: string | null;
+  side: "up" | "down" | null;
+  stakeBase: string | null;
+  status: XReceiptStatusRow;
+  reason: string | null;
+  txHash: string | null;
+  instruction: string;
+  atMs: number;
+}
+
+interface LinkRow {
+  author_id: string;
+  handle: string | null;
+  wallet: string;
+  signature: string;
+  issued_at_ms: string;
+  created_at: Date;
+}
+
+interface ReceiptRow {
+  mention_id: string;
+  author_id: string;
+  handle: string | null;
+  wallet: string | null;
+  grant_id: string | null;
+  market_id: string | null;
+  side: "up" | "down" | null;
+  stake_base: string | null;
+  status: XReceiptStatusRow;
+  reason: string | null;
+  tx_hash: string | null;
+  instruction: string;
+  at_ms: string;
+}
+
+const LINK_COLUMNS = "author_id, handle, wallet, signature, issued_at_ms, created_at";
+const RECEIPT_COLUMNS = "mention_id, author_id, handle, wallet, grant_id, market_id, side, stake_base, status, reason, tx_hash, instruction, at_ms";
+
+const toLink = (row: LinkRow): XLinkRecord => ({
+  authorId: row.author_id,
+  handle: row.handle,
+  wallet: row.wallet,
+  signature: row.signature,
+  issuedAtMs: Number(row.issued_at_ms),
+  createdAtMs: row.created_at.getTime(),
+});
+
+const toReceipt = (row: ReceiptRow): XReceiptRecord => ({
+  mentionId: row.mention_id,
+  authorId: row.author_id,
+  handle: row.handle,
+  wallet: row.wallet,
+  grantId: row.grant_id,
+  marketId: row.market_id,
+  side: row.side,
+  stakeBase: row.stake_base,
+  status: row.status,
+  reason: row.reason,
+  txHash: row.tx_hash,
+  instruction: row.instruction,
+  atMs: Number(row.at_ms),
+});
+
+/** The live link for an X account, or null. `undefined`-free: a missing store answers null like an unlinked account would — callers gate on `isDbConfigured()` first. */
+export async function xLinkByAuthor(authorId: string): Promise<XLinkRecord | null> {
+  const db = getDb();
+  if (!db) return null;
+  await ensureSchema();
+  const [row] = await db<LinkRow[]>`SELECT ${db.unsafe(LINK_COLUMNS)} FROM x_links WHERE author_id = ${authorId} AND revoked_at IS NULL ORDER BY created_at DESC LIMIT 1`;
+  return row ? toLink(row) : null;
+}
+
+export async function xLinkByWallet(wallet: string): Promise<XLinkRecord | null> {
+  const db = getDb();
+  if (!db) return null;
+  await ensureSchema();
+  const [row] = await db<LinkRow[]>`SELECT ${db.unsafe(LINK_COLUMNS)} FROM x_links WHERE wallet = ${wallet.toLowerCase()} AND revoked_at IS NULL ORDER BY created_at DESC LIMIT 1`;
+  return row ? toLink(row) : null;
+}
+
+/**
+ * Points an X account at a wallet. One live route per X account and one per wallet: a wallet
+ * re-pointed to a new account drops its old route, and an account already routed elsewhere is
+ * refused here (the caller reports which wallet holds it) — the reference's `already_claimed_other`.
+ */
+export async function xLinkUpsert(link: Omit<XLinkRecord, "createdAtMs">): Promise<XLinkRecord | null> {
+  const db = getDb();
+  if (!db) return null;
+  await ensureSchema();
+  const wallet = link.wallet.toLowerCase();
+  const [row] = await db.begin(async (tx) => {
+    await tx`UPDATE x_links SET revoked_at = now() WHERE revoked_at IS NULL AND (wallet = ${wallet} OR author_id = ${link.authorId})`;
+    return tx<LinkRow[]>`
+      INSERT INTO x_links (author_id, handle, wallet, signature, issued_at_ms)
+      VALUES (${link.authorId}, ${link.handle}, ${wallet}, ${link.signature}, ${link.issuedAtMs})
+      RETURNING ${tx.unsafe(LINK_COLUMNS)}
+    `;
+  });
+  return row ? toLink(row) : null;
+}
+
+export async function xLinkRevoke(authorId: string, wallet: string): Promise<boolean> {
+  const db = getDb();
+  if (!db) return false;
+  await ensureSchema();
+  const rows = await db`UPDATE x_links SET revoked_at = now() WHERE author_id = ${authorId} AND wallet = ${wallet.toLowerCase()} AND revoked_at IS NULL RETURNING id`;
+  return rows.length > 0;
+}
+
+export async function xReceiptByMention(mentionId: string): Promise<XReceiptRecord | null> {
+  const db = getDb();
+  if (!db) return null;
+  await ensureSchema();
+  const [row] = await db<ReceiptRow[]>`SELECT ${db.unsafe(RECEIPT_COLUMNS)} FROM x_receipts WHERE mention_id = ${mentionId}`;
+  return row ? toReceipt(row) : null;
+}
+
+/** Inserts or replaces the receipt for one mention — the relay writes it before and after sending. */
+export async function xReceiptUpsert(receipt: XReceiptRecord): Promise<void> {
+  const db = getDb();
+  if (!db) return;
+  await ensureSchema();
+  await db`
+    INSERT INTO x_receipts (mention_id, author_id, handle, wallet, grant_id, market_id, side, stake_base, status, reason, tx_hash, instruction, at_ms)
+    VALUES (
+      ${receipt.mentionId}, ${receipt.authorId}, ${receipt.handle}, ${receipt.wallet}, ${receipt.grantId}, ${receipt.marketId},
+      ${receipt.side}, ${receipt.stakeBase}, ${receipt.status}, ${receipt.reason}, ${receipt.txHash}, ${receipt.instruction}, ${receipt.atMs}
+    )
+    ON CONFLICT (mention_id) DO UPDATE SET
+      wallet = EXCLUDED.wallet, grant_id = EXCLUDED.grant_id, market_id = EXCLUDED.market_id, side = EXCLUDED.side,
+      stake_base = EXCLUDED.stake_base, status = EXCLUDED.status, reason = EXCLUDED.reason, tx_hash = EXCLUDED.tx_hash, updated_at = now()
+  `;
+}
+
+export async function xReceiptsByWallet(wallet: string, limit: number): Promise<XReceiptRecord[] | null> {
+  const db = getDb();
+  if (!db) return null;
+  await ensureSchema();
+  const rows = await db<ReceiptRow[]>`SELECT ${db.unsafe(RECEIPT_COLUMNS)} FROM x_receipts WHERE wallet = ${wallet.toLowerCase()} ORDER BY at_ms DESC LIMIT ${limit}`;
+  return rows.map(toReceipt);
+}
+
+export async function xRelayStateGet(key: string): Promise<string | null> {
+  const db = getDb();
+  if (!db) return null;
+  await ensureSchema();
+  const [row] = await db<{ value: string }[]>`SELECT value FROM x_relay_state WHERE key = ${key}`;
+  return row?.value ?? null;
+}
+
+export async function xRelayStateSet(key: string, value: string): Promise<void> {
+  const db = getDb();
+  if (!db) return;
+  await ensureSchema();
+  await db`INSERT INTO x_relay_state (key, value) VALUES (${key}, ${value}) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`;
+}

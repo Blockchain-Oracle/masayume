@@ -12,3 +12,5 @@ export * from "./comments";
 export * from "./migrate";
 export * from "./schema";
 export * from "./takes";
+export * from "./x";
+export * from "./strategies";

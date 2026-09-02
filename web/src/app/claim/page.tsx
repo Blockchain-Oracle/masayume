@@ -1,14 +1,9 @@
 import type { Metadata } from "next";
-import { CapabilityPending } from "@/components/shell";
+import { CLAIM, ClaimScreen } from "@/features/x";
+import "@/features/x/x-card.css";
 
-export const metadata: Metadata = { title: "Claim your account" };
+export const metadata: Metadata = { title: CLAIM.title };
 
 export default function Page() {
-  return (
-    <div className="container">
-      <CapabilityPending eyebrow="Recovery" title="Claim your account" dependency="X OAuth linking and signed wallet binding (Stage 4)">
-        <p>Restore the link between a wallet, an X identity, and the balance held for you — using signed challenges, so a claim proves ownership rather than asserting it.</p>
-      </CapabilityPending>
-    </div>
-  );
+  return <ClaimScreen />;
 }
