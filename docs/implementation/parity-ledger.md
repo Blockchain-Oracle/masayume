@@ -125,6 +125,26 @@ order lane's third dimension (`OrderRequest.route`). Everything answers "EventVa
 network yet" until `contracts/deployments/50312.json` exists and `pnpm contracts:export` regenerates
 `addresses.masayume.json` (AD-10 lockstep).
 
+**Trading Balance surfaces (fork A, 2026-09-02)** — `web/src/features/vault/`, mounted on `/portfolio`
+(inside the balance plate's rows), `/claims` (vault credits beside the plate, never in its sum) and the history
+rows; fixtures on `/dev/vault`.
+
+| Reference | Ours | Class | Approval |
+|---|---|---|---|
+| Trading balance block — `app/portfolio/page.tsx` at `1a36ffa^` L416–466: the pinned source computes the vault balances (L50–130) but its JSX mounts no controls; the block was cut in `1a36ffa` "drop the old-deployment section" | `TradingBalanceView`, `VaultControls`, `vault.css` | Restored from the reference's own history, as `/news` was | **Needs user review** |
+| Snapshot cells L358–412 (Wallet / Available / In trades / Private / Leverage / Agent / Positions / P&L / Address) | `VaultCells`: Wallet, Available, In trades (at cost, says so), Private, In grants, Positions — only what the vault can state truthfully; Leverage and Address dropped, P&L lives in §03 | Adapted | No approval needed |
+| Pool-row grammar `components/portfolio/PoolRows.tsx` (label, one sentence, amount; a row with controls is its own `<details>`) | `VaultRow` inside `BalanceSheetPanel`; the panel is mounted on `/portfolio` only | Exact grammar on our plate surface (the `.ledger-plate` deviation stands) | No approval needed |
+| Fixed cream inks, black deposit button, emerald "Private" figure and button | theme tokens; ink-on-ground button; the private *figure* in plain ink, the private *button* keeps the reference's green | Deviation — flipping surface; colour law (green is for P&L) | Pre-approved class |
+| — | `VaultGrants`: the live grants and revoke, under the cells | Additive — ours | **Needs user review** — may overlap the session manager and strategy surfaces |
+| Sui events | history rows with `source: "vault"`: "via Trading Balance", no proof link, a crank on the row; `/claims` rows "Vault credit — withdrawal" | Adapted (AD-1: a vault credit is a withdrawal, not a redeem) | No approval needed |
+
+Truth corrections: "Your new bets do not use this." → "Bets placed from it and the grants you allow spend from
+here." (the reference's bets ran on its manager account; ours bet from the vault); the pool-row sentence takes the
+reference's X-row shape ("… Only you can withdraw it."); a null amount prints "—" where the reference printed
+`0.00` under a comment promising a placeholder. `BalanceSheet.vaultBase` is `available` only — a private row on
+`/markets` would need `vaultPrivateBase` on the sheet (not added). Not seen in a browser; every state rendered
+through the real components on `/dev/vault`.
+
 **Needs the owner.** Deployment: a funded deployer key (STT from the faucet) and the go —
 `forge script script/DeployEventVault.s.sol --rpc-url shannon --broadcast`; nothing is deployed, published or
 funded without it. Also for review: the private bucket's wording on the portfolio, and the sponsor allowlist.

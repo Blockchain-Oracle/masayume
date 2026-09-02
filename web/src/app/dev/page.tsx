@@ -14,6 +14,7 @@ const FIXTURES = [
   { href: "/dev/share", label: "Share cards", note: "The Call on screen, then both PNG exports from canned records" },
   { href: "/dev/port", label: "Chain port", note: "live lanes as Reading<LaneSet>, venue and clock" },
   { href: "/dev/boot", label: "Boot check", note: "zero-env round-trip to the Shannon indexer" },
+  { href: "/dev/vault", label: "Trading Balance", note: "every vault state from canned readings, the pool row, open vault bets, then live" },
 ] as const;
 
 export default function DevIndexPage() {

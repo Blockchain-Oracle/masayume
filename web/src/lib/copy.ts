@@ -219,8 +219,6 @@ export const PORTFOLIO = {
   toMarkets: "Go to Markets",
   collectTitle: "To collect",
   recordTitle: "Your record",
-  /** Stage 4 brings the vault and the X wallet. */
-  vaultPending: "The Trading Balance and its bounded grants arrive with EventVault (Stage 4).",
 } as const;
 
 export const BALANCE = {
@@ -228,7 +226,7 @@ export const BALANCE = {
   spendable: "Spendable",
   headlineNote: "what you can bet right now — nothing else is added in",
   poolsLabel: "Other pools of your money",
-  rows: { vault: "Vault", escrow: "Order escrow", credit: "Venue payout credit", gas: "STT for gas" },
+  rows: { escrow: "Order escrow", credit: "Venue payout credit", gas: "STT for gas" },
   escrowNote: "locked in your resting orders until they fill or you cancel",
   creditFirst: "spent first on your next buy in its window",
   creditFirstHint: "of venue credit is spent first on your next buy",
