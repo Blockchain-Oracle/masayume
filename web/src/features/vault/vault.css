@@ -140,3 +140,14 @@ details[open] > .vault-row-summary .vault-row-chevron { transform: rotate(90deg)
 /* grants list under the cells */
 .vault-grants { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--color-hairline); display: flex; flex-direction: column; gap: 8px; }
 .vault-grant { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+
+/* Inside the reference's cream `.plate-rows` the panel must read in cream ink whatever the theme —
+   the plate never flips. These are the reference's own plate inks (#1A1612 / #6B6353 / #C9BFA6 / #FAF8F5). */
+.plate-rows .vault-panel {
+  --color-ink: #1A1612;
+  --color-ink-secondary: #6B6353;
+  --color-ink-muted: #6B6353;
+  --color-hairline: rgba(201, 191, 166, 0.4);
+  --input-surface: #FFFFFF;
+  --bg: #FAF8F5;
+}

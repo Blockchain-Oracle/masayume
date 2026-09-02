@@ -37,6 +37,13 @@
 .xt-brand:hover { color: var(--xt-v); }
 /* text-gray-500 font-mono font-normal tracking-normal */
 .xt-brand-crumb { color: #737373; font-family: var(--font-mono); font-weight: 400; letter-spacing: normal; }
+/* hidden md:flex items-center gap-5 font-mono text-[11px] uppercase tracking-[0.12em] text-gray-500 */
+.xt-nav { display: none; align-items: center; gap: 20px; font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: #737373; }
+@media (min-width: 768px) { .xt-nav { display: flex; } }
+/* hover:text-white transition-colors */
+.xt-nav-link { transition: color 0.2s; }
+.xt-nav-link:hover { color: #fff; }
+
 /* font-mono text-[12px] text-vermilion inline-flex items-center gap-1.5 hover:gap-2.5 */
 .xt-open { font-family: var(--font-mono); font-size: 12px; color: var(--xt-v); display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; transition: gap 0.2s; }
 .xt-open:hover { gap: 10px; }

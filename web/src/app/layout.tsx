@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AppStrip, CustomCursor, Footer, GrainOverlay, Header, Marquee } from "@/components/shell";
+import { AppStrip, ShellChrome } from "@/components/shell";
 import { Toaster } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BRAND } from "@/lib/copy";
@@ -36,12 +36,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <AppProviders>
           <TooltipProvider>
             <Toaster limit={1}>
-              <Marquee />
-              <Header />
-              <GrainOverlay />
-              <CustomCursor />
-              <main className="page-shell">{children}</main>
-              <Footer />
+              {/* The ticker, header and footer — or, on the reference's island routes, none of them. */}
+              <ShellChrome>{children}</ShellChrome>
             </Toaster>
           </TooltipProvider>
         </AppProviders>

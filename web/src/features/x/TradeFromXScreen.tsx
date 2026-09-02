@@ -56,6 +56,13 @@ export function TradeFromXScreen() {
           <Link href={MARKETS_PATH} className="xt-brand">
             MASAYUME <span className="xt-brand-crumb">{TRADE_FROM_X.crumb}</span>
           </Link>
+          <nav className="xt-nav" aria-label="Primary">
+            {TRADE_FROM_X.nav.map((item) => (
+              <Link key={item.href} href={item.href} className="xt-nav-link">
+                {item.label}
+              </Link>
+            ))}
+          </nav>
           <Link href={MARKETS_PATH} className="xt-open">
             {TRADE_FROM_X.openApp} <ArrowRight className="xw-icon--s" />
           </Link>

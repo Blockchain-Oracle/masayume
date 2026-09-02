@@ -18,7 +18,7 @@ interface BalanceSheetPanelProps {
   /** Present when the sheet is last-known-good: rendered at full ink with its "as of" tick inside the plate. */
   stale?: ReadingMeta | null;
   /** Controls that belong to a pool, folded into that pool's own row (the reference's `PoolRows` panels). With a vault panel the row is always listed, so a network without a vault still says so in place. */
-  panels?: { vault?: ReactNode; x?: ReactNode };
+  panels?: { vault?: ReactNode };
   className?: string;
 }
 
@@ -38,12 +38,6 @@ export function BalanceSheetPanel({ sheet, symbol, stale, panels, className }: B
 
       <div role="list" aria-label={BALANCE.poolsLabel} className="flex flex-col">
         {(sheet.vaultBase !== null || panels?.vault) && <VaultRow value={sheet.vaultBase} decimals={sheet.decimals} symbol={collateral} panel={panels?.vault} />}
-        {/* The reference nests its X wallet card in the pool rows (`PoolRows` panels.x); the card carries its own figures. */}
-        {panels?.x && (
-          <div role="listitem" className="border-t border-hairline py-2">
-            {panels.x}
-          </div>
-        )}
         <PoolRow
           label={BALANCE.rows.escrow}
           value={sheet.orderEscrowBase}

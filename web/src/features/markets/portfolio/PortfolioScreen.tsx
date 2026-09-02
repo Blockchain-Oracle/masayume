@@ -1,18 +1,20 @@
 "use client";
 
 import { isOk } from "@masayume/core/schemas";
+import { usePositions } from "@masayume/markets/react";
+import { useRouter } from "next/navigation";
 import { SectionHeader } from "@/components/chrome";
-import { EmptyState } from "@/components/states";
-import { TradingBalancePanel } from "@/features/vault";
+import { TradingBalancePanel, useVaultOpenBets } from "@/features/vault";
 import { XWalletCard } from "@/features/x";
 import "@/features/x/x-card.css";
-import { BALANCE, CLAIM, PORTFOLIO } from "@/lib/copy";
+import { CLAIM, PORTFOLIO } from "@/lib/copy";
 import { useWalletSession } from "@/lib/wallet-session";
-import { BalancePlate } from "../balance";
 import { LiveClaimPlate } from "../claims";
 import { RecordSection, TraderEdgeLink, useHistoryReading } from "../history";
 import { useVenue } from "../useVenue";
 import { BetsPanel } from "./BetsPanel";
+import { ConnectCard } from "./ConnectCard";
+import { LedgerPlate, PLATE, PlateDisclosure, PoolRows, useMoney } from "./plate";
 
 /**
  * Portfolio — the money, the open bets, and what is waiting to be collected.
@@ -36,23 +38,38 @@ import { BetsPanel } from "./BetsPanel";
  * earnings, the X wallet — keeps a named dependency state instead of a plausible-looking panel.
  */
 export function PortfolioScreen() {
+  const router = useRouter();
   const { address } = useWalletSession();
   const { boot } = useVenue();
-  const symbol = boot && isOk(boot) ? boot.value.collateral.symbol : undefined;
+  const symbol = boot && isOk(boot) ? boot.value.collateral.symbol : "tUSDC";
   const history = useHistoryReading();
+  const money = useMoney();
+  const positions = usePositions(address);
+  const vaultBets = useVaultOpenBets(address);
+  const openBets = (positions && isOk(positions) ? positions.value.length : 0) + (vaultBets && isOk(vaultBets) ? vaultBets.value.length : 0);
+  const settled = history.reading && isOk(history.reading) ? history.reading.value.rounds.length : 0;
 
   if (!address) {
+    // Kept in the reference's order: the connect card first, the X wallet card below it (page L277–294).
     return (
-      <div className="mx-auto flex w-full max-w-(--content-reading) flex-col gap-6 px-gutter py-8">
-        <EmptyState why={BALANCE.connect.why} />
+      <div className="mx-auto flex w-full max-w-(--content-reading) flex-col gap-4 px-gutter py-8">
+        <ConnectCard />
+        <XWalletCard />
       </div>
     );
   }
 
   return (
     <div className="mx-auto flex w-full max-w-(--content-reading) flex-col gap-8 px-gutter py-8">
-      {/* No page headline: the balance is the header (reference L266). The Trading Balance folds into its own row. */}
-      <BalancePlate panels={{ vault: <TradingBalancePanel inline />, x: <XWalletCard compact /> }} />
+      {/* ONE number first (reference L295–329): the plate answers "how much can I bet right now" once; every
+          pool that is not spendable here is a row inside the same plate, never merged into the figure. */}
+      <LedgerPlate money={money} symbol={symbol} openBets={openBets} settled={settled} onPrimary={() => router.push("/markets")}>
+        <PoolRows pools={money.pools} decimals={money.decimals} symbol={symbol} panels={{ x: <XWalletCard compact /> }} />
+        {/* The reference's disclosure row carries creator earnings; ours carries the Trading Balance's own controls. */}
+        <PlateDisclosure title={PLATE.vaultDisclosure}>
+          <TradingBalancePanel inline />
+        </PlateDisclosure>
+      </LedgerPlate>
 
       <TraderEdgeLink />
 

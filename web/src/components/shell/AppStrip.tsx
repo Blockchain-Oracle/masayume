@@ -11,6 +11,7 @@
 // no native build (native is Blocked — no native source), so claiming one would be false.
 // The installable PWA is real, and testnet collateral is a fact worth stating up front.
 import { usePathname } from "next/navigation";
+import { isIslandRoute } from "./ShellChrome";
 import { useEffect, useState } from "react";
 
 const KEY = "masayume.appstrip.dismissed";
@@ -60,6 +61,9 @@ export default function AppStrip() {
   }, [hidden]);
 
   if (hidden) return null;
+
+  // Islands paint their own top edge; the strip would sit over it.
+  if (isIslandRoute(pathname)) return null;
 
   return (
     <div className={`appstrip ${shown ? "is-in" : ""}`} role="region" aria-label="Install Masayume">

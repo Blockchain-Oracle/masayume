@@ -8,7 +8,7 @@ export interface BalancePlateViewProps {
   reading: Reading<BalanceSheet> | null;
   symbol: string | null;
   retry?: () => void;
-  panels?: { vault?: ReactNode; x?: ReactNode };
+  panels?: { vault?: ReactNode };
   className?: string;
 }
 
