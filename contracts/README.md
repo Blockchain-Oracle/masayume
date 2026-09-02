@@ -40,8 +40,10 @@ to skip the scan (see `context/41-eventvault-fork-verification-2026-09-02.md` fo
 ## Deploy (owner-authorized)
 
 ```sh
-# a funded deployer key; STT from https://testnet.somnia.network/
+# contracts/.env holds DEPLOYER_PRIVATE_KEY (gitignored; the same key as ~/.config/masayume/deployer.env)
+set -a; source .env; set +a                  # fund DEPLOYER_ADDRESS with STT from https://testnet.somnia.network/ first
 forge script script/DeployEventVault.s.sol --rpc-url shannon --broadcast --private-key $DEPLOYER_PRIVATE_KEY
+forge script script/DeployStrategyRegistry.s.sol --rpc-url shannon --broadcast --private-key $DEPLOYER_PRIVATE_KEY
 pnpm contracts:export                        # regenerates packages/markets/src/contracts/* and addresses.masayume.json
 ```
 
