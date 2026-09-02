@@ -46,7 +46,7 @@ Next is item 5, the truthful private / link-reduction flow.**
 | `58ed635` | Stage 5 — `ParlayReserve` contract, port, `/parlay` from source, fork-verified; deployed and supplied on Shannon, the adapter driven live (context/42) |
 | `9dfacae` | Stage 5 — the OracleHub spike (context/43), `RangeReserve` contract, port, the Ticket's Range mode and `/games/range`, fork-verified on Shannon; not deployed |
 | `15c2dda` | Stage 5 — `MarketMakerVault` contract, port, the maker actor and `/earn` from source, fork-verified on Shannon (context/44); not deployed |
-| _(pending)_ | Stage 5 — `LeverageReserve` contract, port, the Ticket's live leverage, the portfolio's boosts, the keeper, fork-verified on Shannon (context/45); not deployed |
+| `38f5e65` | Stage 5 — `LeverageReserve` contract, port, the Ticket's live leverage, the portfolio's boosts, the keeper, fork-verified on Shannon (context/45); not deployed |
 
 Everything is green: `pnpm typecheck`, `pnpm invariants` (14/14, 0 warnings), `pnpm test` (141),
 `forge test --no-match-contract Fork` (154), `pnpm build`. Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
