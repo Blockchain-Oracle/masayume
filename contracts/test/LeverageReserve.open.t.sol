@@ -64,16 +64,33 @@ contract LeverageReserveOpenTest is LeverageTestBase {
         assertBooksBalance();
     }
 
-    function test_open_refundsWhenTheBookFillsCheaperThanTheWalk() public {
-        // The walk sees only the second level once the first is gone; a better ask arrives before the send.
+    function test_open_sizesAtExecutionAndRefundsTheLotsDust() public {
+        // The quote saw 0.60; a better ask arrives before the send: the same stake buys more, the dust comes back.
         ILeverageReserve.Preview memory q = reserve.sizeForStake(marketA, 0, STAKE, TWO_X);
         setBook(poolA, 590_000, 620_000, 580_000, 550_000);
         uint256 before = coll.balanceOf(opener);
         vm.prank(opener);
-        (, uint256 charged) = reserve.open(marketA, 0, q.quantityRaw, TWO_X, STAKE);
-        assertLt(charged, STAKE, "a cheaper fill is a smaller stake");
-        assertEq(coll.balanceOf(opener), before - charged, "the difference came back in the same call");
-        assertEq(reserve.positionOf(1).entryPriceRaw, 590_000);
+        (, uint256 charged) = reserve.open(marketA, 0, STAKE, TWO_X, q.quantityRaw);
+        ILeverageReserve.Position memory p = reserve.positionOf(1);
+        assertGt(p.quantityRaw, q.quantityRaw, "sized off the book at execution");
+        assertLe(charged, STAKE, "never more than the stake");
+        assertEq(coll.balanceOf(opener), before - charged, "the dust came back in the same call");
+        assertEq(p.entryPriceRaw, 590_000);
+        assertBooksBalance();
+    }
+
+    function test_open_refusesABookThatMovedPastTheGuard() public {
+        // The quote saw 0.60 and 32 contracts; the ask moves to 0.66 before the send and the stake buys fewer.
+        ILeverageReserve.Preview memory q = reserve.sizeForStake(marketA, 0, STAKE, TWO_X);
+        setBook(poolA, 660_000, 680_000, 580_000, 550_000);
+        vm.prank(opener);
+        vm.expectRevert(abi.encodeWithSelector(ILeverageReserve.BelowMinQuantity.selector, 29_090_000, q.quantityRaw));
+        reserve.open(marketA, 0, STAKE, TWO_X, q.quantityRaw);
+        // With the guard lowered the open goes through at the new size, the stake unchanged.
+        vm.prank(opener);
+        (, uint256 charged) = reserve.open(marketA, 0, STAKE, TWO_X, 29 * ONE);
+        assertEq(reserve.positionOf(1).quantityRaw, 29_090_000);
+        assertLe(charged, STAKE);
         assertBooksBalance();
     }
 
@@ -89,9 +106,12 @@ contract LeverageReserveOpenTest is LeverageTestBase {
     function test_open_refusesAThinBook() public {
         vm.expectRevert(abi.encodeWithSelector(ILeverageReserve.ThinBook.selector, marketA, 600 * ONE, 700 * ONE));
         reserve.previewOpen(marketA, 0, 700 * ONE, TWO_X);
+        // A stake the whole book cannot absorb is sized to what rests; the guard says so.
+        ILeverageReserve.Preview memory q = reserve.sizeForStake(marketA, 0, 400 * ONE, TWO_X);
+        assertEq(q.quantityRaw, 600 * ONE, "capped at what rests");
         vm.prank(opener);
-        vm.expectRevert(abi.encodeWithSelector(ILeverageReserve.ThinBook.selector, marketA, 600 * ONE, 700 * ONE));
-        reserve.open(marketA, 0, 700 * ONE, TWO_X, type(uint256).max);
+        vm.expectRevert(abi.encodeWithSelector(ILeverageReserve.BelowMinQuantity.selector, 600 * ONE, 700 * ONE));
+        reserve.open(marketA, 0, 400 * ONE, TWO_X, 700 * ONE);
     }
 
     function test_open_refusesOutsideTheLeverageBounds() public {
@@ -115,6 +135,9 @@ contract LeverageReserveOpenTest is LeverageTestBase {
         setBook(poolA, 970_000, 980_000, 960_000, 950_000);
         vm.expectPartialRevert(ILeverageReserve.Underpriced.selector);
         reserve.sizeForStake(marketA, 0, STAKE, TWO_X);
+        vm.prank(opener);
+        vm.expectPartialRevert(ILeverageReserve.Underpriced.selector);
+        reserve.open(marketA, 0, STAKE, TWO_X, 0);
     }
 
     function test_open_refusesTheLastSecondsOfAWindow() public {
@@ -138,38 +161,36 @@ contract LeverageReserveOpenTest is LeverageTestBase {
         reserve.previewOpen(marketA, 2, 32 * ONE, TWO_X);
     }
 
-    function test_open_honoursTheOpenersMaxStake() public {
-        ILeverageReserve.Preview memory q = reserve.sizeForStake(marketA, 0, STAKE, TWO_X);
+    function test_open_refusesAVenueFeeThatWouldExceedTheStake() public {
+        // A taker fee lands in the measured cost; the reserve refuses rather than charge more than the stake.
+        poolA.setFee(100);
         vm.prank(opener);
-        vm.expectRevert(abi.encodeWithSelector(ILeverageReserve.StakeAboveMax.selector, STAKE, STAKE - 1));
-        reserve.open(marketA, 0, q.quantityRaw, TWO_X, STAKE - 1);
+        vm.expectPartialRevert(ILeverageReserve.StakeAboveMax.selector);
+        reserve.open(marketA, 0, STAKE, TWO_X, 0);
     }
 
     function test_open_capsTheFrontPerPositionPerWindowAndInAggregate() public {
         // Per position: 3x on 150 fronts 300 > 200.
-        ILeverageReserve.Preview memory big = reserve.sizeForStake(marketA, 0, 150 * ONE, THREE_X);
         vm.prank(opener);
         vm.expectPartialRevert(ILeverageReserve.OverPositionCap.selector);
-        reserve.open(marketA, 0, big.quantityRaw, THREE_X, type(uint256).max);
+        reserve.open(marketA, 0, 150 * ONE, THREE_X, 0);
 
         // Aggregate: 50% of ~1,000 is 500; three 2x opens of 190 front 570.
         openFor(opener, marketA, 0, 190 * ONE, TWO_X);
         setBook(poolA, 600_000, 620_000, 580_000, 550_000);
         openFor(opener, marketA, 0, 190 * ONE, TWO_X);
         setBook(poolA, 600_000, 620_000, 580_000, 550_000);
-        ILeverageReserve.Preview memory third = reserve.sizeForStake(marketA, 0, 190 * ONE, TWO_X);
         vm.prank(opener);
         vm.expectPartialRevert(ILeverageReserve.OverWindowCap.selector);
-        reserve.open(marketA, 0, third.quantityRaw, TWO_X, type(uint256).max);
+        reserve.open(marketA, 0, 190 * ONE, TWO_X, 0);
 
         // On a second Window the per-Window cap is fresh, so the exposure cap is what refuses.
         (bytes32 marketB, MockLeveragePool poolB) = venue.addWindow(EXPIRY + 300);
         coll.mint(address(poolB), 1_000_000 * ONE);
         setBook(poolB, 600_000, 620_000, 580_000, 550_000);
-        ILeverageReserve.Preview memory onB = reserve.sizeForStake(marketB, 0, 190 * ONE, TWO_X);
         vm.prank(opener);
         vm.expectPartialRevert(ILeverageReserve.OverExposure.selector);
-        reserve.open(marketB, 0, onB.quantityRaw, TWO_X, type(uint256).max);
+        reserve.open(marketB, 0, 190 * ONE, TWO_X, 0);
         assertBooksBalance();
     }
 
@@ -178,27 +199,25 @@ contract LeverageReserveOpenTest is LeverageTestBase {
         p.maxOpenPositions = 1;
         reserve.setParams(p);
         openFor(opener, marketA, 0, STAKE, TWO_X);
-        ILeverageReserve.Preview memory q = reserve.sizeForStake(marketA, 0, STAKE, TWO_X);
         vm.prank(opener);
         vm.expectRevert(abi.encodeWithSelector(ILeverageReserve.TooManyOpen.selector, uint32(1), uint32(1)));
-        reserve.open(marketA, 0, q.quantityRaw, TWO_X, STAKE);
+        reserve.open(marketA, 0, STAKE, TWO_X, 0);
     }
 
     function test_open_needsLiquidToFrontAndToEscrow() public {
         uint256 shares = reserve.sharesOf(house);
         vm.prank(house);
         reserve.withdraw(shares);
-        ILeverageReserve.Preview memory q = reserve.sizeForStake(marketA, 0, STAKE, TWO_X);
         vm.prank(opener);
         vm.expectPartialRevert(ILeverageReserve.InsufficientLiquidity.selector);
-        reserve.open(marketA, 0, q.quantityRaw, TWO_X, STAKE);
+        reserve.open(marketA, 0, STAKE, TWO_X, 0);
     }
 
     function test_pause_stopsOpensAndSupplyOnly() public {
         reserve.setPaused(true);
         vm.prank(opener);
         vm.expectRevert(ILeverageReserve.IsPaused.selector);
-        reserve.open(marketA, 0, 32 * ONE, TWO_X, STAKE);
+        reserve.open(marketA, 0, STAKE, TWO_X, 0);
         vm.prank(house);
         vm.expectRevert(ILeverageReserve.IsPaused.selector);
         reserve.supply(ONE);

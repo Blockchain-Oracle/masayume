@@ -205,9 +205,14 @@ abstract contract LeverageGateway is ILeverageReserve {
         return _priceEntry(_resolve(marketId), marketId, outcomeIdx, quantityRaw, leverageBps);
     }
 
-    /// @notice The size `stake` affords at `leverageBps` off the live book — the stake-first quote — then that size priced.
+    /// @notice The size `stake` affords at `leverageBps` off the live book — the stake-first quote, and exactly what
+    ///         `open` will size at execution — then that size priced.
     function sizeForStake(bytes32 marketId, uint8 outcomeIdx, uint256 stake, uint32 leverageBps) external view returns (Preview memory) {
-        MarketRef memory ref = _resolve(marketId);
+        return _sizeEntry(_resolve(marketId), marketId, outcomeIdx, stake, leverageBps);
+    }
+
+    function _sizeEntry(MarketRef memory ref, bytes32 marketId, uint8 outcomeIdx, uint256 stake, uint32 leverageBps) internal view returns (Preview memory) {
+        _outcomeId(ref, outcomeIdx);
         _requireLeverage(leverageBps);
         (IBinaryPool.Level[] memory levels, bool invert) = _levels(ref, outcomeIdx, false);
         (, uint256 minQuantity, uint256 lot) = IBinaryPool(ref.pool).getOrderBookParameters();

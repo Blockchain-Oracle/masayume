@@ -19,7 +19,25 @@ export const LEVERAGE = {
     terms: (fronted: string, fee: string, symbol: string) => `The reserve fronts ${fronted} ${symbol} for a ${fee} ${symbol} fee, repaid first out of what the contracts fetch.`,
     line: (line: string, symbol: string) => `Knocks out if the book's bid for the position falls to ${line} ${symbol}: sold at the bids, the reserve repaid, the rest yours.`,
     sized: (charged: string, symbol: string) => `Sized to the venue's lot: ${charged} ${symbol} is charged, the rest stays in your wallet.`,
-    requote: (stake: string, symbol: string) => `The book moved — this size now needs ${stake} ${symbol}. Confirm again at the new terms.`,
+    requote: (contracts: string) => `The book moved — your stake now buys ${contracts} contracts. Confirm again at the new size.`,
+    /** The guard under the CTA: the open refuses a fill more than this far under the quoted size. */
+    guard: (contracts: string) => `Fills at least ${contracts} contracts or not at all — the stake never changes.`,
+  },
+  /** The boost card: the reference's numbers laid out as a breakdown — the user's 2026-09-02 redesign call. */
+  card: {
+    boost: "Boost",
+    you: "you",
+    reserve: "the reserve fronts",
+    fee: "fee",
+    knocksOutAt: (line: string, symbol: string) => `knocks out at ${line} ${symbol}`,
+    how: "Sold at the bids if the position's value falls to the line: the reserve is repaid first, the rest is yours.",
+  },
+  meter: {
+    label: "Room before the knock-out",
+    line: (line: string, symbol: string) => `line ${line} ${symbol}`,
+    room: (pct: string) => `${pct}% of room left`,
+    under: "under the line",
+    unpriced: "no bids to mark against",
   },
   cta: {
     buy: (side: string, x: number) => `Buy ${side} ${x}× for`,

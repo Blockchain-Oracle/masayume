@@ -3,7 +3,7 @@ import type { MakerVaultState, MakerWindowView } from "@masayume/core/maker";
 import { isOk } from "@masayume/core/schemas";
 import type { Bytes32, EventMarket, MarketId } from "@masayume/core/types";
 import { oneUnit } from "@masayume/core/units";
-import { createMemoryJournal, createSubmitterSession, ensureMarkets, marketsProvider, parseMarketsEnv, resolveVenueId, type SubmitterSession } from "@masayume/markets";
+import { createMemoryJournal, createSubmitterSession, ensureMarkets, loadCollateral, marketsProvider, parseMarketsEnv, resolveVenueId, type SubmitterSession } from "@masayume/markets";
 import { getMakerVaultState, listMakerOpenWindows, readPoolTop } from "@masayume/markets/maker";
 import { decideOpen, decideQuote, type Placed } from "./decide";
 import { readMakerEnv, type MakerEnv } from "./env";
@@ -28,7 +28,8 @@ async function send(maker: Maker, intent: Parameters<SubmitterSession["submitter
     maker.log(`${intent.kind} ${"marketId" in intent ? intent.marketId : ""}: ${why} · ${outcome.txHash}`);
     return true;
   }
-  maker.log(`${intent.kind} ${"marketId" in intent ? intent.marketId : ""} ${outcome.status}: ${outcome.diagnosis.technical}`);
+  const args = intent.kind === "maker-quote" ? ` (${intent.bidYesRaw} / ${intent.askYesRaw} × ${intent.quantityRaw}, expires ${intent.expireNs})` : "";
+  maker.log(`${intent.kind} ${"marketId" in intent ? intent.marketId : ""} ${outcome.status}${args}: ${why} · ${outcome.diagnosis.technical}`);
   return false;
 }
 
@@ -114,6 +115,9 @@ export async function startMarketMaker(log: Log): Promise<void> {
   const env = readMakerEnv();
   const marketsEnv = parseMarketsEnv({ venueId: env.venueId });
   ensureMarkets(marketsEnv);
+  // The reads price in collateral units: the token must be loaded once before any reserve read (the first live run found this).
+  const collateral = await loadCollateral();
+  if (!isOk(collateral)) return log(`collateral unreadable: ${collateral.error.technical}`);
   const venue = await resolveVenueId(marketsEnv.venueId);
   if (!isOk(venue) || !venue.value.venueId) return log("no live venue; the maker is idle");
 

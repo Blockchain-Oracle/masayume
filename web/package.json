@@ -25,6 +25,7 @@
     "idb-keyval": "^6.3.0",
     "lightweight-charts": "catalog:",
     "lucide-react": "^1.38.0",
+    "motion": "^12.43.0",
     "next": "catalog:",
     "qrcode-generator": "2.0.4",
     "react": "catalog:",

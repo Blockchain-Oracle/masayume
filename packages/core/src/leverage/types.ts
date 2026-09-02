@@ -109,7 +109,8 @@ export interface LeverageMark {
 
 /** Reserve writes: every one journals, simulates, sends and books through the same lane shape as a vault write. */
 export type LeverageIntent =
-  | { kind: "leverage-open"; marketId: MarketId; side: Side; quantityRaw: bigint; leverageBps: number; maxStakeBase: bigint }
+  /** Stake-first: the reserve sizes the boost at execution; `minQuantityRaw` is the owner's guard against a moved book. */
+  | { kind: "leverage-open"; marketId: MarketId; side: Side; stakeBase: bigint; leverageBps: number; minQuantityRaw: bigint }
   /** The owner's cash-out at the book's bids; `minProceedsBase` is their own slippage guard. */
   | { kind: "leverage-close"; positionId: bigint; marketId: MarketId; minProceedsBase: bigint }
   /** Permissionless once the mark is under the line: sells at the bids, the reserve repaid first. */

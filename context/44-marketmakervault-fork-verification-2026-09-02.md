@@ -66,3 +66,12 @@ there — and is covered by the unit suite (won, lost, void, the dead ask draine
 `0xdD7ae7c43e87Fae3eaE13c23C01eCa6D5bE8Bf9a` with `MAKER_ADDRESS=0xE0fEa37ae5af4e7F25A2345254476a3B524eae9d` (a key
 made for the actor, `~/.config/masayume/market-maker.env`, funded 1.5 STT from the deployer). Creation
 **47,192,303** gas, `setMaker` 241,256, then `approve` 259,745 and `supply(5,000 tUSDC)` 898,239.
+
+## The actor's first live cycles (2026-09-02, later)
+
+With `DRY_RUN=0`, `MM_QUOTE_SIZE=5` and the maker key, the actor's first cycles on the live venue: quotes rested on
+four Windows across the 5m/15m/1h lanes, both sides were hit on two of them and the actor merged 5 complete sets
+on each (`maker-merge`), pulled and requoted Window 71513 around a moved fair (0.1215 → 0.106 / 0.137 × 5). The
+vault after: liquid 4,981.82, deployed 18.18, four Windows open. One `maker-merge` receipt timed out in viem's
+wait and was logged `unknown`; the `maker` lane's gas is read off the receipts, not yet tabulated. The actor's
+boot lacked `loadCollateral()` (found on this run, fixed).

@@ -3,9 +3,10 @@
 import type { BlockerContext, BlockerKind } from "@masayume/core/copy";
 import type { MarketPhase } from "@masayume/core/lifecycle";
 import type { RangeReserveState } from "@masayume/core/range";
+import { RANGE_STAKE_HEADROOM_BPS } from "@masayume/core/range";
 import { belowMinStake, minStakeBase } from "@masayume/core/sizing";
 import type { EventMarket, Hex } from "@masayume/core/types";
-import { formatBaseUnits } from "@masayume/core/units";
+import { formatBaseUnits, mulBpsCeil } from "@masayume/core/units";
 import { txUrl } from "@masayume/core/urls";
 import Link from "next/link";
 import { useCallback, useState, type ReactNode } from "react";
@@ -104,7 +105,7 @@ export function RangeTicketBody(p: RangeTicketBodyProps) {
   const place = useCallback(async () => {
     if (!band || !quote) return;
     const bandText = `${usd0(band.lowPrint)} – ${usd0(band.highPrint)}`;
-    const outcome = await writes.open({ ...band, maxPayoutBase: quote.maxPayoutBase, maxStakeBase: quote.stakeBase });
+    const outcome = await writes.open({ ...band, maxPayoutBase: quote.maxPayoutBase, maxStakeBase: mulBpsCeil(quote.stakeBase, 10_000 + RANGE_STAKE_HEADROOM_BPS) });
     if (!outcome) return;
     if (outcome.status === "confirmed") {
       setPlaced({ txHash: outcome.txHash, band: bandText });
@@ -154,6 +155,9 @@ export function RangeTicketBody(p: RangeTicketBodyProps) {
             <Money value={quote.maxPayoutBase} decimals={decimals} symbol={symbol} />
           </Row>
           <Row label={RANGE.ticket.pays}>{`${formatProbE6(quote.insideProbE6)}% inside`}</Row>
+          <Row label="">
+            <span className="type-caption text-ink-muted">{RANGE.ticket.upTo(formatBaseUnits(mulBpsCeil(quote.stakeBase, 10_000 + RANGE_STAKE_HEADROOM_BPS), decimals), symbol)}</span>
+          </Row>
         </dl>
       ) : (
         <p className="type-caption text-ink-muted">{RANGE.ticket.needBand}</p>

@@ -1,9 +1,10 @@
 "use client";
 
 import type { RangeMode, RangeReserveState, RangeSide } from "@masayume/core/range";
+import { RANGE_STAKE_HEADROOM_BPS } from "@masayume/core/range";
 import { isOk } from "@masayume/core/schemas";
 import type { EventMarket, Hex, MarketId } from "@masayume/core/types";
-import { formatBaseUnits, parseDecimalToBaseUnits } from "@masayume/core/units";
+import { formatBaseUnits, parseDecimalToBaseUnits, mulBpsCeil } from "@masayume/core/units";
 import { formatCadence } from "@masayume/core/market";
 import { useBalanceSheet } from "@masayume/markets/react";
 import { Target, Wallet } from "lucide-react";
@@ -95,7 +96,7 @@ export function RangeBuilder({ reserve, symbol }: RangeBuilderProps) {
     setErrorDetail("");
     setTxHash(null);
     setStep("placing");
-    const outcome = await writes.open({ ...band, maxPayoutBase: quote.maxPayoutBase, maxStakeBase: quote.stakeBase });
+    const outcome = await writes.open({ ...band, maxPayoutBase: quote.maxPayoutBase, maxStakeBase: mulBpsCeil(quote.stakeBase, 10_000 + RANGE_STAKE_HEADROOM_BPS) });
     if (!outcome) {
       setStep("idle");
       return;

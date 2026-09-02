@@ -1,5 +1,5 @@
 import { isOk } from "@masayume/core/schemas";
-import { createMemoryJournal, createSubmitterSession, ensureMarkets, marketsProvider, parseMarketsEnv, type SubmitterSession } from "@masayume/markets";
+import { createMemoryJournal, createSubmitterSession, ensureMarkets, loadCollateral, marketsProvider, parseMarketsEnv, type SubmitterSession } from "@masayume/markets";
 import { getLeverageMark, getLeverageReserveState, listLeverageOpenPositions } from "@masayume/markets/leverage";
 import { decidePosition } from "./decide";
 import { readKeeperEnv, type KeeperEnv } from "./env";
@@ -49,6 +49,9 @@ export async function startLeverageKeeper(log: Log): Promise<void> {
   const env = readKeeperEnv();
   const marketsEnv = parseMarketsEnv({ venueId: env.venueId });
   ensureMarkets(marketsEnv);
+  // The reads price in collateral units: the token must be loaded once before any reserve read (the first live run found this).
+  const collateral = await loadCollateral();
+  if (!isOk(collateral)) return log(`collateral unreadable: ${collateral.error.technical}`);
 
   let session: SubmitterSession | null = null;
   if (env.privateKey) {

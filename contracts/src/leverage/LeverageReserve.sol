@@ -79,35 +79,35 @@ contract LeverageReserve is LeverageGateway, ReentrancyGuard {
 
     // ------------------------------------------------------------------ open
 
-    /// @notice Buys `quantityRaw` of a side at `leverageBps` off the live book and books the position to the
-    ///         caller. The stake is what the fill implies (`terms`), charged exactly and never above `maxStake`.
-    function open(bytes32 marketId, uint8 outcomeIdx, uint256 quantityRaw, uint32 leverageBps, uint256 maxStake)
+    /// @notice Stakes `stake` on a side at `leverageBps`: the reserve sizes the boost off the live book at
+    ///         execution (what `stake + fronted − premium` buys, on the venue's lot), buys it as an IOC taker and
+    ///         charges the stake the fill implies — never more than `stake`; a cheaper fill or the lot's dust
+    ///         comes straight back. `minQuantityRaw` is the caller's guard against a book that moved.
+    function open(bytes32 marketId, uint8 outcomeIdx, uint256 stake, uint32 leverageBps, uint256 minQuantityRaw)
         external
         nonReentrant
-        returns (uint256 positionId, uint256 stake)
+        returns (uint256 positionId, uint256 charged)
     {
         if (paused) revert IsPaused();
+        if (stake == 0) revert ZeroAmount();
         MarketRef memory ref = _resolve(marketId);
-        Preview memory q = _priceEntry(ref, marketId, outcomeIdx, quantityRaw, leverageBps);
-        if (q.stake > maxStake) revert StakeAboveMax(q.stake, maxStake);
+        Preview memory q = _sizeEntry(ref, marketId, outcomeIdx, stake, leverageBps);
+        if (q.quantityRaw < minQuantityRaw) revert BelowMinQuantity(q.quantityRaw, minQuantityRaw);
         if (_open.length >= params.maxOpenPositions) revert TooManyOpen(uint32(_open.length), params.maxOpenPositions);
         // The venue escrows the limit for the whole size up front; the wallet covers it beyond the stake.
-        uint256 escrow = LeverageMath.ceilDiv(quantityRaw * LeverageMath.sidePrice(q.limitYesRaw, outcomeIdx == 1, one), one);
-        if (liquid + q.stake < escrow) revert InsufficientLiquidity(escrow - q.stake, liquid);
+        uint256 escrow = LeverageMath.ceilDiv(q.quantityRaw * LeverageMath.sidePrice(q.limitYesRaw, outcomeIdx == 1, one), one);
+        if (liquid + stake < escrow) revert InsufficientLiquidity(escrow - stake, liquid);
 
-        collateral.safeTransferFrom(msg.sender, address(this), q.stake);
-        (uint256 cost, uint256 got) = _placeIoc(ref, outcomeIdx, true, q.limitYesRaw, quantityRaw);
+        collateral.safeTransferFrom(msg.sender, address(this), stake);
+        (uint256 cost, uint256 got) = _placeIoc(ref, outcomeIdx, true, q.limitYesRaw, q.quantityRaw);
         _collect(ref.pool);
-        if (got == 0) revert NothingFilled(marketId);
+        if (got < minQuantityRaw || got == 0) revert BelowMinQuantity(got, minQuantityRaw);
         uint256 fronted;
         uint256 premium;
-        (stake, fronted, premium) = LeverageMath.terms(cost, leverageBps, params.premiumBps);
-        if (stake > q.stake) {
-            if (stake > maxStake) revert StakeAboveMax(stake, maxStake);
-            collateral.safeTransferFrom(msg.sender, address(this), stake - q.stake);
-        } else if (stake < q.stake) {
-            collateral.safeTransfer(msg.sender, q.stake - stake);
-        }
+        (charged, fronted, premium) = LeverageMath.terms(cost, leverageBps, params.premiumBps);
+        // A fill can only cost the walk's price or less; a venue fee on top would land here and is refused.
+        if (charged > stake) revert StakeAboveMax(charged, stake);
+        if (charged < stake) collateral.safeTransfer(msg.sender, stake - charged);
         if (liquid + premium < fronted) revert InsufficientLiquidity(fronted, liquid + premium);
         liquid = liquid + premium - fronted;
         outstanding += fronted;
@@ -125,7 +125,7 @@ contract LeverageReserve is LeverageGateway, ReentrancyGuard {
                 expirySec: ref.expiry,
                 exitedAtSec: 0,
                 quantityRaw: got,
-                stake: stake,
+                stake: charged,
                 fronted: fronted,
                 premium: premium,
                 entryPriceRaw: LeverageMath.ceilDiv(cost * one, got),
@@ -138,7 +138,7 @@ contract LeverageReserve is LeverageGateway, ReentrancyGuard {
         _positionsOf[msg.sender].push(positionId);
         _open.push(positionId);
         _openAt[positionId] = _open.length;
-        emit Opened(positionId, msg.sender, marketId, outcomeIdx, leverageBps, got, stake, fronted, premium, cost);
+        emit Opened(positionId, msg.sender, marketId, outcomeIdx, leverageBps, got, charged, fronted, premium, cost);
     }
 
     // ------------------------------------------------------------------ exits

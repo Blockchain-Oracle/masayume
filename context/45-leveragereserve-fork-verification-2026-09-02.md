@@ -73,3 +73,27 @@ the reserve's loss) and on a thin book (partial: the position stays live with a 
 `0xdD7ae7c43e87Fae3eaE13c23C01eCa6D5bE8Bf9a` with the parlay's recipe. Creation **55,456,358** gas, then `approve`
 259,745 and `supply(5,000 tUSDC)` 897,933. The keeper key is `0xD5604E6cCf575bD690814fA4eF8E4F59E2583D7F`
 (`~/.config/masayume/leverage-keeper.env`, 1.5 STT from the deployer).
+
+## The first live open, and the redeploy it forced (2026-09-02, later)
+
+The first live `open` on Window 71513 (BTC 1h) reverted `StakeAboveMax(10.961455, 9.999925)`: the quote saw the
+ask at 0.208, a live maker moved it to 0.228 in the seconds between the send and the block, and a fixed 92-contract
+size implied a stake over the cap. On a book that requotes every few seconds a stake-first product has to fix the
+stake and let the quantity float. The open is now `open(marketId, outcomeIdx, stake, leverageBps, minQuantityRaw)`:
+the reserve sizes the boost at execution off the live book (what `stake + fronted − premium` buys, on the venue's
+lot), buys it, charges the stake the fill implies — never more than `stake`, the lot's dust and a cheaper fill
+refunded in the same call — and refuses a fill under the caller's `minQuantityRaw` (the Ticket sends 95% of the
+size it quoted, the reference's own 8% sizing cushion made explicit). A venue fee that pushed the implied stake
+over the typed one is refused (`StakeAboveMax`) rather than charged. The first reserve
+(`0x0F4f2C66917D03D2B31c3c5730E6Fae28d9BB575`) was drained by its one supplier and replaced by
+`0x5484fF06F4B6a8108fABb2511385985D933a2D23` (block 478043822, creation 55,407,083 gas, supplied 5,000).
+
+| Live on Shannon, the new reserve | Result |
+|---|---|
+| `open(71603, UP, 10, 2×, ≥95% of 47.22)` on the BTC 15m lane, live makers on the book | position 1: 44.859 contracts, stake **9.999818**, fronted 9.999819, premium 0.799986; **5,071,986 gas** — the `leverage` lane's first measurement, inside its 8M ceiling |
+| `markOf(1)` at the resting bids | mark 17.858881 against a line of 11.999782, not knockable |
+
+The keeper (`services/ops/src/actors/leverage-keeper`, `LEVERAGE_KEEPER_PRIVATE_KEY`, `DRY_RUN=0`) watches the
+live reserve and settles position 1 once the venue resolves the Window. Its first live run found that neither it
+nor the maker actor loaded the collateral before their first read (`loadCollateral()` — the spike's boot did);
+both now do.

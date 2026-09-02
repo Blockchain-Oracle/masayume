@@ -121,7 +121,9 @@ contract MockLeveragePool {
             require(coll.transferFrom(msg.sender, address(this), escrow - fromCredit), "escrow");
             uint256 cost = weighted / ONE;
             cost += cost * feeBps / 10_000;
-            _payBack(escrow - cost);
+            // A fee past the escrow is pulled on top, as a taker fee the venue charges would be.
+            if (cost > escrow) require(coll.transferFrom(msg.sender, address(this), cost - escrow), "fee");
+            else _payBack(escrow - cost);
             venue.mintTo(msg.sender, id, filled);
         } else {
             require(venue.isOperator(msg.sender, address(this)), "pool not operator");

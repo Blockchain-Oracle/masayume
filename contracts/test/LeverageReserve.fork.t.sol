@@ -110,7 +110,7 @@ contract LeverageReserveForkTest is Test {
         uint256 liquidBefore = reserve.liquid();
         vm.record();
         vm.prank(opener);
-        (uint256 positionId, uint256 charged) = reserve.open(id, 0, q.quantityRaw, TWO_X, STAKE);
+        (uint256 positionId, uint256 charged) = reserve.open(id, 0, STAKE, TWO_X, q.quantityRaw * 95 / 100);
         (, bytes32[] memory writes) = vm.accesses(address(reserve));
         for (uint256 i = 0; i < writes.length; i++) {
             bytes32 value = vm.load(address(reserve), writes[i]);
@@ -157,7 +157,7 @@ contract LeverageReserveForkTest is Test {
         _seed(bidYes, askYes);
         ILeverageReserve.Preview memory q2 = reserve.sizeForStake(id, 1, STAKE, TWO_X);
         vm.prank(opener);
-        (uint256 second,) = reserve.open(id, 1, q2.quantityRaw, TWO_X, STAKE);
+        (uint256 second,) = reserve.open(id, 1, STAKE, TWO_X, q2.quantityRaw * 95 / 100);
         vm.warp(uint256(expiry) + uint256(IBinaryMarket(market).settlementWindow()) + 1);
         IBinaryMarket(market).voidExpired();
         assertTrue(IBinaryMarket(market).isVoided());

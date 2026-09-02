@@ -69,6 +69,8 @@ export const RANGE = {
     odds: (pct: string, side: "inside" | "outside") => `${pct}% chance it lands ${side}`,
     setStake: "Set stake",
     setPayout: "Set payout",
+    /** The open's cap is the quote plus a small headroom; the contract charges the exact stake at that second. */
+    upTo: (amount: string, symbol: string) => `up to ${amount} ${symbol} if the basis moves before it lands`,
     youPay: "You pay",
     youWin: "You win",
     wallet: (balance: string, symbol: string) => `Wallet: ${balance} ${symbol}`,

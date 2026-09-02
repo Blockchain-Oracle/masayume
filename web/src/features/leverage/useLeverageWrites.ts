@@ -21,9 +21,10 @@ export type LeverageBusyKey = "open" | `close:${string}` | `settle:${string}` | 
 export interface LeverageOpenInput {
   marketId: MarketId;
   side: Side;
-  quantityRaw: bigint;
+  stakeBase: bigint;
   leverageBps: number;
-  maxStakeBase: bigint;
+  /** The owner's guard: fewer contracts than this and the open is refused rather than filled worse. */
+  minQuantityRaw: bigint;
   maintenanceBps: number;
 }
 

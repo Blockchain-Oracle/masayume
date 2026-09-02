@@ -10,7 +10,7 @@ import { checkGas, gasLimitFor } from "../submitter/gas";
 import { getLeverageDeployment } from "../runtime/read-runtime";
 import { awaitReceipt, settleVaultFailure, type Sent, type VaultContracts } from "../vault/write";
 import { diagnoseLeverage } from "./errors";
-import { previewLeverageOpen } from "./read";
+import { sizeLeverageForStake } from "./read";
 
 type ReserveFn = ContractFunctionName<typeof leverageReserveAbi, "nonpayable">;
 type Args<F extends ReserveFn> = ContractFunctionArgs<typeof leverageReserveAbi, "nonpayable", F>;
@@ -23,7 +23,7 @@ export interface LeverageTxContext {
 
 export type LeverageOpenOutcome =
   | { status: "confirmed"; txHash: Hex; positionId: bigint; stakeBase: bigint; quantityRaw: bigint; frontedBase: bigint }
-  /** The book moved: the stake this size now implies is above the one confirmed. Nothing was sent. */
+  /** The book moved: this stake now buys fewer contracts than the guard allows. Nothing was sent. */
   | { status: "requote"; stakeBase: bigint; quantityRaw: bigint }
   | { status: "refused"; diagnosis: Diagnosis }
   | { status: "reverted"; diagnosis: Diagnosis; txHash?: Hex }
@@ -80,8 +80,8 @@ export async function ensureLeverageAllowance(contracts: VaultContracts, amountB
 export async function sendLeverageIntent(contracts: VaultContracts, intent: LeverageIntent): Promise<Sent> {
   switch (intent.kind) {
     case "leverage-open":
-      await ensureLeverageAllowance(contracts, intent.maxStakeBase);
-      return writeLeverage(contracts, "open", [intent.marketId as `0x${string}`, SIDE_TO_OUTCOME[intent.side], intent.quantityRaw, intent.leverageBps, intent.maxStakeBase], intent.kind);
+      await ensureLeverageAllowance(contracts, intent.stakeBase);
+      return writeLeverage(contracts, "open", [intent.marketId as `0x${string}`, SIDE_TO_OUTCOME[intent.side], intent.stakeBase, intent.leverageBps, intent.minQuantityRaw], intent.kind);
     case "leverage-close":
       return writeLeverage(contracts, "close", [intent.positionId, intent.minProceedsBase], intent.kind);
     case "leverage-knock-out":
@@ -101,7 +101,7 @@ export function summarizeLeverage(intent: LeverageIntent, decimals: number): str
   const amount = (base: bigint) => formatBaseUnits(base, decimals);
   switch (intent.kind) {
     case "leverage-open":
-      return `open ${intent.quantityRaw} ${intent.side} at ${intent.leverageBps / 10_000}x on ${intent.marketId} for at most ${amount(intent.maxStakeBase)}`;
+      return `stake ${amount(intent.stakeBase)} ${intent.side} at ${intent.leverageBps / 10_000}x on ${intent.marketId}, at least ${intent.minQuantityRaw} contracts`;
     case "leverage-close":
       return `cash out boost #${intent.positionId} on ${intent.marketId} for at least ${amount(intent.minProceedsBase)}`;
     case "leverage-knock-out":
@@ -149,15 +149,15 @@ export async function submitLeverageTx(ctx: LeverageTxContext, intent: LeverageI
 }
 
 /**
- * The open, with what the Ticket needs back: the chain is asked once more what this size implies before
- * any signature, and a stake above the confirmed one is surfaced as a requote instead of sent (the reserve
- * would refuse it as `StakeAboveMax` anyway — this just spares the popup).
+ * The open, with what the Ticket needs back: the chain is asked once more what this stake buys before any
+ * signature, and a size under the guard is surfaced as a requote instead of sent (the reserve would refuse
+ * it as `BelowMinQuantity` anyway — this just spares the popup). The stake itself never changes.
  */
 export async function submitLeverageOpen(ctx: LeverageTxContext, intent: Extract<LeverageIntent, { kind: "leverage-open" }>, maintenanceBps: number, onPhase?: PhaseListener): Promise<LeverageOpenOutcome> {
   if (!ctx.contracts || !getLeverageDeployment()) return { status: "refused", diagnosis: diagnosis("not-deployed", LEVERAGE_NOT_DEPLOYED) };
-  const fresh = await previewLeverageOpen(intent.marketId, intent.side, intent.quantityRaw, intent.leverageBps, maintenanceBps);
+  const fresh = await sizeLeverageForStake(intent.marketId, intent.side, intent.stakeBase, intent.leverageBps, maintenanceBps);
   if (!fresh.ok) return { status: "refused", diagnosis: fresh.error };
-  if (fresh.value.stakeBase > intent.maxStakeBase) return { status: "requote", stakeBase: fresh.value.stakeBase, quantityRaw: intent.quantityRaw };
+  if (fresh.value.quantityRaw < intent.minQuantityRaw) return { status: "requote", stakeBase: intent.stakeBase, quantityRaw: fresh.value.quantityRaw };
 
   const record = await ctx.journal.record({ kind: intent.kind, wallet: ctx.wallet, summary: summarizeLeverage(intent, getCollateral().decimals), marketId: intent.marketId });
   const gas = await checkGas(ctx.wallet, "leverage");

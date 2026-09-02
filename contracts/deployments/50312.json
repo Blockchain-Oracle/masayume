@@ -12,6 +12,6 @@
   "rangeReserveFromBlock": 478033175,
   "marketMakerVault": "0x3F6a9D3DF15134328b4928bAf39d41647A8E48cA",
   "marketMakerVaultFromBlock": 478033625,
-  "leverageReserve": "0x0F4f2C66917D03D2B31c3c5730E6Fae28d9BB575",
-  "leverageReserveFromBlock": 478033747
+  "leverageReserve": "0x5484fF06F4B6a8108fABb2511385985D933a2D23",
+  "leverageReserveFromBlock": 478043822
 }

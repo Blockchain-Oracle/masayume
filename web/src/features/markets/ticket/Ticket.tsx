@@ -10,7 +10,7 @@ import { useBalanceSheet, useLeverageReserve, useOnchain, useRangeReserve, useSi
 import { useCallback, useEffect, useState } from "react";
 import { Money } from "@/components/data";
 import { BlockedButton } from "@/components/states";
-import { LEVERAGE, LeverageStrip, useLeverageQuote, useLeverageWrites } from "@/features/leverage";
+import { BoostCard, LEVERAGE, useLeverageQuote, useLeverageWrites } from "@/features/leverage";
 import { RangeTicketBody } from "@/features/range";
 import { RouteControl, SESSION, SessionControl, useTicketRoute, type FundingSource } from "@/features/session";
 import { diagnosisCopy, TICKET } from "@/lib/copy";
@@ -39,6 +39,8 @@ import { useTicket } from "./useTicket";
 import { WalkLine } from "./WalkLine";
 
 const FALLBACK_SYMBOL = "tUSDC";
+/** The reference sizes with an 8% cushion for a quote that drifts before it lands; a boost accepts up to 5% fewer contracts. */
+const BOOST_FILL_FLOOR_BPS = 9_500n;
 
 interface PlacedBoost {
   booked: BookedOrder;
@@ -125,11 +127,11 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
     void bet.place({ market, side, stakeBase, displayedQuote: displayed, route: routing.route });
   };
 
-  /** The boost's open: the size the reserve quoted, its stake as the cap; a moved book comes back as a requote, never a popup. */
+  /** The boost's open: the typed stake, guarded at 95% of the size the reserve quoted; a moved book comes back as a requote, never a popup. */
   const placeBoost = useCallback(async () => {
     if (!side || !boost.quote || !leverageReserve) return;
     const q = boost.quote;
-    const outcome = await leverageWrites.open({ marketId: market.marketId, side, quantityRaw: q.quantityRaw, leverageBps, maxStakeBase: q.stakeBase, maintenanceBps: leverageReserve.params.maintenanceBps });
+    const outcome = await leverageWrites.open({ marketId: market.marketId, side, stakeBase, leverageBps, minQuantityRaw: (q.quantityRaw * BOOST_FILL_FLOOR_BPS) / 10_000n, maintenanceBps: leverageReserve.params.maintenanceBps });
     if (!outcome) return;
     if (outcome.status === "confirmed") {
       const avgPriceBps = priceRawToBps(q.priceRaw, decimals);
@@ -141,13 +143,13 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
       return;
     }
     if (outcome.status === "requote") {
-      notify.warning(diagnosisCopy("requote").headline, LEVERAGE.strip.requote(formatBaseUnits(outcome.stakeBase, decimals), symbol));
+      notify.warning(diagnosisCopy("requote").headline, LEVERAGE.strip.requote(formatBaseUnits(outcome.quantityRaw, decimals, { minDp: 0 })));
       boost.retry();
       return;
     }
     const copy = diagnosisCopy(outcome.diagnosis.kind);
     notify.warning(copy.headline, outcome.diagnosis.technical || copy.body);
-  }, [side, boost, leverageReserve, leverageWrites, market.marketId, leverageBps, decimals, symbol]);
+  }, [side, boost, leverageReserve, leverageWrites, market.marketId, stakeBase, leverageBps, decimals]);
 
   // The Call: once the fill is confirmed the ticket body is the shareable card, with
   // "Place another" bringing the composer back (reference Ticket624Drawer L807–836).
@@ -227,7 +229,7 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
         lockedReason={leverageLock}
       />
       {boosted ? (
-        <LeverageStrip quote={boost.quote} loading={boost.loading} error={boost.error} retry={boost.retry} stakeBase={stakeBase} side={side} multiple={multiple} decimals={decimals} symbol={symbol} />
+        <BoostCard quote={boost.quote} loading={boost.loading} error={boost.error} retry={boost.retry} stakeBase={stakeBase} side={side} multiple={multiple} decimals={decimals} symbol={symbol} />
       ) : (
         <QuoteStrip
           reading={quoteState.reading}

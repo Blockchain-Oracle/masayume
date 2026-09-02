@@ -2,14 +2,16 @@
 
 import { equityOf, type LeverageMark, type LeveragePosition } from "@masayume/core/leverage";
 import { countdown } from "@masayume/core/lifecycle";
-import { formatBaseUnits } from "@masayume/core/units";
+import { formatBaseUnits, oneUnit } from "@masayume/core/units";
 import { marketDeepLink } from "@masayume/core/urls";
 import Link from "next/link";
-import { Countdown, Money } from "@/components/data";
+import { Countdown, Money, Odometer } from "@/components/data";
 import { formatCadence, PORTFOLIO } from "@/lib/copy";
 import { cn } from "@/lib/utils";
 import { SIDE_WORD } from "../markets/side-styles";
 import { LEVERAGE } from "./copy";
+import { KnockoutMeter } from "./KnockoutMeter";
+import "./boost-card.css";
 import type { LeverageBusyKey } from "./useLeverageWrites";
 
 /** The owner's own slippage guard on a cash-out: the book may move between the mark and the send. */
@@ -58,6 +60,7 @@ export function LeverageBetRow(p: LeverageBetRowProps) {
   const priced = mark !== null && mark.filledRaw >= position.quantityRaw;
   const equity = mark ? equityOf(mark.markBase, position.frontedBase) : null;
   const minProceeds = mark ? (mark.markBase * CASH_OUT_FLOOR_BPS) / 10_000n : 0n;
+  const entryBase = (position.quantityRaw * position.entryPriceRaw) / oneUnit(decimals);
   const cashingOut = busy === `close:${position.positionId}`;
   const settlingNow = busy === `settle:${position.positionId}`;
 
@@ -95,14 +98,14 @@ export function LeverageBetRow(p: LeverageBetRowProps) {
         <>
           {priced && equity !== null ? (
             <span className="type-caption text-ink-secondary">
-              {bets.yours} <Money value={equity} decimals={decimals} />
+              {bets.yours} <Odometer value={equity} decimals={decimals} />
             </span>
           ) : (
             <span className="type-caption text-ink-muted">{bets.unpriced}</span>
           )}
           {mark && position.frontedBase > 0n && (
-            <span className={cn("type-caption", mark.knockable ? "text-warning" : "text-ink-muted")}>
-              {mark.knockable ? bets.knockable : bets.line(formatBaseUnits(mark.lineBase, decimals))}
+            <span className={cn("type-caption", mark.knockable ? "text-warning" : "text-ink-muted")} title={mark.knockable ? bets.knockable : bets.line(formatBaseUnits(mark.lineBase, decimals))}>
+              <KnockoutMeter entryBase={entryBase} lineBase={mark.lineBase} markBase={priced ? mark.markBase : null} knockable={mark.knockable} unpriced={!priced} decimals={decimals} symbol={symbol ?? ""} compact />
             </span>
           )}
           {settling

@@ -114,3 +114,11 @@ the same Window skip the rebuild.
 6 gwei — the two `WindowQuestion` builders make it the largest of the reserves), `setVolatility(BTC)` and
 `setVolatility(ETH)` 275,924 each in the same broadcast, then `approve` 259,745 and `supply(5,000 tUSDC)` 897,978.
 `deployments/50312.json` carries `rangeReserve` / `rangeReserveFromBlock` (pinned by hand to the creation block).
+
+## The first live opens (2026-09-02, later)
+
+The basis moves with every second left: a `range-open` capped at the quoted stake came back `requote` at +0.06%
+on a 1h Window and `StakeAboveMax(5.015123, 5.000000)` at +0.3% on a 15m Window seconds after the quote. The
+reference caps its mint cost with a cadence-aware buffer (`costCapBuffer`); every range open here now carries
+`RANGE_STAKE_HEADROOM_BPS` (3%) over the quote — the Ticket says "up to X if the basis moves before it lands" — and
+the contract charges the exact fresh stake.

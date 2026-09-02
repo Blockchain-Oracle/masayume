@@ -4,7 +4,7 @@ import { diagnosis } from "@masayume/core/types";
 import Link from "next/link";
 import { Fixture, FixtureGrid } from "@/app/dev/states/_sections/Fixture";
 import { SectionHeader } from "@/components/chrome";
-import { LEVERAGE, LeverageBetRow, LeverageStrip } from "@/features/leverage";
+import { BoostCard, KnockoutMeter, LEVERAGE, LeverageBetRow } from "@/features/leverage";
 import { LeverageChips } from "@/features/markets/ticket";
 import { CLOSED, FIXTURE_NOW_MS, FIXTURE_SYMBOL, KNOCKED, LIVE, LIVE_3X, LOST, MARK_AT_LINE, MARK_HEALTHY, MARK_UNPRICED, MARKET, QUOTE, SETTLING, WON } from "./fixtures";
 
@@ -35,17 +35,25 @@ export function LeverageFixtures() {
         </Fixture>
       </FixtureGrid>
       <FixtureGrid>
-        <Fixture label="Strip — 10 at 2× on a 0.60 book">
-          <LeverageStrip {...STRIP} quote={QUOTE} loading={false} error={null} />
+        <Fixture label="Boost card — 10 at 2× on a 0.60 book">
+          <BoostCard {...STRIP} quote={QUOTE} loading={false} error={null} />
         </Fixture>
-        <Fixture label="Strip — sized to the lot (9.999 charged)">
-          <LeverageStrip {...STRIP} quote={{ ...QUOTE, stakeBase: 9_999_295n }} loading={false} error={null} />
+        <Fixture label="Boost card — 3×, sized to the lot (9.999 charged)">
+          <BoostCard {...STRIP} multiple={3} quote={{ ...QUOTE, leverageBps: 30_000, quantityRaw: 47_330_000n, costBase: 28_398_000n, stakeBase: 9_999_295n, frontedBase: 19_998_592n, premiumBase: 1_599_887n, winIfRightBase: 27_331_408n, lineBase: 23_998_310n }} loading={false} error={null} />
         </Fixture>
-        <Fixture label="Strip — quoting">
-          <LeverageStrip {...STRIP} quote={null} loading error={null} />
+        <Fixture label="Boost card — quoting">
+          <BoostCard {...STRIP} quote={null} loading error={null} />
         </Fixture>
-        <Fixture label="Strip — the reserve refused (thin book)">
-          <LeverageStrip {...STRIP} quote={null} loading={false} error={diagnosis("no-liquidity", "ThinBook(0x…, 12000000, 32000000)", { errorName: "ThinBook" })} />
+        <Fixture label="Boost card — the reserve refused (thin book)">
+          <BoostCard {...STRIP} quote={null} loading={false} error={diagnosis("no-liquidity", "ThinBook(0x…, 12000000, 32000000)", { errorName: "ThinBook" })} />
+        </Fixture>
+        <Fixture label="Knock-out meter — at entry, healthy, at the line, unpriced">
+          <div className="flex flex-col gap-4">
+            <KnockoutMeter entryBase={19_200_000n} lineBase={12_000_000n} markBase={null} knockable={false} decimals={6} symbol={FIXTURE_SYMBOL} />
+            <KnockoutMeter entryBase={19_200_000n} lineBase={12_000_000n} markBase={14_400_000n} knockable={false} decimals={6} symbol={FIXTURE_SYMBOL} />
+            <KnockoutMeter entryBase={19_200_000n} lineBase={12_000_000n} markBase={11_199_999n} knockable decimals={6} symbol={FIXTURE_SYMBOL} />
+            <KnockoutMeter entryBase={19_200_000n} lineBase={12_000_000n} markBase={null} knockable unpriced decimals={6} symbol={FIXTURE_SYMBOL} />
+          </div>
         </Fixture>
       </FixtureGrid>
       <FixtureGrid>

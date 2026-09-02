@@ -93,11 +93,11 @@ abstract contract LeverageTestBase is Test {
         pool.setBook(askP, askQ, bidP, bidQ);
     }
 
-    /// @dev The stake-first open: the size the stake affords off the live book, then the open at it.
+    /// @dev The stake-first open, guarded at the size the quote saw.
     function openFor(address who, bytes32 marketId, uint8 outcomeIdx, uint256 stake, uint32 leverageBps) internal returns (uint256 id, uint256 charged) {
         ILeverageReserve.Preview memory q = reserve.sizeForStake(marketId, outcomeIdx, stake, leverageBps);
         vm.prank(who);
-        (id, charged) = reserve.open(marketId, outcomeIdx, q.quantityRaw, leverageBps, stake);
+        (id, charged) = reserve.open(marketId, outcomeIdx, stake, leverageBps, q.quantityRaw);
     }
 
     /// @dev `balanceOf(reserve) == liquid` and `totalValue == liquid + Σ fronted` over LIVE positions — the two identities.

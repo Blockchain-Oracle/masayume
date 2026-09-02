@@ -133,3 +133,10 @@ export type RangeIntent =
 export const RANGE_NOT_DEPLOYED = "RangeReserve is not deployed on this network yet" as const;
 /** The oracle's print scale for the venue's Windows: cents (context/40, context/43). */
 export const PRINT_DECIMALS = 2;
+/**
+ * The basis moves with every second left in a Window, so a stake cap equal to the quote can never land on a
+ * short lane (measured live 2026-09-02: +0.06% in the seconds between quote and send, +0.3% on a 15m Window).
+ * The reference caps its mint cost with a cadence-aware buffer; the open accepts up to this much over the quote
+ * and the contract charges the exact fresh stake.
+ */
+export const RANGE_STAKE_HEADROOM_BPS = 300;

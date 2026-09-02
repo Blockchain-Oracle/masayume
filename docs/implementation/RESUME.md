@@ -50,7 +50,12 @@ pass the user asked for (same colours, better animation and breakdowns), startin
 | `8679953` | Stage 5 — `RangeReserve`, `MarketMakerVault` and `LeverageReserve` deployed and supplied on Shannon; the module regenerated |
 
 Everything is green: `pnpm typecheck`, `pnpm invariants` (14/14, 0 warnings), `pnpm test` (141),
-`forge test --no-match-contract Fork` (154), `pnpm build`. Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
+`forge test --no-match-contract Fork` (155), `pnpm build`.
+
+**The live actors** (`pnpm --filter @masayume/ops start` with `DRY_RUN=0 MAKER_PRIVATE_KEY=… LEVERAGE_KEEPER_PRIVATE_KEY=…`,
+keys in `~/.config/masayume/market-maker.env` / `leverage-keeper.env`) ran on Shannon on 2026-09-02: the maker quoted
+and merged live, the keeper watches the leverage reserve. `spike:live-windows` lists Trading ids; `spike:stage5-live`
+drives a boost and a band through the adapters and measures the lanes. Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
 
 **Never touch or commit** the untracked `context/screens/` and `prompt.md`. They are the user's.
 
@@ -352,8 +357,9 @@ session); deploy waits on the owner's go.** Read context/43 and the ledger's §R
   page's frame, the chart band not drawn, the OUTSIDE side and the slip's pills).
 - **Live on Shannon (2026-09-02, eighth session):** `RangeReserve` `0x1F8dB9B0913cB09e5CfDe44Adfa7Ff22b0868386`,
   block 478033175, creation **60,919,875** gas (0.366 STT at 6 gwei — the two definition builders), `setVolatility`
-  275,924 each; `approve` 259,745, `supply(5,000)` 897,978; admin = deployer. The `range` lane is measured by the
-  live spike (`spike:stage5-live`).
+  275,924 each; `approve` 259,745, `supply(5,000)` 897,978; admin = deployer. **Found live:** the basis moves every
+  second, so a cap equal to the quote never lands on a short lane; every range open now carries a 3% headroom
+  (`RANGE_STAKE_HEADROOM_BPS`, context/43). The `range` lane is measured by `spike:stage5-live` (`BOOST=0 WAIT=1`).
 
 **3. `MarketMakerVault` + the maker actor + `/earn` — built and fork-verified 2026-09-02 (seventh session, same
 day); deploy waits on the owner's go.** Read context/44 and the ledger's §MarketMakerVault first. What is where:
@@ -407,10 +413,17 @@ What is where:
   **Not seen in a browser.** Ledger rows flagged for review: the model itself, wallet-only funding, the strip's
   numbers, the multiple on boosted rows only, the row's health words, the unpaid knock-out.
 - `services/ops/src/actors/leverage-keeper/` — dry-run unless `DRY_RUN=0`; `LEVERAGE_KEEPER_PRIVATE_KEY`, `LK_REFRESH_MS`.
-- **Live on Shannon (2026-09-02, eighth session):** `LeverageReserve` `0x0F4f2C66917D03D2B31c3c5730E6Fae28d9BB575`,
-  block 478033747, creation **55,456,358** gas; `approve` 259,745, `supply(5,000)` 897,933; admin = deployer. The
-  keeper key is `0xD5604E6cCf575bD690814fA4eF8E4F59E2583D7F` (`~/.config/masayume/leverage-keeper.env`, 1.5 STT).
-  The `leverage` lane is measured by the live spike (`spike:stage5-live`).
+- **Live on Shannon (2026-09-02, eighth session):** `LeverageReserve` `0x5484fF06F4B6a8108fABb2511385985D933a2D23`,
+  block 478043822, creation **55,407,083** gas; `approve` 259,745, `supply(5,000)` 897,933; admin = deployer. (The
+  first deploy, `0x0F4f…B575`, took `open(quantity, maxStake)`; its first live open reverted `StakeAboveMax` when a
+  maker moved the ask mid-send, so the open became stake-first with a quantity floor and the reserve was
+  redeployed — context/45.) The keeper key is `0xD5604E6cCf575bD690814fA4eF8E4F59E2583D7F`
+  (`~/.config/masayume/leverage-keeper.env`, 1.5 STT). **Measured live:** a 2× open on the 15m BTC lane
+  **5,071,986** gas (`leverage` lane 8M holds); position 1 is live, the keeper settles it.
+- **Redesigned with 21st.dev on the user's call (2026-09-02, later):** `features/leverage/BoostCard.tsx` (the strip
+  became a breakdown card), `KnockoutMeter.tsx`, `components/data/Odometer.tsx` (a rolling figure that settles on
+  the exact reading), the chips' sliding highlight; `motion` added to the web app; `.21st/design.json` carries the
+  project's tokens and the decision. Fixtures on `/dev/leverage`. Same colours and type; layout and motion are ours.
 
 5. The truthful private / link-reduction flow (the reference's `privateBet.ts` desk → an ephemeral
    account or scoped session, described as link-private).
