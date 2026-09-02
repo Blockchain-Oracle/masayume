@@ -5,6 +5,7 @@ import { listClaimables } from "./claimables";
 import { nowMs } from "./clock";
 import { syncClock } from "./clock-sync";
 import { settlementFeeBps } from "./fees";
+import { listWalletHistory } from "./history";
 import { getMarket, listLiveLanes, listSettled } from "./markets";
 import { nextWindow } from "./next-window";
 import { getOnchain } from "./onchain";
@@ -29,6 +30,7 @@ export const marketsProvider: MarketsProvider = {
   listOpenPositions,
   getHoldings,
   listClaimables,
+  listWalletHistory,
   getBalanceSheet,
   syncClock,
   nowMs,
@@ -42,5 +44,7 @@ export { applyClockSync, lastClockSync, nowMs, nowSec } from "./clock";
 export { syncClock } from "./clock-sync";
 export { laneNextStart } from "./next-window";
 export { fetchOpeningPrices } from "./prices";
+export { readVenueBoard, type BoardScope, type VenueBoard } from "./board";
+export { listWalletHistory, mapPool, toRoundMarket } from "./history";
 export { quoteFromBook, type QuoteInput } from "./quotes";
 export { forgetReading, unwrap, withReading, type Unwrap } from "./reading";

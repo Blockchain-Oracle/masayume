@@ -1,7 +1,9 @@
 import { CLOCK_RESYNC_MS, MARKETS_POLL_MS, ONCHAIN_POLL_MS, OPENING_PRINT_POLL_MS } from "@masayume/core/constants";
+import type { WalletHistory } from "@masayume/core/projection";
 import { isOk, type Reading } from "@masayume/core/schemas";
 import type { Address, BalanceSheet, Bytes32, ClaimableRow, ClockSync, EventMarket, LaneSet, MarketId, OnchainSnapshot, OpenPosition, PricePoint, Resolution } from "@masayume/core/types";
 import { getBalanceSheet } from "../provider/balances";
+import { listWalletHistory } from "../provider/history";
 import { listClaimables } from "../provider/claimables";
 import { syncClock } from "../provider/clock-sync";
 import { getMarket, listLiveLanes } from "../provider/markets";
@@ -57,6 +59,11 @@ export function useClaimables(wallet: Address | null, venueId: Bytes32 | null): 
 
 export function useBalanceSheet(wallet: Address | null): Reading<BalanceSheet> | null {
   return useReadingQuery(keys.balanceSheet(wallet), () => getBalanceSheet(wallet as Address), { pollMs: MARKETS_POLL_MS, enabled: wallet !== null });
+}
+
+/** Settled history for a wallet — one reading shared by the ledger rows, the equity curve, Trader Edge and the badges. */
+export function useWalletHistory(wallet: Address | null): Reading<WalletHistory> | null {
+  return useReadingQuery(keys.history(wallet), () => listWalletHistory(wallet as Address), { pollMs: MARKETS_POLL_MS, enabled: wallet !== null });
 }
 
 export function useNextWindow(market: EventMarket | null): Reading<EventMarket | null> | null {

@@ -1,7 +1,7 @@
 ---
 title: Resume point — read this first
 status: working handoff
-updated: 2026-09-01
+updated: 2026-09-02
 ---
 
 # Resume point
@@ -12,8 +12,9 @@ Start here, then read `parity-ledger.md`. The authority package is
 ## Where we are
 
 Branch **`feat/yosuku-source-led-shell`** off `main` (`497b43a`). **Stage 2 is complete; Stage 3 is
-underway — all four `/markets` slots are closed: the Tutorial, the §02 word board, the §01 chart
-card, Sensei and the Room.**
+underway — all four `/markets` slots are closed (Tutorial, §02 word board, §01 chart card, Sensei, the
+Room), and the fill projection now feeds settled history, the equity curve, PnL, stats, reputation,
+badges, CSV, `/portfolio/edge` and `/leaderboard`.**
 
 | Commit | What |
 |---|---|
@@ -30,10 +31,12 @@ card, Sensei and the Room.**
 | `aa3b3b8` | Stage 3 — `/markets` §02 word-market board |
 | `9de0a01` | Stage 3 — §01 as the reference's chart card |
 | `c43819a` | Stage 3 — Sensei on Claude, honest without a key |
-| *(this)* | Stage 3 — the Room, position-gated over a real store |
+| `9f86edc` | Stage 3 — the Room, position-gated over a real store |
+| `6f45a88` | Sensei's model as a setting |
+| *(this)* | Stage 3 — the fill projection: history, equity, Trader Edge, leaderboard |
 
-Everything is green: `pnpm typecheck`, `pnpm invariants` (12/12), `pnpm test` (41),
-`pnpm build` (55 routes). Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
+Everything is green: `pnpm typecheck`, `pnpm invariants` (12/12), `pnpm test` (58),
+`pnpm build` (57 routes). Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
 
 **Never touch or commit** the untracked `context/screens/` and `prompt.md`. They are the user's.
 
@@ -108,13 +111,24 @@ Per `05-migration-and-agency-handoff.md`. Four slots were waiting on `/markets` 
    *narrower* than the reference's `has_bet` — a wallet that redeemed a settled Window loses that
    Room.
 
-**Next: the fill projection**, which unblocks the largest pending set at once: settled history and
-receipts on `/portfolio`, the equity curve, PnL, stats, reputation, badges, `/portfolio/edge`
-(Trader Edge), and `/leaderboard`. `portfolio/BetsPanel.tsx` names it as what it waits on.
+4. ~~**The fill projection**~~ — **done 2026-09-02**, and it unblocked the whole pending set at
+   once: settled history with receipts, the equity curve, PnL, stats, reputation, badges and CSV on
+   `/portfolio`; `/portfolio/edge`; `/leaderboard`. One derivation (`packages/core/src/projection/`)
+   replays a wallet's indexed fills and complete-set router actions into one ledger per Window and
+   settles each by the chain's rule; `listWalletHistory` / `useWalletHistory` is the port read;
+   `readVenueBoard` runs the same replay venue-wide for the board's server route. **No database, no
+   credential.** Read the ledger's §Fill projection before touching any of it — it records the three
+   venue facts the code depends on: a sell beyond inventory is a collateral-backed short (the wallet
+   ends up holding the complement, and the SDK's own PnL engine drops it); redemptions through the
+   settlement contract leave no per-wallet indexer record (claim state is read from live balances);
+   the indexer pages at 1,000 and the busiest wallet is past both caps (the reading pages five deep
+   and says `complete: false` beyond). Verified against chain balances on 89 settled markets across
+   four active wallets before any UI was written (`pnpm --filter @masayume/scripts
+   spike:fill-projection-verify`); `spike:fill-projection-live` reads one wallet end to end.
 
-Also Stage 3: Takes woven into the reel (`ReelsScreen.tsx` renders the composer pill disabled and
-says so), rooms/comments, sharing, alerts, news/ticker, and the real `/status`, `/docs`,
-`/how-it-works`, `/demo`, `/pitch`.
+**Next**: Takes woven into the reel (`ReelsScreen.tsx` renders the composer pill disabled and says
+so), sharing, alerts, news/ticker, and the real `/status`, `/docs`, `/how-it-works`, `/demo`,
+`/pitch`. The Room and the projection between them cover rooms/comments.
 
 **Honesty constraints that keep applying** (doc 05 §No fake-data, doc 00 §No-substitution):
 never an invented odd, balance, fill or payout; loading and unavailable are valid states; a
@@ -168,6 +182,13 @@ value, and a clean load draws dark-on-cream).
 
 ## Known, not fixed
 
+- The venue's `getOpenPositionsWithPnL` (the open-bets rows) clamps a sell beyond inventory to zero and
+  drops the complement, so an open **short** shows as no position until the Window settles, when the
+  projection books it correctly. Recorded in the ledger; the open rows keep the venue's numbers.
+- `/api/leaderboard` takes ~35 s cold (a venue-wide scan of two days of fills, fees per market, router
+  actions per wallet), then serves from a 3-minute in-memory cache. Fine for one process; a
+  multi-instance deploy would recompute per instance until the deferred DB projection exists.
+
 - `PriceChart.client.tsx` reads its colours at *mount*, so toggling the theme leaves the chart line
   in the old theme's ink until the next reload. Pre-existing, and unrelated to the container change
   above. Confirmed in the browser: a clean load is correct in both themes; only a live toggle is
@@ -189,7 +210,13 @@ value, and a clean load draws dark-on-cream).
   was invisible (the `--white` remap above), and the card's darkness was unwanted. **Decision: the
   reel card follows the theme.** Recorded as a deviation in the ledger. Verified in the browser at
   both themes after the change.
-- **Not yet reviewed by the user:** `/portfolio`, the toast, the Tutorial. The Tutorial *was*
+- **Not yet reviewed by the user:** `/portfolio` (now with settled rows, §03 "Your record", the
+  Trader Edge link), `/portfolio/edge`, `/leaderboard`, the toast, the Tutorial. Two placements are
+  ours and flagged in the ledger's decision log for review: reputation/badges/equity/CSV mounted under
+  `/portfolio` §03 (the reference computes them there but its pinned JSX never mounts them), and
+  reputation without the reference's per-tier bonus/fee percentages (no contract pays either). The
+  fill-projection surfaces were inspected in the browser at 1280 and 390 in both themes via
+  `/dev/history` before commit. The Tutorial *was*
   inspected in the browser at both themes and at 390 before commit — a brand-new modal on a
   flipping surface is the exact bug class the four gates miss, and that check is what caught the
   two light-mode defects above. The user's `masayume.tutorialSeen` was left unset, so it opens on

@@ -30,6 +30,12 @@ order", never "optional" or "cut".
 |---|---|---|---|---|
 | 2026-09-01 | Pin confirmed at `3c56ef5`; upstream fetched, zero drift | doc 00 §Pinned reference basis | None — no version mixing | Verified, no approval needed |
 | 2026-09-01 | Yosuku source, CSS, tokens and assets reused verbatim | doc 00 §Source and provenance gaps item 2 | Exact visual fidelity | **User approved** (owns/has permission) |
+| 2026-09-02 | The fill projection is derived in the browser from the wallet's indexed fills and complete-set actions, settled by the chain's own rule; no database, no credential | doc 03 §Equity/PnL "rebuildable event/fill projection", doc 02 §Data ownership | Settled history, equity, PnL, Trader Edge and badges all read one reading | Verified against chain balances (see §Fill projection), no approval needed |
+| 2026-09-02 | A sell beyond inventory is booked as a buy of the complement (a collateral-backed short) | Chain evidence: the indexer labels it a plain sell, the wallet ends up holding the other side | An open short reads as the side actually held; the venue's own PnL engine drops it | Verified on 89 settled markets across 4 active wallets |
+| 2026-09-02 | Whether a payout was collected is read from the live ERC-6909 balance, never inferred | The indexer exposes no per-wallet redemption record for settlement-contract redeems | "collected" / "to collect" / "collection unread" on each settled row | No approval needed — a guessed "paid" would hide money |
+| 2026-09-02 | Reputation tiers ported without the reference's per-tier bonus % and fee % | `lib/predictionContract.ts` TIERS | Tier, record and progress shown; no bonus or fee promised | **Needs user review** — no contract pays either |
+| 2026-09-02 | Reputation, badges, the equity curve and CSV export are mounted on `/portfolio` §03 "Your record" | The reference computes all four on its portfolio page (`computeBadges`, `fetchReputation`, `equityRef`, `positionsToCSV`) but its pinned JSX mounts none of them; `BadgeDisplay` has no render site | A surface the reference wrote but never showed | **Needs user review** — placement is ours, components are the reference's |
+| 2026-09-02 | `/leaderboard` is computed server-side from the indexer's fill tape over a rolling day, cached three minutes in memory; the doc-03 "DB projection" is deferred as an optimisation of the same derivation | doc 03 §Leaderboard; reference route's own 24h scope and cache | Venue-wide board, no credential needed | No approval needed — the derivation is unchanged, only the store |
 | 2026-09-01 | `globals.css` split into <400-line modules, values byte-identical; `design-literals` rescoped for ported presentation | repo invariants vs doc 02 §Source-led shell | None — split verified by concatenation diff | **User approved** |
 | 2026-09-01 | Native mobile remains `Blocked` | doc 00 §Source and provenance gaps item 1 | `/download` native buttons show a truthful blocked state | Architecture default |
 | 2026-09-01 | **Truth correction** — AppStrip advertised "Yosuku is on iOS". Masayume has no native build, so the claim would be false. Mechanism kept (it owns `--appstrip`, which every fixed offset derives from); copy is now "Masayume installs as a web app" / "Somnia testnet — test funds only", both true | doc 00 allowed deviation 4 | Strip promises an installable PWA, which exists, instead of an iOS app, which does not | Deviation class pre-approved |
@@ -370,13 +376,67 @@ that read the market pipeline are connected here; everything else keeps a named 
 | Row links back to its market | — | `BetRow.tsx` | Improved | **Done** — the deep-link grammar, as on the reel |
 | Leverage column (`1.0×`) | L452 | — | Deviation | **Recorded** — Stage 5; a `1×` on every row is a number pretending to be a choice |
 | Claimables / "collect now" | L457–470 | existing `claims/LiveClaimPlate` | Adapted | **Done** — already live on `/claims`, mounted here as §02 |
-| Settled history, receipts, equity curve, reputation, badges, CSV export | L486–512 | — | — | Pending — Stage 3 (fill projection) |
-| Trader Edge link | `TraderEdgeLink` | — | — | Pending — Stage 3 |
+| Settled history, receipts, equity curve, reputation, badges, CSV export | L486–512 | `features/markets/history/*` | Adapted | **Done** — see §Fill projection |
+| Trader Edge link | `TraderEdgeLink` | `history/TraderEdgeLink.tsx` | Exact | **Done** |
 | Creator earnings, X wallet card | L318–329 | — | — | Pending — Stage 3–4 |
 | Trading Balance vault (deposit/withdraw/sweep, private withdrawal) | L51–58 | — | — | Pending — Stage 4 (`EventVault`) |
 | Copy-trading desk, leverage panel | L520+, `LeveragePortfolioPanel` | — | — | Pending — Stage 5 |
 
 ---
+
+### Fill projection — settled history, Trader Edge, leaderboard (Stage 3, done 2026-09-02)
+
+One derivation feeds every pending Portfolio surface at once. `packages/core/src/projection/` replays a
+wallet's indexed fills (`getUserFills`, paged) and complete-set router actions (`getRouterActions`,
+paged) oldest-first into one ledger per Window (`ledger.ts`), settles each closed Window by the chain's
+own rule (`settle.ts`, reusing `estPayoutBase`), and derives the equity curve, drawdown and streaks
+(`equity.ts`), the Trader Edge report (`edge.ts`), reputation (`reputation.ts`), badges (`badges.ts`),
+rankings (`leaderboard.ts`) and the CSV (`csv.ts`). `packages/markets/src/provider/history.ts` is the
+port read (`listWalletHistory`, `useWalletHistory`); `provider/board.ts` runs the same replay venue-wide.
+
+**Verified against the chain, not assumed** (spike `fill-projection-verify.ts`, 2026-09-02): for four
+active wallets, 89 settled markets — 61 reconstructed balances match the ERC-6909 balance exactly, 27
+differ only by the redeemed winning leg being zero, 1 differs by a zero-value losing leg that was
+burned. Money is exact on all 89.
+
+Three facts about the venue this had to learn, kept because they explain the code's shape:
+
+- **A sell beyond inventory is a short.** The pool backs it with collateral and hands the seller the
+  complement; the indexer labels the fill a plain sell. Three of the probe wallet's markets read as
+  "−5,000,000 UP" until the rule was added. The SDK's own `computePositionPnL` clamps that sell to zero
+  and drops the DOWN position — so `getOpenPositionsWithPnL` (the open-bets rows) cannot show an open
+  short. Recorded, not patched: the open rows keep the venue's numbers by the earlier decision.
+- **Redemptions leave no per-wallet record the indexer exposes.** `getRouterActions` covers the
+  RouterMinter only; `trader.redeem` calls the settlement contract directly. Whether a payout was
+  collected is therefore read from the live balance, batched in one `getBalances`, and an unreadable
+  balance is `unknown`, never `paid`.
+- **The indexer pages at 1,000.** The busiest wallet on the venue is a bot past both caps. The
+  reading pages five deep and flips `complete` false beyond that, and every surface says so.
+
+| Element | Reference | Destination | Class | Status |
+|---|---|---|---|---|
+| Settled rows: outcome word · paid X · ago · Receipt ↗ · tx ↗ | `Portfolio624Section` L486–512 | `history/HistoryRow.tsx`, `HistoryRows.tsx` | Adapted | **Done** — plus the net figure (the row's only P&L ink), the claim state, and "sold short" when a short was booked |
+| Receipt modal (one open at a time, overlay/Esc/scroll-lock) | `TradeReceipt` | `history/HistoryReceipt.tsx` (Sheet) + existing `VerdictCard` | Adapted | **Done** — the same Verdict the live window stamps, from `toVerdict(round)` |
+| Eight rows then more | `HISTORY_ROWS = 8` | `HistoryRows.tsx` | Exact | **Done** |
+| Equity curve | `EquitySparkline.tsx` (mounted only in `LiveDesk`); `equityRef` effect on the portfolio page | `history/EquitySparkline.tsx` | Exact | **Done** — colours in `history.css`; below zero muted, never red |
+| Reputation | `getReputationData` TIERS | `history/ReputationPanel.tsx` | Adapted | **Done** — tier, record, progress; bonus/fee % dropped (decision log) |
+| Badges | `BadgeDisplay.tsx`, `computeBadges` | `history/BadgeGrid.tsx` | Exact layout | **Done** — LP Provider locked, "Needs Earn (Stage 5)" |
+| CSV export | `csvExport.ts` (imported, never mounted) | `history/useCsvDownload.ts` | Adapted | **Done** — built in the browser from the rows shown |
+| Trader Edge link | `TraderEdgeLink.tsx` + module CSS | `history/TraderEdgeLink.tsx`, `trader-edge-link.css` | Exact | **Done** |
+| `/portfolio/edge` — intro, connect / reading / failed / none / report states | `app/portfolio/edge/page.tsx` | `features/edge/*`, `edge.css`, `edge-report.css` | Exact structure; adapted facts | **Done** — framer-motion entrance as a CSS keyframe honouring reduced motion |
+| Curve, readout, four metrics, time-of-day split bars, payoff, provenance | same + `traderEdge729.ts` | `core/projection/edge.ts`, `features/edge/Edge*.tsx` | Adapted | **Done** — "Fees paid" is **settlement fees** (exact); maker/taker fees are not on the fill row and are not guessed |
+| `/leaderboard` — hero, filter bar, podium, banzuke, you-bar, loading/empty | `app/leaderboard/page.tsx` | `features/leaderboard/*` | Exact (classes already in part-07..09) | **Done** — light-mode hairlines in `leaderboard-theme.css` (the reference's board has the same cream defect) |
+| Board computed server-side, 24h, cached | `app/api/leaderboard/route.ts` | `api/leaderboard/route.ts`, `markets/provider/board.ts` | Adapted | **Done** — venue-wide as the reference's final rule; no protocol-account exclusion list exists here yet |
+| Asset tabs (BTC only) | L163–166 | `LeaderboardBoard.tsx` | Adapted | **Done** — "All assets", since the venue lists BTC and ETH lanes |
+| "Next market closes in" | `fetchMarkets624` poll | `LeaderboardScreen.tsx` via `useLanes` | Improved | **Done** — the same live lanes the markets page holds |
+| Fixtures | — | `/dev/history` | — | **Done** — every state from canned rounds |
+
+**Honesty constraints applied:** a capped history says so above its rows and on the report; the board's
+meta says "partial day" when a scan was cut short; no bonus %, no fee %, no maker/taker fee estimate;
+the board never claims a payout was collected (no live balance on a venue scan).
+
+**Known, not fixed:** the venue's PnL engine drops open shorts (above). Trading fees beyond the
+settlement skim are not shown. `/agents` still waits on the `StrategyRegistry` alone.
 
 ## Product shell
 
@@ -407,12 +467,12 @@ Portfolio and More all remain.
 | `/markets` | `app/markets/page.tsx` | Adapted to DreamDEX | DreamDEX indexer + RPC | **Partial** — real lanes/book/lifecycle/ticket live, Yosuku hero-as-ticket ported (see Stage 2 above), first-run Tutorial, §02 word board, §01 chart card, Sensei and the Room live — all four Stage 3 slots closed |
 | `/markets/[id]` | `app/markets/[id]/page.tsx` | Exact redirect intent | — | **Done** — redirect |
 | `/reels` | `app/reels/page.tsx` | Adapted | Shared market stream | **Live** — see §`/reels` |
-| `/portfolio` | `app/portfolio/page.tsx` | Adapted | Chain/indexer projection | **Partial** — money, open bets and claimables live; see §`/portfolio` |
-| `/portfolio/edge` | `app/portfolio/edge/page.tsx` | Adapted | Real fills incl. losses/voids | **Shell** — honest dependency state |
-| `/leaderboard` | `app/leaderboard/page.tsx` | Adapted | DB projection from verified outcomes | **Shell** — honest dependency state |
+| `/portfolio` | `app/portfolio/page.tsx` | Adapted | Chain/indexer projection | **Partial** — money, open bets, claimables, settled history, equity, reputation, badges and CSV live; creator earnings, X wallet and the vault pending |
+| `/portfolio/edge` | `app/portfolio/edge/page.tsx` | Adapted | Real fills incl. losses/voids | **Done** — see §Fill projection |
+| `/leaderboard` | `app/leaderboard/page.tsx` | Adapted | Fill projection over the venue tape (DB store deferred) | **Done** — see §Fill projection |
 | `/earn` | `app/earn/page.tsx` | Adapted via `MarketMakerVault` | Masayume contract | **Shell** — honest dependency state (Stage 5) |
 | `/strategies` | `app/strategies/page.tsx` | Adapted | `StrategyRegistry` + DB | **Shell** — honest dependency state (Stage 4) |
-| `/agents` | `app/agents/page.tsx` | Adapted | Registry + fill projection | **Shell** — honest dependency state (Stage 4) |
+| `/agents` | `app/agents/page.tsx` | Adapted | Registry + fill projection | **Shell** — waits on the `StrategyRegistry` alone now (Stage 4) |
 | `/parlay` | `app/parlay/page.tsx` | Adapted via `ParlayReserve` | Masayume contract | **Shell** — honest dependency state (Stage 5) |
 | `/surface` | `app/surface/page.tsx` | Adapted — real DreamDEX structures, not SVI | DreamDEX book/term structure | **Shell** — honest dependency state (Stage 5) |
 | `/trade-from-x` | `app/trade-from-x/page.tsx` | Adapted | X provider + `EventVault` grant | **Shell** — honest dependency state (Stage 4) |
@@ -467,7 +527,7 @@ Tracked separately so the route table cannot hide a missing capability.
 | Rooms / comments | **Done** | Position-gated, signature-authenticated, over `packages/db`; honest when unconfigured |
 | Social takes, sharing, alerts, news/ticker, X linking | Pending | Stage 3–4 |
 | Trading Balance with labeled pools | **Partial** | Balance plate + labeled pools exist; `EventVault` pending |
-| Positions, PnL, history, equity, reputation, badges, Trader Edge | **Partial** | Open positions with the venue's own PnL live on `/portfolio`; history, equity, reputation, badges and Trader Edge are Stage 3 |
+| Positions, PnL, history, equity, reputation, badges, Trader Edge | **Done** | Open positions off the venue's PnL; history, equity, PnL, reputation, badges, CSV and Trader Edge off the fill projection; the leaderboard off the same replay venue-wide |
 | Earn, parlays, strategies, creators, agents, playbooks | Pending | Stage 4–5 |
 | Assistant (Sensei) | **Done** | Claude-backed; honest unconfigured state, lights up on `ANTHROPIC_API_KEY` |
 | Faucet, account setup, recovery, smart-wallet session, revocation | **Partial** | Faucet live; rest Stage 4 |

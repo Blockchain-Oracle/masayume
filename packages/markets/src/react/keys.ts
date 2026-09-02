@@ -17,6 +17,8 @@ export const keys = {
   /** Nested under the wallet's positions so one invalidation after a write refreshes both. */
   holdings: (wallet: string | null, marketId: string | null) => [QUERY_KEY_SCOPE, APP, "positions", wallet, "holdings", marketId] as const,
   claimables: (wallet: string | null, venueId: Bytes32 | null) => [QUERY_KEY_SCOPE, APP, "claimables", wallet, venueId] as const,
+  /** The fill projection: settled rounds, equity, stats — one key, so a claim or an order refreshes all of it. */
+  history: (wallet: string | null) => [QUERY_KEY_SCOPE, APP, "history", wallet] as const,
   balanceSheet: (wallet: string | null) => [QUERY_KEY_SCOPE, APP, "balanceSheet", wallet] as const,
   nextWindow: (marketId: MarketId | null) => [QUERY_KEY_SCOPE, APP, "nextWindow", marketId] as const,
   clock: () => [QUERY_KEY_SCOPE, APP, "clock"] as const,

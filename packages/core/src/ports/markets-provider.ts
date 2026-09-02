@@ -1,3 +1,4 @@
+import type { WalletHistory } from "../projection/types";
 import type { Reading } from "../schemas/reading";
 import type { AssetPrice, ClockSync, PricePoint, Resolution } from "../types/feeds";
 import type { EventMarket, LaneSet, MarketId, OnchainSnapshot, Side } from "../types/market";
@@ -32,6 +33,8 @@ export interface MarketsProvider {
   listOpenPositions(wallet: Address): Promise<Reading<OpenPosition[]>>;
   getHoldings(wallet: Address, onchain: OnchainSnapshot): Promise<Reading<Holdings>>;
   listClaimables(wallet: Address, venueId: Bytes32): Promise<Reading<ClaimableRow[]>>;
+  /** Every settled Window for a wallet, replayed from its fills — the one derivation history, PnL and Trader Edge share. */
+  listWalletHistory(wallet: Address): Promise<Reading<WalletHistory>>;
   getBalanceSheet(wallet: Address): Promise<Reading<BalanceSheet>>;
   syncClock(): Promise<Reading<ClockSync>>;
   /** Chain-offset-corrected wall clock; raw device time never drives a phase. */

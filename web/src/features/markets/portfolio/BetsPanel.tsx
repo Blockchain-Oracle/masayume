@@ -9,25 +9,29 @@ import { SectionHeader } from "@/components/chrome";
 import { ReadingBoundary } from "@/components/states";
 import { PORTFOLIO } from "@/lib/copy";
 import { useWalletSession } from "@/lib/wallet-session";
+import { HISTORY, HistoryRows, type HistoryReading } from "../history";
 import { useChainNowMs } from "../useChainNow";
 import { BetRow } from "./BetRow";
 
 interface BetsPanelProps {
   symbol: string | undefined;
   index: string;
+  history: HistoryReading;
 }
 
 const isEmpty = (rows: OpenPosition[]) => rows.length === 0;
 
 /**
- * Your open bets, straight off `getOpenPositionsWithPnL` — the venue's own cost
- * basis, mark value and unrealised PnL, not a figure recomputed here.
+ * Your bets: the open ones straight off `getOpenPositionsWithPnL` — the venue's own cost basis,
+ * mark value and unrealised PnL — then, as the reference lists them in the same panel, every
+ * settled Window from the fill projection.
  *
- * The reference lists settled history in the same panel. That needs the fill
- * projection (Stage 3), so this panel is open bets only and says as much rather
- * than showing an empty "history" heading that will never fill on its own.
+ * Two sources on purpose. The venue's engine clamps a sell beyond inventory to zero and drops
+ * the complement, so an open short would read as no position; the projection books it as the
+ * other side (verified against chain balances). A settled row therefore never depends on the
+ * open-position engine, and the two cannot disagree about a Window that has closed.
  */
-export function BetsPanel({ symbol, index }: BetsPanelProps) {
+export function BetsPanel({ symbol, index, history }: BetsPanelProps) {
   const { address } = useWalletSession();
   const nowMs = useChainNowMs();
   const reading = usePositions(address);
@@ -35,20 +39,29 @@ export function BetsPanel({ symbol, index }: BetsPanelProps) {
   const retry = () => {
     if (address) void queryClient.invalidateQueries({ queryKey: keys.positions(address) });
   };
-  const count = reading && isOk(reading) ? reading.value.length : null;
+  const openCount = reading && isOk(reading) ? reading.value.length : null;
+  const settledCount = history.reading?.ok ? history.reading.value.rounds.length : null;
 
   return (
     <section className="flex flex-col gap-4" aria-label={PORTFOLIO.betsTitle}>
       <SectionHeader
         index={index}
         title={PORTFOLIO.betsTitle}
-        aside={count === null ? undefined : <span className="type-label-micro text-ink-muted">{PORTFOLIO.openBets(count)}</span>}
+        aside={
+          openCount === null && settledCount === null ? undefined : (
+            <span className="type-label-micro text-ink-muted">
+              {openCount !== null && PORTFOLIO.openBets(openCount)}
+              {openCount !== null && settledCount !== null && " · "}
+              {settledCount !== null && HISTORY.settledCount(settledCount)}
+            </span>
+          )
+        }
       />
       <ReadingBoundary
         reading={reading}
         shape="row"
         retry={retry}
-        isEmpty={isEmpty}
+        isEmpty={(rows) => isEmpty(rows) && (history.reading?.ok ? history.reading.value.rounds.length === 0 : false)}
         empty={{ why: PORTFOLIO.noBets, nextAction: { label: PORTFOLIO.firstCall, href: "/markets" } }}
       >
         {(positions) => (
@@ -59,7 +72,7 @@ export function BetsPanel({ symbol, index }: BetsPanelProps) {
           </ul>
         )}
       </ReadingBoundary>
-      <p className="type-caption text-ink-muted">{PORTFOLIO.historyPending}</p>
+      <HistoryRows history={history} symbol={symbol} />
       <Link href="/markets" data-cursor="hover" className="type-caption text-accent">
         {PORTFOLIO.toMarkets} →
       </Link>

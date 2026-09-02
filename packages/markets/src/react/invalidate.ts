@@ -14,6 +14,7 @@ export async function invalidateAfterWrite(queryClient: QueryClient, { wallet, m
   const families = [
     keys.balanceSheet(wallet),
     keys.positions(wallet),
+    keys.history(wallet),
     claimablesForWallet,
     ...(marketId ? [keys.onchain(marketId), keys.market(marketId)] : []),
   ];

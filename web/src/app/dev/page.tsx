@@ -9,6 +9,7 @@ const FIXTURES = [
   { href: "/dev/balance", label: "Balance plate", note: "every money state from canned sheets, then live" },
   { href: "/dev/verdict", label: "Verdict", note: "win, loss, void, both-sides-net, then live (?m=)" },
   { href: "/dev/claims", label: "Claim-all", note: "idle plate, mid-run progress, success receipt, then live" },
+  { href: "/dev/history", label: "Fill projection", note: "settled rows, record, Trader Edge and leaderboard from canned rounds" },
   { href: "/dev/port", label: "Chain port", note: "live lanes as Reading<LaneSet>, venue and clock" },
   { href: "/dev/boot", label: "Boot check", note: "zero-env round-trip to the Shannon indexer" },
 ] as const;

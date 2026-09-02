@@ -3,6 +3,7 @@ export * from "./constants";
 export * from "./lifecycle";
 export * from "./market";
 export * from "./ports";
+export * from "./projection";
 export * from "./schemas";
 export * from "./sizing";
 export * from "./types";

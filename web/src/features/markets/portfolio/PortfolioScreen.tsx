@@ -7,6 +7,7 @@ import { BALANCE, CLAIM, PORTFOLIO } from "@/lib/copy";
 import { useWalletSession } from "@/lib/wallet-session";
 import { BalancePlate } from "../balance";
 import { LiveClaimPlate } from "../claims";
+import { RecordSection, TraderEdgeLink, useHistoryReading } from "../history";
 import { useVenue } from "../useVenue";
 import { BetsPanel } from "./BetsPanel";
 
@@ -24,8 +25,9 @@ import { BetsPanel } from "./BetsPanel";
  * reverse, exactly the "one card, two backgrounds" defect the reference's own
  * `.plate-rows` remap exists to fix.
  *
- * Everything the reference shows that needs a capability we have not built — the
- * settled history and equity curve, reputation and badges, Trader Edge, creator
+ * The settled history, the equity curve, reputation and badges read the fill
+ * projection (`useWalletHistory`), and the Trader Edge link opens the report built
+ * from the same reading. What still needs a capability we have not built — creator
  * earnings, the X wallet, the Trading Balance vault — keeps a named dependency
  * state instead of a plausible-looking panel.
  */
@@ -33,6 +35,7 @@ export function PortfolioScreen() {
   const { address } = useWalletSession();
   const { boot } = useVenue();
   const symbol = boot && isOk(boot) ? boot.value.collateral.symbol : undefined;
+  const history = useHistoryReading();
 
   if (!address) {
     return (
@@ -48,7 +51,9 @@ export function PortfolioScreen() {
       {/* No page headline: the balance is the header (reference L266). */}
       <BalancePlate />
 
-      <BetsPanel symbol={symbol} index="01" />
+      <TraderEdgeLink />
+
+      <BetsPanel symbol={symbol} index="01" history={history} />
 
       <section className="flex flex-col gap-4" aria-label={PORTFOLIO.collectTitle}>
         <SectionHeader index="02" title={PORTFOLIO.collectTitle} />
@@ -56,8 +61,9 @@ export function PortfolioScreen() {
         <LiveClaimPlate />
       </section>
 
+      <RecordSection history={history} symbol={symbol} index="03" />
+
       <section className="flex flex-col gap-2 border-t border-hairline pt-4">
-        <p className="type-caption text-ink-muted">{PORTFOLIO.edgePending}</p>
         <p className="type-caption text-ink-muted">{PORTFOLIO.vaultPending}</p>
       </section>
     </div>

@@ -25,6 +25,7 @@ export {
   usePositions,
   usePriceHistory,
   useResolution,
+  useWalletHistory,
 } from "./useReads";
 export { invalidateAfterWrite, type WriteScope } from "./invalidate";
 export { useStakeQuote, type StakeQuoteInput } from "./useStakeQuote";

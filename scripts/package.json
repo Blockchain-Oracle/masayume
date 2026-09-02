@@ -13,7 +13,10 @@
     "spike:smoke-order": "tsx spike/smoke-order.ts",
     "spike:check-claimables": "tsx spike/check-claimables.ts",
     "spike:smoke-verdict": "tsx spike/smoke-verdict.ts",
-    "spike:reel-rounds": "tsx spike/reel-rounds.ts"
+    "spike:reel-rounds": "tsx spike/reel-rounds.ts",
+    "spike:fill-projection": "tsx spike/fill-projection.ts",
+    "spike:fill-projection-verify": "tsx spike/fill-projection-verify.ts",
+    "spike:fill-projection-live": "tsx spike/fill-projection-live.ts"
   },
   "dependencies": {
     "@masayume/core": "workspace:*",

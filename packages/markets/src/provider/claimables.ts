@@ -6,21 +6,12 @@ import { getClient } from "../runtime/read-runtime";
 import { bigintOf, lowerAddress, numberOf } from "../mappers/scalars";
 import { settlementFeeBps } from "./fees";
 import { SETTLED_STATUSES } from "./markets";
-import { getOnchain } from "./onchain";
-import { withReading, type Unwrap } from "./reading";
+import { resolveOutcomeToken } from "./outcome-token";
+import { withReading } from "./reading";
 
 interface SettledPosition {
   market: SettledMarket;
   tokenIds: { up: bigint | null; down: bigint | null };
-}
-
-let outcomeToken: Address | null = null;
-
-/** OutcomeToken6909 is one singleton for every market; learn its address from any market once. */
-async function resolveOutcomeToken(inner: Unwrap, marketId: MarketId): Promise<Address> {
-  if (outcomeToken) return outcomeToken;
-  outcomeToken = inner(await getOnchain(marketId)).outcomeToken;
-  return outcomeToken;
 }
 
 function toSettledMarket(market: PortfolioMarket): SettledMarket {

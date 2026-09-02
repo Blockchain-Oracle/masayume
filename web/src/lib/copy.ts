@@ -221,9 +221,8 @@ export const PORTFOLIO = {
   bothSides: "UP + DOWN",
   toMarkets: "Go to Markets",
   collectTitle: "To collect",
-  /** Stage 3 stands up the settled-history and PnL projection; Stage 4 the vault and X wallet. */
-  historyPending: "Settled history, the equity curve and reputation arrive with the fill projection (Stage 3).",
-  edgePending: "Trader Edge reads that same projection — it opens with it (Stage 3).",
+  recordTitle: "Your record",
+  /** Stage 4 brings the vault and the X wallet. */
   vaultPending: "The Trading Balance and its bounded grants arrive with EventVault (Stage 4).",
 } as const;
 

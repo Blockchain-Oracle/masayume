@@ -1,14 +1,8 @@
 import type { Metadata } from "next";
-import { CapabilityPending } from "@/components/shell";
+import { LEADERBOARD, LeaderboardScreen } from "@/features/leaderboard";
 
-export const metadata: Metadata = { title: "Leaderboard" };
+export const metadata: Metadata = { title: LEADERBOARD.title };
 
 export default function Page() {
-  return (
-    <div className="container">
-      <CapabilityPending eyebrow="Reputation" title="Leaderboard" dependency="the verified outcome projection (Stage 3)">
-        <p>A banzuke-style ranking built from complete verified outcome history. Losses cannot disappear from it — a ranking you can only climb is not a ranking.</p>
-      </CapabilityPending>
-    </div>
-  );
+  return <LeaderboardScreen />;
 }

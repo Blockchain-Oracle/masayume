@@ -1,4 +1,5 @@
 export * from "./book";
+export * from "./fill";
 export * from "./market";
 export * from "./onchain";
 export * from "./position";

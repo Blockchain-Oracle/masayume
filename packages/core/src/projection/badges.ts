@@ -1,0 +1,45 @@
+import { oneUnit } from "../units/decimals";
+
+export type BadgeId = "first_trade" | "winning_streak" | "lp_provider" | "whale" | "oracle";
+
+export interface Badge {
+  id: BadgeId;
+  earned: boolean;
+  /** Set when the badge's source is a capability that is not connected yet; it stays locked and says why. */
+  pending: "earn" | null;
+}
+
+export interface BadgeInput {
+  fillCount: number;
+  currentWinStreak: number;
+  /** Everything ever staked, base units. */
+  stakeBase: bigint;
+  decidedRounds: number;
+  /** 0..1 */
+  winRate: number;
+  decimals: number;
+}
+
+/** The reference's thresholds (`lib/badges.ts`): a 3-win run, 1,000 units traded, 70% over ten decided rounds. */
+export const BADGE_RULES = {
+  streak: 3,
+  whaleUnits: 1_000n,
+  oracleWinRate: 0.7,
+  oracleRounds: 10,
+} as const;
+
+/**
+ * Five badges, in the reference's order. "LP Provider" reads the Earn vault, which is Stage 5:
+ * it is listed locked with its dependency named rather than dropped, because a missing badge
+ * looks like a badge you failed to earn.
+ */
+export function computeBadges(input: BadgeInput): Badge[] {
+  const whaleFloor = BADGE_RULES.whaleUnits * oneUnit(input.decimals);
+  return [
+    { id: "first_trade", earned: input.fillCount > 0, pending: null },
+    { id: "winning_streak", earned: input.currentWinStreak >= BADGE_RULES.streak, pending: null },
+    { id: "lp_provider", earned: false, pending: "earn" },
+    { id: "whale", earned: input.stakeBase >= whaleFloor, pending: null },
+    { id: "oracle", earned: input.decidedRounds >= BADGE_RULES.oracleRounds && input.winRate >= BADGE_RULES.oracleWinRate, pending: null },
+  ];
+}
