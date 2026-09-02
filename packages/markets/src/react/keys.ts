@@ -22,6 +22,10 @@ export const keys = {
   /** The Trading Balance and its grants; holdings nest under it so one invalidation refreshes both. */
   vault: (wallet: string | null) => [QUERY_KEY_SCOPE, APP, "vault", wallet] as const,
   vaultHoldings: (wallet: string | null, marketId: string | null) => [QUERY_KEY_SCOPE, APP, "vault", wallet, "holdings", marketId] as const,
+  /** The reserve's own sheet, and one wallet's tickets. */
+  parlayReserve: () => [QUERY_KEY_SCOPE, APP, "parlayReserve"] as const,
+  parlays: (wallet: string | null) => [QUERY_KEY_SCOPE, APP, "parlays", wallet] as const,
+  parlayQuote: (signature: string) => [QUERY_KEY_SCOPE, APP, "parlayQuote", signature] as const,
   balanceSheet: (wallet: string | null) => [QUERY_KEY_SCOPE, APP, "balanceSheet", wallet] as const,
   nextWindow: (marketId: MarketId | null) => [QUERY_KEY_SCOPE, APP, "nextWindow", marketId] as const,
   clock: () => [QUERY_KEY_SCOPE, APP, "clock"] as const,

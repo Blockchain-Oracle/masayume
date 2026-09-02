@@ -18,6 +18,7 @@ const FIXTURES = [
   { href: "/dev/x", label: "X rail", note: "the X-Predict wallet card in every link state, the claim ticket, receipts of every status" },
   { href: "/dev/session", label: "Session key", note: "tap-trading chip, manager, route control, enable sheet — canned states, then live" },
   { href: "/dev/vault", label: "Trading Balance", note: "every vault state from canned readings, the pool row, open vault bets, then live" },
+  { href: "/dev/parlay", label: "Parlay", note: "every slip card and every ticket state from canned readings; the builder is live on /parlay" },
 ] as const;
 
 export default function DevIndexPage() {

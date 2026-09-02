@@ -11,11 +11,11 @@ Start here, then read `parity-ledger.md`. The authority package is
 
 ## Where we are
 
-Branch **`feat/yosuku-source-led-shell`** off `main` (`497b43a`). **Stages 2 and 3 are closed. Stage 4 is
-in progress (2026-09-02, fourth session): `EventVault` is written, fork-verified against Shannon's real
-contracts and ported into the chain port; the four surface slices (Trading Balance on `/portfolio`,
-session-key tap trading + sponsor relay, `StrategyRegistry` + runner + `/strategies` `/agents`, the X
-rail) were built by parallel forks — see §Stage 4 below for what landed and what waits on the owner.**
+Branch **`feat/yosuku-source-led-shell`** off `main` (`497b43a`). **Stages 2 and 3 are closed. Stage 4 is live
+on Shannon (`EventVault`, the forwarder, `StrategyRegistry` — §Stage 4 records what the user has and has not
+reviewed). Stage 5 is in progress (2026-09-02, sixth session): item 1, `ParlayReserve` + `/parlay`, is deployed,
+supplied with 5,000 tUSDC and driven through the adapter on a fork and live — §Stage 5. Next is item 2,
+`RangeReserve`.**
 
 | Commit | What |
 |---|---|
@@ -41,9 +41,10 @@ rail) were built by parallel forks — see §Stage 4 below for what landed and w
 | `a970be7` | Stage 4 — `EventVault` contract, fork-verified on Shannon (context/41) |
 | `bb1180a` | Stage 4 — the vault in the chain port: reads, second write lane, the order route's third dimension |
 | `cd069c7`, `ec32a7e` | Stage 4 — seams for the parallel slices; caps golden vectors beside `simulateCaps` |
+| (this session) | Stage 5 — `ParlayReserve` contract, port, `/parlay` from source, fork-verified; deployed and supplied on Shannon, the adapter driven live (context/42) |
 
-Everything is green: `pnpm typecheck`, `pnpm invariants` (12/12), `pnpm test` (58),
-`pnpm build`. Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
+Everything is green: `pnpm typecheck`, `pnpm invariants` (12/12, 0 warnings), `pnpm test` (99),
+`forge test --no-match-contract Fork` (72), `pnpm build`. Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
 
 **Never touch or commit** the untracked `context/screens/` and `prompt.md`. They are the user's.
 
@@ -269,14 +270,49 @@ Still pending from the owner: the X app credentials (`X_CLIENT_ID`, `X_SESSION_S
 executor key) and a `SPONSOR_PRIVATE_KEY`; a `RUNNER_PRIVATE_KEY` + `STRATEGY_IDS` to run the strategy
 runner; STT for the demo user's own live runs (it holds 1 STT).
 
-## Next — Stage 5
+## Stage 5 — in progress
 
-Per doc 05 §Stage 5, product contracts around DreamDEX, in this order (the vault and registry are the
-pattern: Foundry + fork test + `contracts/export.mjs` + a `packages/markets` adapter + the reference's
-surface ported from source):
-1. `ParlayReserve` — escrow, immutable legs, maximum payout, settlement, void/refund rules; `/parlay`
-   (reference `app/parlay/page.tsx`, Move `parlay624.move`, `lib/sui/parlayClient.ts`). Reads leg prices
-   from the on-chain book inside the opening tx (AD-10).
+**1. `ParlayReserve` + `/parlay` — built 2026-09-02 (fifth session), fork-verified; deployed on Shannon and
+supplied on the owner's go (sixth session, same day).** Read the ledger's §ParlayReserve first; the decisions
+and the reference-vs-ours tables are there. What is where:
+- `contracts/src/parlay/` — `IParlayReserve` (vocabulary), `ParlayMath` (pure: VWAP, the same-instant
+  correlation floor, the ceiling-rounded stake floor), `ParlayPricing` (the venue seam: `previewOpen`,
+  `previewLegPrice`, params, pause, admin), `ParlayReserve` (supply/withdraw shares, `openParlay`,
+  `resolveLeg`, `claim`, views with `parlaysOf` paging). 25 forge tests over a per-Window mock
+  (`test/mocks/MockWindows.sol` — the one-market `MockVenue` cannot price two legs) plus the shared golden
+  vectors (`ParlayVectors.t.sol` ↔ `packages/core/src/parlay/pricing.test.ts` over `pricing.vectors.json`).
+  `forge test --no-match-contract Fork`: 72 pass. Fork: `SHANNON_FORK_URL=… FORK_MARKET_IDS=<a>,<b> forge test
+  --match-contract ParlayReserveFork -vv` (context/42).
+- **Leg pricing is the book's, in-transaction** (the reference's named gap, closed): UP takes the YES asks,
+  DOWN takes the YES bids inverted, cost-weighted over `max(priceDepthRaw, maxPayout)` contracts, rounded up;
+  thinner than that refuses `ThinBook`. So a bigger payout gets a worse price on a thin book — by design.
+- `@masayume/core/parlay` (types, `quoteParlay`, `maxPayoutForStake`), `@masayume/markets/parlay`
+  (deployment with `PARLAY_RESERVE_ADDRESS` fork override, `getParlayReserveState`, `listParlaysOf`,
+  `previewParlayOpen`, `quoteParlayOnchain`, `submitParlayTx`, `submitParlayOpen` → `parlayId` + `requote`),
+  `ParlayIntent` on the tx lane, a `parlay` gas lane (6M; on Shannon a two-leg open measured 3,919,971 and a crank 125,421), a `requote` diagnosis kind,
+  `useParlayReserve` / `useMyParlays` hooks, `SubmitterSession.contracts` exposed for the spike.
+- `web/src/features/parlay/` — the reference's page, builder and slip from source; `components/shell/SectionHead.tsx`
+  is the reference's own `SectionHeader` verbatim (use it for the next ported page); `/dev/parlay` fixtures.
+  **Not seen in a browser** — verified by typecheck, invariants (0 warnings), 99 vitest, 72 forge, build.
+- `scripts/spike/parlay-fork.ts` (`pnpm --filter @masayume/scripts spike:parlay-fork`) drives the adapter on a
+  fork: supply → chain quote → open → slip read → warp + void → crank → refund. Env in its header. **Ran 2026-09-02**
+  on an Anvil fork of Shannon that already held the live reserve (no `DEPLOY_TAG=anvil` deploy needed any more;
+  `anvil_setBalance` the house to cover the parlay lane's 0.43 STT envelope, `SKIP_FAUCET=1` because the deployer
+  holds tUSDC): a 5.00 stake for 17.88 over UP 0.371 × DOWN 0.673 on two Windows sharing an instant, the void
+  refunding the stake to the cent. `LIVE=1 SKIP_FAUCET=1 HOUSE_KEY=…` then ran it against Shannon itself — the
+  results are in context/42 §Live on Shannon.
+- **Live on Shannon (2026-09-02, the owner's go):** `ParlayReserve` `0x50Ced768C80d499bA4FB956C7DF0c2beB078C151`,
+  block 477800945, creation tx `0xb4ee…ed72`, 36,937,142 gas at 6 gwei. Somnia's own `eth_estimateGas` said
+  55,405,713 and forge's local simulation 3.3M, so the broadcast that landed was
+  `forge script … --broadcast --skip-simulation --legacy --with-gas-price 6000000000 --gas-estimate-multiplier 105`
+  — the limit taken from Somnia's estimate and kept inside the deployer's 0.358 STT (the node refuses an envelope
+  the balance cannot cover). Then `approve` (259,745 gas) and `supply(5,000 tUSDC)` (898,941 gas) from the
+  deployer, which is also the reserve's `admin`. `deployments/50312.json` carries `parlayReserve` /
+  `parlayReserveFromBlock`, `pnpm contracts:export` regenerated the module, all five gates pass on it. The user
+  approved the four parlay review rows in the ledger (no admin void, the Settle pill, the Paid row, the reserve
+  line). The user then topped the deployer up to 50 STT from the faucet; it also holds ~5,000 tUSDC.
+
+Then, in order:
 2. `RangeReserve` — a fully funded range outcome, oracle basis, expiry and settlement; the Ticket's Range
    side and `/games/range` connect only after it is real.
 3. `MarketMakerVault` for `/earn` — share accounting, the maker actor with bounded exposure, exit and

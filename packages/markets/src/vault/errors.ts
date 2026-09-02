@@ -34,14 +34,18 @@ function revertedWith(error: unknown): ContractFunctionRevertedError | null {
   return found instanceof ContractFunctionRevertedError ? found : null;
 }
 
-/** viem decodes the custom error from the ABI at simulation time; the name is what the map keys on. */
-export function diagnoseVault(error: unknown): Diagnosis {
+/** viem decodes the custom error from the ABI at simulation time; the name is what the table keys on. */
+export function diagnoseNamedRevert(error: unknown, kinds: Record<string, DiagnosisKind>): Diagnosis {
   const reverted = revertedWith(error);
   const name = reverted?.data?.errorName;
   if (name) {
-    const kind = VAULT_REVERT_KINDS[name] ?? "contract-revert";
+    const kind = kinds[name] ?? "contract-revert";
     const args = reverted?.data?.args?.map((a) => (typeof a === "bigint" ? a.toString() : String(a))).join(", ") ?? "";
     return diagnosis(kind, `${name}(${args})`, { errorName: name });
   }
   return diagnoseWrite(error);
+}
+
+export function diagnoseVault(error: unknown): Diagnosis {
+  return diagnoseNamedRevert(error, VAULT_REVERT_KINDS);
 }

@@ -12,7 +12,9 @@ import { SOMNIA_TESTNET_PRICE_FEED, SomniaMarkets } from "@somnia-chain/markets-
 import { resolveAddresses } from "../addresses";
 import { SOMNIA_SHANNON } from "../chain";
 import type { MarketsEnv } from "../env";
+import { resolveParlayDeployment } from "../parlay/deployment";
 import { resolveVaultDeployment } from "../vault/deployment";
+import type { ParlayDeployment } from "@masayume/core/parlay";
 import type { VaultDeployment } from "@masayume/core/vault";
 
 type ExchangeConfig = ConstructorParameters<typeof SomniaMarkets>[0];
@@ -24,6 +26,7 @@ export const AUTO_ROTATE_RPC = false;
 
 let exchange: SomniaMarkets | null = null;
 let vaultDeployment: VaultDeployment | null = null;
+let parlayDeployment: ParlayDeployment | null = null;
 let version = 0;
 let wsIndex = 0;
 const listeners = new Set<() => void>();
@@ -49,6 +52,7 @@ export function configureMarkets(env: MarketsEnv, options: { wsIndex?: number } 
   const previous = exchange;
   exchange = new SomniaMarkets(buildConfig(env, env.rpcWsUrls[wsIndex] ?? env.rpcWsUrls[0]));
   vaultDeployment = resolveVaultDeployment(env);
+  parlayDeployment = resolveParlayDeployment(env);
   version += 1;
   if (previous) void previous.close().catch(() => undefined);
   for (const listener of listeners) listener();
@@ -71,6 +75,11 @@ export function getClient() {
 /** The EventVault for the configured chain, or null where none is deployed — every vault read branches on this. */
 export function getVaultDeployment(): VaultDeployment | null {
   return vaultDeployment;
+}
+
+/** The ParlayReserve for the configured chain, or null where none is deployed — every parlay read branches on this. */
+export function getParlayDeployment(): ParlayDeployment | null {
+  return parlayDeployment;
 }
 
 /** Bumps whenever the singleton is rebuilt so React providers can re-key. */

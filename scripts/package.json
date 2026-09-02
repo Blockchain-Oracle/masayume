@@ -17,7 +17,8 @@
     "spike:fill-projection": "tsx spike/fill-projection.ts",
     "spike:fill-projection-verify": "tsx spike/fill-projection-verify.ts",
     "spike:fill-projection-live": "tsx spike/fill-projection-live.ts",
-    "spike:endpoint-ids": "tsx spike/endpoint-ids.ts"
+    "spike:endpoint-ids": "tsx spike/endpoint-ids.ts",
+    "spike:parlay-fork": "tsx spike/parlay-fork.ts"
   },
   "dependencies": {
     "@masayume/core": "workspace:*",

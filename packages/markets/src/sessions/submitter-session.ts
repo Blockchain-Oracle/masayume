@@ -36,6 +36,8 @@ export interface SubmitterSession {
   readonly chainId: number;
   readonly submitter: MarketsSubmitter;
   readonly trader: SessionTrader;
+  /** The same signer as viem clients, for Masayume's own contracts — what the open lane and the spikes hand to `submitParlayOpen`. */
+  readonly contracts: VaultContracts;
   readonly disposed: boolean;
   /** Releases the session's own SDK instance. A disposed session can never sign again. */
   dispose(): Promise<void>;
@@ -119,6 +121,7 @@ export async function createSubmitterSession(config: SubmitterSessionConfig): Pr
     chainId: SOMNIA_SHANNON.id,
     submitter,
     trader: exchange.trader,
+    contracts,
     get disposed() {
       return disposed;
     },

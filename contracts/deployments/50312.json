@@ -5,5 +5,7 @@
   "forwarder": "0x82bb75b8aE663abC73308Ce42ca00d701cFb50d3",
   "fromBlock": 477731559,
   "strategyRegistry": "0xAd5f37B0f3d0f6030B9d9c0f4985AFb184A85FB4",
-  "strategyRegistryFromBlock": 477738374
+  "strategyRegistryFromBlock": 477738374,
+  "parlayReserve": "0x50Ced768C80d499bA4FB956C7DF0c2beB078C151",
+  "parlayReserveFromBlock": 477800945
 }

@@ -28,6 +28,10 @@ order", never "optional" or "cut".
 
 | Date | Decision | Reference | User-visible consequence | Approval |
 |---|---|---|---|---|
+| 2026-09-02 | **A parlay leg is priced by the venue's book, on-chain, at open** — `ParlayReserve.openParlay` reads each Window's `getBookLevels` and charges the cost-weighted price over the depth the ticket must hedge; the reference took opener-supplied `prob_bps` and named that its gap | `parlay624.move` L1–41 (v1 header), context/14 §5 "production hardening is re-deriving them from venue quotes in-tx" | The number on the Place button is the number the chain charges; a moved book is a requote, never a worse fill | No approval needed — the reference's own stated fix |
+| 2026-09-02 | **No admin void on the parlay reserve.** A leg whose Window the venue voids voids the ticket and refunds the stake; the venue's `voidExpired()` is permissionless, so no grace-and-admin path is needed to untrap funds | `parlay624.move` `admin_void`; AD-5 | Nothing can hold a refund back; a void is a state the slip shows | **Approved by the user 2026-09-02** — a deliberate removal, like the vault's |
+| 2026-09-02 | `/parlay` adds a "Settle" pill on a settled-but-uncranked leg, a "Paid" row for a claimed ticket, a "Voided" row, and the reserve's liquid/in-play line under the footnote | reference `ParlaySlip.tsx`, `ParlayBuilder.tsx` L492–494 | The reference relied on a keeper and deleted claimed objects; here the crank is the reader's and history stays | **Approved by the user 2026-09-02** |
+| 2026-09-02 | **`ParlayReserve` deployed on Shannon on the owner's go and supplied**: `0x50Ced768C80d499bA4FB956C7DF0c2beB078C151` (block 477800945, 36.9M gas against Somnia's own 55.4M estimate, forge's local 3.3M), then 5,000 tUSDC from the deployer `0xdD7a…Bf9a`; the module regenerated (AD-10 lockstep); the adapter driven on an Anvil fork holding the live reserve and then live on Shannon | `contracts/deployments/50312.json`; context/42 §Live on Shannon | `/parlay` quotes off the live books and opens against a funded reserve | **User's go** 2026-09-02 (the faucet then topped the deployer up to 50 STT) |
 | 2026-09-02 | **`/portfolio` opens with the reference's cream ledger plate, verbatim** (`components/portfolio/BalancePlate.tsx`, `PoolRows.tsx`, the page's plate mount L295–329, the connect card L277–292): the Stage 2 deviation that put our dark `/markets` panel on `/portfolio` is reverted on the user's call ("look how clean Yosuku's is"). The plate is cream in both themes as the reference's is; the X card nests in the X row; the Trading Balance's own controls take the plate's disclosure row (the reference's carries creator earnings, which does not exist here); `/markets` keeps its reviewed dark plate | `web/src/features/markets/portfolio/plate/*`, `ConnectCard.tsx` | The portfolio reads as the reference's: one vermilion figure, the proportion bar, the legs, "Elsewhere · not spendable here" rows | **User's call 2026-09-02** |
 | 2026-09-02 | The plate's second leg says "In your Trading Balance" where the reference says "In your account"; "Get test tUSDC"; "New to Somnia? Test funds are free →" | `BalancePlate.tsx` L68, L56; page L289 | The words name the pool every other surface names | Truth correction (doc 00 allowed change 4) |
 | 2026-09-02 | `/trade-from-x` renders without the app's ticker, header, footer and install strip, as the reference does (its page mounts no `Header`/`Marquee`; the sticky strip carries the primary nav); the layout's shell is route-aware (`ShellChrome`, `ISLAND_ROUTES`) | reference `app/trade-from-x/page.tsx` L88–106 | No double chrome on the island; the strip's mono nav links are the reference's | Fidelity restored, no approval needed |
@@ -213,6 +217,77 @@ the tally (`claim: paid`). The wallet seat's indexer read timed out during the r
 **Needs the owner.** Deployment: a funded deployer key (STT from the faucet) and the go —
 `forge script script/DeployEventVault.s.sol --rpc-url shannon --broadcast`; nothing is deployed, published or
 funded without it. Also for review: the private bucket's wording on the portfolio, and the sponsor allowlist.
+
+### ParlayReserve and `/parlay` (Stage 5, built and fork-verified 2026-09-02; live on Shannon the same day)
+
+The reference's parlay is `parlay624::parlay624` (`contracts/parlay624-pkg/sources/parlay624.move`): one ticket
+over N legs, escrow both sides at open (the opener's stake plus the house's `max_payout − stake`), resolve leg by
+leg on the venue's own print, kill the ticket on the first losing leg, force-pay the owner on a full streak;
+suppliers hold shares of `liquid + locked`. `ParlayReserve.sol` (`contracts/src/parlay/`) ports the escrow, the
+incremental resolve, the exposure and per-instant caps and the share vault in shape, and changes what DreamDEX
+changes:
+
+| Requirement | Reference | Ours | Class | Status |
+|---|---|---|---|---|
+| Leg pricing | the opener supplies `prob_bps[]`; the contract only recomputes the combination (its header names this the production gap) | `openParlay` reads each Window's resting book (`getBookLevels`) inside the call and prices the chosen side as the cost-weighted price over the depth the ticket would need to hedge (`max(priceDepthRaw, maxPayout)`), rounded up; a book thinner than that depth refuses the leg (`ThinBook`) | Strengthening — the gap the reference named, closed | **Done** — 25 forge tests, golden vectors shared with vitest |
+| A leg | `(expiry, lower, higher]` on the BTC feed | `(marketId, outcomeIdx)` — a Window and a side; the line is the Window's own opening print | Adapted — AD-10, market id only | **Done** |
+| Settlement | `pyth_feed::normalized_spot_at(expiry)` + the venue's band rule, permissionless, idempotent | `resolveLeg` reads the market's `isVoided` / `isResolved` / `payoutNumerators` (the venue's own verdict), permissionless, idempotent; a settled Window not yet resolved reverts `MarketNotSettled` — crank again | Adapted | **Done**, fork-verified on a void |
+| A leg the venue voids | not a case — the print is always recorded eventually; `admin_void` after a grace | the ticket voids on the first void leg: the stake goes back to the owner, the house's part back to liquid; **no admin void exists** because the venue's `voidExpired()` is itself permissionless, so nothing can trap a refund | Adapted — AD-5 | **Done**, fork-verified |
+| Same-print correlation | λ · min leg prob floor when two legs share an expiry; per-expiry liability sub-cap | the same floor and sub-cap keyed on the Window's expiry instant (Windows across assets and cadences that close at the same second are decided by the same closing prints) | Exact (shape) | **Done** — the two Windows live during the fork run shared an instant |
+| Open | one PTB: split the stake coin, `open_parlay(...)` | `openParlay(legs, maxPayout, maxStake)`: the caller's `maxStake` is the guard the reference had in the coin it split; a stake above it reverts `StakeAboveMax`, which the port surfaces as a requote | Adapted | **Done** |
+| Claim | force-pays `owner`, never the caller; the object is deleted | `claim` pays `owner` only; the ticket stays as `CLAIMED` (history readable without an indexer) | Adapted | **Done** |
+| Suppliers | `supply` / `withdraw` shares over `liquid + locked` | the same; `paused` stops opens and supply only — settlement, claims, refunds and withdrawals never pause | Exact (shape) | **Done** |
+| Admin | keeper rotation, params, pause | `setParams` / `setPaused` / `setAdmin` on tunables only; no keeper (every crank is permissionless); open tickets keep the terms they were opened on | Adapted | **Done** |
+
+**The port (`packages/core/src/parlay`, `packages/markets/src/parlay`).** `quoteParlay` mirrors `ParlayMath`
+(VWAP, the correlation floor, the ceiling-rounded stake floor) and is golden-tested on
+`pricing.vectors.json` by forge and vitest alike; `maxPayoutForStake` is the "Set stake" inverse the
+contract does not have. On the page the quote is the chain's own (`previewOpen`) — one call for "Set
+payout", up to three for "Set stake", the last always over a depth no shallower than the payout it returns,
+so the chain can only charge less than the number shown. `submitParlayOpen` asks the chain once more before
+any signature and returns `requote` instead of sending when the book moved. Reads are multicalls
+(`getParlayReserveState`, `listParlaysOf` via `parlaysOf` paging, no event scan). Everything answered
+"ParlayReserve is not deployed on this network yet" until `contracts/deployments/50312.json` carried
+`parlayReserve`; it has since 2026-09-02 (`0x50Ce…C151`, `parlayReserveFromBlock` 477800945) and
+`pnpm contracts:export` regenerated the module.
+
+**`/parlay` (`web/src/features/parlay/`)** — the reference's page, `ParlayBuilder` and `ParlaySlip` ported from
+source; the reference's own `SectionHeader` is now `components/shell/SectionHead.tsx` verbatim (its
+`.section-head` rules were already in part-05/06); fixtures on `/dev/parlay`.
+
+| Reference | Ours | Class | Approval |
+|---|---|---|---|
+| Legs are BTC "bells" only (binary-only v1); the strike is picked from a grid | Legs are the venue's live Up/Down Windows of any listed asset; the strike slot shows the Window's opening print, read-only ("opening print pending" before it prints) | Truth correction (doc 00 allowed change 4) | No approval needed |
+| "BTC close streak" preset — UP at the three soonest BTC bells | The same, on the soonest BTC Windows; disabled with fewer than two | Exact | — |
+| Quote: a dry-run per leg on the venue, debounced 400 ms | `previewOpen` on the reserve, debounced 400 ms, requoted every 12 s; a refusal shows the reserve's reason and "Retry" | Adapted | No approval needed |
+| "Legs share a BTC market, so odds are adjusted for correlation." | "Legs settle on the same closing print, so odds are adjusted for correlation." | Truth correction | No approval needed |
+| The stake leaves the wallet in the same PTB | Two signatures the first time (approve, then open), absorbed as everywhere (Approvals convention) | Adapted | No approval needed |
+| Keeper cranks settlement; the slip shows "ringing…" at zero | A "Settle" pill on a leg whose Window the indexer reports settled (the permissionless crank); "Settling…" between expiry and that | Additive — no keeper runs here | **Approved by the user 2026-09-02** |
+| Claimed tickets vanish (the object is deleted) | A "Paid" pill and "Paid out to your wallet." — the row stays | Additive | **Approved by the user 2026-09-02** |
+| — | "Voided" state: "The venue voided a Window, so the ticket is void. Your stake is back in your wallet." | Additive — a state the venue can produce | No approval needed |
+| Footnote "The full payout is set aside up front…" | The same sentence, then the reserve's own line: "Reserve: N tUSDC liquid · U% in play" (or that it is paused) | Additive — the promise as a figure | **Approved by the user 2026-09-02** |
+| "View on Suiscan" | "View on the Shannon explorer" | Truth correction | — |
+| framer-motion enters and layout animation | CSS enters (`pl-rise`, `pl-drop`, `pl-fade`), none under reduced motion; no layout animation | Deviation — no framer-motion dependency in this repo | Pre-approved class |
+| `text-gray-*` utilities | the reference's own `--gray-*` vars in the CSS module (what its Tailwind config maps the utilities to) — they follow the theme, the compiled utilities do not | The Tutorial's rule, applied at port time | Recorded |
+
+**Fork verification** — `context/42-parlayreserve-fork-verification-2026-09-02.md`: against Shannon's real
+contracts, two legs (UP on the daily BTC Window, DOWN on the daily ETH Window, both closing at the same
+instant) priced off the venue's books inside `previewOpen`, the open charging exactly the preview, the whole
+payout escrowed, no market address in storage, then `voidExpired()` on one Window and a third party's
+`resolveLeg` refunding the stake and releasing the house's part.
+
+**Live on Shannon (2026-09-02, the owner's go).** Deployed by `0xdD7a…Bf9a` at
+`0x50Ced768C80d499bA4FB956C7DF0c2beB078C151` (block 477800945, tx `0xb4ee…ed72`): the creation used 36,937,142
+gas at 6 gwei against Somnia's own `eth_estimateGas` of 55,405,713 (forge's local simulation said 3.3M — the
+limit must come from Somnia's estimate, and `gas × price` must fit the balance; recipe in `contracts/README.md`).
+The house (the deployer) then approved (259,745 gas) and supplied 5,000 tUSDC (`supply` 898,941 gas), so the
+reserve can lock up to 3,000 tUSDC of payouts under the launch params — the reference's demo cut (12% margin,
+λ 0.40, 3 legs) with a 500 tUSDC jackpot cap; `setParams` tunes them without a redeploy. The adapter was then
+driven end to end on an Anvil fork holding the live reserve (a 5.00 stake for 17.88 over UP 0.371 × DOWN 0.673,
+the void refunding the stake to the cent) and live on Shannon: ticket 1 opened for 4.521740 against a 40.69 payout
+on two 1-minute Windows sharing an instant, the UP leg at 0.115 lost on the oracle's print, a permissionless crank
+settled the ticket `lost` and released the 36.17 the house had locked (context/42 §Live on Shannon). The four
+review rows above were approved by the user the same day.
 
 ### Toast (Stage 2, done 2026-09-01)
 
@@ -853,7 +928,7 @@ Portfolio and More all remain.
 | `/earn` | `app/earn/page.tsx` | Adapted via `MarketMakerVault` | Masayume contract | **Shell** — honest dependency state (Stage 5) |
 | `/strategies` | `app/strategies/page.tsx` | Adapted | `StrategyRegistry` + DB | **Shell** — honest dependency state (Stage 4) |
 | `/agents` | `app/agents/page.tsx` | Adapted | Registry + fill projection | **Shell** — waits on the `StrategyRegistry` alone now (Stage 4) |
-| `/parlay` | `app/parlay/page.tsx` | Adapted via `ParlayReserve` | Masayume contract | **Shell** — honest dependency state (Stage 5) |
+| `/parlay` | `app/parlay/page.tsx` | Adapted via `ParlayReserve` | Masayume contract + the venue's books | **Done** — contract, port and page built, fork-verified, live on Shannon (`0x50Ce…C151`, 5,000 tUSDC supplied) and driven through the adapter on a fork and live (see §ParlayReserve); awaits the user's browser review |
 | `/surface` | `app/surface/page.tsx` | Adapted — real DreamDEX structures, not SVI | DreamDEX book/term structure | **Shell** — honest dependency state (Stage 5) |
 | `/trade-from-x` | `app/trade-from-x/page.tsx` | Adapted | X provider + `EventVault` grant | **Shell** — honest dependency state (Stage 4) |
 | `/claim` | `app/claim/page.tsx` | Adapted to DreamDEX redemption | Chain receipts | **Partial** — `/claims` implemented |
@@ -910,7 +985,7 @@ Tracked separately so the route table cannot hide a missing capability.
 | X linking | **Partial** | OAuth/PKCE + signed wallet binding, parser, `/trade-from-x`, `/claim`, the relay actor and receipts built; the live X account, credentials and posting stay with the owner; on-chain execution needs the vault deployed |
 | Trading Balance with labeled pools | **Partial** | `EventVault` written, fork-verified (contract and adapter), ported and surfaced on `/portfolio`, the plate, bets, history and `/claims`; not deployed (owner) |
 | Positions, PnL, history, equity, reputation, badges, Trader Edge | **Done** | Open positions off the venue's PnL; history, equity, PnL, reputation, badges, CSV and Trader Edge off the fill projection; the leaderboard off the same replay venue-wide |
-| Earn, parlays, strategies, creators, agents, playbooks | **Partial** | `StrategyRegistry`, the runner and `/strategies` + `/agents` built (not deployed); Earn, parlays, creators, playbooks stay Stage 5 |
+| Earn, parlays, strategies, creators, agents, playbooks | **Partial** | `StrategyRegistry`, the runner, `/strategies` + `/agents` live on Shannon; `ParlayReserve` + `/parlay` live on Shannon (deployed and supplied 2026-09-02); Earn, creators, playbooks stay Stage 5 |
 | Assistant (Sensei) | **Done** | Claude-backed; honest unconfigured state, lights up on `ANTHROPIC_API_KEY` |
 | Faucet, account setup, recovery, smart-wallet session, revocation | **Partial** | Faucet live; session-key tap trading with the enable sheet, manager, revoke, grant-without-key recovery and the sponsor rail built; all on-chain steps wait on the deployment |
 | Status, docs, how-it-works, demo, pitch | **Done** | Read-time probes; every public page on real facts and live reads |

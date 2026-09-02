@@ -28,6 +28,9 @@ export const marketsEnvSchema = z.object({
   eventVaultAddress: addressSchema.optional(),
   forwarderAddress: addressSchema.optional(),
   eventVaultFromBlock: z.coerce.bigint().optional(),
+  /** Local-fork overrides for the ParlayReserve, the same way. */
+  parlayReserveAddress: addressSchema.optional(),
+  parlayReserveFromBlock: z.coerce.bigint().optional(),
 });
 
 export type MarketsEnv = z.infer<typeof marketsEnvSchema>;

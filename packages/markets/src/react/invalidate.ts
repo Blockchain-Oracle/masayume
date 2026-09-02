@@ -16,6 +16,8 @@ export async function invalidateAfterWrite(queryClient: QueryClient, { wallet, m
     keys.vault(wallet),
     keys.positions(wallet),
     keys.history(wallet),
+    keys.parlays(wallet),
+    keys.parlayReserve(),
     claimablesForWallet,
     ...(marketId ? [keys.onchain(marketId), keys.market(marketId)] : []),
   ];

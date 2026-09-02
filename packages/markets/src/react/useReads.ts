@@ -2,6 +2,7 @@ import { CLOCK_RESYNC_MS, MARKETS_POLL_MS, ONCHAIN_POLL_MS, OPENING_PRINT_POLL_M
 import type { WalletHistory } from "@masayume/core/projection";
 import { isOk, type Reading } from "@masayume/core/schemas";
 import type { Address, BalanceSheet, Bytes32, ClaimableRow, ClockSync, EventMarket, LaneSet, MarketId, OnchainSnapshot, OpenPosition, PricePoint, Resolution } from "@masayume/core/types";
+import type { ParlayReserveState, ParlayTicket } from "@masayume/core/parlay";
 import type { VaultHoldings, VaultSnapshot } from "@masayume/core/vault";
 import { getBalanceSheet } from "../provider/balances";
 import { listWalletHistory } from "../provider/history";
@@ -13,6 +14,7 @@ import { getOnchain } from "../provider/onchain";
 import { listOpenPositions } from "../provider/positions";
 import { getOpeningPrice, getPriceHistory } from "../provider/prices";
 import { getResolution } from "../provider/resolution";
+import { getParlayReserveState, listParlaysOf } from "../parlay/read";
 import { getVaultHoldings, getVaultSnapshot } from "../vault/read";
 import { keys } from "./keys";
 import { useReadingQuery } from "./useReadingQuery";
@@ -79,6 +81,16 @@ export function useClock(): Reading<ClockSync> | null {
 /** The Trading Balance and the live grant per kind; `null` inside the reading where no vault is deployed. */
 export function useVaultSnapshot(wallet: Address | null): Reading<VaultSnapshot | null> | null {
   return useReadingQuery(keys.vault(wallet), () => getVaultSnapshot(wallet as Address), { pollMs: MARKETS_POLL_MS, enabled: wallet !== null });
+}
+
+/** The reserve's sheet and tunables; `null` inside the reading where no reserve is deployed. */
+export function useParlayReserve(): Reading<ParlayReserveState | null> | null {
+  return useReadingQuery(keys.parlayReserve(), getParlayReserveState, { pollMs: MARKETS_POLL_MS });
+}
+
+/** One wallet's tickets, live first; empty (never an error) without a reserve. */
+export function useMyParlays(wallet: Address | null): Reading<ParlayTicket[]> | null {
+  return useReadingQuery(keys.parlays(wallet), () => listParlaysOf(wallet as Address), { pollMs: MARKETS_POLL_MS, enabled: wallet !== null });
 }
 
 /** What the vault holds for the wallet on one Window; zeros without a vault. */

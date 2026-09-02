@@ -6,5 +6,6 @@ export { default as GrainOverlay } from "./GrainOverlay";
 export { default as Header } from "./header/Header";
 export { default as Marquee } from "./Marquee";
 export { default as MasayumeMark } from "./MasayumeMark";
+export { default as SectionHead } from "./SectionHead";
 export { default as ThemeToggle } from "./ThemeToggle";
 export { ShellChrome, isIslandRoute, ISLAND_ROUTES } from "./ShellChrome";

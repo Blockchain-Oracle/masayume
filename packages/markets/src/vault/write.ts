@@ -220,8 +220,8 @@ function refused(diag: Diagnosis): TxOutcome {
   return { status: "refused", diagnosis: diag };
 }
 
-export async function settleVaultFailure(journal: IntentJournal, id: string, error: unknown, onPhase?: PhaseListener): Promise<TxOutcome> {
-  const diag = diagnoseVault(error);
+export async function settleVaultFailure(journal: IntentJournal, id: string, error: unknown, onPhase?: PhaseListener, diagnoseFn: (error: unknown) => Diagnosis = diagnoseVault): Promise<TxOutcome> {
+  const diag = diagnoseFn(error);
   if (error instanceof TxRevertedError) {
     await journal.markSent(id, error.txHash);
     await journal.markFailed(id, diag.technical);

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-/// @title The slice of DreamDEX Event Contracts the vault talks to.
+/// @title The slice of DreamDEX Event Contracts Masayume's contracts talk to.
 /// @notice Signatures were taken from `@somnia-chain/markets-sdk` 0.28.1's ABIs
-///         (`binaryModuleReadAbi`, `binaryModuleWriteAbi`, `binaryPoolWriteAbi`,
+///         (`binaryModuleReadAbi`, `binaryModuleWriteAbi`, `binaryPoolWriteAbi`, `binaryPoolReadAbi`,
 ///         `erc20VaultReadAbi`, `erc20VaultWriteAbi`, `binaryMarketReadAbi`, `erc6909Abi`).
-///         Only what the vault calls is declared here.
+///         Only what the vault and the reserves call is declared here.
 interface IBinaryModule {
     /// @dev Return order mirrors the module's `markets(bytes32)` tuple exactly.
     function markets(bytes32 marketId)
@@ -42,11 +42,20 @@ interface IBinaryMarket {
     function isVoided() external view returns (bool);
     function expiry() external view returns (uint64);
     function settlementWindow() external view returns (uint64);
+    /// @dev Settlement v3 stores a payout VECTOR, not a winner: empty until resolved, one-hot for a
+    ///      resolved binary. `winningOutcome()` no longer exists on the deployed contract.
+    function payoutNumerators() external view returns (uint256[] memory);
     function voidExpired() external;
     function poke() external;
 }
 
 interface IBinaryPool {
+    /// @dev One aggregated price level of the resting book, in the book's own (YES) terms.
+    struct Level {
+        uint256 price;
+        uint256 quantity;
+    }
+
     /// @dev `kind`: BUY_YES(0) SELL_YES(1) BUY_NO(2) SELL_NO(3). `orderType`: 2 = ImmediateOrCancel.
     function placeBinaryOrder(
         uint8 kind,
@@ -59,6 +68,10 @@ interface IBinaryPool {
         uint96 builderFeeBpsTimes1k,
         uint64 userData
     ) external;
+
+    /// @dev The resting book aggregated by price: bids highest first, asks lowest first, expired makers
+    ///      skipped. A NO price is one collateral less the YES bid it rests against.
+    function getBookLevels(bool isBid, uint64 numLevels) external view returns (Level[] memory);
 
     /// @dev The pool's internal per-owner credit for `token` (refunds and payouts can land here).
     function getWithdrawableBalance(address owner, address token) external view returns (uint256);

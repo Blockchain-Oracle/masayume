@@ -21,6 +21,7 @@ const COPY: Record<DiagnosisKind, DiagnosisCopy> = {
   "outside-band": { headline: "Too close to certain or impossible", body: "This book is quoting outside the 2–97¢ band, so the order is refused rather than filled at a lottery price." },
   "daily-stop": { headline: "Daily Stop hit", body: "Betting reopens at midnight your time. Nothing was sent." },
   "invalid-price": { headline: "Off the price grid", body: "The venue rejected the price step. Requote and try again." },
+  requote: { headline: "The book moved", body: "The odds changed before your ticket landed. Nothing was taken — check the new price and confirm again." },
   "not-settled": { headline: "Not settled yet", body: "The oracle hasn't printed. Redemption opens the moment it does." },
   "already-claimed": { headline: "Already paid out", body: "The auto-payout got here first. Your wallet already has it." },
   "faucet-refused": { headline: "Faucet refused", body: "The venue's faucet said no — you may hold enough already, or it's capped. Try later." },

@@ -16,6 +16,7 @@ export const DIAGNOSIS_KINDS = [
   "outside-band",
   "daily-stop",
   "invalid-price",
+  "requote",
   "not-settled",
   "already-claimed",
   "faucet-refused",
