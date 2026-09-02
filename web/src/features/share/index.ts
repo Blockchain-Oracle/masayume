@@ -4,4 +4,4 @@ export { SHARE } from "./copy";
 export { ShareCallButton } from "./ShareCallButton";
 export { ShareTradeButton } from "./ShareTradeButton";
 export { buildTradeTweetText, renderTradeShareCard, shortTradeId, tradeBandLabel, type TradeCard, type TradeOutcome } from "./trade-card";
-export { shareHost, useShareCard } from "./useShareCard";
+export { useShareCard } from "./useShareCard";

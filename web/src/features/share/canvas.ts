@@ -2,17 +2,34 @@
  * The share cards' drawing kit — the helpers `lib/shareCard.ts` and
  * `lib/openBetShareCard.ts` each carry a copy of in the reference, kept once.
  *
- * Both cards are a portrait 1200×1500 (4:5) PNG drawn at 2× on an offscreen canvas
- * and downscaled for crisp type: near-black ground, registration ticks, the
- * masthead, a perforation rule, a footer, and film grain over everything. A
- * shareable image has one design, so these values are the reference's and do not
- * follow the page theme — the on-screen preview does (share-card.css).
+ * Both cards are a landscape 1600×900 (16:9) PNG — the one ratio X shows uncropped
+ * in the timeline on both web and phone — drawn at 2× on an offscreen canvas and
+ * downscaled for crisp type. The frame is the reference's ticket language turned on
+ * its side: near-black ground, registration ticks, the masthead, and a vertical
+ * perforation tearing the record (left) from a stub (right) that carries the QR,
+ * the site and the handle. A shareable image has one design, so these values do
+ * not follow the page theme — the on-screen preview does (share-card.css).
  */
 
-export const CARD_W = 1200;
-export const CARD_H = 1500;
+export const CARD_W = 1600;
+export const CARD_H = 900;
 export const CARD_SCALE = 2;
-export const CARD_MARGIN = 80;
+export const CARD_MARGIN = 72;
+/** The vertical perforation between the record and the stub. */
+export const STUB_RULE_X = 1088;
+/** The record's right edge and the stub's left edge, either side of the perforation. */
+export const RECORD_RIGHT = STUB_RULE_X - 48;
+export const STUB_LEFT = STUB_RULE_X + 48;
+export const RECORD_W = RECORD_RIGHT - CARD_MARGIN;
+
+const TICK_INSET = 40;
+const MASTHEAD_Y = 92;
+const MASTHEAD_RULE_Y = 124;
+const RECORD_TYPE_Y = 178;
+const RULE_TOP = 160;
+const RULE_BOTTOM = 776;
+const FOOTER_RULE_Y = 800;
+const FOOTER_Y = 846;
 
 /** Every colour the cards draw comes from share-card.css; these are the no-stylesheet fallbacks, as rgb() so no hex lives in code. */
 const FALLBACK_VERMILION = "rgb(224 77 38)";
@@ -29,6 +46,9 @@ export interface CardPalette {
   /** The drained loss tone — NOT red. */
   ash: string;
   ashDim: string;
+  /** The QR tile — Yosuku's light-card paper — and the ink the modules take on it. */
+  paper: string;
+  qrInk: string;
 }
 
 /** A canvas font shorthand; sizes are card-space numbers, never a px literal in code. */
@@ -101,11 +121,13 @@ export function resolvePalette(): CardPalette {
     groundTrade: cssVar("--share-ground-trade", "rgb(7 5 5)"),
     ash: cssVar("--share-ash", "rgb(143 138 130)"),
     ashDim: cssVar("--share-ash-dim", "rgba(143,138,130,0.55)"),
+    paper: cssVar("--share-paper", "rgb(253 248 239)"),
+    qrInk: cssVar("--share-qr-ink", "rgb(20 18 16)"),
   };
 }
 
 /** Manual letter-spacing — canvas `letterSpacing` is not portable. */
-export function drawTracked(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, tracking: number, align: "left" | "center" | "right" = "left"): void {
+export function drawTracked(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, tracking: number, align: "left" | "center" | "right" = "left"): number {
   const chars = Array.from(text);
   const widths = chars.map((ch) => ctx.measureText(ch).width);
   const total = widths.reduce((a, b) => a + b, 0) + tracking * Math.max(0, chars.length - 1);
@@ -117,6 +139,7 @@ export function drawTracked(ctx: CanvasRenderingContext2D, text: string, x: numb
     cx += widths[i]! + tracking;
   }
   ctx.textAlign = prevAlign;
+  return total;
 }
 
 /** Largest px ≤ basePx at which `text` fits `maxWidth`. */
@@ -160,7 +183,7 @@ export function openCard(ground: string, vignetteInner: number, vignetteAlpha: n
   ctx.fillStyle = ground;
   ctx.fillRect(0, 0, CARD_W, CARD_H);
 
-  const vignette = ctx.createRadialGradient(CARD_W / 2, CARD_H / 2, CARD_H * vignetteInner, CARD_W / 2, CARD_H / 2, CARD_H * 0.8);
+  const vignette = ctx.createRadialGradient(CARD_W / 2, CARD_H / 2, CARD_H * vignetteInner, CARD_W / 2, CARD_H / 2, CARD_W * 0.6);
   vignette.addColorStop(0, "rgba(0,0,0,0)");
   vignette.addColorStop(1, `rgba(0,0,0,${vignetteAlpha})`);
   ctx.fillStyle = vignette;
@@ -169,7 +192,8 @@ export function openCard(ground: string, vignetteInner: number, vignetteAlpha: n
   ctx.strokeStyle = "rgba(255,255,255,0.18)";
   ctx.lineWidth = 1;
   const tick = 9;
-  for (const [tx, ty] of [[44, 44], [CARD_W - 44, 44], [44, CARD_H - 44], [CARD_W - 44, CARD_H - 44]] as const) {
+  const far = { x: CARD_W - TICK_INSET, y: CARD_H - TICK_INSET };
+  for (const [tx, ty] of [[TICK_INSET, TICK_INSET], [far.x, TICK_INSET], [TICK_INSET, far.y], [far.x, far.y]] as const) {
     ctx.beginPath();
     ctx.moveTo(tx - tick, ty);
     ctx.lineTo(tx + tick, ty);
@@ -180,71 +204,81 @@ export function openCard(ground: string, vignetteInner: number, vignetteAlpha: n
   return { canvas, ctx };
 }
 
-/** MASAYUME (left) · N° folio (right), the hairline under them, and the record-type line. */
-export function drawMasthead(ctx: CanvasRenderingContext2D, fonts: CardFonts, brand: string, folio: string, recordType: string, recordY: number): void {
-  const mastY = 118;
+/** MASAYUME (left) · N° folio (right), the hairline under them, and the record-type line on the record's edge. */
+export function drawMasthead(ctx: CanvasRenderingContext2D, fonts: CardFonts, brand: string, folio: string, recordType: string): void {
   ctx.textAlign = "left";
-  ctx.font = font(800, 27, fonts.display);
+  ctx.font = font(800, 26, fonts.display);
   ctx.fillStyle = "rgba(255,255,255,0.92)";
-  drawTracked(ctx, brand, CARD_MARGIN, mastY - 1, 7, "left");
-  ctx.font = font(600, 18, fonts.mono);
+  drawTracked(ctx, brand, CARD_MARGIN, MASTHEAD_Y, 7, "left");
+  ctx.font = font(600, 17, fonts.mono);
   ctx.fillStyle = "rgba(255,255,255,0.40)";
-  drawTracked(ctx, `N° ${folio}`, CARD_W - CARD_MARGIN, mastY - 3, 3, "right");
+  drawTracked(ctx, `N° ${folio}`, CARD_W - CARD_MARGIN, MASTHEAD_Y - 2, 3, "right");
 
   ctx.strokeStyle = "rgba(255,255,255,0.09)";
+  ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(CARD_MARGIN, 152);
-  ctx.lineTo(CARD_W - CARD_MARGIN, 152);
+  ctx.moveTo(CARD_MARGIN, MASTHEAD_RULE_Y);
+  ctx.lineTo(CARD_W - CARD_MARGIN, MASTHEAD_RULE_Y);
   ctx.stroke();
 
-  ctx.font = font(600, 16, fonts.mono);
+  ctx.font = font(600, 15, fonts.mono);
   ctx.fillStyle = "rgba(255,255,255,0.38)";
-  drawTracked(ctx, recordType, CARD_W / 2, recordY, 6, "center");
+  drawTracked(ctx, recordType, CARD_MARGIN, RECORD_TYPE_Y, 6, "left");
 }
 
-/** The dashed perforation rule between the record and its proof. */
-export function drawPerforation(ctx: CanvasRenderingContext2D, y: number): void {
+/** A short vermilion segment laid over the masthead hairline at the record's edge — The Call's single spark. */
+export function drawSpark(ctx: CanvasRenderingContext2D, color: string): void {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(CARD_MARGIN, MASTHEAD_RULE_Y);
+  ctx.lineTo(CARD_MARGIN + 56, MASTHEAD_RULE_Y);
+  ctx.stroke();
+}
+
+/** The dashed perforation tearing the record from its stub. */
+export function drawPerforation(ctx: CanvasRenderingContext2D): void {
   ctx.save();
   ctx.strokeStyle = "rgba(255,255,255,0.20)";
   ctx.lineWidth = 2;
   ctx.setLineDash([2, 11]);
   ctx.beginPath();
-  ctx.moveTo(CARD_MARGIN, y);
-  ctx.lineTo(CARD_W - CARD_MARGIN, y);
+  ctx.moveTo(STUB_RULE_X, RULE_TOP);
+  ctx.lineTo(STUB_RULE_X, RULE_BOTTOM);
   ctx.stroke();
   ctx.restore();
 }
 
-/** The proof block: the record's transaction line and the "verify on" line under it. */
-export function drawProof(ctx: CanvasRenderingContext2D, fonts: CardFonts, line: string, verifyLine: string): void {
-  ctx.font = font(400, 19, fonts.mono);
-  ctx.fillStyle = "rgba(255,255,255,0.34)";
-  ctx.textAlign = "center";
-  const px = fitFontPx(ctx, line, fonts.mono, 400, 19, CARD_W - 2 * CARD_MARGIN, 12);
-  ctx.font = font(400, px, fonts.mono);
-  ctx.fillText(line, CARD_W / 2, 1192);
-  ctx.font = font(400, 15, fonts.mono);
-  ctx.fillStyle = "rgba(255,255,255,0.24)";
-  drawTracked(ctx, verifyLine, CARD_W / 2, 1234, 4, "center");
-}
-
-/** The footer hairline, the origin on the left and the record kind on the right. */
-export function drawFooter(ctx: CanvasRenderingContext2D, fonts: CardFonts, left: string, right: string): void {
+/** The footer hairline; the proof (the record's transaction line, then the "verify on" line) on the left, the record kind on the right. */
+export function drawFooter(ctx: CanvasRenderingContext2D, fonts: CardFonts, proof: string, verifyLine: string, kind: string): void {
   ctx.strokeStyle = "rgba(255,255,255,0.09)";
+  ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(CARD_MARGIN, 1372);
-  ctx.lineTo(CARD_W - CARD_MARGIN, 1372);
+  ctx.moveTo(CARD_MARGIN, FOOTER_RULE_Y);
+  ctx.lineTo(CARD_W - CARD_MARGIN, FOOTER_RULE_Y);
   ctx.stroke();
-  ctx.font = font(500, 21, fonts.mono);
+
+  ctx.font = font(500, 16, fonts.mono);
+  ctx.fillStyle = "rgba(255,255,255,0.30)";
+  const kindW = drawTracked(ctx, kind, CARD_W - CARD_MARGIN, FOOTER_Y - 2, 3, "right");
+
+  const gap = 28;
+  ctx.font = font(400, 14, fonts.mono);
+  const verifyW = Array.from(verifyLine).reduce((w, ch) => w + ctx.measureText(ch).width, 0) + 4 * Math.max(0, verifyLine.length - 1);
+  const room = CARD_W - 2 * CARD_MARGIN - kindW - gap - verifyW - gap;
+  const proofPx = fitFontPx(ctx, proof, fonts.mono, 500, 19, room, 12);
+  ctx.font = font(500, proofPx, fonts.mono);
   ctx.fillStyle = "rgba(255,255,255,0.52)";
   ctx.textAlign = "left";
-  ctx.fillText(left, CARD_MARGIN, 1424);
-  ctx.font = font(500, 17, fonts.mono);
-  ctx.fillStyle = "rgba(255,255,255,0.30)";
-  drawTracked(ctx, right, CARD_W - CARD_MARGIN, 1422, 3, "right");
+  ctx.fillText(proof, CARD_MARGIN, FOOTER_Y);
+  const proofW = ctx.measureText(proof).width;
+
+  ctx.font = font(400, 14, fonts.mono);
+  ctx.fillStyle = "rgba(255,255,255,0.28)";
+  drawTracked(ctx, verifyLine, CARD_MARGIN + proofW + gap, FOOTER_Y - 2, 4, "left");
 }
 
-/** Grain over everything, then downscale to 1200×1500 and encode. */
+/** Grain over everything, then downscale to 1600×900 and encode. */
 export function closeCard(big: HTMLCanvasElement, ctx: CanvasRenderingContext2D): Promise<Blob> {
   const pattern = ctx.createPattern(makeGrainTile(), "repeat");
   if (pattern) {

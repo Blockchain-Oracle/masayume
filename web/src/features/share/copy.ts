@@ -1,8 +1,20 @@
 /** The share cards' words — ported from the reference's two card renderers and `BetPlacedCard.tsx`. */
-export const SHARE = {
+
+/** The brand as the owner gave it (2026-09-02): the public home and the X handle — the same on every deployment. */
+const BRAND = {
   brand: "MASAYUME",
+  site: "masayume.app",
+  siteUrl: "https://masayume.app",
+  handle: "@masayume_app",
+} as const;
+
+const signOff = `${BRAND.site} via ${BRAND.handle}`;
+
+export const SHARE = {
+  ...BRAND,
   network: "SOMNIA TESTNET",
   verifyOn: "VERIFY ON SHANNON EXPLORER",
+  scan: "SCAN TO MAKE YOUR CALL",
   shareCall: "Share this call",
   shareCard: "Share card",
   rendering: "Rendering…",
@@ -30,8 +42,8 @@ export const SHARE = {
     footerKind: "MASAYUME · LIVE CALL",
     tx: (short: string) => `TX ${short}`,
     /** The pre-filled post: real staked numbers only, framed as a live call. */
-    tweet: (band: string, cadence: string, stake: string, win: string, symbol: string, utc: string, host: string) =>
-      `My call: ${band} (${cadence} Window). Staked ${stake} to win ${win} ${symbol}, oracle-settles ${utc} on Somnia testnet. Will it land? ${host}`,
+    tweet: (band: string, cadence: string, stake: string, win: string, symbol: string, utc: string) =>
+      `My call: ${band} (${cadence} Window). Staked ${stake} to win ${win} ${symbol}, oracle-settles ${utc} on Somnia testnet. Will it land? ${signOff}`,
   },
   trade: {
     settlement: "SETTLEMENT RECORD",
@@ -47,7 +59,7 @@ export const SHARE = {
     entry: (short: string) => `ENTRY ${short}`,
     settlementTx: (short: string) => `SETTLEMENT ${short}`,
     noTx: "PROOF ON THE RECEIPT",
-    tweet: (pnl: string, symbol: string, asset: string, band: string, how: string, stake: string, payout: string, host: string) =>
-      `${pnl} ${symbol} on ${asset} ${band}: ${how}. ${stake} → ${payout} ${symbol} (Somnia testnet). ${host}`,
+    tweet: (pnl: string, symbol: string, asset: string, band: string, how: string, stake: string, payout: string) =>
+      `${pnl} ${symbol} on ${asset} ${band}: ${how}. ${stake} → ${payout} ${symbol} (Somnia testnet). ${signOff}`,
   },
 } as const;

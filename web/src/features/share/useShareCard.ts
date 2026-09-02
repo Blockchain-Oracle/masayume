@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { webEnv } from "@/lib/env";
 import { notify } from "@/lib/toast";
 import { SHARE } from "./copy";
 
@@ -10,15 +9,6 @@ export interface ShareInput {
   fileName: string;
   text: string;
 }
-
-/** Where a shared card points people — the app's own origin, since no social handle exists. */
-export const shareHost = (): string => {
-  try {
-    return new URL(webEnv.appOrigin).host;
-  } catch {
-    return webEnv.appOrigin;
-  }
-};
 
 /**
  * The share flow the reference runs from both its buttons (`ShareBetButton.tsx`,

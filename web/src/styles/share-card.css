@@ -15,6 +15,9 @@
   --share-ground-trade: #070505;
   --share-ash: #8f8a82;
   --share-ash-dim: rgba(143, 138, 130, 0.55);
+  /* the QR tile on the stub: Yosuku's light-card paper (part-01.css .creator-studio) and its remapped --white ink */
+  --share-paper: #fdf8ef;
+  --share-qr-ink: #141210;
 }
 
 .call-card {
@@ -364,9 +367,9 @@
 .share-link:hover:not(:disabled) { color: var(--vermilion); }
 .share-link:disabled { opacity: 0.5; cursor: wait; }
 
-/* /dev/share — the exports at a quarter of their size */
+/* /dev/share — the 1600×900 exports at a quarter of their width */
 .dev-share-png {
-  width: 300px;
+  width: 400px;
   max-width: 100%;
   border-radius: 8px;
   box-shadow: var(--receipt-shadow);

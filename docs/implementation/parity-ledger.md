@@ -41,6 +41,7 @@ order", never "optional" or "cut".
 | 2026-09-02 | The composer's strike is the Window's opening print, read-only; Range is present, disabled, and names RangeReserve (Stage 5) | `TakeComposer624.tsx` L59–63 (user-typed strike), L129–140 (three sides) | The call is on the number the Window settles against; no invented level; a control that does nothing says why | Truth correction (doc 00 allowed change 4) |
 | 2026-09-02 | Share cards are rendered in the browser and handed to the native share sheet or downloaded with a pre-filled X post — the reference's own mechanism; doc 03's "server-rendered/open-graph cards" (link unfurls) are a follow-on, not a substitute | `lib/shareCard.ts`, `lib/openBetShareCard.ts`, `ShareBetButton.tsx`, `ShareTradeButton.tsx` | Identical share behaviour; a pasted link does not yet unfurl into the card | No approval needed — user-visible behaviour is the reference's |
 | 2026-09-02 | The Call (on-screen) follows the theme; the exported PNG keeps its one dark design. No leverage caveat, no X handle: the footer prints the app's own host | `BetPlacedCard.tsx` L70 (`data-theme="dark"`), `openBetShareCard.ts` L101 (`@yosuku0`), L354–362 (leverage) | Cream ticket in light mode; the PNG is the same in both; nothing on a card claims an account or a product that does not exist | Deviation — the user's 2026-09-01 ruling on non-flipping surfaces; truth corrections |
+| 2026-09-02 | Share cards redesigned as a 1600×900 X banner with a QR stub, the site and the handle `@masayume_app` — the user's explicit exception to source-led replication; the "no X handle" half of the row above is superseded | User instruction 2026-09-02 ("that's like one exception I think you can do"); `openBetShareCard.ts` L101 for the handle line the reference had | A landscape card X shows uncropped; a scannable route into the app from any shared post; the post text ends `masayume.app via @masayume_app` | **User's call** — brand constants supplied by the owner |
 | 2026-09-02 | Price alerts get a live evaluator (the reference's `checkAlerts` has no caller and its button was cut in 8c7ecc1); mounted in the hero foot beside the Room | doc 03 §Alerts "market stream evaluator"; reference `PriceAlerts.tsx` orphaned | A threshold alert actually fires (toast, and a system notification when permitted) while the app is open; the popover says exactly that | **Needs user review** — placement is ours; the reference has no live mount |
 | 2026-09-02 | `/news` is restored from the reference's own history (`93d09c1^:app/news/page.tsx`); the feed component and RSS route survive in the pinned source. "Bitcoin News" → "Market News" because the venue lists BTC and ETH. A More-menu entry is added | doc 03 §News/ticker "real configured feed/provider" | A live wire (Cointelegraph + Decrypt, no credential) at `/news`; Fear/Greed still pending a provider | **Needs user review** — a route the pinned reference cut as "broken" |
 | 2026-09-02 | `/status` probes at read time: RPC head, indexer, price feed lag, social store, Sensei — each under its own timeout; a stale last-good reading counts as a failed probe | doc 03 §Status "derive dependency health at read time; do not keep a stale healthy claim" | Healthy / degraded / unreachable computed per load; optional capabilities listed truthfully without degrading the verdict | No approval needed |
@@ -496,17 +497,40 @@ just-placed call) and `lib/shareCard.ts` + `ShareTradeButton.tsx` (the settled t
 
 | Element | Reference | Destination | Class | Status |
 |---|---|---|---|---|
-| The Call — 1200×1500 PNG: masthead, record line, direction eyebrow, hero band, stake → return, settle line, perforation, proof, footer, grain | `openBetShareCard.ts` L226–436 | `call-card.ts` | Adapted | **Done** — `MASAYUME`, `THE CALL · SOMNIA TESTNET`, return net of the settlement fee and labelled so; `TX 0x… · VERIFY ON SHANNON EXPLORER`; footer = the app's host |
+| The Call — 1600×900 PNG (revised, see below): masthead, record line, direction eyebrow, hero band, stake → return, settle line, vertical perforation, the stub, proof in the footer, grain | `openBetShareCard.ts` L226–436 | `call-card.ts`, `stub.ts` | **Redesigned on the user's call** | **Done** — `MASAYUME`, `THE CALL · SOMNIA TESTNET`, return net of the settlement fee and labelled so; footer `TX 0x… · VERIFY ON SHANNON EXPLORER` / `MASAYUME · LIVE CALL` |
 | Leverage caveat | L354–362 | — | Truth correction | Omitted, not printed as "1×" |
-| Earned Heat — P&L hero (win = vermilion heat, loss = ash), sub-line, kind line, proof pair | `shareCard.ts` L285–482 | `trade-card.ts` | Adapted | **Done** — win/loss `SETTLEMENT RECORD` with `ORACLE-SETTLED $print AT <expiry UTC>` only when the closing print is on record; void `VOID RECORD · BOTH SIDES PAID 0.5`; a close-out `CLOSE-OUT RECORD` never claims a settlement; no cost on record → hero is the payout, labelled `PAID OUT` |
+| Earned Heat — P&L hero (win = vermilion heat, loss = ash), sub-line, kind line, proof pair in the footer, the stub | `shareCard.ts` L285–482 | `trade-card.ts`, `stub.ts` | **Redesigned on the user's call** | **Done** — win/loss `SETTLEMENT RECORD` with `ORACLE-SETTLED $print AT <expiry UTC>` only when the closing print is on record; void `VOID RECORD · BOTH SIDES PAID 0.5`; a close-out `CLOSE-OUT RECORD` never claims a settlement; no cost on record → hero is the payout, labelled `PAID OUT` |
 | Native share sheet with the file, else download + X intent, path decided inside the click | `ShareBetButton.tsx` L38–99 | `useShareCard.ts` | Exact | **Done** — once, for both buttons |
 | The Call on screen: grain, ticks, masthead, eyebrow, band, wager strip, live countdown + draining bar, verify, share CTA, Portfolio / Place another | `BetPlacedCard.tsx`, `Ticket624Drawer.tsx` L807–836 | `CallPlacedCard.tsx`, `ticket/PlacedCall.tsx` | Adapted | **Done** — the ticket body becomes The Call on a confirmed fill; "Place another" resets the composer |
 | Share slot on the receipt | `TradeReceipt.tsx` L321–325 | `VerdictCard.tsx` | Adapted | **Done** — replaces the earlier "Copy link"; the history receipt passes the entry tx and whether the round closed early |
-| Fixtures | `app/dev/receipt`, `app/dev/betplaced` | `/dev/share` | — | **Done** — the on-screen card and every export rendered from canned records |
+| The stub — `SCAN TO MAKE YOUR CALL`, the QR to `https://masayume.app` on a cream tile, `masayume.app`, `@masayume_app` | none — the reference's cards carry no QR, and its handle line (`openBetShareCard.ts` L101, `@yosuku0`) had been dropped as an account that did not exist | `stub.ts`, `copy.ts` | Ours | **Done** — every export's QR decoded to the brand URL in verification |
+| Fixtures | `app/dev/receipt`, `app/dev/betplaced` | `/dev/share` | — | **Done** — the on-screen card and every export rendered from canned records; dev scaffolding the user will remove before production |
 
-**Verified**: both exports rendered at 1200×1500 in the browser from the fixture page (six cards: the call,
-win, loss, void, close-out, payout-only) and read against the reference's layout. The live swap to The Call
-after a fill is exercised by types and the fixture, not by a wallet placing a bet in the automated browser.
+**Revised 2026-09-02, the user's call** — the one surface the user opened to redesign ("we could redesign
+the card in our own way… that's like one exception"): the exports are now a **1600×900 (16:9) banner**, the one
+ratio X shows uncropped on both the web and phone timelines, with the reference's perforation turned vertical
+and the torn-off **stub** carrying a QR to `https://masayume.app` on a cream tile, `masayume.app` and
+`@masayume_app` — both given by the owner on 2026-09-02, held as constants in `copy.ts` so a card shared from
+a preview deploy still points home. The pre-filled post signs off `masayume.app via @masayume_app`. The record
+panel keeps every honesty rule and every word of the earlier port; only the geometry and the branding changed.
+The QR is `qrcode-generator` (zero dependencies, ships its own types): byte mode at level M, modules snapped
+to whole card units, a four-module quiet zone, dark ink on paper so phone scanners read it — an inverted code
+on the dark ground is the version many of them refuse. The on-screen ticket (`CallPlacedCard`) is unchanged.
+
+**Fixed with it**: `ticket/PlacedCall.tsx` now snapshots the Window at mount. `useTicket` auto-advances to the
+next Window inside the no-entry buffer while the bet state stays, so The Call could show the next Window's
+expiry and opening print under the fill it had just confirmed.
+
+**Where the cards live in the app** (asked by the user 2026-09-02): The Call replaces the ticket body in the
+`/markets` hero the moment a fill confirms (`ticket/Ticket.tsx`, `booked` branch) with "Share this call ↗"
+under it; Earned Heat is the "Share card ↗" link on every Verdict receipt — the hero's verdict when a held
+Window settles in view (`verdict/LiveVerdict.tsx`) and each settled row's receipt on `/portfolio`
+(`history/HistoryReceipt.tsx`).
+
+**Verified**: all six exports rendered at 1600×900 in the browser from `/dev/share` (2.0–2.4 MB each, under
+X's 5 MB PNG limit); every QR tile cropped from the exports decoded to `https://masayume.app` with jsQR; the
+call, the win and the loss inspected at full size. The live swap to The Call after a fill remains exercised by
+types and the fixture only — the automated browser cannot sign.
 
 ### Alerts (Stage 3, done 2026-09-02)
 

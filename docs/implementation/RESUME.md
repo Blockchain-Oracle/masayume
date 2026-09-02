@@ -42,6 +42,9 @@ Everything is green: `pnpm typecheck`, `pnpm invariants` (12/12), `pnpm test` (5
 
 **Never touch or commit** the untracked `context/screens/` and `prompt.md`. They are the user's.
 
+**`/dev/*` is scaffolding.** The user keeps it only to eyeball fixtures quickly and will remove the whole
+tree before production — never link it from the app, never treat a `/dev` mount as the feature shipping.
+
 **Local state, not in the repo**: `web/.env.local` (gitignored) holds the user's Neon
 `DATABASE_URL` and a random `ROOM_TOKEN_SECRET`. The temporary local `masayume_room_dev` database
 used to verify the Room on 2026-09-01 has been dropped. **The Neon credential was pasted into a
@@ -126,6 +129,14 @@ Per `05-migration-and-agency-handoff.md`. Four slots were waiting on `/markets` 
    - **Share cards** (`features/share/`): `canvas.ts` is the drawing kit both PNGs use; it reads
      `--share-*` tokens off `share-card.css`, and `font()` builds canvas font strings, so no hex or px
      lives in TSX. `/dev/share` renders every export as an `<img>` — the way to look at a card.
+     **Redesigned 2026-09-02 on the user's call** (the one surface exempt from source-led replication):
+     a 1600×900 X banner whose perforation runs vertical, with a stub (`stub.ts`) carrying a QR to
+     `https://masayume.app`, the site and `@masayume_app` — brand constants in `copy.ts`, given by the
+     owner. QR via `qrcode-generator`. **Where they show in the app**: The Call is the ticket body in the
+     `/markets` hero from the moment a fill confirms (`ticket/Ticket.tsx` → `PlacedCall`), Earned Heat is
+     "Share card ↗" on every Verdict receipt (`LiveVerdict`, and `/portfolio` settled rows via
+     `HistoryReceipt`). `PlacedCall` snapshots the Window at mount because `useTicket` auto-advances in
+     the no-entry buffer while the bet state stays.
    - **Alerts** fire only while a tab is open (browser-side evaluator in `AppProviders`); the popover
      says so. Placement in the hero foot is ours and awaits the user's eye.
    - **`/status`** is the probe; a stale last-good reading is reported as a failed probe on purpose.
@@ -222,7 +233,9 @@ value, and a clean load draws dark-on-cream).
 ## Open blockers (unchanged)
 
 - **Native mobile — Blocked.** No native source exists. Responsive web/PWA is authoritative.
-- **Masayume X account — owner-only.** Architecture supports it; live creation needs the user.
+- **Masayume X account.** The handle is `@masayume_app` and the site `masayume.app` (given by the user
+  2026-09-02; constants in `features/share/copy.ts`). Live posting and X OAuth linking stay Stage 4 and
+  owner-authorized.
 - **`/fund` — owner-only.** The reference's on-ramp needs a Paystack key and a funded treasury
   signer; funding is outside this authorization. `/claim` is X-OAuth recovery, Stage 4. Neither was
   reclassified; both keep their dependency state.
@@ -235,6 +248,10 @@ value, and a clean load draws dark-on-cream).
   was invisible (the `--white` remap above), and the card's darkness was unwanted. **Decision: the
   reel card follows the theme.** Recorded as a deviation in the ledger. Verified in the browser at
   both themes after the change.
+- 2026-09-02: reviewed `/dev/share` — ruled the share card the one surface we may redesign our own way,
+  gave the X handle `@masayume_app` and the site `masayume.app`, asked for a QR to the app and an X-sized
+  banner instead of the tall card. Said again that `/dev` is temporary. Asked where the cards live in the
+  real app (answered above under Share cards). Feedback on the work so far: positive.
 - **Not yet reviewed by the user:** the whole social and public-proof slice (the woven reel and the
   composer, The Call after a fill, the share button on receipts, the alert bell in the hero foot,
   `/news`, `/status`, `/docs`, `/how-it-works`, `/demo`, `/pitch`), and before it `/portfolio` (settled

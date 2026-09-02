@@ -3,12 +3,13 @@ import { formatCadence } from "@masayume/core/copy";
 import type { Hex, Side } from "@masayume/core/types";
 import { formatBaseUnits, formatOracleRaw, formatUtc, secToMs } from "@masayume/core/units";
 import { ORACLE_SCALE } from "@/features/markets/hero/units";
-import { CARD_MARGIN, CARD_W, closeCard, drawFooter, drawMasthead, drawPerforation, drawProof, drawTracked, ensureFont, fitFontPx, font, openCard, resolveFonts, resolvePalette } from "./canvas";
+import { CARD_MARGIN, RECORD_W, closeCard, drawFooter, drawMasthead, drawPerforation, drawSpark, drawTracked, ensureFont, fitFontPx, font, openCard, resolveFonts, resolvePalette } from "./canvas";
 import { SHARE } from "./copy";
+import { drawStub, encodeQr } from "./stub";
 
 /**
  * "The Call" — the shareable card for one just-placed bet, ported from
- * `reference/yosuku/lib/openBetShareCard.ts`.
+ * `reference/yosuku/lib/openBetShareCard.ts` and laid out as the 16:9 banner.
  *
  * HONESTY (hard rules — do not relax):
  *  · This is an OPEN position with NO result. The return is framed conditionally
@@ -37,6 +38,15 @@ export interface CallCard {
   placedAtMs: number;
 }
 
+/** Baselines down the record panel. */
+const EYEBROW_Y = 272;
+const HERO_Y = 386;
+const WINS_IF_Y = 434;
+const STAKE_LABEL_Y = 520;
+const WAGER_Y = 612;
+const FEE_NOTE_Y = 656;
+const SETTLES_Y = 728;
+
 const fmt = (value: bigint, decimals: number) => formatBaseUnits(value, decimals);
 const usd0 = (raw: bigint) => `$${formatOracleRaw(raw, ORACLE_SCALE, 0)}`;
 
@@ -63,89 +73,86 @@ export function shortCallId(card: CallCard): string {
 const shortHash = (hash: string): string => (hash.length > 14 ? `${hash.slice(0, 14)}…` : hash);
 
 /** Honest pre-filled post text — real staked numbers only, framed as a live call. */
-export function buildCallTweetText(card: CallCard, host: string): string {
-  return SHARE.call.tweet(callBandLabel(card).toLowerCase(), formatCadence(card.intervalSec), fmt(card.stakeBase, card.decimals), fmt(callWinBase(card), card.decimals), card.symbol, formatUtc(secToMs(card.expirySec)), host);
+export function buildCallTweetText(card: CallCard): string {
+  return SHARE.call.tweet(callBandLabel(card).toLowerCase(), formatCadence(card.intervalSec), fmt(card.stakeBase, card.decimals), fmt(callWinBase(card), card.decimals), card.symbol, formatUtc(secToMs(card.expirySec)));
 }
 
-export async function renderCallShareCard(card: CallCard, host: string): Promise<Blob> {
+export async function renderCallShareCard(card: CallCard): Promise<Blob> {
   const fonts = resolveFonts();
-  const { vermilion, verm, groundCall } = resolvePalette();
+  const palette = resolvePalette();
+  const { vermilion, verm, groundCall } = palette;
   const band = callBandLabel(card);
   const stakeText = fmt(card.stakeBase, card.decimals);
   const winText = fmt(callWinBase(card), card.decimals);
+  const arrow = "  →  ";
+  const wager = `${stakeText}${arrow}${winText}`;
+  const qr = encodeQr(SHARE.siteUrl);
 
   await Promise.all([
-    ensureFont(font(800, 150, fonts.display), band),
-    ensureFont(font(800, 120, fonts.display), `${stakeText}→${winText}`),
-    ensureFont(font(800, 27, fonts.display), SHARE.brand),
-    ensureFont(font(600, 22, fonts.mono)),
-    ensureFont(font(500, 26, fonts.mono)),
+    ensureFont(font(800, 112, fonts.display), band),
+    ensureFont(font(800, 88, fonts.display), wager),
+    ensureFont(font(800, 30, fonts.display), `${SHARE.brand}${SHARE.site}`),
+    ensureFont(font(600, 24, fonts.mono)),
+    ensureFont(font(500, 20, fonts.mono)),
+    ensureFont(font(400, 19, fonts.mono)),
   ]);
 
-  // Flat near-black; the heat lives only on the return number and the direction spark.
-  const { canvas, ctx } = openCard(groundCall, 0.34, 0.46);
-  drawMasthead(ctx, fonts, SHARE.brand, shortCallId(card), SHARE.call.recordType, 250);
-
-  // a single vermilion spark under the record line
-  ctx.strokeStyle = verm(0.5);
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(CARD_W / 2 - 26, 172);
-  ctx.lineTo(CARD_W / 2 + 26, 172);
-  ctx.stroke();
+  // Flat near-black; the heat lives only on the spark, the direction and the return.
+  const { canvas, ctx } = openCard(groundCall, 0.3, 0.46);
+  drawMasthead(ctx, fonts, SHARE.brand, shortCallId(card), SHARE.call.recordType);
+  drawSpark(ctx, verm(0.6));
 
   // direction eyebrow
-  ctx.font = font(600, 30, fonts.mono);
+  ctx.font = font(600, 24, fonts.mono);
   ctx.fillStyle = vermilion;
-  drawTracked(ctx, callDirLabel(card), CARD_W / 2, 360, 4, "center");
+  drawTracked(ctx, callDirLabel(card), CARD_MARGIN, EYEBROW_Y, 4, "left");
 
   // hero: the call
-  const heroPx = fitFontPx(ctx, band, fonts.display, 800, 132, CARD_W - 2 * CARD_MARGIN, 60);
+  const heroPx = fitFontPx(ctx, band, fonts.display, 800, 112, RECORD_W, 48);
   ctx.font = font(800, heroPx, fonts.display);
   ctx.fillStyle = "rgba(255,255,255,0.98)";
-  ctx.textAlign = "center";
-  ctx.fillText(band, CARD_W / 2, 486);
+  ctx.textAlign = "left";
+  ctx.fillText(band, CARD_MARGIN, HERO_Y);
+
+  ctx.font = font(400, 20, fonts.mono);
+  ctx.fillStyle = "rgba(255,255,255,0.55)";
+  ctx.fillText(SHARE.call.winsIf(card.asset, card.side), CARD_MARGIN, WINS_IF_Y);
 
   // wager: stake → return (the return carries the vermilion)
-  ctx.font = font(600, 18, fonts.mono);
+  ctx.font = font(600, 15, fonts.mono);
   ctx.fillStyle = "rgba(255,255,255,0.45)";
-  drawTracked(ctx, SHARE.call.stakeLine, CARD_W / 2, 632, 4, "center");
+  drawTracked(ctx, SHARE.call.stakeLine, CARD_MARGIN, STAKE_LABEL_Y, 4, "left");
 
-  ctx.font = font(800, 108, fonts.display);
-  const arrow = "  →  ";
-  const wStake = ctx.measureText(stakeText).width;
-  const wArrow = ctx.measureText(arrow).width;
-  const wWin = ctx.measureText(winText).width;
-  let wx = CARD_W / 2 - (wStake + wArrow + wWin) / 2;
-  const wagerY = 772;
-  ctx.textAlign = "left";
+  const wagerPx = fitFontPx(ctx, wager, fonts.display, 800, 88, RECORD_W, 40);
+  ctx.font = font(800, wagerPx, fonts.display);
+  let wx = CARD_MARGIN;
   ctx.fillStyle = "rgba(255,255,255,0.92)";
-  ctx.fillText(stakeText, wx, wagerY);
-  wx += wStake;
+  ctx.fillText(stakeText, wx, WAGER_Y);
+  wx += ctx.measureText(stakeText).width;
   ctx.fillStyle = "rgba(255,255,255,0.35)";
-  ctx.fillText(arrow, wx, wagerY);
-  wx += wArrow;
+  ctx.fillText(arrow, wx, WAGER_Y);
+  wx += ctx.measureText(arrow).width;
   ctx.save();
   ctx.shadowColor = verm(0.5);
-  ctx.shadowBlur = 68;
+  ctx.shadowBlur = 60;
   ctx.fillStyle = vermilion;
-  ctx.fillText(winText, wx, wagerY);
+  ctx.fillText(winText, wx, WAGER_Y);
   ctx.restore();
   ctx.fillStyle = vermilion;
-  ctx.fillText(winText, wx, wagerY);
+  ctx.fillText(winText, wx, WAGER_Y);
 
-  ctx.font = font(500, 22, fonts.mono);
+  ctx.font = font(500, 17, fonts.mono);
   ctx.fillStyle = "rgba(255,255,255,0.45)";
-  drawTracked(ctx, card.feeBps === null ? card.symbol : `${card.symbol} · ${SHARE.call.afterFee.toUpperCase()}`, CARD_W / 2, 824, 5, "center");
+  drawTracked(ctx, card.feeBps === null ? card.symbol : `${card.symbol} · ${SHARE.call.afterFee.toUpperCase()}`, CARD_MARGIN, FEE_NOTE_Y, 5, "left");
 
   // settle line (real expiry, absolute UTC)
-  ctx.font = font(400, 21, fonts.mono);
+  const settles = SHARE.call.settlesLine(formatUtc(secToMs(card.expirySec)));
+  ctx.font = font(400, fitFontPx(ctx, settles, fonts.mono, 400, 19, RECORD_W, 12), fonts.mono);
   ctx.fillStyle = "rgba(255,255,255,0.55)";
-  ctx.textAlign = "center";
-  ctx.fillText(SHARE.call.settlesLine(formatUtc(secToMs(card.expirySec))), CARD_W / 2, 900);
+  ctx.fillText(settles, CARD_MARGIN, SETTLES_Y);
 
-  drawPerforation(ctx, 1120);
-  drawProof(ctx, fonts, SHARE.call.tx(shortHash(card.txHash)), SHARE.verifyOn);
-  drawFooter(ctx, fonts, host, SHARE.call.footerKind);
+  drawPerforation(ctx);
+  drawStub(ctx, fonts, palette, qr);
+  drawFooter(ctx, fonts, SHARE.call.tx(shortHash(card.txHash)), SHARE.verifyOn, SHARE.call.footerKind);
   return closeCard(canvas, ctx);
 }

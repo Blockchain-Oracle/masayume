@@ -3,14 +3,14 @@
 import { toMarketId } from "@masayume/core/types";
 import { useEffect, useState } from "react";
 import { SectionHeader } from "@/components/chrome";
-import { CallPlacedCard, renderCallShareCard, renderTradeShareCard, shareHost, type CallCard, type TradeCard } from "@/features/share";
+import { CallPlacedCard, renderCallShareCard, renderTradeShareCard, type CallCard, type TradeCard } from "@/features/share";
 import { DECIMALS, FIXED_NOW_MS, FIXED_NOW_SEC, SYMBOL, TX_HASH } from "../states/fixtures";
 
 const DEV = {
   title: "Share cards",
-  intro: "The Call as it appears the instant a bet lands, then both PNG exports rendered from canned records — no wallet, no chain.",
+  intro: "The Call as it appears the instant a bet lands, then both PNG exports — the 1600×900 X banner with the QR stub — rendered from canned records. No wallet, no chain.",
   call: "The Call — on screen, 4:12 left of a 5m Window",
-  pngCall: "The Call — the 1200×1500 export",
+  pngCall: "The Call — the 1600×900 export",
   pngTrade: "Earned Heat — win, loss, void, close-out, and a payout with no cost on record",
   rendering: "rendering…",
 } as const;
@@ -70,13 +70,12 @@ function Png({ render }: { render: () => Promise<Blob> }) {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [render]);
-  // A rendered export, shown at a quarter of its size.
+  // A rendered export, shown at a quarter of its width.
   // eslint-disable-next-line @next/next/no-img-element
   return url ? <img src={url} alt="" className="dev-share-png" /> : <p className="type-caption text-ink-muted">{DEV.rendering}</p>;
 }
 
 export default function DevSharePage() {
-  const host = shareHost();
   return (
     <div className="mx-auto flex w-full max-w-(--content-wide) flex-col gap-10 px-gutter py-8">
       <div className="flex flex-col gap-2">
@@ -93,14 +92,14 @@ export default function DevSharePage() {
 
       <section className="flex flex-col gap-4">
         <SectionHeader index="02" title={DEV.pngCall} />
-        <Png render={() => renderCallShareCard(CALL, host)} />
+        <Png render={() => renderCallShareCard(CALL)} />
       </section>
 
       <section className="flex flex-col gap-4">
         <SectionHeader index="03" title={DEV.pngTrade} />
         <div className="dev-share-grid">
           {TRADES.map((trade, i) => (
-            <Png key={i} render={() => renderTradeShareCard(trade, host)} />
+            <Png key={i} render={() => renderTradeShareCard(trade)} />
           ))}
         </div>
       </section>

@@ -27,20 +27,24 @@ export function PlacedCall({ booked, market, nowMs, decimals, symbol, onAnother 
   // The moment the confirmation arrived, held for the life of the card so the
   // draining bar measures the holding window rather than resetting every render.
   const [placedAtMs] = useState(() => (nowMs > 0 ? nowMs : Date.now()));
-  const opening = useOpeningPrice(market.marketId);
-  const fee = useSettlementFee(market.marketId, true);
+  // The Window the fill landed in, held the same way: inside the no-entry buffer
+  // the ticket auto-advances to the next Window (useTicket) while the bet state
+  // stays, and The Call must keep describing the one that was actually bought.
+  const [placedIn] = useState(() => market);
+  const opening = useOpeningPrice(placedIn.marketId);
+  const fee = useSettlementFee(placedIn.marketId, true);
 
   const card: CallCard = {
-    asset: market.asset,
+    asset: placedIn.asset,
     side: booked.side,
-    intervalSec: market.intervalSec,
-    lineRaw: opening?.ok ? opening.value : market.openingPriceRaw,
+    intervalSec: placedIn.intervalSec,
+    lineRaw: opening?.ok ? opening.value : placedIn.openingPriceRaw,
     stakeBase: booked.costBase,
     contractsRaw: booked.contractsRaw,
     decimals,
     symbol,
     feeBps: fee?.ok ? fee.value : null,
-    expirySec: market.expirySec,
+    expirySec: placedIn.expirySec,
     txHash: booked.txHash,
     placedAtMs,
   };

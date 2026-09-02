@@ -2,16 +2,17 @@ import { formatCadence } from "@masayume/core/copy";
 import type { Hex, Side } from "@masayume/core/types";
 import { formatBaseUnits, formatOracleRaw, formatUtc, secToMs } from "@masayume/core/units";
 import { ORACLE_SCALE } from "@/features/markets/hero/units";
-import { CARD_H, CARD_MARGIN, CARD_W, closeCard, drawFooter, drawMasthead, drawPerforation, drawProof, drawTracked, ensureFont, fitFontPx, font, openCard, resolveFonts, resolvePalette } from "./canvas";
+import { CARD_H, CARD_MARGIN, CARD_W, RECORD_RIGHT, RECORD_W, closeCard, drawFooter, drawMasthead, drawPerforation, drawTracked, ensureFont, fitFontPx, font, openCard, resolveFonts, resolvePalette } from "./canvas";
 import { SHARE } from "./copy";
+import { drawStub, encodeQr } from "./stub";
 
 /**
  * "Earned Heat" — the shareable card for one settled Window, ported from
- * `reference/yosuku/lib/shareCard.ts`.
+ * `reference/yosuku/lib/shareCard.ts` and laid out as the 16:9 banner.
  *
  * The realised P&L is the giant focal number: a win is living vermilion heat, a loss
  * is drained ash — never green, never red. ONE-SPARK rule: vermilion appears only
- * on a win, and only in the P&L.
+ * on a win, and only in the P&L — the stub stays neutral for that reason.
  *
  * HONESTY (hard rules — do not relax):
  *  · The oracle's print is drawn ONLY when the closing print is on record, at the
@@ -42,6 +43,14 @@ export interface TradeCard {
   entryTxHash: Hex | null;
   settlementTxHash: Hex | null;
 }
+
+/** Baselines down the record panel, and where the heat sits behind the hero. */
+const LABEL_Y = 330;
+const HERO_Y = 520;
+const SUB_Y = 606;
+const KIND_Y = 654;
+const HEAT_CX = (CARD_MARGIN + RECORD_RIGHT) / 2;
+const HEAT_CY = 470;
 
 const fmt = (value: bigint, decimals: number) => formatBaseUnits(value, decimals);
 const usd0 = (raw: bigint) => `$${formatOracleRaw(raw, ORACLE_SCALE, 0)}`;
@@ -76,32 +85,34 @@ function tradeLook(card: TradeCard): TradeLook {
 }
 
 /** Honest pre-filled post text from real fields only. */
-export function buildTradeTweetText(card: TradeCard, host: string): string {
+export function buildTradeTweetText(card: TradeCard): string {
   const look = tradeLook(card);
   const pnl = card.stakeBase === null ? fmt(card.payoutBase, card.decimals) : formatBaseUnits(card.pnlBase, card.decimals, { signed: true });
-  return SHARE.trade.tweet(pnl, card.symbol, card.asset, tradeBandLabel(card).toLowerCase(), look.kindLine.toLowerCase(), card.stakeBase === null ? "—" : fmt(card.stakeBase, card.decimals), fmt(card.payoutBase, card.decimals), host);
+  return SHARE.trade.tweet(pnl, card.symbol, card.asset, tradeBandLabel(card).toLowerCase(), look.kindLine.toLowerCase(), card.stakeBase === null ? "—" : fmt(card.stakeBase, card.decimals), fmt(card.payoutBase, card.decimals));
 }
 
-export async function renderTradeShareCard(card: TradeCard, host: string): Promise<Blob> {
+export async function renderTradeShareCard(card: TradeCard): Promise<Blob> {
   const fonts = resolveFonts();
-  const { vermilion, verm, groundTrade, ash, ashDim } = resolvePalette();
+  const palette = resolvePalette();
+  const { vermilion, verm, groundTrade, ash, ashDim } = palette;
   const look = tradeLook(card);
   const heroText = card.stakeBase === null ? fmt(card.payoutBase, card.decimals) : formatBaseUnits(card.pnlBase, card.decimals, { signed: true }).replace(/^-/, "−");
   const heroLabel = card.stakeBase === null ? SHARE.trade.paidOut(card.symbol) : SHARE.trade.realized(card.symbol);
   const subLine = `${card.asset} · ${tradeBandLabel(card)} · ${formatCadence(card.intervalSec)} · ${card.stakeBase === null ? "—" : fmt(card.stakeBase, card.decimals)} → ${fmt(card.payoutBase, card.decimals)} ${card.symbol}`;
+  const qr = encodeQr(SHARE.siteUrl);
 
   await Promise.all([
-    ensureFont(font(800, 240, fonts.display), heroText),
-    ensureFont(font(800, 34, fonts.display), SHARE.brand),
-    ensureFont(font(600, 22, fonts.mono)),
-    ensureFont(font(500, 26, fonts.mono), subLine),
-    ensureFont(font(400, 21, fonts.mono)),
+    ensureFont(font(800, 200, fonts.display), heroText),
+    ensureFont(font(800, 30, fonts.display), `${SHARE.brand}${SHARE.site}`),
+    ensureFont(font(600, 17, fonts.mono)),
+    ensureFont(font(500, 24, fonts.mono), subLine),
+    ensureFont(font(400, 19, fonts.mono)),
   ]);
 
-  const { canvas, ctx } = openCard(groundTrade, 0.35, 0.42);
+  const { canvas, ctx } = openCard(groundTrade, 0.3, 0.42);
 
   // living heat behind the hero on a win, a faint lamp on a loss
-  const heat = ctx.createRadialGradient(CARD_W / 2, 780, 60, CARD_W / 2, 780, 760);
+  const heat = ctx.createRadialGradient(HEAT_CX, HEAT_CY, 60, HEAT_CX, HEAT_CY, 620);
   if (look.won) {
     heat.addColorStop(0, verm(0.14));
     heat.addColorStop(0.55, verm(0.05));
@@ -113,46 +124,42 @@ export async function renderTradeShareCard(card: TradeCard, host: string): Promi
   ctx.fillStyle = heat;
   ctx.fillRect(0, 0, CARD_W, CARD_H);
 
-  drawMasthead(ctx, fonts, SHARE.brand, shortTradeId(card), look.recordType, 258);
+  drawMasthead(ctx, fonts, SHARE.brand, shortTradeId(card), look.recordType);
 
-  ctx.font = font(600, 19, fonts.mono);
+  ctx.font = font(600, 17, fonts.mono);
   ctx.fillStyle = "rgba(255,255,255,0.45)";
-  drawTracked(ctx, heroLabel, CARD_W / 2, 648, 5, "center");
+  drawTracked(ctx, heroLabel, CARD_MARGIN, LABEL_Y, 5, "left");
 
-  const pnlPx = fitFontPx(ctx, heroText, fonts.display, 800, 232, CARD_W - 2 * CARD_MARGIN);
+  const pnlPx = fitFontPx(ctx, heroText, fonts.display, 800, 200, RECORD_W, 60);
   ctx.font = font(800, pnlPx, fonts.display);
-  ctx.textAlign = "center";
-  const pnlY = 872;
+  ctx.textAlign = "left";
   if (look.won) {
     ctx.save();
     ctx.shadowColor = verm(0.55);
-    ctx.shadowBlur = 180;
+    ctx.shadowBlur = 150;
     ctx.fillStyle = verm(0.9);
-    ctx.fillText(heroText, CARD_W / 2, pnlY);
-    ctx.shadowBlur = 56;
-    ctx.fillText(heroText, CARD_W / 2, pnlY);
+    ctx.fillText(heroText, CARD_MARGIN, HERO_Y);
+    ctx.shadowBlur = 48;
+    ctx.fillText(heroText, CARD_MARGIN, HERO_Y);
     ctx.restore();
     ctx.fillStyle = vermilion;
-    ctx.fillText(heroText, CARD_W / 2, pnlY);
+    ctx.fillText(heroText, CARD_MARGIN, HERO_Y);
   } else {
     ctx.fillStyle = card.outcome === "void" ? ashDim : ash;
-    ctx.fillText(heroText, CARD_W / 2, pnlY);
+    ctx.fillText(heroText, CARD_MARGIN, HERO_Y);
   }
 
-  const subPx = fitFontPx(ctx, subLine, fonts.mono, 500, 26, CARD_W - 2 * CARD_MARGIN);
-  ctx.font = font(500, subPx, fonts.mono);
+  ctx.font = font(500, fitFontPx(ctx, subLine, fonts.mono, 500, 24, RECORD_W), fonts.mono);
   ctx.fillStyle = "rgba(255,255,255,0.82)";
-  ctx.textAlign = "center";
-  ctx.fillText(subLine, CARD_W / 2, 972);
+  ctx.fillText(subLine, CARD_MARGIN, SUB_Y);
 
-  const klPx = fitFontPx(ctx, look.kindLine, fonts.mono, 400, 20, CARD_W - 2 * CARD_MARGIN);
-  ctx.font = font(400, klPx, fonts.mono);
+  ctx.font = font(400, fitFontPx(ctx, look.kindLine, fonts.mono, 400, 19, RECORD_W), fonts.mono);
   ctx.fillStyle = card.outcome === "void" ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.55)";
-  ctx.fillText(look.kindLine, CARD_W / 2, 1026);
+  ctx.fillText(look.kindLine, CARD_MARGIN, KIND_Y);
 
-  drawPerforation(ctx, 1120);
+  drawPerforation(ctx);
+  drawStub(ctx, fonts, palette, qr);
   const proof = [card.entryTxHash && SHARE.trade.entry(shortHash(card.entryTxHash)), card.settlementTxHash && SHARE.trade.settlementTx(shortHash(card.settlementTxHash))].filter(Boolean).join(" · ") || SHARE.trade.noTx;
-  drawProof(ctx, fonts, proof, SHARE.verifyOn);
-  drawFooter(ctx, fonts, host, look.footerKind);
+  drawFooter(ctx, fonts, proof, SHARE.verifyOn, look.footerKind);
   return closeCard(canvas, ctx);
 }
