@@ -15,6 +15,7 @@ const contracts = [
   { name: "forwarder", artifact: "ERC2771Forwarder.sol/ERC2771Forwarder.json", exportName: "forwarderAbi" },
   { name: "strategy-registry", artifact: "StrategyRegistry.sol/StrategyRegistry.json", exportName: "strategyRegistryAbi", optional: true },
   { name: "parlay-reserve", artifact: "ParlayReserve.sol/ParlayReserve.json", exportName: "parlayReserveAbi", optional: true },
+  { name: "range-reserve", artifact: "RangeReserve.sol/RangeReserve.json", exportName: "rangeReserveAbi", optional: true },
 ];
 
 mkdirSync(join(target, "contracts"), { recursive: true });

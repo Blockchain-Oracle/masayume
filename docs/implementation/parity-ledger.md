@@ -28,6 +28,11 @@ order", never "optional" or "cut".
 
 | Date | Decision | Reference | User-visible consequence | Approval |
 |---|---|---|---|---|
+| 2026-09-02 | **A band's odds are the house's, from the Window's book and the venue's own prints.** `RangeReserve` centres a normal return where the Window's resting book puts the market (Φ⁻¹ of its P(close ≥ open) over the parlay's depth) and widens it by a per-asset σ measured from the venue's closing prints; a band opened mid-Window is therefore priced against the current price. The reference's venue priced bands with its own model; DreamDEX has none | `ticket624.core.ts` §range; `RangeMath.sol`, `RangePricing.sol`; context/43 §What this settles | The multiple on the button follows the market and the clock, and the chain charges exactly it or requotes | **Needs user review** — a pricing model where the reference had a venue; parameters are public and tunable |
+| 2026-09-02 | The reserve refuses a Window whose book is thinner than 20 contracts a side (`ThinBook`), wider than 0.20 (`WideBook`) or already decided (P(up) outside 3–97%) — the same doctrine as the parlay: the venue's data prices the product or nothing does. With the venue's makers offline every book was empty on 2026-09-02, so the live page would refuse until they return | `RangePricing._center`; context/43 | "No liquidity at this size" on an empty book rather than a guessed centre | No approval needed — the parlay's rule |
+| 2026-09-02 | `/games/range` is built on the parlay page's frame because the reference has no range page; the Ticket's range mode is the reference's own | ledger §RangeReserve | A game page in the app's grammar | **Needs user review** |
+| 2026-09-02 | The range band is not yet drawn on the hero's chart (the reference shades it); recorded as a follow-up | `Ticket624Drawer.tsx` L750–761 | The band lives in the Ticket only | **Needs user review** |
+| 2026-09-02 | **RangeReserve settles on the OracleHub's own print.** A Window's closing price is `pullNumericAnswer` on the question the module row names (cents, two decimals, readable from a contract two seconds after expiry, pending under `0x25cd016c` before); the opening print and the asset are proven through the hub's content-addressed key of the venue's rebuilt question definition. Nothing is scheduled, nothing co-signed | context/43; `contracts/test/OracleHub.fork.t.sol`; `scripts/spike/range-oracle.ts` (live Window 70535: 76,735.23, hub == indexer) | A range round will show the same closing print the Window settled on, with the oracle's own receipt link | No approval needed — the venue's machinery, verified; the design that follows is in RESUME §Stage 5 |
 | 2026-09-02 | **A parlay leg is priced by the venue's book, on-chain, at open** — `ParlayReserve.openParlay` reads each Window's `getBookLevels` and charges the cost-weighted price over the depth the ticket must hedge; the reference took opener-supplied `prob_bps` and named that its gap | `parlay624.move` L1–41 (v1 header), context/14 §5 "production hardening is re-deriving them from venue quotes in-tx" | The number on the Place button is the number the chain charges; a moved book is a requote, never a worse fill | No approval needed — the reference's own stated fix |
 | 2026-09-02 | **No admin void on the parlay reserve.** A leg whose Window the venue voids voids the ticket and refunds the stake; the venue's `voidExpired()` is permissionless, so no grace-and-admin path is needed to untrap funds | `parlay624.move` `admin_void`; AD-5 | Nothing can hold a refund back; a void is a state the slip shows | **Approved by the user 2026-09-02** — a deliberate removal, like the vault's |
 | 2026-09-02 | `/parlay` adds a "Settle" pill on a settled-but-uncranked leg, a "Paid" row for a claimed ticket, a "Voided" row, and the reserve's liquid/in-play line under the footnote | reference `ParlaySlip.tsx`, `ParlayBuilder.tsx` L492–494 | The reference relied on a keeper and deleted claimed objects; here the crank is the reader's and history stays | **Approved by the user 2026-09-02** |
@@ -288,6 +293,62 @@ the void refunding the stake to the cent) and live on Shannon: ticket 1 opened f
 on two 1-minute Windows sharing an instant, the UP leg at 0.115 lost on the oracle's print, a permissionless crank
 settled the ticket `lost` and released the 36.17 the house had locked (context/42 §Live on Shannon). The four
 review rows above were approved by the user the same day.
+
+### RangeReserve, the Ticket's Range mode and `/games/range` (Stage 5, built and fork-verified 2026-09-02; deploy waits on the owner's go)
+
+The reference's Range is the Ticket's second mode (`Ticket624Drawer.tsx` L203–333, L857–1030, L1257–1280): a
+both-ends-finite band around spot, a width preset scaled per cadence, a draggable centre in five-dollar steps,
+priced by the reference's own venue (`ticket624.core.ts` §range: `placeRangeMint624`, `rangeTicks624`) and settled
+on its feed. DreamDEX has no band market, so `RangeReserve.sol` (`contracts/src/range/`) is the house that prices
+and funds it, on the venue's own machinery (context/43):
+
+| Requirement | Reference | Ours | Class | Status |
+|---|---|---|---|---|
+| Basis | the venue's normalized spot at expiry | the OracleHub's answer to the Window's own closing question (`markets(id).oracleQuestionId` → `pullNumericAnswer`), in cents — the same print the Window's Up/Down settles on; pending under one selector until two seconds after expiry, readable for good after | Adapted — the venue's oracle, no print of ours | **Done**, live-verified (context/43) |
+| Band | `[lowerTick, higherTick]` in ticks, both finite | `[lowPrint, highPrint]` in cents, inclusive; `INSIDE` or `OUTSIDE` | Adapted | **Done** |
+| Odds | the venue's own model (`entryProb` from a dry-run) | the house's: P(inside) under a normal return over the seconds left, σ per asset **measured from the venue's own closing prints** (BTC 0.615 bps/√s over 388 five-minute Windows, ETH 0.75–0.80 over 370, 2026-09-02), the distribution **centred where the Window's book puts the market** (P(close ≥ open) off the resting orders, Φ⁻¹ of it, over the parlay's 20-contract depth) — so a band opened mid-Window is priced against the current price, not the stale opening print; margin, longshot/near-certain refusals as the reference's 2–97% admission band | Adapted — a model where the reference had a venue; every input readable, every parameter public | **Done** — 100 forge tests incl. 12 golden rows shared with vitest, generated by a third implementation |
+| The asset | known | the opener names it; the contract rebuilds the (asset, expiry) question definition and requires the hub's key to map to the Window's question (`WindowQuestion.sol`); cached per Window after the first open | Strengthening — the module row carries no asset | **Done**, fork-verified |
+| The opening print | the market's strike | the hub's answer to the (asset, `tradingStart`) question through the same key; a Window without one is refused (`NoOpeningPrint`), never guessed | Adapted | **Done**, fork-verified |
+| Venue guard | one venue | only Windows whose `oracleAdapter` is the hub and whose `originVenueId` is the pinned venue (two-decimal prints); the 1-minute lanes ride another adapter and are refused | Adapted | **Done** |
+| Escrow | the venue's mint | the parlay's: the whole `maxPayout` at open, stake from the opener, `maxPayout − stake` from `liquid` into `locked`; per-expiry sub-cap because every band on one print is decided together | Exact (shape) | **Done** |
+| Settlement | the venue's | `settle(roundId)`: permissionless, idempotent, `NotSettled` while the hub is pending; a voided answer refunds; `voidStale` after `staleAfterSec` (6 h) if the hub never answers — anyone may call, the stake goes home | Adapted — AD-5 | **Done** |
+| Claim | the venue pays | `claim` pays `owner` only; the round stays as `CLAIMED` | Adapted | **Done** |
+| Suppliers, admin, pause | — | the parlay's share vault, `setParams` / `setVolatility` / `setPaused` / `setAdmin`; open rounds keep their terms; settlement, claims, refunds and withdrawals never pause | Exact (shape) | **Done** |
+
+**The port (`packages/core/src/range`, `packages/markets/src/range`).** `RangeMath` (the Φ table, its inverse, the
+root, the band probability, the floored stake) is mirrored integer for integer by `@masayume/core/range` and pinned
+by `pricing.vectors.json` (forge `RangeVectors.t.sol` ↔ vitest `pricing.test.ts`, the table checked against erf
+within 1e-4). `quoteRangeOnchain` asks the chain (`previewOpen`) for "Set payout"; "Set stake" reads the basis
+(`previewBasis`), solves with the mirror, then lets the chain price that payout. `submitRangeOpen` asks once more
+before any signature and returns `requote` when the basis moved. Reads are multicalls (`getRangeReserveState`,
+`listRangesOf` via `roundsOf` paging). A `range` gas lane (8M, not yet measured on Shannon). Everything answers
+"RangeReserve is not deployed on this network yet" until `contracts/deployments/50312.json` carries `rangeReserve`.
+
+**The Ticket's Range mode (`features/range/RangeTicketBody.tsx`, `BandControl.tsx`, `range-band.css`)** — the
+reference's range body ported: "Winning range", From/To, the track with the spot marked, the width presets
+(Tight / Balanced / Wide, `$60 span`), the centre readout with −$5 / recentre / +$5, the vermilion "Place RANGE
+$X to $Y →". `BetModes` is live where the reserve is deployed and stays disabled, naming what is missing, where it is
+not. Inside only, as the reference. The wallet route only (the reserve takes the stake by allowance).
+
+**`/games/range` (`features/range/RangeScreen.tsx`)** — the reference has no range page; the surface is its Ticket's
+range mode on the parlay page's frame (the same `pl-*` CSS: hero, §01 plate + ticket, §02 slip, §03 how it pays),
+with the Window picker on the plate and both sides offered. Fixtures on `/dev/range`. **Not seen in a browser.**
+
+| Reference | Ours | Class | Approval |
+|---|---|---|---|
+| Presets ±$15/30/55, scaled 0.5 / 1 / 4 for 1m / 5m / 1h | the same three; other cadences scale by √time from the 5-minute anchor (15m ≈ 1.7, 4h ≈ 6.9, 1d 16) | Adapted — lanes the reference did not have | No approval needed |
+| "BTC must finish inside" · "BTC now" | `{asset} must finish inside` · `{asset} now` — the venue lists ETH too | Truth correction | No approval needed |
+| The band drawn as a shaded region on the price chart (`drawPriceLine` `band`) | **not drawn** — the chart card and the Ticket are siblings; lifting the band into the hero is a follow-up | Pending | **Needs user review** |
+| Gas-free footnote ("Gas-free · settles on its own, right on the price.") | "Settles on its own, right on the oracle's print." | Truth correction — no sponsor on this lane | No approval needed |
+| Private bets refuse range ("Private bets cannot be range bets") | no private control in range mode (the link-private flow is Stage 5 item 5) | — | — |
+| — | `/games/range` with OUTSIDE as a side, the Window picker, the slip's Settle / Void (no oracle answer) / Claim pills | Additive — the game the doc-04 mode row names | **Needs user review** |
+
+**Fork verification** — `contracts/test/RangeReserve.fork.t.sol` on a fork of Shannon (Window 70625, BTC 5m, question
+49301): the opening print 77,105.51 read through the hub's key, the book centre 0.4535 off the Window's own resting
+orders (the venue's makers were offline, so the test rests a maker's two bids first through `placeBinaryOrder`),
+P(inside ±0.05%) 0.368, an 8.25 stake for a 20 payout charged exactly as previewed, the asset proof cached, no market
+address in storage, `settle` refusing while the hub is pending, and after the grace a third party's `voidStale`
+refunding the stake to the cent. The hub itself is covered by `OracleHub.fork.t.sol` and the live spike (context/43).
 
 ### Toast (Stage 2, done 2026-09-01)
 

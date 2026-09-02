@@ -3,6 +3,7 @@ import type { WalletHistory } from "@masayume/core/projection";
 import { isOk, type Reading } from "@masayume/core/schemas";
 import type { Address, BalanceSheet, Bytes32, ClaimableRow, ClockSync, EventMarket, LaneSet, MarketId, OnchainSnapshot, OpenPosition, PricePoint, Resolution } from "@masayume/core/types";
 import type { ParlayReserveState, ParlayTicket } from "@masayume/core/parlay";
+import type { RangeReserveState, RangeRound } from "@masayume/core/range";
 import type { VaultHoldings, VaultSnapshot } from "@masayume/core/vault";
 import { getBalanceSheet } from "../provider/balances";
 import { listWalletHistory } from "../provider/history";
@@ -15,6 +16,7 @@ import { listOpenPositions } from "../provider/positions";
 import { getOpeningPrice, getPriceHistory } from "../provider/prices";
 import { getResolution } from "../provider/resolution";
 import { getParlayReserveState, listParlaysOf } from "../parlay/read";
+import { getRangeReserveState, listRangesOf } from "../range/read";
 import { getVaultHoldings, getVaultSnapshot } from "../vault/read";
 import { keys } from "./keys";
 import { useReadingQuery } from "./useReadingQuery";
@@ -91,6 +93,16 @@ export function useParlayReserve(): Reading<ParlayReserveState | null> | null {
 /** One wallet's tickets, live first; empty (never an error) without a reserve. */
 export function useMyParlays(wallet: Address | null): Reading<ParlayTicket[]> | null {
   return useReadingQuery(keys.parlays(wallet), () => listParlaysOf(wallet as Address), { pollMs: MARKETS_POLL_MS, enabled: wallet !== null });
+}
+
+/** The range reserve's sheet and tunables; `null` inside the reading where no reserve is deployed. */
+export function useRangeReserve(): Reading<RangeReserveState | null> | null {
+  return useReadingQuery(keys.rangeReserve(), getRangeReserveState, { pollMs: MARKETS_POLL_MS });
+}
+
+/** One wallet's range rounds, live first; empty (never an error) without a reserve. */
+export function useMyRanges(wallet: Address | null): Reading<RangeRound[]> | null {
+  return useReadingQuery(keys.ranges(wallet), () => listRangesOf(wallet as Address), { pollMs: MARKETS_POLL_MS, enabled: wallet !== null });
 }
 
 /** What the vault holds for the wallet on one Window; zeros without a vault. */

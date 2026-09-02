@@ -22,6 +22,7 @@ export const BLOCKER_KINDS = [
   "outside-band-low",
   "outside-band-high",
   "stale-quote",
+  "quote-refused",
   "daily-stop",
   "stop-unverified",
   "no-exit",
@@ -46,6 +47,8 @@ const DEFAULT_MIN_STAKE = "1 tUSDC";
 /** The blocker IS the control's label — one derived string for the CTA and its accessible name. */
 export function blockerLabel(kind: BlockerKind, ctx: BlockerContext = {}): string {
   switch (kind) {
+    case "quote-refused":
+      return "The reserve refused this band — see why above";
     case "disconnected":
       return "Connect a wallet to bet";
     case "connecting":

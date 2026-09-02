@@ -11,6 +11,8 @@ contract MockWindow {
     bool public isResolved;
     bool public isVoided;
     uint64 public expiry;
+    uint64 public tradingStart;
+    uint256 public questionId = 1;
     uint64 public settlementWindow = 60;
     uint256[] private _numerators;
     IBinaryPool.Level[] private _bids;
@@ -39,6 +41,14 @@ contract MockWindow {
 
     function setExpiry(uint64 e) external {
         expiry = e;
+    }
+
+    function setTradingStart(uint64 t) external {
+        tradingStart = t;
+    }
+
+    function setQuestionId(uint256 q) external {
+        questionId = q;
     }
 
     /// @dev A resolved binary carries a one-hot vector; `[1,1]` models a vector that names no winner.
@@ -76,6 +86,8 @@ contract MockWindow {
 contract MockWindows {
     MockCollateral public immutable coll;
     mapping(bytes32 => MockWindow) public windowOf;
+    address public oracleAdapter;
+    bytes32 public venue = bytes32("venue");
     uint256 private _next = 1;
 
     constructor(MockCollateral coll_) {
@@ -89,6 +101,24 @@ contract MockWindows {
         windowOf[id] = window;
     }
 
+    /// @dev A Window as the range reserve reads it: when it opened, and which hub question closes it.
+    function addWindowAt(uint64 tradingStart, uint64 expiry, uint256 questionId) external returns (bytes32 id, MockWindow window) {
+        id = bytes32(0x20000 + _next);
+        _next += 1;
+        window = new MockWindow(expiry);
+        window.setTradingStart(tradingStart);
+        window.setQuestionId(questionId);
+        windowOf[id] = window;
+    }
+
+    function setOracleAdapter(address adapter) external {
+        oracleAdapter = adapter;
+    }
+
+    function setVenue(bytes32 v) external {
+        venue = v;
+    }
+
     function markets(bytes32 id)
         external
         view
@@ -99,7 +129,7 @@ contract MockWindows {
             return (0, 0, 0, address(0), 0, bytes32(0), address(0), address(0), address(0), address(0), 0, 0, 0, 0);
         }
         uint256 base = uint256(id) << 8;
-        return (1, 2, 0, address(coll), 7, bytes32("venue"), address(0), address(0), address(w), address(w), base, base + 1, 0, w.expiry());
+        return (w.questionId(), 2, 0, address(coll), 7, venue, oracleAdapter, address(0), address(w), address(w), base, base + 1, w.tradingStart(), w.expiry());
     }
 
     function settlement() external view returns (address) {

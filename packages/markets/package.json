@@ -10,6 +10,7 @@
     "./env": "./src/env.ts",
     "./identity": "./src/identity.ts",
     "./parlay": "./src/parlay/index.ts",
+    "./range": "./src/range/index.ts",
     "./react": "./src/react/index.ts",
     "./runtime": "./src/runtime/index.ts",
     "./sessions": "./src/sessions/index.ts",

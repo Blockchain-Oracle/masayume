@@ -4,14 +4,15 @@ import { formatCadence, type BlockerContext } from "@masayume/core/copy";
 import { minStakeBase } from "@masayume/core/sizing";
 import { formatBaseUnits } from "@masayume/core/units";
 import { collateralOrNull } from "@masayume/markets";
-import { useBalanceSheet, useOnchain, useSigner } from "@masayume/markets/react";
+import { useBalanceSheet, useOnchain, useRangeReserve, useSigner } from "@masayume/markets/react";
 import { useEffect, useState } from "react";
+import { RangeTicketBody } from "@/features/range";
 import { RouteControl, SESSION, SessionControl, useTicketRoute, type FundingSource } from "@/features/session";
 import { TICKET } from "@/lib/copy";
 import { useWalletSession } from "@/lib/wallet-session";
 import { FaucetCard } from "../faucet";
 import { AutoAdvanceNote } from "./AutoAdvanceNote";
-import { BetModes } from "./BetModes";
+import { BetModes, type BetMode } from "./BetModes";
 import { FundingNote } from "./FundingNote";
 import { LeverageChips } from "./LeverageChips";
 import { OutcomeNote } from "./OutcomeNote";
@@ -48,6 +49,10 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
 
   // Where the escrow comes from: the wallet, the Trading Balance, or — armed — the session key inside its caps.
   const [source, setSource] = useState<FundingSource>("wallet");
+  // Call a side, or call a band; the band needs the RangeReserve (Stage 5) and takes the wallet route only.
+  const [mode, setMode] = useState<BetMode>("dir");
+  const rangeReading = useRangeReserve();
+  const rangeReserve = rangeReading?.ok ? rangeReading.value : null;
   const quoteState = useQuote({ market, side, stakeBase, nowMs: t.nowMs, enabled: hasSigner && phase === "trading" });
   const routing = useTicketRoute({ market, side, stakeBase, quote: quoteState.quote, onchain: onchain?.ok ? onchain.value : null, source, walletAvailableBase, symbol });
   const availableBase = routing.availableBase;
@@ -118,7 +123,25 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
       ) : (
         <>
       <WalkLine />
-      <BetModes />
+      <BetModes mode={mode} onChange={setMode} rangeAvailable={rangeReserve !== null} />
+      {mode === "range" && rangeReserve ? (
+        <RangeTicketBody
+          market={market}
+          nowMs={t.nowMs}
+          phase={phase}
+          decimals={decimals}
+          symbol={symbol}
+          reserve={rangeReserve}
+          stakeText={t.stakeText}
+          stakeBase={stakeBase}
+          onStakeText={t.setStakeText}
+          onStakeBase={t.setStakeBase}
+          availableBase={walletAvailableBase}
+          session={session}
+          hasSigner={hasSigner}
+        />
+      ) : (
+        <>
       {showRoute && (
         <RouteControl
           source={source}
@@ -160,6 +183,8 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
         <FaucetCard />
       ) : (
         <TicketCta blocker={blocker} ctx={ctx} side={side} costBase={displayed?.maxCostBase ?? null} decimals={decimals} symbol={symbol} onClick={place} />
+      )}
+        </>
       )}
         </>
       )}

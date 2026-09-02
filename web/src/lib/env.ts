@@ -27,6 +27,8 @@ export const webEnv: WebEnv = {
     eventVaultFromBlock: process.env.NEXT_PUBLIC_EVENT_VAULT_FROM_BLOCK,
     parlayReserveAddress: process.env.NEXT_PUBLIC_PARLAY_RESERVE_ADDRESS,
     parlayReserveFromBlock: process.env.NEXT_PUBLIC_PARLAY_RESERVE_FROM_BLOCK,
+    rangeReserveAddress: process.env.NEXT_PUBLIC_RANGE_RESERVE_ADDRESS,
+    rangeReserveFromBlock: process.env.NEXT_PUBLIC_RANGE_RESERVE_FROM_BLOCK,
   }),
   ...webOnlySchema.parse({
     walletConnectProjectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || undefined,

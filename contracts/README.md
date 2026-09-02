@@ -8,10 +8,14 @@ Foundry workspace for Masayume's own contracts around DreamDEX Event Contracts.
 | `ERC2771Forwarder` (OpenZeppelin) | **Live** `0x82bb…50d3` | The sponsored-transaction rail: a relayer submits what the owner signed; the vault sees the signer |
 | `StrategyRegistry` (`src/strategy/`) | **Live** `0xAd5f…5FB4` | Who may copy-trade whom, under which caps envelope, for what fee; consent is a live vault grant |
 | `ParlayReserve` (`src/parlay/`) | **Live on Shannon** `0x50Ce…C151`, supplied 5,000 tUSDC | One ticket over many Windows: legs priced off the venue's book in-transaction, the whole payout escrowed at open, settled leg by leg on the venue's resolution, claim and void pay the owner only |
-| `RangeReserve`, `MarketMakerVault`, `GameArena` | pending (Stages 5–6) | — |
+| `RangeReserve` (`src/range/`) | **Built, fork-verified** (context/43); deploy waits on the owner's go | A band on one Window's closing print, inside or outside: the opening print and the asset proven through the OracleHub's key, the centre off the Window's book, the odds from the house's measured volatility, the whole payout escrowed at open, settled permissionlessly on the hub's answer |
+| `MarketMakerVault`, `GameArena` | pending (Stages 5–6) | — |
 
 `src/interfaces/IDreamDex.sol` declares only the venue functions the vault calls, copied from the
 pinned SDK's ABIs (`@somnia-chain/markets-sdk` 0.28.1).
+`src/interfaces/IOracleHub.sol` declares the slice of Somnia's OracleHub a price-basis consumer reads
+(`pullNumericAnswer`, the definition structs, `questionKeyOf` / `questionIdByKey`, the scheduling quote),
+checked against Shannon in context/43.
 
 ## Rules the code keeps
 
@@ -34,6 +38,11 @@ pinned SDK's ABIs (`@somnia-chain/markets-sdk` 0.28.1).
   that its gap. `previewOpen` is the same arithmetic as a view, so a client shows the number the
   chain will charge. Golden vectors in `packages/core/src/parlay/pricing.vectors.json` are asserted
   by forge (`ParlayVectors.t.sol`) and vitest alike.
+- **A range round's basis is the hub's own print.** A Window's closing price is `pullNumericAnswer` on the
+  question `BinaryMarketsModule.markets(id)` names — in cents, pending under one selector (`0x25cd016c`)
+  until two seconds after expiry, readable for good after that. Its opening price is the same read on the
+  (asset, `tradingStart`) question, found through the hub's content-addressed key; the same key proves the
+  asset. Nothing of ours is scheduled. Named test: `OracleHub.fork.t.sol` (context/43).
 
 ## Commands
 
@@ -43,8 +52,14 @@ forge test --no-match-contract Fork         # 72 unit tests on mock venues
 SHANNON_FORK_URL=<rpc> forge test --match-contract Fork -vv   # against Shannon's real contracts
 ```
 
+`forge test --no-match-contract Fork` runs 100 unit tests: the range reserve adds `RangeMath` (the table, its
+inverse, the band probability), `RangeVectors` (the shared golden rows), and the pricing and lifecycle suites over
+`MockOracleHub` + `MockWindows`.
+
 The fork tests need Windows that are `Trading` at the fork block; pass `FORK_MARKET_ID=<decimal id>`
-to pin one and skip the scan (context/41 for the vault run, context/42 for the parlay run).
+to pin one and skip the scan (context/41 for the vault run, context/42 for the parlay run, context/43 for
+the hub run, which also takes `FORK_RESOLVED_MARKET_ID` and `SETTLED_QUESTION_ID`; the range run takes
+`FORK_MARKET_ID` + `FORK_ASSET` and seeds a thin book itself).
 
 ## Deploy (owner-authorized)
 

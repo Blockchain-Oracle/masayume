@@ -26,6 +26,11 @@ export const keys = {
   parlayReserve: () => [QUERY_KEY_SCOPE, APP, "parlayReserve"] as const,
   parlays: (wallet: string | null) => [QUERY_KEY_SCOPE, APP, "parlays", wallet] as const,
   parlayQuote: (signature: string) => [QUERY_KEY_SCOPE, APP, "parlayQuote", signature] as const,
+  /** The range reserve's sheet, one wallet's rounds, a Window's basis and a band's quote. */
+  rangeReserve: () => [QUERY_KEY_SCOPE, APP, "rangeReserve"] as const,
+  ranges: (wallet: string | null) => [QUERY_KEY_SCOPE, APP, "ranges", wallet] as const,
+  rangeBasis: (marketId: string | null, asset: string | null) => [QUERY_KEY_SCOPE, APP, "rangeBasis", marketId, asset] as const,
+  rangeQuote: (signature: string) => [QUERY_KEY_SCOPE, APP, "rangeQuote", signature] as const,
   balanceSheet: (wallet: string | null) => [QUERY_KEY_SCOPE, APP, "balanceSheet", wallet] as const,
   nextWindow: (marketId: MarketId | null) => [QUERY_KEY_SCOPE, APP, "nextWindow", marketId] as const,
   clock: () => [QUERY_KEY_SCOPE, APP, "clock"] as const,
