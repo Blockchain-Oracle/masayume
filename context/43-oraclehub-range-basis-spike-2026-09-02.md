@@ -126,3 +126,7 @@ the contract charges the exact fresh stake.
 With the headroom, `range-open` landed on a BTC 15m Window: round 1, stake **5.008214** for the 5.00 quoted (the
 basis moved 0.16% in the seconds between), tx `0x519ef575af58d43b1097a6c409891ca6648c340f5c8b7d5cf07ab7ab6146ceda`,
 **4,527,445 gas** — the `range` lane's first measurement, inside its 8M ceiling.
+
+The round then settled on the hub's print and won: Window 71513 (BTC 1h), band 77,239.05–77,471.11 inside at a
+26.05% probability for a 17.134673 payout, closing print **77,319.65**; `range-settle` **290,312** gas, `range-claim`
+**94,078** — the payout to the owner. The `range` lane's three figures: open 4.53M, settle 0.29M, claim 0.09M.

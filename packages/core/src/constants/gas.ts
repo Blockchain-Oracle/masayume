@@ -22,8 +22,8 @@ export const GAS_CEILING: Record<GasLane, bigint> = {
   // 20 contracts each, the module read twice, the ticket written); resolveLeg on a lost leg 125,421; supply
   // 898,941; approve 259,745. A three-leg open adds one more book walk, so the ceiling stays at the vault order's.
   parlay: 6_000_000n,
-  // Measured on Shannon 2026-09-02 (RangeReserve 0x1F8d…8386): a first open on a 15m Window 4,527,445 — the two
-  // question definitions rebuilt for the hub's key (context/43) on top of the book read; later opens skip the rebuild.
+  // Measured on Shannon 2026-09-02 (RangeReserve 0x1F8d…8386): a first open on a Window 4,527,445 — the two question
+  // definitions rebuilt for the hub's key (context/43) on top of the book read; settle 290,312; claim 94,078.
   range: 8_000_000n,
   // Measured on Shannon 2026-09-02 (MarketMakerVault 0xc904…9e79): quote 526,880, pull 325,500, merge 1,018,744;
   // a settle is the cancels plus two redeems. The envelope stays at the range lane's.

@@ -361,7 +361,8 @@ session); deploy waits on the owner's go.** Read context/43 and the ledger's §R
   block 478033175, creation **60,919,875** gas (0.366 STT at 6 gwei — the two definition builders), `setVolatility`
   275,924 each; `approve` 259,745, `supply(5,000)` 897,978; admin = deployer. **Found live:** the basis moves every
   second, so a cap equal to the quote never lands on a short lane; every range open now carries a 3% headroom
-  (`RANGE_STAKE_HEADROOM_BPS`, context/43). **Measured live:** a range open **4,527,445** gas (`range` lane 8M holds).
+  (`RANGE_STAKE_HEADROOM_BPS`, context/43). **Measured live:** a range open **4,527,445** gas, its settle **290,312**,
+  its claim **94,078** (`range` lane 8M holds); round 1 on the 1h BTC lane won inside its band and paid 17.13 on 5.01.
 
 **3. `MarketMakerVault` + the maker actor + `/earn` — built and fork-verified 2026-09-02 (seventh session, same
 day); deploy waits on the owner's go.** Read context/44 and the ledger's §MarketMakerVault first. What is where:

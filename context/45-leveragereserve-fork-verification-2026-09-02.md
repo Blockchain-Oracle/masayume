@@ -100,6 +100,12 @@ The reserve's `liquid` after: 5,000.799985 — its 5,000 back plus the premium; 
 (measured over 6,000 blocks), which is why a fixed size cannot survive the seconds between a quote and its block.
 
 The keeper (`services/ops/src/actors/leverage-keeper`, `LEVERAGE_KEEPER_PRIVATE_KEY`, `DRY_RUN=0`) watches the
-live reserve; its first live cycle was that knock-out. Its first live run found that neither it
+live reserve; its first live cycle was that knock-out.
+
+The fork test rerun with the stake-first open (Window 68116, BTC 1d, live makers at 0.303 / 0.331): 2× on 10 →
+58.006 contracts for a stake of 9.999992 (fronted 9.999993, premium 0.799999), win if right 48.006; the knock-out
+into the live bids fetched 17.575818, the reserve repaid 9.999993, the owner paid 7.575825; the voided second
+boost paid 3.773228 after the reserve's 9.999772; the house withdrew 5,001.599980. `forge test --match-contract
+LeverageReserveFork`: pass, 6,971,691 gas for the scenario. Its first live run found that neither it
 nor the maker actor loaded the collateral before their first read (`loadCollateral()` — the spike's boot did);
 both now do.
