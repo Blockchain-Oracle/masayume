@@ -88,6 +88,9 @@ export interface IntentRecord {
   state: IntentState;
   txHash?: Hex;
   summary: string;
+  /** The pool and Window an order was aimed at — what a send with no digest is reconciled against. */
+  pool?: Address;
+  marketId?: MarketId;
 }
 
 /** Intent is journaled before send so a no-digest timeout can be reconciled instead of retried (AD-3). */

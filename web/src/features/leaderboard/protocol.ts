@@ -1,5 +1,6 @@
 import type { Address } from "@masayume/core/types";
 import { z } from "zod";
+import { tractionSchema } from "@/features/stats/protocol";
 
 /** Wire shape of `/api/leaderboard` — base units travel as decimal strings, never floats. */
 const rankingSchema = z.object({
@@ -15,6 +16,8 @@ const rankingSchema = z.object({
 
 export const leaderboardPayloadSchema = z.object({
   rankings: z.array(rankingSchema),
+  /** The same scan's traction, served to `/api/traction` from the same cache. */
+  traction: tractionSchema,
   meta: z.object({
     period: z.literal("24h"),
     windowStartMs: z.number(),

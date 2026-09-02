@@ -1,6 +1,8 @@
 import type { AttributionHook, IntentJournal, OrderOutcome, OrderRequest, PhaseListener, StopGate } from "@masayume/core/ports";
 import { diagnosis, type Diagnosis } from "@masayume/core/types";
 import type { Address } from "@masayume/core/types";
+import { formatCadence } from "@masayume/core/copy";
+import { formatBaseUnits } from "@masayume/core/units";
 import type { SessionTrader } from "../sessions/trader";
 import { OrderRefusedError, RequoteError } from "./errors";
 import { isTimeoutError } from "./failure";
@@ -26,8 +28,9 @@ function refused(diag: Diagnosis): OrderOutcome {
   return { status: "refused", diagnosis: diag };
 }
 
+/** The journal's one line about the order — read back to the user by recovery, so it is written for a person. */
 function summarize({ side, market, stakeBase }: OrderRequest): string {
-  return `buy ${side} on ${market.marketId} for ${stakeBase}`;
+  return `${side === "up" ? "Up" : "Down"} on ${market.asset} (${formatCadence(market.intervalSec)} Window), ${formatBaseUnits(stakeBase, market.decimals)} staked`;
 }
 
 function preSendOutcome(error: unknown): OrderOutcome {
@@ -76,7 +79,7 @@ export async function submitOrder(ctx: OrderLaneContext, req: OrderRequest, onPh
     const funding = await assertFunded(wallet, onchain, quote);
     if (!funding.ok) throw new OrderRefusedError(funding.diagnosis);
 
-    const record = await ctx.journal.record({ kind: "order", wallet, summary: summarize(req) });
+    const record = await ctx.journal.record({ kind: "order", wallet, summary: summarize(req), pool: market.poolAddress, marketId: market.marketId });
     onPhase?.("submitted");
     try {
       const result = assertTxOk(await sendOrder({ trader: ctx.trader, onchain, side, quote, expireTimestampNs, attribution: ctx.attribution(req) }), "order");

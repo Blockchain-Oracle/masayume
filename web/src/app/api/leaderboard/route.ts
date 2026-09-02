@@ -8,7 +8,8 @@ import { LEADERBOARD } from "@/features/leaderboard/copy";
  * visitor. No credential and no database: the indexer's fill tape is the only input.
  */
 export const runtime = "nodejs";
-export const maxDuration = 60;
+// A cold scan measured 66 s on 2026-09-02; the reference's traction route allows 120 for the same reason.
+export const maxDuration = 120;
 export const dynamic = "force-dynamic";
 
 export async function GET() {

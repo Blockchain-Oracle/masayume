@@ -1,18 +1,13 @@
 "use client";
 
-import { diagnosis } from "@masayume/core";
-import { ErrorState } from "@/components/states/ErrorState";
+import { BoundaryScreen } from "@/components/states";
 
 interface ErrorPageProps {
   error: Error & { digest?: string };
   reset: () => void;
 }
 
+/** Route-level boundary — the reference's `app/error.tsx`, inside the shell the root layout keeps. */
 export default function ErrorPage({ error, reset }: ErrorPageProps) {
-  const technical = error.digest ? `${error.message} (digest ${error.digest})` : error.message;
-  return (
-    <div className="mx-auto flex w-full max-w-(--content-reading) flex-1 flex-col justify-center px-gutter py-section">
-      <ErrorState variant="boundary" diagnosis={diagnosis("unknown", technical)} retry={reset} backHref="/markets" />
-    </div>
-  );
+  return <BoundaryScreen error={error} reset={reset} backHref="/markets" />;
 }

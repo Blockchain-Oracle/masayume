@@ -14,6 +14,15 @@ export const metadata: Metadata = {
   description: `${BRAND.name} — ${BRAND.tagline}. Live price windows, one-tap calls, and settlement receipts you can click.`,
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: BRAND.name },
   other: { "mobile-web-app-capable": "yes" },
+  // The installable web app: the manifest carries the identity, colours and icons (public/).
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/icons/icon.svg", type: "image/svg+xml" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: "/icons/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

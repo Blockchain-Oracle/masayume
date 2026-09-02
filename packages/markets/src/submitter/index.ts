@@ -8,6 +8,7 @@ export * from "./journal-local-storage";
 export * from "./journal-memory";
 export * from "./order-lane";
 export * from "./reconcile";
+export * from "./recovery";
 export * from "./steps/assert-tx-ok";
 export * from "./steps/book-fills";
 export * from "./steps/expiry";

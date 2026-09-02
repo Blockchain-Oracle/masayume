@@ -42,6 +42,11 @@ order", never "optional" or "cut".
 | 2026-09-02 | Share cards are rendered in the browser and handed to the native share sheet or downloaded with a pre-filled X post — the reference's own mechanism; doc 03's "server-rendered/open-graph cards" (link unfurls) are a follow-on, not a substitute | `lib/shareCard.ts`, `lib/openBetShareCard.ts`, `ShareBetButton.tsx`, `ShareTradeButton.tsx` | Identical share behaviour; a pasted link does not yet unfurl into the card | No approval needed — user-visible behaviour is the reference's |
 | 2026-09-02 | The Call (on-screen) follows the theme; the exported PNG keeps its one dark design. No leverage caveat, no X handle: the footer prints the app's own host | `BetPlacedCard.tsx` L70 (`data-theme="dark"`), `openBetShareCard.ts` L101 (`@yosuku0`), L354–362 (leverage) | Cream ticket in light mode; the PNG is the same in both; nothing on a card claims an account or a product that does not exist | Deviation — the user's 2026-09-01 ruling on non-flipping surfaces; truth corrections |
 | 2026-09-02 | Share cards redesigned as a 1600×900 X banner with a QR stub, the site and the handle `@masayume_app` — the user's explicit exception to source-led replication; the "no X handle" half of the row above is superseded | User instruction 2026-09-02 ("that's like one exception I think you can do"); `openBetShareCard.ts` L101 for the handle line the reference had | A landscape card X shows uncropped; a scannable route into the app from any shared post; the post text ends `masayume.app via @masayume_app` | **User's call** — brand constants supplied by the owner |
+| 2026-09-02 | `/stats` reads the last 24 hours off the board's own scan, never "since launch": the indexer's paging caps one scan at about a day of five-minute Windows, so a cumulative-since-inception figure cannot be read honestly in one request; incomplete scans label every figure a floor; no `localStorage` high-water mark (the reference floors its counters; a rolling day legitimately goes down) | `lib/sui/traction.ts` `MAX_PAGES`, `monotonic()`; `scan.ts` caps | Numbers are a day's truth, labelled as such; the page and the leaderboard cannot disagree | No approval needed — the doc-05 no-fake-data rule applied to a paging limit |
+| 2026-09-02 | A "call" on `/stats` is a taker's buy; a taker's sell is a cash-out, listed and not counted; fills the indexer has not attributed are counted and shown, never guessed | `traction.ts` counted `OrderMinted` events on sponsored txs | "Calls filled" is the number of times a wallet clicked a side and the book filled it | No approval needed |
+| 2026-09-02 | `/download` is the PWA install surface: manifest + icons, a stateful install CTA (`beforeinstallprompt` / iOS steps / browser menu / installed), the phone frame around a real capture of `/markets`. Native stays Blocked and is said plainly in the meta list | doc 03 §Download; `app/download/page.tsx`, `manifest.json` | Install works where the platform allows it; nowhere does the page claim a store or a native build | **Needs user review** — copy is truth-corrected throughout (see §Download) |
+| 2026-09-02 | The route error boundary's words are the reference's again ("A quiet moment on the floor." …); the earlier Masayume wording ("The screen blinked. The chain didn't." / "Back to markets") was never a recorded decision and the row classed the surface Exact | `app/error.tsx` | Same calm fallback in both themes, technical-details disclosure kept (additive) | Fidelity restored, no approval needed |
+| 2026-09-02 | Unresolved journaled intents are reconciled against the chain when a session starts, and told to the user as toasts; `reconcileUnknown` distinguishes a reverted receipt from a successful one; nothing is ever re-sent | doc 05 Stage 2 "journal and reconciliation"; AD-3 | A send that timed out yesterday is explained today — landed, reverted, absent, or still unknown | No approval needed — the architecture's own rule, finally wired |
 | 2026-09-02 | Price alerts get a live evaluator (the reference's `checkAlerts` has no caller and its button was cut in 8c7ecc1); mounted in the hero foot beside the Room | doc 03 §Alerts "market stream evaluator"; reference `PriceAlerts.tsx` orphaned | A threshold alert actually fires (toast, and a system notification when permitted) while the app is open; the popover says exactly that | **Needs user review** — placement is ours; the reference has no live mount |
 | 2026-09-02 | `/news` is restored from the reference's own history (`93d09c1^:app/news/page.tsx`); the feed component and RSS route survive in the pinned source. "Bitcoin News" → "Market News" because the venue lists BTC and ETH. A More-menu entry is added | doc 03 §News/ticker "real configured feed/provider" | A live wire (Cointelegraph + Decrypt, no credential) at `/news`; Fear/Greed still pending a provider | **Needs user review** — a route the pinned reference cut as "broken" |
 | 2026-09-02 | `/status` probes at read time: RPC head, indexer, price feed lag, social store, Sensei — each under its own timeout; a stale last-good reading counts as a failed probe | doc 03 §Status "derive dependency health at read time; do not keep a stale healthy claim" | Healthy / degraded / unreachable computed per load; optional capabilities listed truthfully without degrading the verdict | No approval needed |
@@ -532,6 +537,78 @@ X's 5 MB PNG limit); every QR tile cropped from the exports decoded to `https://
 call, the win and the loss inspected at full size. The live swap to The Call after a fill remains exercised by
 types and the fixture only — the automated browser cannot sign.
 
+### Traction — `/stats` (Stage 3, done 2026-09-02)
+
+Ported from `app/stats/page.tsx` + `lib/sui/traction.ts` + `api/traction/route.ts` into `web/src/features/stats/`
+and `packages/markets/src/provider/traction.ts`. The reference proved its numbers through the gas it sponsored
+(its Onara ledger); Masayume sponsors nothing, so the proof is the venue's own fill tape — every call is a fill
+with the wallet as taker, and every row links to the Shannon explorer.
+
+| Element | Reference | Destination | Class | Status |
+|---|---|---|---|---|
+| Hero — eyebrow, "Proof of **demand**.", lede, headline metric card with the foot stat | page L107–149 | `StatsPage.tsx`, `stats.css` | Adapted | **Done** — lede truth-corrected (no sponsor; the tape is the proof); headline `Wallets that made a call · 24h`, foot `Calls filled` |
+| Growth curve — a dot for one point, a glowing line over a gradient fill, no smoothing | `GrowthCurve` L52–84 | `GrowthCurve.tsx` | Exact, by hour | **Done** — cumulative distinct callers at each hour boundary of the window |
+| Adoption — four `Stat` cards and the attribution paragraph | L167–195 | `StatsSections.tsx` | Adapted | **Done** — `Wallets that made a call` / `Calls filled` / `Staked` (labelled "at least this much" when the scan is incomplete) / `Windows settled … of N that closed`; the paragraph states the taker rule and the count of fills the indexer had not yet attributed |
+| Live activity — dot by kind, kind label, wallet → account page, amount, age, `↗`, the row itself → the tx | L197–241 | `ActivityList` | Exact | **Done** — a call is vermilion, a cash-out gray; `call · UP · BTC` |
+| Footnote on sources | L242–247 | `STATS.foot` | Adapted | **Done** — "the same replay the leaderboard ranks, computed once and shared" |
+| Data — walks every sponsored tx and four event streams; `monotonic()` floors counters in `localStorage` | `traction.ts` L131–365 | `deriveTraction()` on the board's own scan (`scan.ts` shared with `board.ts`); `/api/traction` answers from `readBoard()`'s cache | Adapted | **Done** — **no floor**: a rolling day legitimately goes down |
+| Polling 30 s; route cached 15 min, `maxDuration` 120 | page L94–98, route L15–18 | `useTraction.ts` 30 s; the board's 3-minute cache; both scan routes now `maxDuration = 120` | Adapted | **Done** — a cold read measured 66 s on 2026-09-02 |
+| Loading / unreachable words | L153–155, L250 | `STATS.reading`, `STATS.unreachable` | Exact | **Done** |
+
+**Scope is the last 24 hours, not since inception.** The indexer's past-market paging (100 × 20) and fill paging
+(1,000 × 5 per pool) cap one scan at about a day of five-minute Windows, so "cumulative since launch" cannot be read
+honestly in one request; the window is the board's, and `complete:false` marks every figure a floor. Riding on the
+board's scan means the two surfaces cannot disagree and the venue is scanned once per three minutes, not twice.
+
+**What counts.** A *call* is a taker's buy on a Window's book (the ledger's own price rule: the DOWN leg pays the
+complement), **one per transaction and wallet**: an order that fills across several price levels is several fill
+rows in one transaction, and the first cut counted each row — 491 "calls" that were 438 orders. A taker's sell is a
+*cash-out* — listed in the activity, never counted as a call. A fill whose taker or side the indexer has not bridged
+yet is counted as unattributed and shown as a number, never guessed onto a wallet.
+
+**Verified**: the live route answered from the venue on 2026-09-02 — 69 wallets, 438 calls, 87 cash-outs,
+16,325.42 tUSDC staked, 828 of 830 Windows settled, a 24-point curve, 30 recent rows with unique ids,
+`complete: true`; a cold read took 66 s, a warm one 11 s. In the browser at 1280 the page rendered on those numbers;
+two console errors from the first cut (an anchor nested in the row anchor — the reference's `role="link"` row is now
+ported exactly — and duplicate keys from multi-level fills) are gone.
+
+### Download — `/download` (Stage 3, done 2026-09-02)
+
+Ported from `app/download/page.tsx` + `public/manifest.json` + `app/icon.svg` into `web/src/features/install/`,
+`web/public/manifest.webmanifest`, `web/public/icons/`. Doc 03: "preserve web/PWA installation; native buttons
+remain blocked". The `.dl-*` CSS was already in `part-18.css`.
+
+| Element | Reference | Destination | Class | Status |
+|---|---|---|---|---|
+| Manifest — standalone, `/markets` start, `#050505` / `#E04D26`, SVG icon | `manifest.json` | `manifest.webmanifest` (JSON, since TS under `app/` may not carry hex) + `icon.svg`, 192, 512, maskable 512, Apple 180 rendered with rsvg-convert; `layout.tsx` metadata links them | Exact + PNGs | **Done** — served as `application/manifest+json`, five icons 200 |
+| Hero — eyebrow, "Call it in *ten seconds.*", line, CTA, meta list | L66–90 | `DownloadPage.tsx`, `InstallCta.tsx` | Truth-corrected | **Done** — "Masayume on your phone"; the line drops "no gas, no seed phrase"; meta = web app · Somnia testnet · **Native — not built, the web app is the product** |
+| CTA "Get the app" → TestFlight | L78–83 | `useInstallPrompt.ts` state machine | Adapted | **Done** — `installed` (inert), `prompt` (`beforeinstallprompt` → "Install Masayume"), `ios` ("Add to Home Screen", three steps), `manual` (browser-menu hint) |
+| PhoneShot — a real capture, frame, island, side buttons | L32–59 | `PhoneShot.tsx`, `/app/bet-screen.png` | Exact + one frame addition | **Done** — the capture is `/markets` at 390×844 (2×, 780×1688) on 2026-09-02; a `dl-phone-bar` status-bar band above it so the island sits in a real gap (a browser capture has none) |
+| Points — sign in / rounds / paid on the close | L97–113 | `DownloadPage.tsx` | Truth-corrected | **Done** — "Connect and go" (any EVM wallet, faucet), "Windows all day" (BTC and ETH), "Paid on the close" (the oracle print; yours to claim) |
+| Foot | L115–118 | `DownloadPage.tsx` | Exact, Sui → Somnia | **Done** |
+| Light theme | — | `download.css` | Deviation (invisible ≠ fidelity) | `.dl-cta` ink is a literal white on vermilion (`--white` remaps); `.dl-points` border-top takes part-14's own `border-white/[0.08]` light value |
+
+### Error recovery (Stage 3, done 2026-09-02)
+
+Doc 01 lists "error recovery" as a feature family; doc 05 Stage 2 asked for "the common transaction lifecycle,
+error map, journal and reconciliation". The journal existed (`submitter/journal.ts`, intent recorded before send,
+marked sent/confirmed/failed/unknown) and `reconcileUnknown()` could ask the chain — but nothing ever called
+`listUnresolved`, so a send that timed out, or an intent recorded and never sent, was silent on the next visit.
+
+| Element | Reference | Destination | Class | Status |
+|---|---|---|---|---|
+| Recovery on session start | none (the reference has no journal) | `packages/markets/src/submitter/recovery.ts` (`recoverUnresolved`), `web/src/features/recovery/WriteRecovery.tsx` in `AppProviders` | Ours — doc 05's own requirement | **Done** — once per session object; AD-3 kept: nothing is ever re-sent, only the chain's answer moves a record |
+| Verdicts | — | `reconcile.ts` now `confirmed \| reverted \| absent \| unknown` (a reverted receipt used to read as confirmed) | Correction | **Done** — confirmed → "An earlier call landed … It is in your Portfolio"; reverted → "… reverted on chain. No position was opened; only gas was spent"; absent → "… never reached the chain. Nothing was spent"; unknown > 24 h → failed "unverifiable after 24h", with "Check your Portfolio before placing it again"; unknown, fresh → one quiet "still being checked" |
+| Order records carry their pool and market | — | `IntentRecord.pool`, `.marketId` (optional, additive); `order-lane.ts` records them; `summarize()` is now `Up on BTC (5m Window), 12.00 staked` | Additive | **Done** — old records keep the old machine string, once |
+| Route boundary | `app/error.tsx` — "A quiet moment on the floor." | `components/states/BoundaryScreen.tsx`, `app/error.tsx`, `error.css` | Exact (the row above classed it Exact; the Masayume wording was never a recorded decision) | **Done** — words are the reference's; `min-height: 70vh` inside the shell because our layout keeps the header and footer around it (the reference's pages mount their own header) |
+| Root boundary | none | `app/global-error.tsx` (own `<html>`, theme-init script, fonts, `index.css`) | Additive | **Done** — `100vh`, same words |
+| Sanity test | — | `recovery.test.ts` | — | the verdict matrix, one test (59 total) |
+
+**Not verified live**: the recovery path needs a wallet with a journaled unresolved intent, which the automated
+browser cannot produce — types and the unit test only. The two boundary screens were not rendered in the browser
+either (nothing on the site throws on demand); `error.css` uses the reference's own `var(--bg)` / `var(--white)` /
+`var(--gray-400)`, which part-13 remaps, so the light theme should hold — worth one look the first time it fires.
+
 ### Alerts (Stage 3, done 2026-09-02)
 
 Ported from `components/PriceAlerts.tsx` + `lib/priceAlerts.ts` into `web/src/features/alerts/`. In the
@@ -701,7 +778,7 @@ Tracked separately so the route table cannot hide a missing capability.
 | Assistant (Sensei) | **Done** | Claude-backed; honest unconfigured state, lights up on `ANTHROPIC_API_KEY` |
 | Faucet, account setup, recovery, smart-wallet session, revocation | **Partial** | Faucet live; rest Stage 4 |
 | Status, docs, how-it-works, demo, pitch | **Done** | Read-time probes; every public page on real facts and live reads |
-| Traction, download, error recovery | Pending | Stage 3 — `/stats` is the next slice |
+| Traction, download, error recovery | **Done** | `/stats` off the board's scan (24h, floors labelled); `/download` as the PWA install surface with a real capture; journal reconciliation on session start, reference boundary words, root boundary |
 | Game selection, progress, achievements, stats, matchmaking, MMR, sound/haptics | Pending | Stage 6 |
 
 ## Visual contract

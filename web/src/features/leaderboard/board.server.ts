@@ -20,8 +20,14 @@ let cache: { payload: LeaderboardPayload; atMs: number } | null = null;
 let inFlight: Promise<LeaderboardPayload> | null = null;
 
 function serialize(board: VenueBoard, computedAtMs: number): LeaderboardPayload {
+  const { traction } = board;
   return {
     rankings: board.rankings.map((r) => ({ ...r, pnlBase: r.pnlBase.toString(), volumeBase: r.volumeBase.toString() })),
+    traction: {
+      ...traction,
+      stakedBase: traction.stakedBase.toString(),
+      recent: traction.recent.map((event) => ({ ...event, stakeBase: event.stakeBase.toString() })),
+    },
     meta: {
       period: "24h",
       windowStartMs: board.windowStartMs,

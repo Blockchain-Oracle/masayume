@@ -1,14 +1,8 @@
 import type { Metadata } from "next";
-import { CapabilityPending } from "@/components/shell";
+import { DownloadPage, INSTALL } from "@/features/install";
 
-export const metadata: Metadata = { title: "Get Masayume" };
+export const metadata: Metadata = { title: INSTALL.title };
 
 export default function Page() {
-  return (
-    <div className="container">
-      <CapabilityPending eyebrow="Install" title="Get Masayume" dependency="the PWA install surface (Stage 3); native remains blocked pending source">
-        <p>Masayume installs from the browser as a web app on phone and desktop. There is no native build: the referenced native source does not exist, so no native store button is shown rather than one that cannot work.</p>
-      </CapabilityPending>
-    </div>
-  );
+  return <DownloadPage />;
 }

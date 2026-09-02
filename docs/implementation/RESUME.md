@@ -35,7 +35,9 @@ with a live evaluator, `/news`, `/status`, `/docs`, `/how-it-works`, `/demo` and
 | `9f86edc` | Stage 3 — the Room, position-gated over a real store |
 | `6f45a88` | Sensei's model as a setting |
 | `4f442d5` | Stage 3 — the fill projection: history, equity, Trader Edge, leaderboard |
-| *(this)* | Stage 3 — takes, share cards, alerts, news, status, docs, how-it-works, demo, pitch |
+| `9a76900` | Stage 3 — takes, share cards, alerts, news, status, docs, how-it-works, demo, pitch |
+| `04ce0eb` | Stage 3 — the share cards as an X banner with a QR stub (user's call) |
+| *(this)* | Stage 3 — `/stats`, `/download`, error recovery; Stage 3 closed |
 
 Everything is green: `pnpm typecheck`, `pnpm invariants` (12/12), `pnpm test` (58),
 `pnpm build`. Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
@@ -160,11 +162,27 @@ Per `05-migration-and-agency-handoff.md`. Four slots were waiting on `/markets` 
    four active wallets before any UI was written (`pnpm --filter @masayume/scripts
    spike:fill-projection-verify`); `spike:fill-projection-live` reads one wallet end to end.
 
-**Next**: `/stats` (traction, chain-derived — the reference's `api/traction` walks sponsored txs; ours
-would count wallets, fills and volume off the same venue replay the board uses), `/download` (PWA
-install; native stays Blocked), the error-recovery pass, then Stage 4 (`EventVault`, session trading,
-the X rail). Fear/Greed on the ticker still waits on a provider. `/social` (the reference's internal
-marketing-content board) is untouched and keeps its shell. Lifecycle alerts have no reference source.
+6. ~~**`/stats`, `/download`, error recovery**~~ — **done 2026-09-02** (two forks + the main session). Worth knowing:
+   - **`/stats`** rides on the board's scan: `packages/markets/src/provider/scan.ts` is the shared venue scan,
+     `traction.ts` derives wallets / calls / cash-outs / staked / windows / an hourly curve / 30 recent rows from
+     the same fills, and `/api/traction` answers from `readBoard()`'s three-minute cache. **Scope is 24h** and
+     an incomplete scan labels every figure a floor (ledger §Traction). A cold read measured 66 s; both scan
+     routes now allow 120 s. Live numbers on 2026-09-02: 69 wallets, 438 calls (one per taker order, not per fill row), 16,325 tUSDC staked.
+   - **`/download`** is the PWA surface: `web/public/manifest.webmanifest` + `web/public/icons/*` (rendered
+     from the mark with rsvg-convert), `features/install/useInstallPrompt.ts` (installed / prompt / ios /
+     manual), the reference's phone frame around a **real capture** at `web/public/app/bet-screen.png` —
+     re-capture it at a 390×844 viewport (2×) whenever the markets page changes materially. Native stays
+     Blocked and the meta list says so.
+   - **Error recovery**: `packages/markets/src/submitter/recovery.ts` + `features/recovery/WriteRecovery.tsx`
+     reconcile every unresolved journaled intent when a session starts and tell the user (landed / reverted /
+     absent / unverifiable after 24h / still checking). Order records now carry `pool` and `marketId`.
+     `app/error.tsx` uses the reference's words again; `app/global-error.tsx` is new and additive.
+
+**Next**: Stage 4 (`EventVault` and the Unified Trading Balance, embedded session trading and the
+gas-sponsorship policy, the strategy registry/runner and agent/creator surfaces, X OAuth linking and the
+mention rail — the live X account itself needs the owner). Fear/Greed on the ticker still waits on a
+provider. `/social` (the reference's internal marketing-content board) is untouched and keeps its shell.
+Lifecycle alerts have no reference source.
 
 **Honesty constraints that keep applying** (doc 05 §No fake-data, doc 00 §No-substitution):
 never an invented odd, balance, fill or payout; loading and unavailable are valid states; a
@@ -252,7 +270,7 @@ value, and a clean load draws dark-on-cream).
   gave the X handle `@masayume_app` and the site `masayume.app`, asked for a QR to the app and an X-sized
   banner instead of the tall card. Said again that `/dev` is temporary. Asked where the cards live in the
   real app (answered above under Share cards). Feedback on the work so far: positive.
-- **Not yet reviewed by the user:** the whole social and public-proof slice (the woven reel and the
+- **Not yet reviewed by the user:** `/stats`, `/download`, the boundary screens, the recovery toasts; the whole social and public-proof slice (the woven reel and the
   composer, The Call after a fill, the share button on receipts, the alert bell in the hero foot,
   `/news`, `/status`, `/docs`, `/how-it-works`, `/demo`, `/pitch`), and before it `/portfolio` (settled
   rows, §03 "Your record", the Trader Edge link), `/portfolio/edge`, `/leaderboard`, the toast, the
