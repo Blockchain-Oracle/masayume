@@ -246,10 +246,11 @@ every on-chain path shows its not-deployed state today:
 and the gitignored `contracts/.env`): `EventVault` `0x84Ec824D89ee78d5728545CE0B40EC968aa7CD7A`, forwarder
 `0x82bb75b8aE663abC73308Ce42ca00d701cFb50d3`, block 477731559 — `contracts/deployments/50312.json`, module
 regenerated and committed (7192f02). Somnia charges ~10× the EVM for calls and ~20× for creations; deploy
-with limits from Somnia's own `eth_estimateGas` (context/41 §Live on Shannon). `StrategyRegistry` is next
-(≈34M gas, ≈0.2 STT) once the deployer or the demo user holds enough STT; the faucet funds one wallet a day.
+with limits from Somnia's own `eth_estimateGas` (context/41 §Live on Shannon). `StrategyRegistry` `0xAd5f37B0f3d0f6030B9d9c0f4985AFb184A85FB4` (block 477738374, 22.7M gas) followed. The
+deployer keeps ~0.36 STT; the demo user `0xd357…9358` holds 1 STT (the faucet funds one wallet a day). The
+live adapter run and the exits all passed on Shannon (ledger decision log, context/41 §Live on Shannon).
 
-**Was waiting on the owner (now partly done):** a funded deployer key (STT from https://testnet.somnia.network/) and the go to run
+**Was waiting on the owner (done 2026-09-02):** a funded deployer key (STT from https://testnet.somnia.network/) and the go to run
 `forge script script/DeployEventVault.s.sol --rpc-url shannon --broadcast --private-key …`, then
 `pnpm contracts:export` and a commit of the regenerated module (AD-10 lockstep). Until then nothing on-chain in
 Stage 4 is verified live; the fork run is the evidence.

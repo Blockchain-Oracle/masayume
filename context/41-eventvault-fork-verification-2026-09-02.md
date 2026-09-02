@@ -73,7 +73,10 @@ Deployed by `0xdD7ae7c43e87Fae3eaE13c23C01eCa6D5bE8Bf9a`: `ERC2771Forwarder` at
 - The adapter on Shannon (`LIVE=1 scripts/spike/vault-fork.ts`, the deployer as owner and actor): deposit,
   an owner UP from the Trading Balance filled at 0.167, a STRATEGY grant, a delegated DOWN from it, and an
   over-cap order refused by `simulateCaps` before any signature ("would spend 536.84 against a per-trade cap
-  of 500.00"); the crank ran after the oracle settled the Window (see the ledger for the tail).
+  of 500.00"); the oracle settled the Window (UP won), the crank credited 3,321.15 available; then via cast:
+  `withdraw` (284k gas), `revoke` (66k) returning 795.57 of budget, `withdraw` again (84k) — the account closed
+  at 0 with 4,116.72 withdrawn against 4,100 deposited. `StrategyRegistry` deployed after at
+  `0xAd5f37B0f3d0f6030B9d9c0f4985AFb184A85FB4` (22.7M gas).
 
 ## Not covered
 
