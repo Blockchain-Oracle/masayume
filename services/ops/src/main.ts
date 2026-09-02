@@ -1,13 +1,19 @@
 /**
- * The single long-running ops service. Actors (seeder-maker, oracle-follow runner, relayer,
- * TG executor, settlement watcher, Stop service, watchdog) register here from Epic 5 onward.
- * Every cycle logs a structured why-string; idle is a heartbeat, never silence.
+ * The single long-running ops service (AD-8). Each actor is a single writer over its own key and
+ * registers here; every cycle logs a structured why-string, and idle is a heartbeat, never silence.
  */
+import { startStrategyRunner } from "./actors/strategy-runner";
+import { startXRelay } from "./actors/x-relay";
+
 const HEARTBEAT_MS = 30_000;
 
 function whyString(actor: string, why: string): string {
   return JSON.stringify({ tsMs: Date.now(), actor, why });
 }
 
-console.log(whyString("ops", "boot: no actors registered yet"));
+const log = (actor: string) => (why: string) => console.log(whyString(actor, why));
+
+console.log(whyString("ops", "boot"));
+void startStrategyRunner(log("strategy-runner"));
+void startXRelay(log("x-relay"));
 setInterval(() => console.log(whyString("ops", "idle heartbeat")), HEARTBEAT_MS);

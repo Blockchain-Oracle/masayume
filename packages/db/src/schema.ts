@@ -1,3 +1,6 @@
+import { STRATEGIES_SCHEMA_SQL } from "./schema-strategies";
+import { X_SCHEMA_SQL } from "./schema-x";
+
 /**
  * The social store's schema. Social records only; chain truth is never stored here.
  *
@@ -69,4 +72,4 @@ CREATE INDEX IF NOT EXISTS takes_created_idx
   ON takes (created_at DESC);
 `;
 
-export const SCHEMA_SQL = `${ROOM_SCHEMA_SQL}\n${TAKES_SCHEMA_SQL}`;
+export const SCHEMA_SQL = `${ROOM_SCHEMA_SQL}\n${TAKES_SCHEMA_SQL}\n${STRATEGIES_SCHEMA_SQL}\n${X_SCHEMA_SQL}`;

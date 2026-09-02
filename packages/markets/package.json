@@ -11,7 +11,10 @@
     "./identity": "./src/identity.ts",
     "./react": "./src/react/index.ts",
     "./runtime": "./src/runtime/index.ts",
-    "./sessions": "./src/sessions/index.ts"
+    "./sessions": "./src/sessions/index.ts",
+    "./strategies": "./src/strategies/index.ts",
+    "./vault": "./src/vault/index.ts",
+    "./x": "./src/x/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json"

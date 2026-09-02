@@ -13,12 +13,16 @@ const target = join(here, "..", "packages", "markets", "src");
 const contracts = [
   { name: "event-vault", artifact: "EventVault.sol/EventVault.json", exportName: "eventVaultAbi" },
   { name: "forwarder", artifact: "ERC2771Forwarder.sol/ERC2771Forwarder.json", exportName: "forwarderAbi" },
+  { name: "strategy-registry", artifact: "StrategyRegistry.sol/StrategyRegistry.json", exportName: "strategyRegistryAbi", optional: true },
 ];
 
 mkdirSync(join(target, "contracts"), { recursive: true });
-for (const { name, artifact, exportName } of contracts) {
+for (const { name, artifact, exportName, optional } of contracts) {
   const path = join(here, "out", artifact);
-  if (!existsSync(path)) throw new Error(`missing ${path} — run forge build first`);
+  if (!existsSync(path)) {
+    if (optional) continue;
+    throw new Error(`missing ${path} — run forge build first`);
+  }
   const { abi } = JSON.parse(readFileSync(path, "utf8"));
   // One ABI entry per line: readable in a diff, and a generated file stays inside the file-length invariant.
   const entries = abi.map((entry) => `  ${JSON.stringify(entry)},`).join("\n");
@@ -31,7 +35,9 @@ const dir = join(here, "deployments");
 if (existsSync(dir)) {
   for (const file of readdirSync(dir).filter((f) => f.endsWith(".json"))) {
     const record = JSON.parse(readFileSync(join(dir, file), "utf8"));
-    deployments[String(record.chainId)] = { eventVault: record.eventVault, forwarder: record.forwarder, collateral: record.collateral, fromBlock: record.fromBlock ?? 0 };
+    const chain = String(record.chainId);
+    deployments[chain] = { ...(deployments[chain] ?? {}), ...record, chainId: undefined };
+    delete deployments[chain].chainId;
   }
 }
 writeFileSync(join(target, "addresses.masayume.json"), `${JSON.stringify({ generatedBy: "contracts/export.mjs", deployments }, null, 2)}\n`);
