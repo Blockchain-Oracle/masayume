@@ -4,6 +4,7 @@ import type { ClaimableRow } from "@masayume/core/types";
 import { keys, useClaimables } from "@masayume/markets/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { EmptyState, ReadingBoundary } from "@/components/states";
+import { VaultCreditRows } from "@/features/vault";
 import { CLAIM } from "@/lib/copy";
 import { useWalletSession } from "@/lib/wallet-session";
 import { useVenue } from "../useVenue";
@@ -30,6 +31,7 @@ export function LiveClaimPlate({ className }: { className?: string }) {
   const retry = () => void queryClient.invalidateQueries({ queryKey: keys.claimables(session.address, venue.venueId) });
 
   return (
+    <>
     <ReadingBoundary reading={reading} shape="plate" isEmpty={isEmpty} empty={CLAIM.empty} retry={retry} className={className}>
       {(rows) => {
         const decimals = rows[0]?.decimals ?? venue.decimals ?? run.items[0]?.decimals ?? 0;
@@ -43,5 +45,8 @@ export function LiveClaimPlate({ className }: { className?: string }) {
         );
       }}
     </ReadingBoundary>
+    {/* A Vault credit is a withdrawal, not a redeem: listed beside the plate, never inside its sum (AD-1). */}
+    <VaultCreditRows className="mt-6" />
+    </>
   );
 }

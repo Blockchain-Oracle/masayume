@@ -3,6 +3,7 @@
 import { isOk } from "@masayume/core/schemas";
 import { SectionHeader } from "@/components/chrome";
 import { EmptyState } from "@/components/states";
+import { TradingBalancePanel } from "@/features/vault";
 import { BALANCE, CLAIM, PORTFOLIO } from "@/lib/copy";
 import { useWalletSession } from "@/lib/wallet-session";
 import { BalancePlate } from "../balance";
@@ -27,9 +28,10 @@ import { BetsPanel } from "./BetsPanel";
  *
  * The settled history, the equity curve, reputation and badges read the fill
  * projection (`useWalletHistory`), and the Trader Edge link opens the report built
- * from the same reading. What still needs a capability we have not built — creator
- * earnings, the X wallet, the Trading Balance vault — keeps a named dependency
- * state instead of a plausible-looking panel.
+ * from the same reading. The Trading Balance is the vault's pool row inside the plate,
+ * with its controls folded into the row the way the reference folds the X wallet's
+ * (`PoolRows` panels). What still needs a capability we have not built — creator
+ * earnings, the X wallet — keeps a named dependency state instead of a plausible-looking panel.
  */
 export function PortfolioScreen() {
   const { address } = useWalletSession();
@@ -41,15 +43,14 @@ export function PortfolioScreen() {
     return (
       <div className="mx-auto flex w-full max-w-(--content-reading) flex-col gap-6 px-gutter py-8">
         <EmptyState why={BALANCE.connect.why} />
-        <p className="type-caption text-ink-muted">{PORTFOLIO.vaultPending}</p>
       </div>
     );
   }
 
   return (
     <div className="mx-auto flex w-full max-w-(--content-reading) flex-col gap-8 px-gutter py-8">
-      {/* No page headline: the balance is the header (reference L266). */}
-      <BalancePlate />
+      {/* No page headline: the balance is the header (reference L266). The Trading Balance folds into its own row. */}
+      <BalancePlate panels={{ vault: <TradingBalancePanel inline /> }} />
 
       <TraderEdgeLink />
 
@@ -62,10 +63,6 @@ export function PortfolioScreen() {
       </section>
 
       <RecordSection history={history} symbol={symbol} index="03" />
-
-      <section className="flex flex-col gap-2 border-t border-hairline pt-4">
-        <p className="type-caption text-ink-muted">{PORTFOLIO.vaultPending}</p>
-      </section>
     </div>
   );
 }

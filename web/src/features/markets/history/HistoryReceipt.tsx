@@ -23,7 +23,7 @@ function ReceiptBody({ round, symbol }: { round: SettledRound; symbol: string })
       market={{ marketId: round.marketId, asset: round.asset, intervalSec: round.intervalSec, expirySec: round.expirySec, openingPriceRaw }}
       resolution={resolution && isOk(resolution) ? resolution.value : null}
       symbol={symbol}
-      provenance={{ entryTxHash: round.entryTxHash, closedEarly: round.outcome === "closed" }}
+      provenance={{ ...(round.source === "vault" ? {} : { entryTxHash: round.entryTxHash }), closedEarly: round.outcome === "closed" }}
     />
   );
 }

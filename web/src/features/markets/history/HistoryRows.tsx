@@ -3,6 +3,7 @@
 import type { SettledRound, WalletHistory } from "@masayume/core/projection";
 import { useState } from "react";
 import { ReadingBoundary } from "@/components/states";
+import { useVaultWrite, VAULT } from "@/features/vault";
 import { useChainNowMs } from "../useChainNow";
 import { HISTORY } from "./copy";
 import { HistoryReceipt } from "./HistoryReceipt";
@@ -28,6 +29,10 @@ export function HistoryRows({ history, symbol }: HistoryRowsProps) {
   const nowMs = useChainNowMs();
   const [expanded, setExpanded] = useState(false);
   const [receiptFor, setReceiptFor] = useState<SettledRound | null>(null);
+  const { state: vaultWrite, run: runVault, address } = useVaultWrite();
+  const crank = (round: SettledRound) => {
+    if (address) void runVault({ kind: "vault-crank-settle", owner: address, marketId: round.marketId }, VAULT.rounds.cranked);
+  };
 
   return (
     <ReadingBoundary reading={history.reading} shape="row" retry={history.retry} isEmpty={isEmpty} empty={HISTORY.empty}>
@@ -38,7 +43,15 @@ export function HistoryRows({ history, symbol }: HistoryRowsProps) {
             {!value.complete && <p className="type-caption text-warning">{HISTORY.partial}</p>}
             <ul className="flex flex-col">
               {rows.map((round) => (
-                <HistoryRow key={round.marketId} round={round} symbol={symbol} nowMs={nowMs} onReceipt={setReceiptFor} />
+                <HistoryRow
+                  key={`${round.source}:${round.marketId}`}
+                  round={round}
+                  symbol={symbol}
+                  nowMs={nowMs}
+                  onReceipt={setReceiptFor}
+                  onCrank={crank}
+                  cranking={vaultWrite.busy === "vault-crank-settle"}
+                />
               ))}
             </ul>
             {value.rounds.length > FIRST_PAGE && (

@@ -7,6 +7,7 @@ import { marketDeepLink } from "@masayume/core/urls";
 import { txUrl } from "@masayume/core/urls";
 import Link from "next/link";
 import { Money } from "@/components/data";
+import { VAULT } from "@/features/vault";
 import { CLAIMS_PATH } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 import { SIDE_WORD } from "../side-styles";
@@ -19,6 +20,9 @@ interface HistoryRowProps {
   /** Chain-corrected clock; 0 before the first client tick, when no relative time is printed. */
   nowMs: number;
   onReceipt: (round: SettledRound) => void;
+  /** Settles a vault round into the Trading Balance — permissionless, so the button is offered to whoever is looking. */
+  onCrank?: (round: SettledRound) => void;
+  cranking?: boolean;
 }
 
 /** UP, DOWN, or both — from what was held at expiry, or what was traded when the round closed out early. */
@@ -34,9 +38,10 @@ function sidesLabel(round: SettledRound): string {
  * The loss is printed in the same ink as everything else — a fact, not an alarm. The only
  * profit/loss colour on the row is the net figure, by the colour law.
  */
-export function HistoryRow({ round, symbol, nowMs, onReceipt }: HistoryRowProps) {
+export function HistoryRow({ round, symbol, nowMs, onReceipt, onCrank, cranking = false }: HistoryRowProps) {
   const settledAtMs = roundSettledAtMs(round);
   const claimLine = HISTORY.claim[round.claim];
+  const vault = round.source === "vault";
 
   return (
     <li className="history-row">
@@ -46,13 +51,18 @@ export function HistoryRow({ round, symbol, nowMs, onReceipt }: HistoryRowProps)
         {round.asset} {sidesLabel(round)}
       </Link>
       <span className="type-label-micro text-ink-muted">{formatCadence(round.intervalSec)}</span>
+      {vault && <span className="type-label-micro text-accent">{VAULT.rounds.via}</span>}
 
       {round.payoutBase > 0n && (
         <span className="type-caption text-ink-secondary">
           {HISTORY.paid} <Money value={round.payoutBase} decimals={round.decimals} symbol={symbol} />
         </span>
       )}
-      {round.claim === "to-collect" ? (
+      {round.claim === "to-collect" && vault ? (
+        <button type="button" onClick={() => onCrank?.(round)} disabled={cranking || !onCrank} data-cursor="hover" className="type-label-micro text-accent">
+          {cranking ? VAULT.rounds.cranking : VAULT.rounds.crank}
+        </button>
+      ) : round.claim === "to-collect" ? (
         <Link href={CLAIMS_PATH} data-cursor="hover" className="type-label-micro text-accent">
           {claimLine} · {HISTORY.collectLink}
         </Link>
@@ -68,9 +78,11 @@ export function HistoryRow({ round, symbol, nowMs, onReceipt }: HistoryRowProps)
       <button type="button" onClick={() => onReceipt(round)} data-cursor="hover" className="history-receipt-button type-label-micro">
         {HISTORY.receipt} ↗
       </button>
-      <a href={txUrl(round.entryTxHash)} target="_blank" rel="noreferrer" title={HISTORY.entryTx} className="history-proof-link numbers">
-        ↗
-      </a>
+      {!vault && (
+        <a href={txUrl(round.entryTxHash)} target="_blank" rel="noreferrer" title={HISTORY.entryTx} className="history-proof-link numbers">
+          ↗
+        </a>
+      )}
     </li>
   );
 }

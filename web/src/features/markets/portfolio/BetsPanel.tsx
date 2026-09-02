@@ -7,6 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { SectionHeader } from "@/components/chrome";
 import { ReadingBoundary } from "@/components/states";
+import { useVaultOpenBets, VaultBetRows } from "@/features/vault";
 import { PORTFOLIO } from "@/lib/copy";
 import { useWalletSession } from "@/lib/wallet-session";
 import { HISTORY, HistoryRows, type HistoryReading } from "../history";
@@ -35,11 +36,13 @@ export function BetsPanel({ symbol, index, history }: BetsPanelProps) {
   const { address } = useWalletSession();
   const nowMs = useChainNowMs();
   const reading = usePositions(address);
+  const vaultBets = useVaultOpenBets(address);
+  const vaultOpen = vaultBets && isOk(vaultBets) ? vaultBets.value.length : 0;
   const queryClient = useQueryClient();
   const retry = () => {
     if (address) void queryClient.invalidateQueries({ queryKey: keys.positions(address) });
   };
-  const openCount = reading && isOk(reading) ? reading.value.length : null;
+  const openCount = reading && isOk(reading) ? reading.value.length + vaultOpen : null;
   const settledCount = history.reading?.ok ? history.reading.value.rounds.length : null;
 
   return (
@@ -61,7 +64,7 @@ export function BetsPanel({ symbol, index, history }: BetsPanelProps) {
         reading={reading}
         shape="row"
         retry={retry}
-        isEmpty={(rows) => isEmpty(rows) && (history.reading?.ok ? history.reading.value.rounds.length === 0 : false)}
+        isEmpty={(rows) => isEmpty(rows) && vaultOpen === 0 && (history.reading?.ok ? history.reading.value.rounds.length === 0 : false)}
         empty={{ why: PORTFOLIO.noBets, nextAction: { label: PORTFOLIO.firstCall, href: "/markets" } }}
       >
         {(positions) => (
@@ -72,6 +75,7 @@ export function BetsPanel({ symbol, index, history }: BetsPanelProps) {
           </ul>
         )}
       </ReadingBoundary>
+      <VaultBetRows symbol={symbol} />
       <HistoryRows history={history} symbol={symbol} />
       <Link href="/markets" data-cursor="hover" className="type-caption text-accent">
         {PORTFOLIO.toMarkets} →
