@@ -22,13 +22,13 @@ export const GAS_CEILING: Record<GasLane, bigint> = {
   // 20 contracts each, the module read twice, the ticket written); resolveLeg on a lost leg 125,421; supply
   // 898,941; approve 259,745. A three-leg open adds one more book walk, so the ceiling stays at the vault order's.
   parlay: 6_000_000n,
-  // Not yet measured on Shannon: a first open on a Window rebuilds two question definitions for the hub's key
-  // (context/43) on top of the parlay's two book walks; later opens on the same Window skip the rebuild.
+  // Measured on Shannon 2026-09-02 (RangeReserve 0x1F8d…8386): a first open on a 15m Window 4,527,445 — the two
+  // question definitions rebuilt for the hub's key (context/43) on top of the book read; later opens skip the rebuild.
   range: 8_000_000n,
   // Not yet measured on Shannon: a quote is two post-only placements plus the module read (a vault IOC order
   // measured 2,562,772); a settle is the cancels plus two redeems. Same envelope as the range lane.
   maker: 8_000_000n,
-  // Not yet measured on Shannon: an open is one book walk, the module read, one IOC and the credit sweep — the
-  // shape of a vault IOC order (2,562,772) plus the walk; a knock-out or close is the same on the exit side.
+  // Measured on Shannon 2026-09-02 (LeverageReserve 0x5484…2D23): a 2x open on the 15m BTC lane 5,071,986 (the book
+  // walk, the module read, one IOC across a live maker's levels, the credit sweep); the keeper's knock-out 1,367,150.
   leverage: 8_000_000n,
 };

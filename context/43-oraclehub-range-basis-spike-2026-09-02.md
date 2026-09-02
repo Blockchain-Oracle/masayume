@@ -122,3 +122,7 @@ on a 1h Window and `StakeAboveMax(5.015123, 5.000000)` at +0.3% on a 15m Window 
 reference caps its mint cost with a cadence-aware buffer (`costCapBuffer`); every range open here now carries
 `RANGE_STAKE_HEADROOM_BPS` (3%) over the quote — the Ticket says "up to X if the basis moves before it lands" — and
 the contract charges the exact fresh stake.
+
+With the headroom, `range-open` landed on a BTC 15m Window: round 1, stake **5.008214** for the 5.00 quoted (the
+basis moved 0.16% in the seconds between), tx `0x519ef575af58d43b1097a6c409891ca6648c340f5c8b7d5cf07ab7ab6146ceda`,
+**4,527,445 gas** — the `range` lane's first measurement, inside its 8M ceiling.

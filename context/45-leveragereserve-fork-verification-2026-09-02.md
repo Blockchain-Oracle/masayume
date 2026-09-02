@@ -93,7 +93,13 @@ over the typed one is refused (`StakeAboveMax`) rather than charged. The first r
 | `open(71603, UP, 10, 2×, ≥95% of 47.22)` on the BTC 15m lane, live makers on the book | position 1: 44.859 contracts, stake **9.999818**, fronted 9.999819, premium 0.799986; **5,071,986 gas** — the `leverage` lane's first measurement, inside its 8M ceiling |
 | `markOf(1)` at the resting bids | mark 17.858881 against a line of 11.999782, not knockable |
 
+| The keeper's `knockOut(1)` at 20:56 UTC, 509 s before the Window's expiry — the BTC 15m YES had fallen from the 0.428 entry toward the line | sold 44.859 into the live bids for **11.259609**: reserve repaid **9.999819**, owner paid **1.259790**, position `KNOCKED_OUT`; tx `0x357c1fa1604dd89a4aa594eab369424b006f2d880d585c03fd81face0103d9e9`, block 478047104, **1,367,150 gas** — the exit side of the `leverage` lane, sent by the keeper key `0xD560…3D7F` |
+
+The reserve's `liquid` after: 5,000.799985 — its 5,000 back plus the premium; the boost cost its owner 8.74 of a
+9.9998 stake, exactly the reference's "it can knock out before close". Shannon produces ~10 blocks a second
+(measured over 6,000 blocks), which is why a fixed size cannot survive the seconds between a quote and its block.
+
 The keeper (`services/ops/src/actors/leverage-keeper`, `LEVERAGE_KEEPER_PRIVATE_KEY`, `DRY_RUN=0`) watches the
-live reserve and settles position 1 once the venue resolves the Window. Its first live run found that neither it
+live reserve; its first live cycle was that knock-out. Its first live run found that neither it
 nor the maker actor loaded the collateral before their first read (`loadCollateral()` — the spike's boot did);
 both now do.

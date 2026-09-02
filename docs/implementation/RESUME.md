@@ -48,6 +48,7 @@ pass the user asked for (same colours, better animation and breakdowns), startin
 | `15c2dda` | Stage 5 — `MarketMakerVault` contract, port, the maker actor and `/earn` from source, fork-verified on Shannon (context/44); not deployed |
 | `38f5e65` | Stage 5 — `LeverageReserve` contract, port, the Ticket's live leverage, the portfolio's boosts, the keeper, fork-verified on Shannon (context/45); not deployed |
 | `8679953` | Stage 5 — `RangeReserve`, `MarketMakerVault` and `LeverageReserve` deployed and supplied on Shannon; the module regenerated |
+| `0879bf7` | Stage 5 — the boost stake-first and the reserve redeployed at `0x5484…2D23`; the leverage surfaces redesigned with 21st.dev; range headroom; the actors load the collateral |
 
 Everything is green: `pnpm typecheck`, `pnpm invariants` (14/14, 0 warnings), `pnpm test` (141),
 `forge test --no-match-contract Fork` (155), `pnpm build`.
@@ -359,7 +360,7 @@ session); deploy waits on the owner's go.** Read context/43 and the ledger's §R
   block 478033175, creation **60,919,875** gas (0.366 STT at 6 gwei — the two definition builders), `setVolatility`
   275,924 each; `approve` 259,745, `supply(5,000)` 897,978; admin = deployer. **Found live:** the basis moves every
   second, so a cap equal to the quote never lands on a short lane; every range open now carries a 3% headroom
-  (`RANGE_STAKE_HEADROOM_BPS`, context/43). The `range` lane is measured by `spike:stage5-live` (`BOOST=0 WAIT=1`).
+  (`RANGE_STAKE_HEADROOM_BPS`, context/43). **Measured live:** a range open **4,527,445** gas (`range` lane 8M holds).
 
 **3. `MarketMakerVault` + the maker actor + `/earn` — built and fork-verified 2026-09-02 (seventh session, same
 day); deploy waits on the owner's go.** Read context/44 and the ledger's §MarketMakerVault first. What is where:
@@ -419,7 +420,8 @@ What is where:
   maker moved the ask mid-send, so the open became stake-first with a quantity floor and the reserve was
   redeployed — context/45.) The keeper key is `0xD5604E6cCf575bD690814fA4eF8E4F59E2583D7F`
   (`~/.config/masayume/leverage-keeper.env`, 1.5 STT). **Measured live:** a 2× open on the 15m BTC lane
-  **5,071,986** gas (`leverage` lane 8M holds); position 1 is live, the keeper settles it.
+  **5,071,986** gas, the keeper's knock-out of the same position **1,367,150** (`leverage` lane 8M holds); the
+  position was knocked out at the line 509 s before expiry, the reserve repaid, the owner paid 1.26 of a 10 stake.
 - **Redesigned with 21st.dev on the user's call (2026-09-02, later):** `features/leverage/BoostCard.tsx` (the strip
   became a breakdown card), `KnockoutMeter.tsx`, `components/data/Odometer.tsx` (a rolling figure that settles on
   the exact reading), the chips' sliding highlight; `motion` added to the web app; `.21st/design.json` carries the
