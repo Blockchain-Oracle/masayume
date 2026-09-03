@@ -105,9 +105,13 @@ the SUI→dUSDC swap), say so and say what replaces it.
 
 ## 4. What the architecture must answer
 
-For each of the eight routes (`/games`, `/practice`, `/duel`, `/lucky`, `/range` (done), `/moonshot`, `/line-rider`,
-`/candle-hop`), the complete user flow from entry to every terminal state, in Yosuku's shell, with the economic
-boundary stated exactly as doc 04's mode-truth table demands. Then, specifically:
+**Every game route is nested under `/games`** — `/games` (the hub), `/games/practice`, `/games/duel`, `/games/lucky`,
+`/games/range` (done), `/games/moonshot`, `/games/line-rider`, `/games/candle-hop`. Nothing game-related goes at the
+top level the way `/parlay` or `/earn` do; this is doc 04's route family and `web/src/app/games/*` already holds it.
+The family shares one `/games` layout (the hub's chrome, the dark stage island, resume of an active match); whether
+the modes are eight folders or one dynamic `[game]` segment under that layout is yours to recommend — the URLs are
+the same either way. For each of the eight routes, give the complete user flow from entry to every terminal state,
+in Yosuku's shell, with the economic boundary stated exactly as doc 04's mode-truth table demands. Then, specifically:
 
 1. **Lucky.** The seeded reel (asset, side, payout tier), the scan over every live Window for the book price closest
    to the tier, the seed's auditability (server seed, client seed, commitment, what the player can verify), the real
@@ -187,7 +191,8 @@ choice is the owner's, put it in the decisions list with your recommendation rat
 
 ## 7. Things already decided that you should not reopen
 
-Yosuku is the visual authority; the games are additive; the eight routes are the route family; ranked scoring is real
+Yosuku is the visual authority; the games are additive; the eight routes under `/games` are the route family and no
+game surface sits at the top level; ranked scoring is real
 PnL from receipts with no speed bonuses or UI multipliers; the side-pot and the underlying positions are separate
 ledgers; `RangeReserve` is live and `/games/range` is built; the reserves' gateway pattern is how a contract talks to
 the venue; deployments to Shannon follow the owner's standing go for gate-green, fork-verified slices unless the owner
