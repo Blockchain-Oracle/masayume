@@ -67,7 +67,18 @@ export function seedCommitment(seed: Bytes32): Bytes32 {
   return keccak256(seed);
 }
 
-async function candidates(headroomSec: number): Promise<readonly DeckCandidate[] | null> {
+/**
+ * Every live Window of the venue, unfiltered.
+ *
+ * It deliberately does NOT drop the Windows that are too close to expiry to deal. `selectDeck` applies
+ * `minHeadroomSec` itself, so pre-filtering here changed no deck — but it silently broke the countdown
+ * beside it. `nextDealableSec` projects each series forward to its SUCCESSOR Window, and the series
+ * whose successor makes the next deck is precisely the one about to expire. Filtering those out left the
+ * projection with only the 4h and 1d series, whose successors never fall inside a duel's horizon, so
+ * `deckSupply` returned null — "further out than the projection looked" — exactly during the dead zone
+ * where the queue has a countdown to show. Found on 2026-09-03 by `spike:duel-full` landing in the gap.
+ */
+async function candidates(): Promise<readonly DeckCandidate[] | null> {
   const venue = await resolveVenueId(parseMarketsEnv().venueId);
   if (!isOk(venue) || !venue.value.venueId) return null;
   const lanes = await marketsProvider.listLiveLanes(venue.value.venueId);
@@ -85,8 +96,7 @@ async function candidates(headroomSec: number): Promise<readonly DeckCandidate[]
       // per-card cap is small enough that the arena's own minQuantity guard is the binding protection.
       spreadRaw: 0n,
       depthRaw: 1n,
-    }))
-    .filter((c) => c.expirySec - Math.floor(nowMs / 1_000) > headroomSec);
+    }));
 }
 
 /**
@@ -95,7 +105,7 @@ async function candidates(headroomSec: number): Promise<readonly DeckCandidate[]
  */
 export async function deckSupply(params: DealInput["params"]): Promise<number | null> {
   const headroomSec = dealHeadroomSec(params);
-  const pool = await candidates(headroomSec);
+  const pool = await candidates();
   if (!pool) return null;
   const nowSec = Math.floor(marketsProvider.nowMs() / 1_000);
   const policy = {
@@ -143,7 +153,7 @@ export async function dealDeck(input: DealInput, onWarning?: (why: string) => vo
   if (!key) return { ok: false, why: `no ${DECK_KEY_ENV}, so a deck's reveal could not be kept`, retry: false };
 
   const headroomSec = dealHeadroomSec(input.params);
-  const pool = await candidates(headroomSec);
+  const pool = await candidates();
   if (!pool) return { ok: false, why: "the venue's live Windows are unreadable", retry: true };
 
   const nowSec = Math.floor(marketsProvider.nowMs() / 1_000);
