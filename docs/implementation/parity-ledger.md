@@ -352,7 +352,7 @@ with the Window picker on the plate and both sides offered. Fixtures on `/dev/ra
 | "BTC must finish inside" · "BTC now" | `{asset} must finish inside` · `{asset} now` — the venue lists ETH too | Truth correction | No approval needed |
 | The band drawn as a shaded region on the price chart (`drawPriceLine` `band`) | **not drawn** — the chart card and the Ticket are siblings; lifting the band into the hero is a follow-up | Pending | **Needs user review** |
 | Gas-free footnote ("Gas-free · settles on its own, right on the price.") | "Settles on its own, right on the oracle's print." | Truth correction — no sponsor on this lane | No approval needed |
-| Private bets refuse range ("Private bets cannot be range bets") | no private control in range mode (the link-private flow is Stage 5 item 5) | — | — |
+| Private bets refuse range ("Private bets cannot be range bets") | the Private option disabled in range mode with that sentence (§PrivateDesk) | Exact | No approval needed |
 | — | `/games/range` with OUTSIDE as a side, the Window picker, the slip's Settle / Void (no oracle answer) / Claim pills | Additive — the game the doc-04 mode row names | **Needs user review** |
 
 **Fork verification** — `contracts/test/RangeReserve.fork.t.sol` on a fork of Shannon (Window 70625, BTC 5m, question
@@ -461,6 +461,66 @@ bought 27.157 contracts for a 9.999999 stake, 10.00 fronted and 0.80 premium; th
 12.00 line; with the line raised over the mark (the reference's own proof-script move) a stranger's knock-out sold
 into the live bids for 18.44, the reserve repaid 10.00 and the owner paid 8.44; a second boost voided through the
 venue's `voidExpired` settled at half a contract; the house withdrew its 5,000 plus the two premiums.
+
+### PrivateDesk, the Ticket's Private option and the claims list (Stage 5, built, fork-verified and live on Shannon 2026-09-03)
+
+The reference's private bet is a `private_budget` Move module and an HTTP desk (`lib/privateBet.ts`,
+`lib/sui/privateBudget.ts`, `services/private-bet-executor/server.mjs`, `openAuth.mjs`, `enclaveTicket.mjs`;
+context/14 §7): an owner funds a budget only they withdraw and allows the desk a cap; each bet opens in a fresh
+throwaway account through three transactions so none names the owner and the position together; an attested
+enclave signs the bearer ticket that is the only claim; the tickets live in the browser with back-up and restore.
+Doc 03's row: "ephemeral account or scoped session; described as link-private unless stronger privacy is actually
+built"; doc 00: "Link-private is not anonymous." `PrivateDesk.sol` (`contracts/src/private/`) is the module on DreamDEX
+and `packages/markets/src/private/desk-*.ts` the desk, run inside Next API routes (context/46):
+
+| Requirement | Reference | Ours | Class | Status |
+|---|---|---|---|---|
+| The budget | `private_budget::deposit` / `allocate(agent, allowance)` / `revoke` / `withdraw_to_sender`; fund-and-allocate in one PTB | `deposit`, `allow`, `depositAndAllow` (one tx), `revoke`, `withdraw` — pays `msg.sender` only; the desk is one pinned key (`desk()`), not an address the owner names | Exact (shape) | **Done** — 8 unit tests |
+| The open | three txs: `charge_to_pool(owner)`, `fund_slot_from_pool(slot)`, `mint_in_slot(slot, market)` with `min_quantity 0` and `max_cost = stake` | `chargeToPool(owner, amount, key)`, `fundSlot(slot)`, `mintInSlot(slot, market, side, minQuantity)` — sized off the live book to the slot's balance, the escrow clamped to the stake, the dust kept | Exact (shape) — the book prices it in-transaction | **Done** — fork-verified |
+| The way home | redeem, then `sweep_slot_to_pool(slot)`, then `credit_from_pool(owner)` (winnings land in the private balance, not the Trading Balance: "settling straight to the Trading Balance cannot be done without naming both halves") | `settleSlot` (permissionless), `sweepSlotToPool(slot)`, `creditFromPool(owner, amount, key)` — into the private balance, the same reason; the vault's `privateAvailable` bucket stays for what it was (a move-aside) | Exact (shape) | **Done** — void fork-verified, won/lost in the unit suite |
+| The desk's record | an on-disk ticket store with no owner ("exists only so a position cannot be redeemed twice") | **none**: the three keys derive from the owner's authorisation signature and the contract's `chargedOf` / `slotOf` / `creditedOf` say what landed; an open or cash-out that lost its reply is sent again and resumes | Strengthening | **Done** — `spike:private-live` re-sends the same authorisation and nothing is charged twice |
+| The claim | an enclave-signed BCS ticket, its key pinned on chain in `ticket_seal::PrivateDesk`, verified locally with ed25519 | an EIP-712 `Claim` signed by the desk key the contract pins, verified locally with `verifyTypedData` against `desk()` | Adapted — a key, not a TEE; the surfaces say "the desk key the contract pins" | **Needs user review** — the trust model |
+| Authorising an open | `openAuthMessage`: a human-readable personal_sign naming the bet, 5-minute TTL, future-dated refused | `privateOpenMessage`, the same shape, rebuilt by the route from the chain's own Window (never the caller's strings); the signature doubles as the keys' seed | Exact (pattern) | **Done** — 7 vitest |
+| Honesty | "BETA", "link-reduction, not full anonymity", never "anonymous / untraceable / zk" | the same words on the control, the note and the panel; the panel names the correlation that remains and what the desk can and cannot do | Exact | **Done** |
+| The pool's bound | `no function hands the desk a spendable coin` | the desk funds only what was charged and credits only what was swept (`PoolShort`); it cannot withdraw; the pool holds only what was just charged or just won | Strengthening | **Done** |
+
+**The port (`packages/core/src/private`, `packages/markets/src/private`).** Types, the wire schemas, the message and
+the EIP-712 types in core; `deriveSlotKeys`, `signPrivateClaim` / `verifyPrivateClaim` (4 vitest), reads
+(`getPrivateDeskState`, `getPrivateBudget`, `getPrivateSlot`, `sizePrivateForStake`), the owner's `PrivateIntent`s on
+the tx lane, a `private` gas lane (6M, **measured live below**), and the desk: `createDeskClient` (one key, one nonce
+queue, a lock per slot), `openPrivateBet` (the resumable state machine; a mint the book refuses is swept and credited
+back with the reason), `cashOutPrivateBet` (settle → sweep → credit, each skipped when the contract shows it landed),
+`deskHealth`. Hooks `usePrivateDesk` / `usePrivateBudget` / `usePrivateSlot`; `private-desk.abi.ts` exported.
+
+**The surfaces (`web/src/features/private/`, `/api/private/{status,open,cashout}`)** — from the reference's source:
+
+| Reference | Ours | Class | Approval |
+|---|---|---|---|
+| Public / Private two-option control (`Ticket624Drawer.tsx` L1175–1219), off until the desk reports ready, "retry" beside it | Private as the route control's third option (Wallet / Trading Balance / Private), shown where a desk is deployed, disabled with the reason in its title, "retry" beside it; drops back to the wallet when the desk cannot run, the stake is over the cap, or the bet is a band | Adapted | **Needs user review** |
+| `privBlocker` (L443–448): checking, not available, the floor, the cap | `derivePrivateBlocker`: the common ladder without the funds checks, then `private-probing` / `-unavailable` / `-below-min` / `-over-cap` / `-unreadable` / `-refused`, the wallet's shortfall as `over-balance` | Exact (pattern) | No approval needed |
+| The budget line (L1221–1247): "X in your private balance." / "Private bets spend a balance only you can withdraw." · "add funds"; else "Always 1x. Cash out from this device." | The same two lines; "Always 1×. Cash out from this browser, on Portfolio."; the honest one-liner under it | Exact | No approval needed |
+| Top up and bet as ONE action (`place()` L541–563): four stakes' worth, never more than the wallet holds, the new balance allowed | The same: `Add X and buy UP privately`, then the signature; the note says how many signatures | Exact | No approval needed |
+| The desk prices the bet itself; the public quote strip shown | `PrivateQuoteRows`: cost, payout if right, max loss, odds — the desk contract's `sizeForStake` off the live book | Adapted | No approval needed |
+| `Bet UP privately →`; toast `Private bet placed: UP $64,500` | `Buy UP privately for <cost>`; toast `Private bet placed: UP on BTC` | Exact (pattern) | No approval needed |
+| Chips disabled under Private, "Private bets are placed at 1x." | The same title on the chips | Exact | No approval needed |
+| Range refuses Private ("Private bets cannot be range bets…") | The option disabled in range mode with that sentence; switching to Range drops the source to the wallet | Exact | No approval needed |
+| Tickets in `localStorage` (`yosuku_private_bet_tickets`, 40), refreshed every 4 s and on `storage` | `masayume.private.claims` (60), the same cadence | Exact | No approval needed |
+| `PrivateClaims.tsx`: verify on sight, Back up / Restore (existing claims win), the warn line, the row (side, strike, stake, payout delta, when, Verified / Unverified, Cash out), the foot — mounted nowhere in the pinned source (only `/dev/private`) | Ported verbatim with its CSS (`private-claims.css`, the reference's own light overrides, plus the plate's cream inks); the Window in place of the strike; mounted as the plate's Private pool row panel with the budget controls above it | Restored from the reference's own component, mounted where its pool row is | **Needs user review** |
+| The portfolio sums `privateBalanceDusdc(tickets) + vaultPrivateDusdc` into the Private pool row | The desk's balance plus the vault's private bucket; the row shows whenever a desk is deployed | Exact (pattern) | No approval needed |
+| `TradePanel`'s honest line: "Your main wallet stays off this trade…"; the incognito toggle's info: "your bet stays separate from your main wallet, so it isn't tied to your public trading history" | "Kept separate from your wallet, so it is harder to link back to you — not anonymous." (from `MOBILE_INTEGRATION.md` §5 / `MOBILE_COPY_DEJARGON.md`) | Exact (spirit) | No approval needed |
+| — | The panel's trust and correlation sentences (what the desk can and cannot do; what stays visible) | Additive (truth) | **Needs user review** |
+
+**The desk service** — `web/src/features/private/desk.server.ts` holds `PRIVATE_DESK_PRIVATE_KEY` (the browser never
+learns it), `/api/private/status` answers `deskHealth` (no key, not deployed, the key is not the pinned one, paused,
+too little STT), `/open` verifies the owner's signature over the message rebuilt from the chain's Window and runs
+the resumable open, `/cashout` takes the claim and nothing else (a forged or edited claim fails against the pinned
+key). Fixtures on `/dev/private` (the control's states, the claims list on real signatures from a throwaway key,
+then the live panel). **Not seen in a browser** — typecheck, invariants (0 warnings), 149 vitest, 173 forge, build.
+
+**Fork verification** — context/46: on Window 71691 (BTC 4h) a 10 stake sized to 19.23 contracts at 0.52 off the
+live book; the three-transaction open left no owner in any log and no venue address in storage; voided through the
+venue, a stranger's settle paid half a contract, the sweep and credit brought 9.6154 home, the owner withdrew to
+the cent and the desk's wallet read zero.
 
 ### Toast (Stage 2, done 2026-09-01)
 
@@ -1152,7 +1212,7 @@ Tracked separately so the route table cannot hide a missing capability.
 | Hero-as-ticket trade flow | **Partial** | Ticket + quote + guarded write live; Yosuku presentation ported |
 | Reel — snap feed of live Windows and takes | **Done** | Market cards off the shared stream; community takes woven in from the social store, honest when unconfigured |
 | Up/Down · stake · cash-out · claim · receipt | **Partial** | Up/Down, stake, claim, receipt live; cash-out pending |
-| Range · leverage · private | **Partial** | `RangeReserve` and `LeverageReserve` live on Shannon; private needs the link-private service |
+| Range · leverage · private | **Done** | `RangeReserve`, `LeverageReserve` and `PrivateDesk` live on Shannon; the private route is link-private, said so |
 | Rooms / comments | **Done** | Position-gated, signature-authenticated, over `packages/db`; honest when unconfigured |
 | Social takes, sharing, alerts, news/ticker | **Done** | Signed takes over Postgres; The Call and Earned Heat share cards; threshold price alerts with a live evaluator; the wire on `/news`; the ticker on real prices (Fear/Greed pending a provider) |
 | X linking | **Partial** | OAuth/PKCE + signed wallet binding, parser, `/trade-from-x`, `/claim`, the relay actor and receipts built; the live X account, credentials and posting stay with the owner; on-chain execution needs the vault deployed |

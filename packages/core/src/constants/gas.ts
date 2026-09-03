@@ -31,7 +31,8 @@ export const GAS_CEILING: Record<GasLane, bigint> = {
   // Measured on Shannon 2026-09-02 (LeverageReserve 0x5484…2D23): a 2x open on the 15m BTC lane 5,071,986 (the book
   // walk, the module read, one IOC across a live maker's levels, the credit sweep); the keeper's knock-out 1,367,150.
   leverage: 8_000_000n,
-  // The private desk: a mint is one book walk, one IOC and the credit sweep — the vault order's shape; the
-  // owner's deposit, allow and withdraw are plain storage. Not measured on Shannon yet.
-  private: 6_000_000n,
+  // Measured on Shannon 2026-09-03 (PrivateDesk 0x4356…7c67): the desk's charge 278,380, fund 454,255, mint 1,917,880
+  // (one book walk, one IOC across a live maker's level, the credit sweep); the owner's depositAndAllow and withdraw are
+  // plain storage. A 4M ceiling leaves the mint twice its room and keeps the desk key's envelope at 0.29 STT a send.
+  private: 4_000_000n,
 };

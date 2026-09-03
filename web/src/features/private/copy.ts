@@ -39,7 +39,7 @@ export const PRIVATE = {
     payoutIfRight: (side: string) => `Payout if ${side} lands`,
     maxLoss: "Max loss",
     odds: "Odds",
-    sized: (charged: string, symbol: string) => `Sized to the venue's lot off the live book: ${charged} ${symbol} is what the slot pays; the rest stays in your private balance.`,
+    sized: (charged: string, symbol: string) => `Sized off the live book: ${charged} ${symbol} buys the contracts; the rest waits in the slot and comes home with the payout.`,
   },
   toasts: {
     placed: (side: string, window: string) => `Private bet placed: ${side} on ${window}`,

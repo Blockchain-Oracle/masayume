@@ -1,7 +1,7 @@
 ---
 title: Resume point — read this first
 status: working handoff
-updated: 2026-09-02
+updated: 2026-09-03
 ---
 
 # Resume point
@@ -15,9 +15,10 @@ Branch **`feat/yosuku-source-led-shell`** off `main` (`497b43a`). **Stages 2 and
 on Shannon (`EventVault`, the forwarder, `StrategyRegistry` — §Stage 4 records what the user has and has not
 reviewed). Stage 5 is in progress (2026-09-02, seventh session): item 1, `ParlayReserve` + `/parlay`, is live on Shannon;
 items 2, 3 and 4 — `RangeReserve`, `MarketMakerVault` and `LeverageReserve` — are **live on Shannon and supplied**
-(deployed 2026-09-02, eighth session, on the owner's standing go; §Stage 5 has the addresses). The user has not yet
-reviewed their surfaces. Next is item 5, the truthful private / link-reduction flow, and a 21st.dev-led redesign
-pass the user asked for (same colours, better animation and breakdowns), starting with the leverage surfaces.**
+(deployed 2026-09-02, eighth session, on the owner's standing go; §Stage 5 has the addresses); item 5, `PrivateDesk`
+and the Ticket's Private option, is **live on Shannon too** (2026-09-03, ninth session, `0x4356…7c67`). The user has
+not yet reviewed any Stage 5 surface. Next is item 6, `/surface`, and the 21st.dev redesign pass on the other
+surfaces (the leverage ones are done).**
 
 | Commit | What |
 |---|---|
@@ -50,9 +51,11 @@ pass the user asked for (same colours, better animation and breakdowns), startin
 | `8679953` | Stage 5 — `RangeReserve`, `MarketMakerVault` and `LeverageReserve` deployed and supplied on Shannon; the module regenerated |
 | `0879bf7` | Stage 5 — the boost stake-first and the reserve redeployed at `0x5484…2D23`; the leverage surfaces redesigned with 21st.dev; range headroom; the actors load the collateral |
 | `9a2637f` | Stage 5 — the maker vault books the venue's exact escrow (its lazy refund panicked the first vault) and is redeployed at `0xc904…9e79`; the maker lane measured |
+| `5f54e5e` | Stage 5 — `PrivateDesk` contract (the budget, the slot, the pool between), fork-verified on Shannon; the desk's resumable open and cash-out in the port (context/46) |
+| `cc4490e` | Stage 5 — the private route's surfaces from source; the desk in `/api/private/*`; `PrivateDesk` deployed on Shannon at `0x4356…7c67` |
 
-Everything is green: `pnpm typecheck`, `pnpm invariants` (14/14, 0 warnings), `pnpm test` (141),
-`forge test --no-match-contract Fork` (156), `pnpm build`.
+Everything is green: `pnpm typecheck`, `pnpm invariants` (14/14, 0 warnings), `pnpm test` (149),
+`forge test --no-match-contract Fork` (173), `pnpm build`.
 
 **The live actors** (`pnpm --filter @masayume/ops start` with `DRY_RUN=0 MAKER_PRIVATE_KEY=… LEVERAGE_KEEPER_PRIVATE_KEY=…`,
 keys in `~/.config/masayume/market-maker.env` / `leverage-keeper.env`) ran on Shannon on 2026-09-02: the maker quoted
@@ -432,8 +435,38 @@ What is where:
   the exact reading), the chips' sliding highlight; `motion` added to the web app; `.21st/design.json` carries the
   project's tokens and the decision. Fixtures on `/dev/leverage`. Same colours and type; layout and motion are ours.
 
-5. The truthful private / link-reduction flow (the reference's `privateBet.ts` desk → an ephemeral
-   account or scoped session, described as link-private).
+**5. `PrivateDesk` + the Ticket's Private option + the claims list — built, fork-verified and live on Shannon
+2026-09-03 (ninth session).** Read context/46 and the ledger's §PrivateDesk first. What is where:
+- `contracts/src/private/` — `IPrivateDesk` (vocabulary), `PrivateGateway` (the venue seam: resolve by market id, the
+  stake-first `sizeForStake` with the escrow clamped to the stake, IOC buy, redeem, admin, the pinned `desk`),
+  `PrivateDesk` (the owner's `deposit` / `allow` / `depositAndAllow` / `revoke` / `withdraw`; the desk's
+  `chargeToPool(owner, amount, key)` → `fundSlot(slot)` → `mintInSlot(slot, market, side, minQuantity)`; the
+  permissionless `settleSlot`; `sweepSlotToPool(slot)` → `creditFromPool(owner, amount, key)`). Tests:
+  `PrivateDesk.budget.t.sol`, `PrivateDesk.lifecycle.t.sol` over `MockLeverageVenue` — `forge test
+  --no-match-contract Fork`: **173** pass, including "after the charge no log names the owner". Fork:
+  `SHANNON_FORK_URL=… FORK_MARKET_ID=<decimal> forge test --match-contract PrivateDeskFork -vv`.
+- **Nothing on chain names the owner and the slot together**, and **the desk keeps no record**: the slot id and the
+  two opaque keys derive from the owner's own authorisation signature (`deriveSlotKeys`), so an open or cash-out that
+  lost its reply is sent again and resumes from `chargedOf` / `slotOf` / `creditedOf`. What remains visible is amount
+  and timing (the charge and the slot's funding seconds apart) — every surface says "harder to link back to you — not
+  anonymous". The claim is an EIP-712 ticket signed by the desk key the contract pins, verified in the browser.
+- `@masayume/core/private` (types, `privateOpenMessage`, the schemas, the EIP-712 types — 7 vitest),
+  `@masayume/markets/private` (deployment with `PRIVATE_DESK_ADDRESS` override, reads, the owner's `PrivateIntent`s on
+  the tx lane, a `private` gas lane, `deriveSlotKeys`, `signPrivateClaim` / `verifyPrivateClaim` — 4 vitest, and the desk:
+  `createDeskClient`, `openPrivateBet`, `cashOutPrivateBet`, `deskHealth`), hooks `usePrivateDesk` / `usePrivateBudget`.
+- `web/src/features/private/` — the Ticket's Private option on the route control (third button, disabled with the
+  reason), `usePrivateTicket` (readiness, budget, the desk's quote, the `privBlocker` ladder, top-up-and-bet as one
+  action), `PrivateQuoteRows` / `PrivateNote` / `PrivateCta`, `PrivateClaims` (the reference's component with its CSS:
+  verify on sight, back up, restore, cash out), `PrivateBalancePanel` (the plate's Private pool row panel), the desk's
+  server half `desk.server.ts` (`PRIVATE_DESK_PRIVATE_KEY`, in `web/.env.local`), `/api/private/{status,open,cashout}`;
+  fixtures on `/dev/private`. **Not seen in a browser.** Ledger rows flagged for review: the trust model (a key, not a
+  TEE), the third option on the control, the claims list mounted on the pool row, the panel's trust sentences.
+- **Live on Shannon (2026-09-03):** `PrivateDesk` `0x4356F421bFAf8BFEEf5188C3A511aD79A5947c67`, block 478410575,
+  creation **36,142,430** gas; admin = deployer; the desk signer `0x8aF0208D3B3428d03E036912312cD892Da8362AF`
+  (`~/.config/masayume/private-desk.env`, 1.5 STT). `pnpm --filter @masayume/scripts spike:private-live` drives it
+  through the real adapter (`HOUSE_KEY` the owner, `PRIVATE_DESK_PRIVATE_KEY` the desk, `WAIT=1` to settle).
+  **Measured live:** see context/46 §Live on Shannon.
+
 6. `/surface` — replace the Yosuku SVI content with the real DreamDEX book/term structure.
 Remember Somnia's gas schedule when deploying (context/41 §Live on Shannon) and the faucet's one wallet a
 day. Deploy nothing without the owner's go.

@@ -112,4 +112,6 @@ try {
   await owner.dispose();
 } finally {
   await closeRuntime();
+  // The SDK session leaves a handle open after dispose; say so and leave rather than hang at the end.
+  process.exit(0);
 }
