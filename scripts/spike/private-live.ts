@@ -3,7 +3,7 @@ import { execSync } from "node:child_process";
 import { formatCadence } from "@masayume/core/copy";
 import { privateOpenMessage } from "@masayume/core/private";
 import type { Hex } from "@masayume/core/types";
-import { oneUnit } from "@masayume/core/units";
+import { formatBaseUnits, oneUnit } from "@masayume/core/units";
 import { closeRuntime, configureMarkets, createMemoryJournal, createSubmitterSession, getCollateral, loadCollateral, marketsProvider, parseMarketsEnv, resolveVenueId, unwrap } from "@masayume/markets";
 import { cashOutPrivateBet, createDeskClient, deriveSlotKeys, deskHealth, getPrivateBudget, getPrivateDeskState, getPrivateSlot, openPrivateBet, sizePrivateForStake } from "@masayume/markets/private";
 import { privateKeyToAccount } from "viem/accounts";
@@ -69,7 +69,7 @@ try {
   const account = privateKeyToAccount(process.env.HOUSE_KEY as Hex);
   const issuedAtMs = Date.now();
   const collateral = getCollateral();
-  const message = privateOpenMessage({ owner: owner.address, marketId: window.marketId, asset: window.asset, cadenceText: formatCadence(window.intervalSec), expirySec: window.expirySec, side: "up", stakeText: (Number(stake) / Number(one)).toFixed(2).replace(/\.00$/, ""), symbol: collateral.symbol, issuedAtMs });
+  const message = privateOpenMessage({ owner: owner.address, contract: state.deployment.privateDesk, chainId: state.deployment.chainId, marketId: window.marketId, asset: window.asset, cadenceText: formatCadence(window.intervalSec), expirySec: window.expirySec, side: "up", stakeText: formatBaseUnits(stake, state.decimals, { maxDp: state.decimals, minDp: 0, group: false }), symbol: collateral.symbol, issuedAtMs });
   const authSignature = await account.signMessage({ message });
   const keys = deriveSlotKeys(authSignature);
   console.log("keys", json(keys));

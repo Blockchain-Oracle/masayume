@@ -5,7 +5,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { describe, expect, it } from "vitest";
 import { SOMNIA_SHANNON } from "../chain";
 import { claimDomain, signPrivateClaim, verifyPrivateClaim } from "./claim";
-import { deriveSlotKeys } from "./keys";
+import { canonicalSignature, deriveSlotKeys } from "./keys";
 
 const DESK_KEY = `0x${"11".repeat(32)}` as const;
 const OTHER_KEY = `0x${"22".repeat(32)}` as const;
@@ -20,6 +20,30 @@ describe("deriveSlotKeys", () => {
     expect(new Set([a.slotId, a.chargeKey, a.creditKey]).size).toBe(3);
     expect(c.slotId).not.toBe(a.slotId);
     expect(a.slotId).toMatch(/^0x[0-9a-f]{64}$/);
+  });
+});
+
+describe("canonicalSignature", () => {
+  const SECP256K1_N = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n;
+  const hex32 = (n: bigint) => `0x${n.toString(16).padStart(64, "0")}`;
+  const account = privateKeyToAccount(DESK_KEY);
+
+  it("keeps a wallet's own low-s signature byte for byte and normalises a 0/1 recovery byte", async () => {
+    const sig = await account.signMessage({ message: "one bet" });
+    expect(canonicalSignature(sig)).toBe(sig);
+    const v = Number.parseInt(sig.slice(-2), 16);
+    const zeroOne = `${sig.slice(0, -2)}${(v - 27).toString(16).padStart(2, "0")}` as `0x${string}`;
+    expect(canonicalSignature(zeroOne)).toBe(sig);
+  });
+
+  it("refuses the malleated twin, so one authorisation cannot become a second slot", async () => {
+    const sig = await account.signMessage({ message: "one bet" });
+    const r = sig.slice(2, 66);
+    const s = BigInt(`0x${sig.slice(66, 130)}`);
+    const v = Number.parseInt(sig.slice(130, 132), 16);
+    const twin = `0x${r}${hex32(SECP256K1_N - s).slice(2)}${(v === 27 ? 28 : 27).toString(16)}` as `0x${string}`;
+    expect(canonicalSignature(twin)).toBeNull();
+    expect(canonicalSignature("0x1234")).toBeNull();
   });
 });
 

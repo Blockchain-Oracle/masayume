@@ -106,12 +106,6 @@ abstract contract PrivateGateway is IPrivateDesk {
 
     // ------------------------------------------------------------------ the venue
 
-    /// @notice Moves the desk's own credit on `pool` into its wallet. Anyone may call; the credit is the desk's
-    ///         either way, so nothing changes hands.
-    function sweep(address pool) external returns (uint256 amount) {
-        return _collect(pool);
-    }
-
     /// @dev Everything about a Window comes off the module by market id, in-transaction.
     function _resolve(bytes32 marketId) internal view returns (MarketRef memory ref) {
         (,,, address coll, uint32 operatorId, bytes32 venueId,,, address market, address pool, uint256 yesId, uint256 noId,, uint64 expiry) =

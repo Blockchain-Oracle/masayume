@@ -3,6 +3,8 @@ import { PRIVATE_AUTH_TTL_MS, privateAuthFresh, privateCashoutRequestSchema, pri
 
 const INPUT = {
   owner: "0xD357A1b7F6E1C2d3E4F5061728394A5B6C7D9358",
+  contract: "0x4356F421bFAf8BFEEf5188C3A511aD79A5947c67",
+  chainId: 50312,
   marketId: `0x${"11".repeat(32)}`,
   asset: "BTC",
   cadenceText: "5m",
@@ -23,6 +25,7 @@ describe("privateOpenMessage", () => {
         "Stake: 10.00 tUSDC",
         "Window: BTC 5m, closes 2026-09-03T01:51:40.000Z",
         `Market: 0x${"11".repeat(32)}`,
+        "Desk: 0x4356f421bfaf8bfeef5188c3a511ad79a5947c67 on chain 50312",
         "Wallet: 0xd357a1b7f6e1c2d3e4f5061728394a5b6c7d9358",
         "Issued: 2026-09-03T01:46:40.000Z",
         "",
@@ -36,6 +39,8 @@ describe("privateOpenMessage", () => {
     expect(privateOpenMessage({ ...INPUT, side: "down" })).not.toBe(base);
     expect(privateOpenMessage({ ...INPUT, stakeText: "10.01" })).not.toBe(base);
     expect(privateOpenMessage({ ...INPUT, issuedAtMs: INPUT.issuedAtMs + 1 })).not.toBe(base);
+    expect(privateOpenMessage({ ...INPUT, chainId: 1 })).not.toBe(base);
+    expect(privateOpenMessage({ ...INPUT, contract: `0x${"ab".repeat(20)}` })).not.toBe(base);
   });
 });
 

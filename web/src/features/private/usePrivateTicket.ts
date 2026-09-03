@@ -167,7 +167,7 @@ export function usePrivateTicket({ market, side, stakeBase, enabled, symbol, wal
       }
       return;
     }
-    if (!side || !quote.quote) return;
+    if (!side || !quote.quote || !desk) return;
     if (depositShortBase > 0n || reallowOnly) {
       if (!budget || (depositShortBase > 0n && topUpBase < depositShortBase)) return;
       setBusy("fund");
@@ -181,13 +181,13 @@ export function usePrivateTicket({ market, side, stakeBase, enabled, symbol, wal
     setBusy("open");
     try {
       const q = quote.quote;
-      settle(await opener.open({ market, side, stakeBase, minQuantityRaw: (q.quantityRaw * FILL_FLOOR_BPS) / 10_000n, symbol }), side);
+      settle(await opener.open({ market, contract: desk.deployment.privateDesk, chainId: desk.deployment.chainId, side, stakeBase, minQuantityRaw: (q.quantityRaw * FILL_FLOOR_BPS) / 10_000n, symbol }), side);
     } catch (error) {
       notify.warning(PRIVATE.cta.notPlaced, error instanceof Error ? error.message : String(error));
     } finally {
       setBusy(null);
     }
-  }, [blocker, pending, side, quote.quote, depositShortBase, reallowOnly, budget, topUpBase, writes, opener, market, stakeBase, symbol, settle]);
+  }, [blocker, pending, side, quote.quote, desk, depositShortBase, reallowOnly, budget, topUpBase, writes, opener, market, stakeBase, symbol, settle]);
 
   return {
     deployed,

@@ -1,5 +1,25 @@
 import type { Bytes32, Hex } from "@masayume/core/types";
-import { concatHex, keccak256, stringToHex } from "viem";
+import { concatHex, keccak256, parseSignature, serializeSignature, stringToHex, type Hex as ViemHex } from "viem";
+
+/** secp256k1's group order halved: a signature with `s` above it is the malleated twin of a canonical one. */
+const HALF_ORDER = 0x7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0n;
+
+/**
+ * One authorisation, one byte form. viem verifies a high-`s` signature and either `v` encoding, so without this
+ * one signed message would map to four slots and four charges. Returns null for a signature that is not the
+ * canonical low-`s` form — those are refused, never normalised, so the bytes the wallet showed are the bytes used.
+ */
+export function canonicalSignature(signature: Hex): Hex | null {
+  try {
+    const parsed = parseSignature(signature as ViemHex);
+    if (BigInt(parsed.s) > HALF_ORDER) return null;
+    const yParity = parsed.yParity ?? (parsed.v === undefined ? undefined : parsed.v === 27n || parsed.v === 0n ? 0 : parsed.v === 28n || parsed.v === 1n ? 1 : undefined);
+    if (yParity !== 0 && yParity !== 1) return null;
+    return serializeSignature({ r: parsed.r, s: parsed.s, yParity }) as Hex;
+  } catch {
+    return null;
+  }
+}
 
 /** The three keys one private bet uses on chain, derived from one secret the owner and the desk alone hold. */
 export interface SlotKeys {

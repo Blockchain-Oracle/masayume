@@ -16,7 +16,8 @@ on Shannon (`EventVault`, the forwarder, `StrategyRegistry` — §Stage 4 record
 reviewed). Stage 5 is in progress (2026-09-02, seventh session): item 1, `ParlayReserve` + `/parlay`, is live on Shannon;
 items 2, 3 and 4 — `RangeReserve`, `MarketMakerVault` and `LeverageReserve` — are **live on Shannon and supplied**
 (deployed 2026-09-02, eighth session, on the owner's standing go; §Stage 5 has the addresses); item 5, `PrivateDesk`
-and the Ticket's Private option, is **live on Shannon too** (2026-09-03, ninth session, `0x4356…7c67`). The user has
+and the Ticket's Private option, is **live on Shannon too** (2026-09-03, ninth session, `0x4D27…28bB` after a security
+redeploy). The user has
 not yet reviewed any Stage 5 surface. Next is item 6, `/surface`, and the 21st.dev redesign pass on the other
 surfaces (the leverage ones are done).**
 
@@ -461,8 +462,10 @@ What is where:
   server half `desk.server.ts` (`PRIVATE_DESK_PRIVATE_KEY`, in `web/.env.local`), `/api/private/{status,open,cashout}`;
   fixtures on `/dev/private`. **Not seen in a browser.** Ledger rows flagged for review: the trust model (a key, not a
   TEE), the third option on the control, the claims list mounted on the pool row, the panel's trust sentences.
-- **Live on Shannon (2026-09-03):** `PrivateDesk` `0x4356F421bFAf8BFEEf5188C3A511aD79A5947c67`, block 478410575,
-  creation **36,142,430** gas; admin = deployer; the desk signer `0x8aF0208D3B3428d03E036912312cD892Da8362AF`
+- **Live on Shannon (2026-09-03):** `PrivateDesk` `0x4D27115c4eff6536bf0D009ACeBf339AA02128bB`, block 478433921,
+  creation **36,654,926** gas (the first deploy `0x4356…7c67` accumulated credits per key — the security reviewer's
+  high finding, a double credit across desk instances — and was replaced; it still holds two open slots on Window
+  73121 to settle, sweep and credit the deployer with the desk key, context/46); admin = deployer; the desk signer `0x8aF0208D3B3428d03E036912312cD892Da8362AF`
   (`~/.config/masayume/private-desk.env`, 1.5 STT). `pnpm --filter @masayume/scripts spike:private-live` drives it
   through the real adapter (`HOUSE_KEY` the owner, `PRIVATE_DESK_PRIVATE_KEY` the desk, `WAIT=1` to settle).
   **Measured live:** charge 278,380, fund 454,255, mint 1,917,880; settle 487,256, sweep 249,887, credit 268,553; the

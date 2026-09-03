@@ -87,6 +87,26 @@ contract PrivateDeskBudgetTest is PrivateTestBase {
         deskContract.chargeToPool(owner, 5 * ONE, keysFor("c").chargeKey);
     }
 
+    function test_oneCreditPerKeyAndTheBandAtTheCharge() public {
+        fund(owner, 30 * ONE, 30 * ONE);
+        Keys memory k = keysFor("k");
+        vm.startPrank(desk);
+        vm.expectRevert(abi.encodeWithSelector(IPrivateDesk.StakeOutsideBand.selector, 26 * ONE, ONE, 25 * ONE));
+        deskContract.chargeToPool(owner, 26 * ONE, k.chargeKey);
+        deskContract.chargeToPool(owner, STAKE, k.chargeKey);
+        deskContract.fundSlot(k.slotId, STAKE);
+        deskContract.sweepSlotToPool(k.slotId);
+        deskContract.creditFromPool(owner, 4 * ONE, k.creditKey);
+        // The rest of the pool is there, but this key has paid: a racing second process is refused, not paid twice.
+        vm.expectRevert(abi.encodeWithSelector(IPrivateDesk.KeyUsed.selector, k.creditKey));
+        deskContract.creditFromPool(owner, 6 * ONE, k.creditKey);
+        deskContract.creditFromPool(owner, 6 * ONE, keysFor("k2").creditKey);
+        vm.stopPrank();
+        assertEq(deskContract.creditedOf(owner, k.creditKey), 4 * ONE);
+        assertEq(deskContract.pool(), 0);
+        assertBooksBalance();
+    }
+
     function test_theDeskCannotFundOrCreditBeyondThePool() public {
         fund(owner, 10 * ONE, 10 * ONE);
         Keys memory k = keysFor("d");

@@ -48,6 +48,9 @@ function writePending(owner: string, pending: PendingOpen | null): void {
 
 export interface PrivateOpenInput {
   market: EventMarket;
+  /** The desk contract and its chain — the message names them so the signature opens nothing elsewhere. */
+  contract: Address;
+  chainId: number;
   side: Side;
   stakeBase: bigint;
   /** The guard against a book that moved since the quote: fewer contracts than this and the desk refunds. */
@@ -106,17 +109,19 @@ export function usePrivateOpen() {
   );
 
   const open = useCallback(
-    async ({ market, side, stakeBase, minQuantityRaw, symbol }: PrivateOpenInput): Promise<PrivateOpenResult | null> => {
+    async ({ market, contract, chainId, side, stakeBase, minQuantityRaw, symbol }: PrivateOpenInput): Promise<PrivateOpenResult | null> => {
       if (!address) return null;
       const issuedAtMs = Date.now();
       const message = privateOpenMessage({
         owner: address,
+        contract,
+        chainId,
         marketId: market.marketId,
         asset: market.asset,
         cadenceText: formatCadence(market.intervalSec),
         expirySec: market.expirySec,
         side,
-        stakeText: formatBaseUnits(stakeBase, market.decimals),
+        stakeText: formatBaseUnits(stakeBase, market.decimals, { maxDp: market.decimals, minDp: 0, group: false }),
         symbol,
         issuedAtMs,
       });

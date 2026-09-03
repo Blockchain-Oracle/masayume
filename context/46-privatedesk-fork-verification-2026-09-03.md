@@ -124,12 +124,41 @@ can pay whoever the operator believes the owner is — here the house, because t
 the desk would have nothing to go on, which is the point and the risk, and why "Back up" is a primary action on
 the claims list. (The slot's `settle → sweep → credit` for the house is left to run after 73121 closes.)
 
+## The security review and the redeploy (2026-09-03, later)
+
+The security-reviewer agent over the slice found one high: `creditFromPool` accumulated per key, so two desk
+processes racing on one claim (the desk runs inside Next route handlers; a multi-instance host is a real
+deployment shape) could each read `swept − credited > 0` and each credit, bounded only by the pool — other
+owners' float. Fixed on the contract: **one credit per key** (`KeyUsed`), as the charge already was. With it,
+because a redeploy was due anyway: the stake band is checked at the charge too (a refused mint would have cost
+the desk four sends and the attacker nothing), and `sweep` takes a market id and resolves the pool through the
+module instead of calling whatever address a stranger names. On the desk: a pre-flight `sizeForStake` and a
+check of the key's STT before a cent moves; a slot swept but never credited (the credit was the send that got
+lost) has its refund finished on the next attempt; the authorisation signature is canonicalised (viem verifies a
+high-`s` twin and either `v` encoding, which would have mapped one signature to four slots — refused, never
+normalised); the signed message names the desk contract and the chain and states the stake to the base unit;
+opens are gated per owner and per address like the sponsor's calls; error text that reaches anonymous callers is
+the first line only (viem's carries the RPC URL). The NatSpec and the panel no longer say the desk "cannot pay
+itself": a stolen desk key could credit an address of its choosing up to the pool's float and the owner's
+allowance is the blast radius — the panel says so and tells the owner to keep it to a few bets.
+
+`PrivateDesk` is now at **`0x4D27115c4eff6536bf0D009ACeBf339AA02128bB`**, block 478433921 (creation
+`0xda9a…4e34` at 478433988, **36,654,926** gas), same signer, same params. The first contract at
+`0x4356…7c67` keeps its two open slots on Window 73121 (`0x7de3…7f78` with no claim, `0xaca9…5332` with the
+house's ticket in the run log); after 73121 closes, the desk key can `settleSlot`, `sweepSlotToPool` and
+`creditFromPool` the deployer on the OLD contract and the deployer withdraws — the deployer's balance there
+is otherwise zero. 174 forge tests; the fork test re-run on 73121 against the hardened contract (15.873 at 0.63,
+voided, home).
+
 ## Not covered
 
 - The claims list, the control and the panel in a browser — the desk ran only through the adapter.
 - Pre-funding slots ahead of demand — what would break the amount-and-timing correlation the reference
   also names as "the next piece of work". The slot is funded in the same minute as the charge.
 - ERC-1271 wallets: the authorisation is checked with `verifyMessage` (EOA), as the takes and the Room are.
+- Desk-key rotation or a desk outage strands settled payouts: the chain holds no owner on a slot and the server
+  verifies the pinned key only. The escape hatch is an on-chain `claimWithTicket(claim, sig)` against a recorded
+  set of past desk keys, crediting `claim.owner` at the owner's choice of linking on chain — a follow-up.
 - A withdraw through the sponsor rail: the owner pays their own gas to withdraw; `PrivateDesk` carries no
   ERC-2771 context.
 - The desk's sends are serialised in one process; a multi-instance deploy would race on the key's nonce the

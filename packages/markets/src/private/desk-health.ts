@@ -35,8 +35,8 @@ export async function deskHealth(desk: DeskClient | null): Promise<PrivateStatus
     if (paused) reasons.push("Private mode is paused on the contract");
     if (stt < requiredGasWei("private") * OPEN_SENDS) reasons.push("the desk key holds too little STT to place a bet");
     return { ...base, ready: reasons.length === 0, desk: pinned as Address, minStakeBase: p[0].toString(), maxStakeBase: p[1].toString(), paused };
-  } catch (error) {
-    reasons.push(`the desk could not read the contract: ${error instanceof Error ? error.message : String(error)}`);
+  } catch {
+    reasons.push("the desk could not read the contract right now");
     return base;
   }
 }

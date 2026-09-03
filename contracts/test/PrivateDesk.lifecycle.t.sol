@@ -113,11 +113,20 @@ contract PrivateDeskLifecycleTest is PrivateTestBase {
         vm.startPrank(desk);
         vm.expectRevert(abi.encodeWithSelector(IPrivateDesk.SlotNotFunded.selector, k.slotId));
         deskContract.mintInSlot(k.slotId, marketA, 0, 0);
-        deskContract.chargeToPool(owner, 30 * ONE, k.chargeKey);
-        deskContract.fundSlot(k.slotId, 30 * ONE);
+        // The band is checked at the charge, so a stake the mint would refuse never costs three sends...
         vm.expectRevert(abi.encodeWithSelector(IPrivateDesk.StakeOutsideBand.selector, 30 * ONE, ONE, 25 * ONE));
-        deskContract.mintInSlot(k.slotId, marketA, 0, 0);
+        deskContract.chargeToPool(owner, 30 * ONE, k.chargeKey);
+        deskContract.chargeToPool(owner, 20 * ONE, k.chargeKey);
+        deskContract.fundSlot(k.slotId, 20 * ONE);
         vm.stopPrank();
+        // ...and again at the mint, against the params of the moment.
+        IPrivateDesk.Params memory tighter = defaultParams();
+        tighter.maxStake = 15 * ONE;
+        deskContract.setParams(tighter);
+        vm.prank(desk);
+        vm.expectRevert(abi.encodeWithSelector(IPrivateDesk.StakeOutsideBand.selector, 20 * ONE, ONE, 15 * ONE));
+        deskContract.mintInSlot(k.slotId, marketA, 0, 0);
+        deskContract.setParams(defaultParams());
 
         Keys memory k2 = keysFor("m2");
         vm.startPrank(desk);

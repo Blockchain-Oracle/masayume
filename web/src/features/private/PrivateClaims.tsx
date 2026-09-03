@@ -53,6 +53,11 @@ export function PrivateClaims({ claims, pinnedDesk, contract, chainId, owner, de
   // Verify every claim on sight. Making the user press a button to find out their bet is real would be putting the burden in the wrong place.
   useEffect(() => {
     let cancelled = false;
+    // Until the contract's pinned key is known there is nothing honest to check against: the rows stay "Checking".
+    if (pinnedDesk === null) {
+      setVerified({});
+      return;
+    }
     void (async () => {
       const next: Record<string, boolean> = {};
       for (const c of claims) next[c.claim.slotId] = await verifyTicket(c, pinnedDesk, contract, chainId);

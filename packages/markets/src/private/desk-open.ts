@@ -5,6 +5,7 @@ import { MULTICALL3_ADDRESS } from "../chain";
 import { getCollateral } from "../collateral";
 import { privateDeskAbi } from "../contracts/private-desk.abi";
 import { isTimeoutError } from "../submitter/failure";
+import { requiredGasWei } from "../submitter/gas";
 import { claimDomain, signPrivateClaim } from "./claim";
 import type { DeskClient } from "./desk-client";
 import { diagnosePrivate } from "./errors";
@@ -26,6 +27,14 @@ export interface DeskOpenInput {
 }
 
 /** Everything the resume needs, read in one multicall off the contract — the desk keeps no record of its own. */
+/** An open is three sends; the desk must be able to pay for all of them before it starts one. */
+const OPEN_SENDS = 3n;
+
+/** The first line only: viem's messages carry the RPC URL and the request body under it, which anonymous callers never see. */
+export function publicReason(technical: string): string {
+  return technical.split("\n")[0]?.trim() || "the desk could not complete this";
+}
+
 async function readOpenState(desk: DeskClient, contract: Address, owner: Address, chargeKey: Hex, slotId: Hex) {
   const c = { address: contract, abi: privateDeskAbi } as const;
   const [charged, slot, budget, paused, credited] = await desk.publicClient.multicall({
@@ -68,13 +77,28 @@ export async function openPrivateBet(desk: DeskClient, input: DeskOpenInput): Pr
         if (state.paused) return { status: "refused", reason: "Private mode is paused right now.", technical: "IsPaused()", refundedBase: "0", txs };
         if (state.balance < stakeBase) return { status: "refused", reason: `Your private balance is ${amount(state.balance)}; this bet needs ${amount(stakeBase)}.`, technical: "Insufficient", refundedBase: "0", txs };
         if (state.allowance < stakeBase) return { status: "refused", reason: `Your private spending limit has ${amount(state.allowance)} left; this bet needs ${amount(stakeBase)}.`, technical: "OverAllowance", refundedBase: "0", txs };
+        // Before a cent moves: the book must be able to fill this at the owner's guard (a refused mint would cost the
+        // desk four sends and the owner nothing), and the desk must be able to pay for the whole open.
+        try {
+          const preview = (await desk.publicClient.readContract({ address: contract, abi: privateDeskAbi, functionName: "sizeForStake", args: [input.marketId as `0x${string}`, SIDE_TO_OUTCOME[input.side], stakeBase] })) as { quantityRaw: bigint };
+          if (preview.quantityRaw < input.minQuantityRaw) return { status: "refused", reason: refusalWords("requote"), technical: `sizeForStake ${preview.quantityRaw} < guard ${input.minQuantityRaw}`, refundedBase: "0", txs };
+        } catch (error) {
+          const diag = diagnosePrivate(error);
+          return { status: "refused", reason: refusalWords(diag.kind), technical: publicReason(diag.technical), refundedBase: "0", txs };
+        }
+        if ((await desk.publicClient.getBalance({ address: desk.address })) < requiredGasWei("private") * OPEN_SENDS) {
+          return { status: "refused", reason: "Private mode is short of gas right now; nothing was charged.", technical: "desk STT below the open's envelope", refundedBase: "0", txs };
+        }
         txs.charge = (await desk.send("chargeToPool", [owner, stakeBase, keys.chargeKey], "private charge")).hash;
         state.charged = stakeBase;
       }
       if (state.slot.fundedAtSec === 0) {
         txs.fund = (await desk.send("fundSlot", [keys.slotId, state.charged], "private fund")).hash;
       } else if (state.slot.mintedAtSec === 0 && state.slot.balanceBase === 0n) {
-        // Funded once, then refunded: this authorisation was already answered.
+        // Funded once, then swept back: this authorisation was already refused. Finish the refund if its credit was
+        // the send that got lost — otherwise the stake would sit in the pool with no ticket to claim it.
+        const owedCredit = state.slot.sweptBase - state.credited;
+        if (owedCredit > 0n) txs.credit = (await desk.send("creditFromPool", [owner, owedCredit, keys.creditKey], "private refund credit")).hash;
         return { status: "refused", reason: "This bet was already refunded to your private balance.", technical: "slot swept", refundedBase: state.slot.sweptBase.toString(), txs };
       }
       if (state.slot.mintedAtSec === 0) {
@@ -86,7 +110,7 @@ export async function openPrivateBet(desk: DeskClient, input: DeskOpenInput): Pr
           const diag = diagnosePrivate(error);
           txs.sweep = (await desk.send("sweepSlotToPool", [keys.slotId], "private refund sweep")).hash;
           txs.credit = (await desk.send("creditFromPool", [owner, state.charged, keys.creditKey], "private refund credit")).hash;
-          return { status: "refused", reason: refusalWords(diag.kind), technical: diag.technical, refundedBase: state.charged.toString(), txs };
+          return { status: "refused", reason: refusalWords(diag.kind), technical: publicReason(diag.technical), refundedBase: state.charged.toString(), txs };
         }
       }
       state = await readOpenState(desk, contract, owner, keys.chargeKey, keys.slotId);
@@ -119,7 +143,7 @@ export async function openPrivateBet(desk: DeskClient, input: DeskOpenInput): Pr
     } catch (error) {
       if (isTimeoutError(error)) return { status: "unknown", reason: "The chain has not answered yet. Try again in a moment — nothing is charged twice.", txs };
       const diag = diagnosePrivate(error);
-      return { status: "unknown", reason: diag.technical, txs };
+      return { status: "unknown", reason: publicReason(diag.technical), txs };
     }
   });
 }

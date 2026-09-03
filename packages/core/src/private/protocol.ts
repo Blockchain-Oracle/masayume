@@ -11,6 +11,9 @@ export const PRIVATE_HONESTY = "Kept separate from your wallet, so it is harder 
 
 export interface PrivateOpenMessageInput {
   owner: string;
+  /** The desk contract and its chain, so a signature for one deployment never opens a bet on another. */
+  contract: string;
+  chainId: number;
   marketId: string;
   asset: string;
   cadenceText: string;
@@ -35,6 +38,7 @@ export function privateOpenMessage(input: PrivateOpenMessageInput): string {
     `Stake: ${input.stakeText} ${input.symbol}`,
     `Window: ${input.asset} ${input.cadenceText}, closes ${new Date(input.expirySec * 1000).toISOString()}`,
     `Market: ${input.marketId}`,
+    `Desk: ${input.contract.toLowerCase()} on chain ${input.chainId}`,
     `Wallet: ${input.owner.toLowerCase()}`,
     `Issued: ${new Date(input.issuedAtMs).toISOString()}`,
     "",

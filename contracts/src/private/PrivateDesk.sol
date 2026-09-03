@@ -15,7 +15,9 @@ import {PrivateGateway} from "./PrivateGateway.sol";
 ///         `fundSlot` names the slot; `mintInSlot` names the slot and the market. Settlement is permissionless.
 ///         The way home is the same split in reverse: `sweepSlotToPool` names the slot, `creditFromPool`
 ///         names the owner and another opaque key. Only the owner's own `withdraw` ever pays out, and only to
-///         `msg.sender`; the desk can move an allowance into a bet and a payout back to a balance, never to itself.
+///         `msg.sender`. The desk moves an allowance into a bet and a payout back to a balance; a compromised desk
+///         key could credit an address of its choosing, so the allowance an owner sets is the blast radius, and the
+///         pool it could raid holds only what was just charged or just won.
 /// @dev What this is NOT: anonymity. `Charged` and `SlotFunded` land seconds apart for the same figure, and a
 ///      determined observer can line them up; the desk process sees both halves while it works. The claim of
 ///      ownership is the desk's signed ticket, held by the owner alone — the chain keeps no owner on any slot.
@@ -83,6 +85,9 @@ contract PrivateDesk is PrivateGateway, ReentrancyGuard {
     function chargeToPool(address owner, uint256 amount, bytes32 chargeKey) external onlyDesk nonReentrant {
         if (paused) revert IsPaused();
         if (amount == 0) revert ZeroAmount();
+        Params memory p = params;
+        // The band is checked here too, so a stake the mint would refuse never costs the desk three sends.
+        if (amount < p.minStake || amount > p.maxStake) revert StakeOutsideBand(amount, p.minStake, p.maxStake);
         if (chargedOf[owner][chargeKey] != 0) revert KeyUsed(chargeKey);
         uint256 have = balanceOf[owner];
         if (have < amount) revert Insufficient(amount, have);
@@ -178,15 +183,23 @@ contract PrivateDesk is PrivateGateway, ReentrancyGuard {
     }
 
     /// @notice OWNER SIDE. Pool float into an owner's balance, ready for the next private bet or a withdrawal.
-    ///         Names the owner and an opaque key, never a slot. Bounded by what the pool actually holds.
+    ///         Names the owner and an opaque key, never a slot. Bounded by what the pool actually holds, and one
+    ///         credit per key: two desk processes racing on one claim cannot pay it twice.
     function creditFromPool(address owner, uint256 amount, bytes32 creditKey) external onlyDesk nonReentrant {
         if (amount == 0) revert ZeroAmount();
+        if (creditedOf[owner][creditKey] != 0) revert KeyUsed(creditKey);
         if (pool < amount) revert PoolShort(amount, pool);
         pool -= amount;
         owed += amount;
         balanceOf[owner] += amount;
-        creditedOf[owner][creditKey] += amount;
+        creditedOf[owner][creditKey] = amount;
         emit Credited(owner, creditKey, amount);
+    }
+
+    /// @notice Moves the desk's own credit on a Window's pool into its wallet. Anyone may call; the pool is resolved
+    ///         from the venue's market id, never taken from the caller, and the credit is the desk's either way.
+    function sweep(bytes32 marketId) external nonReentrant returns (uint256 amount) {
+        return _collect(_resolve(marketId).pool);
     }
 
     // ------------------------------------------------------------------ views

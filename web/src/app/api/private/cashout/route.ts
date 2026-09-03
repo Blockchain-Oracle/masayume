@@ -1,6 +1,6 @@
 import { privateCashoutRequestSchema, type PrivateClaim } from "@masayume/core/private";
 import { toMarketId } from "@masayume/core/types";
-import { cashOutPrivateBet, ClaimRefusedError } from "@masayume/markets/private";
+import { cashOutPrivateBet, ClaimRefusedError, publicReason } from "@masayume/markets/private";
 import { NextResponse } from "next/server";
 import { getDesk } from "@/features/private/desk.server";
 
@@ -25,6 +25,6 @@ export async function POST(req: Request) {
     return NextResponse.json(await cashOutPrivateBet(desk, claim, parsed.data.signature as `0x${string}`));
   } catch (error) {
     if (error instanceof ClaimRefusedError) return refuse(403, error.message);
-    return refuse(502, error instanceof Error ? error.message : String(error));
+    return refuse(502, publicReason(error instanceof Error ? error.message : String(error)));
   }
 }
