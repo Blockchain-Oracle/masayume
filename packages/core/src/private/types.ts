@@ -123,7 +123,10 @@ export interface PrivateTicket {
   txs: { charge: Hex; fund: Hex; mint: Hex };
   openedAtMs: number;
   status: PrivateTicketStatus;
+  /** What the contracts paid at settlement; absent when this browser never saw the settlement itself. */
   payoutBase?: string;
+  /** What reached the private balance (payout plus dust). */
+  creditedBase?: string;
   creditedAtMs?: number;
   creditTx?: Hex;
 }

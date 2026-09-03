@@ -84,6 +84,29 @@ export const privateCashoutRequestSchema = z.object({
 });
 export type PrivateCashoutRequest = z.infer<typeof privateCashoutRequestSchema>;
 
+const hexString = z.string().regex(/^0x[0-9a-fA-F]*$/);
+
+/** One stored claim, checked field by field on restore so a hand-edited backup can never brick the list that is the only record of unclaimed money. */
+export const privateTicketSchema = z.object({
+  claim: privateClaimSchema,
+  signature: signatureSchema,
+  desk: addressSchema,
+  contract: addressSchema,
+  chainId: z.number().int().positive(),
+  asset: z.string().min(1).max(16),
+  intervalSec: z.number().int().positive(),
+  expirySec: z.number().int().positive(),
+  quantityRaw: decimalString,
+  costBase: decimalString,
+  txs: z.object({ charge: hexString, fund: hexString, mint: hexString }),
+  openedAtMs: z.number().int().positive(),
+  status: z.enum(["open", "settled", "credited"]),
+  payoutBase: decimalString.optional(),
+  creditedBase: decimalString.optional(),
+  creditedAtMs: z.number().int().positive().optional(),
+  creditTx: hexString.optional(),
+});
+
 /** The backup file: plain JSON on purpose — it has to survive a lost laptop, a new device, and this app going away. */
 export const PRIVATE_BACKUP_KIND = "masayume.private.claims";
 export const PRIVATE_BACKUP_VERSION = 1;

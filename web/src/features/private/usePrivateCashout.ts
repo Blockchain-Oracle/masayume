@@ -29,11 +29,13 @@ export function usePrivateCashout(refresh: () => void, decimals: number, symbol:
           notify.neutral(PRIVATE.toasts.stillOpen);
         } else if (json.status === "credited") {
           const payout = BigInt(json.payoutBase);
-          upsertPrivateTicket({ ...ticket, status: "credited", payoutBase: json.payoutBase, creditedAtMs: Date.now(), ...(json.txs.credit ? { creditTx: json.txs.credit } : {}) });
+          upsertPrivateTicket({ ...ticket, status: "credited", payoutBase: json.payoutBase, creditedBase: json.creditedBase, creditedAtMs: Date.now(), ...(json.txs.credit ? { creditTx: json.txs.credit } : {}) });
           if (payout > 0n) notify.neutral(PRIVATE.toasts.cashedOut(formatBaseUnits(BigInt(json.creditedBase), decimals), symbol));
           else notify.neutral(PRIVATE.toasts.lost);
         } else {
-          upsertPrivateTicket({ ...ticket, status: "credited", payoutBase: ticket.payoutBase ?? "0", creditedAtMs: ticket.creditedAtMs ?? Date.now() });
+          // Already home — from another browser, or an earlier tap. This browser never saw the settlement, so it
+          // records what reached the balance and claims nothing about the outcome it did not witness.
+          upsertPrivateTicket({ ...ticket, status: "credited", creditedBase: json.creditedBase, creditedAtMs: ticket.creditedAtMs ?? Date.now() });
           notify.neutral(PRIVATE.toasts.alreadyHome);
         }
         refresh();

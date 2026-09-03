@@ -32,7 +32,7 @@ export const GAS_CEILING: Record<GasLane, bigint> = {
   // walk, the module read, one IOC across a live maker's levels, the credit sweep); the keeper's knock-out 1,367,150.
   leverage: 8_000_000n,
   // Measured on Shannon 2026-09-03 (PrivateDesk 0x4356…7c67): the desk's charge 278,380, fund 454,255, mint 1,917,880
-  // (one book walk, one IOC across a live maker's level, the credit sweep); the owner's depositAndAllow and withdraw are
-  // plain storage. A 4M ceiling leaves the mint twice its room and keeps the desk key's envelope at 0.29 STT a send.
+  // (one book walk, one IOC across a live maker's level, the credit sweep); settle 487,256, sweep 249,887, credit 268,553;
+  // the owner's withdraw 85,992. A 4M ceiling leaves the mint twice its room and keeps the desk key's envelope at 0.29 STT a send.
   private: 4_000_000n,
 };

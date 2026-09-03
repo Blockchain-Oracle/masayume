@@ -45,7 +45,7 @@ export function RouteControl({ source, onChange, vaultAvailableBase, decimals, s
           type="button"
           className="tk-mode"
           aria-pressed={effective === "vault"}
-          disabled={armed || !deployed || vaultEmpty}
+          disabled={(armed && source !== "private") || !deployed || (vaultEmpty && !armed)}
           title={vaultTitle}
           onClick={() => onChange("vault")}
           data-cursor="hover"

@@ -109,10 +109,17 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
   };
   // The private route (the reference's Private): the desk's readiness, the owner's budget, the desk's quote, its own ladder.
   const priv = usePrivateTicket({ market, side, stakeBase, enabled: privateMode && hasSigner, symbol, walletSpendableBase: balances?.spendableBase ?? null, base });
-  // Off by default and never silently on: the option drops back to the wallet the moment the desk cannot run, the stake is over its cap, or the bet is a band.
+  // Off by default and never silently on. The reference also drops Private the moment the stake passes the cap; here the
+  // ladder names the cap on the CTA instead, because a silent private-to-public flip is the one outcome this route
+  // exists to prevent. The desk going away is said aloud; a band is a different ticket and takes the wallet.
   useEffect(() => {
-    if (privateMode && (!priv.ready || priv.overCap || mode === "range")) setSource("wallet");
-  }, [privateMode, priv.ready, priv.overCap, mode]);
+    if (!privateMode) return;
+    if (mode === "range") setSource("wallet");
+    else if (!priv.probing && !priv.ready) {
+      setSource("wallet");
+      notify.warning(PRIVATE.route.label, PRIVATE.toasts.flippedOff(priv.reason ?? "not ready"));
+    }
+  }, [privateMode, priv.probing, priv.ready, priv.reason, mode]);
 
   // A new stake or side starts a new composition; the previous outcome no longer describes it.
   useEffect(() => {

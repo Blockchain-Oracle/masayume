@@ -1,5 +1,5 @@
 import { formatCadence } from "@masayume/core/copy";
-import { privateAuthFresh, privateOpenMessage, privateOpenRequestSchema } from "@masayume/core/private";
+import { privateOpenMessage, privateOpenRequestSchema } from "@masayume/core/private";
 import { toMarketId } from "@masayume/core/types";
 import { formatBaseUnits } from "@masayume/core/units";
 import { getCollateral, marketsProvider } from "@masayume/markets";
@@ -23,7 +23,6 @@ export async function POST(req: Request) {
   const parsed = privateOpenRequestSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return refuse(400, "malformed private open request");
   const body = parsed.data;
-  if (!privateAuthFresh(body.issuedAtMs, Date.now())) return refuse(401, "authorisation expired, or dated in the future — confirm again");
 
   const desk = await getDesk().catch(() => null);
   if (!desk) return refuse(503, "no desk key is configured on this deployment (PRIVATE_DESK_PRIVATE_KEY)");
@@ -53,6 +52,7 @@ export async function POST(req: Request) {
     stakeBase,
     minQuantityRaw: BigInt(body.minQuantityRaw),
     authSignature: body.signature as `0x${string}`,
+    issuedAtMs: body.issuedAtMs,
     asset: market.value.asset,
     intervalSec: market.value.intervalSec,
     expirySec: market.value.expirySec,

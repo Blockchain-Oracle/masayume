@@ -1,8 +1,8 @@
 "use client";
 
-import type { BlockerContext, BlockerKind } from "@masayume/core/copy";
+import { formatCadence, type BlockerContext, type BlockerKind } from "@masayume/core/copy";
 import type { BookedOrder } from "@masayume/core/ports";
-import type { PrivateBudget, PrivateQuote } from "@masayume/core/private";
+import type { PrivateBudget, PrivateOpenResult, PrivateQuote } from "@masayume/core/private";
 import { isOk } from "@masayume/core/schemas";
 import type { Diagnosis, EventMarket, Side } from "@masayume/core/types";
 import { formatBaseUnits, oneUnit, priceRawToBps } from "@masayume/core/units";
@@ -11,10 +11,10 @@ import { useCallback, useEffect, useState } from "react";
 import { notify } from "@/lib/toast";
 import { useWalletSession } from "@/lib/wallet-session";
 import { SIDE_WORD } from "../markets/side-styles";
-import type { TicketBlockerInput } from "../markets/ticket/ticket-guards";
+import { commonBlocker, type TicketBlockerInput } from "../markets/ticket/ticket-guards";
 import { PRIVATE } from "./copy";
 import { derivePrivateBlocker } from "./private-blocker";
-import { usePrivateOpen } from "./usePrivateOpen";
+import { usePrivateOpen, type PendingOpen } from "./usePrivateOpen";
 import { usePrivateQuote } from "./usePrivateQuote";
 import { usePrivateStatus } from "./usePrivateStatus";
 import { usePrivateWrites } from "./usePrivateWrites";
@@ -48,9 +48,14 @@ export interface PrivateTicketState {
   quoteLoading: boolean;
   quoteError: Diagnosis | null;
   retryQuote: () => void;
-  shortBase: bigint;
+  /** What the balance itself lacks — covered by a wallet deposit. */
+  depositShortBase: bigint;
   topUpBase: bigint;
+  /** The balance covers it but the desk's allowance does not — a zero-amount re-allow, no wallet money. */
+  reallowOnly: boolean;
   overCap: boolean;
+  /** An authorisation the desk never answered; the next tap resumes it. */
+  pending: PendingOpen | null;
   blocker: BlockerKind | null;
   ctx: Partial<BlockerContext>;
   busy: PrivateBusy;
@@ -59,6 +64,8 @@ export interface PrivateTicketState {
   placed: BookedOrder | null;
   reset: () => void;
 }
+
+const windowWords = (asset: string, intervalSec: number) => `${asset} ${formatCadence(intervalSec)}`;
 
 /** Everything the Ticket's private route needs, derived once: the desk's readiness, the owner's budget, the desk's quote, the ladder, and the one-action place. */
 export function usePrivateTicket({ market, side, stakeBase, enabled, symbol, walletSpendableBase, base }: PrivateTicketInput): PrivateTicketState {
@@ -77,22 +84,27 @@ export function usePrivateTicket({ market, side, stakeBase, enabled, symbol, wal
   const [placed, setPlaced] = useState<BookedOrder | null>(null);
   const decimals = market.decimals;
 
-  const spendable = budget?.spendableBase ?? 0n;
-  const shortBase = stakeBase > spendable ? stakeBase - spendable : 0n;
+  // The two shortfalls are different fixes: the balance's needs wallet money; the allowance's needs only a re-allow
+  // (every charge spends allowance, and a refund restores the balance but never the desk's permission).
+  const balance = budget?.balanceBase ?? 0n;
+  const allowance = budget?.allowanceBase ?? 0n;
+  const depositShortBase = stakeBase > balance ? stakeBase - balance : 0n;
+  const reallowOnly = budget !== null && depositShortBase === 0n && stakeBase > allowance;
   const wanted = stakeBase * TOP_UP_STAKES;
   const wallet = walletSpendableBase ?? 0n;
-  const topUpBase = shortBase === 0n ? 0n : wanted < wallet ? wanted : wallet;
-  const walletCanCover = walletSpendableBase !== null && walletSpendableBase >= shortBase;
+  const topUpBase = depositShortBase === 0n ? 0n : wanted < wallet ? wanted : wallet;
+  const walletCanCover = walletSpendableBase !== null && walletSpendableBase >= depositShortBase;
   const minStakeBase = status.status?.minStakeBase ? BigInt(status.status.minStakeBase) : (desk?.params.minStakeBase ?? null);
   const maxStakeBase = status.status?.maxStakeBase ? BigInt(status.status.maxStakeBase) : (desk?.params.maxStakeBase ?? null);
   const overCap = maxStakeBase !== null && stakeBase > maxStakeBase;
+  const pending = opener.pending;
 
-  const blocker = enabled
-    ? derivePrivateBlocker(
-        { ...base, placing: base.placing || busy !== null },
-        { deployed, probing: status.probing, ready: status.status?.ready === true, minStakeBase, maxStakeBase, budgetReadable, shortBase, walletCanCover, quote: quote.quote, quoteLoading: quote.loading, quoteError: quote.error },
-      )
-    : null;
+  const guarded: TicketBlockerInput = { ...base, placing: base.placing || busy !== null };
+  const blocker = !enabled
+    ? commonBlocker({ ...guarded, availableBase: null, funding: null })
+    : pending
+      ? (commonBlocker({ ...guarded, availableBase: null, funding: null, side: "up", stakeBase: 1n }) ?? null)
+      : derivePrivateBlocker(guarded, { deployed, probing: status.probing, ready: status.status?.ready === true, minStakeBase, maxStakeBase, budgetReadable, shortBase: depositShortBase, walletCanCover, quote: quote.quote, quoteLoading: quote.loading, quoteError: quote.error });
   const ctx: Partial<BlockerContext> = {
     privateMinText: minStakeBase !== null ? `${formatBaseUnits(minStakeBase, decimals, { minDp: 0 })} ${symbol}` : undefined,
     privateCapText: maxStakeBase !== null ? `${formatBaseUnits(maxStakeBase, decimals, { minDp: 0 })} ${symbol}` : undefined,
@@ -101,24 +113,66 @@ export function usePrivateTicket({ market, side, stakeBase, enabled, symbol, wal
 
   useEffect(() => setPlaced(null), [stakeBase, side]);
 
-  /** Top up and authorise in one transaction (the reference's `submitPrivateTopUp`): the new balance is what the desk may spend. */
+  /** What the desk answered, told and booked. A ticket resumed after a lost reply has no hashes to link, so it is told and left to the claims list. */
+  const settle = useCallback(
+    (result: PrivateOpenResult | null, sideOf: Side | null) => {
+      if (!result) return;
+      if (result.status === "opened") {
+        const t = result.ticket;
+        const window = windowWords(t.asset, t.intervalSec);
+        const contractsRaw = BigInt(t.quantityRaw);
+        const costBase = BigInt(t.costBase);
+        const bookedSide: Side = t.claim.outcomeIdx === 0 ? "up" : "down";
+        if (t.txs.mint === "0x" || t.txs.mint.length < 10) {
+          notify.neutral(PRIVATE.toasts.resumed(window));
+          return;
+        }
+        const avgRaw = contractsRaw === 0n ? 0n : (costBase * oneUnit(decimals) + contractsRaw - 1n) / contractsRaw;
+        setPlaced({ marketId: t.claim.marketId, side: bookedSide, contractsRaw, costBase, avgPriceBps: priceRawToBps(avgRaw, decimals), txHash: t.txs.mint, fillCount: 1 });
+        notify.neutral(PRIVATE.toasts.placed(SIDE_WORD[sideOf ?? bookedSide], window));
+      } else if (result.status === "refused") {
+        notify.warning(result.reason, result.technical);
+        quote.retry();
+      } else {
+        notify.warning(PRIVATE.toasts.unknown, result.reason);
+      }
+    },
+    [decimals, quote],
+  );
+
+  /** Top up and authorise in one transaction (the reference's `submitPrivateTopUp`): the new balance is what the desk may spend. A zero amount is the plain re-allow. */
   const fund = useCallback(async () => {
-    if (!budget || topUpBase === 0n) return;
+    if (!budget) return;
+    if (!reallowOnly && topUpBase === 0n) return;
     setBusy("fund");
     try {
-      await writes.run({ kind: "private-deposit-and-allow", amountBase: topUpBase, allowanceBase: budget.balanceBase + topUpBase }, PRIVATE.toasts.toppedUp);
+      const amountBase = reallowOnly ? 0n : topUpBase;
+      await writes.run({ kind: "private-deposit-and-allow", amountBase, allowanceBase: budget.balanceBase + amountBase }, PRIVATE.toasts.toppedUp);
     } finally {
       setBusy(null);
     }
-  }, [budget, topUpBase, writes]);
+  }, [budget, reallowOnly, topUpBase, writes]);
 
-  /** One action even the first time: the top-up first when the balance will not cover it, then the signature and the desk. */
+  /** One action even the first time: a pending authorisation is resumed before anything else; then the top-up or re-allow when needed, then the signature and the desk. */
   const place = useCallback(async () => {
-    if (!side || !quote.quote || blocker) return;
-    if (shortBase > 0n) {
-      if (!budget || topUpBase < shortBase) return;
+    if (blocker) return;
+    if (pending) {
+      setBusy("open");
+      try {
+        settle(await opener.resume(), null);
+      } catch (error) {
+        notify.warning(PRIVATE.cta.notPlaced, error instanceof Error ? error.message : String(error));
+      } finally {
+        setBusy(null);
+      }
+      return;
+    }
+    if (!side || !quote.quote) return;
+    if (depositShortBase > 0n || reallowOnly) {
+      if (!budget || (depositShortBase > 0n && topUpBase < depositShortBase)) return;
       setBusy("fund");
-      const funded = await writes.run({ kind: "private-deposit-and-allow", amountBase: topUpBase, allowanceBase: budget.balanceBase + topUpBase }, null);
+      const amountBase = reallowOnly ? 0n : topUpBase;
+      const funded = await writes.run({ kind: "private-deposit-and-allow", amountBase, allowanceBase: budget.balanceBase + amountBase }, null);
       if (funded?.status !== "confirmed") {
         setBusy(null);
         return;
@@ -127,27 +181,13 @@ export function usePrivateTicket({ market, side, stakeBase, enabled, symbol, wal
     setBusy("open");
     try {
       const q = quote.quote;
-      const result = await opener.open({ market, side, stakeBase, minQuantityRaw: (q.quantityRaw * FILL_FLOOR_BPS) / 10_000n, symbol });
-      if (!result) return;
-      if (result.status === "opened") {
-        const t = result.ticket;
-        const contractsRaw = BigInt(t.quantityRaw);
-        const costBase = BigInt(t.costBase);
-        const avgRaw = contractsRaw === 0n ? 0n : (costBase * oneUnit(decimals) + contractsRaw - 1n) / contractsRaw;
-        setPlaced({ marketId: market.marketId, side, contractsRaw, costBase, avgPriceBps: priceRawToBps(avgRaw, decimals), txHash: t.txs.mint, fillCount: 1 });
-        notify.neutral(PRIVATE.toasts.placed(SIDE_WORD[side], `${market.asset} ${t.intervalSec ? "" : ""}`.trim()));
-      } else if (result.status === "refused") {
-        notify.warning(result.reason, result.technical);
-        quote.retry();
-      } else {
-        notify.warning(PRIVATE.toasts.unknown, result.reason);
-      }
+      settle(await opener.open({ market, side, stakeBase, minQuantityRaw: (q.quantityRaw * FILL_FLOOR_BPS) / 10_000n, symbol }), side);
     } catch (error) {
-      notify.warning(PRIVATE.cta.placing, error instanceof Error ? error.message : String(error));
+      notify.warning(PRIVATE.cta.notPlaced, error instanceof Error ? error.message : String(error));
     } finally {
       setBusy(null);
     }
-  }, [side, quote, blocker, shortBase, budget, topUpBase, writes, opener, market, stakeBase, symbol, decimals]);
+  }, [blocker, pending, side, quote.quote, depositShortBase, reallowOnly, budget, topUpBase, writes, opener, market, stakeBase, symbol, settle]);
 
   return {
     deployed,
@@ -161,9 +201,11 @@ export function usePrivateTicket({ market, side, stakeBase, enabled, symbol, wal
     quoteLoading: quote.loading,
     quoteError: quote.error,
     retryQuote: quote.retry,
-    shortBase,
+    depositShortBase,
     topUpBase,
+    reallowOnly,
     overCap,
+    pending,
     blocker,
     ctx,
     busy,

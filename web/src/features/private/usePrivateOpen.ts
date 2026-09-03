@@ -6,10 +6,45 @@ import type { Address, EventMarket, Side } from "@masayume/core/types";
 import { formatBaseUnits } from "@masayume/core/units";
 import { invalidateAfterWrite } from "@masayume/markets/react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSignMessage } from "wagmi";
 import { useWalletSession } from "@/lib/wallet-session";
 import { upsertPrivateTicket } from "./claims-store";
+
+/**
+ * An authorisation the desk has not answered definitively yet, kept per owner across reloads. Its signature
+ * is the seed of the bet's keys, so re-sending it resumes the same slot and can never charge twice; signing a
+ * new one would. It stays until the desk says "opened" or "refused".
+ */
+const PENDING_KEY = "masayume.private.pending";
+
+export interface PendingOpen {
+  request: PrivateOpenRequest;
+  asset: string;
+  intervalSec: number;
+}
+
+function readPending(owner: string | null): PendingOpen | null {
+  if (!owner || typeof window === "undefined") return null;
+  try {
+    const all = JSON.parse(window.localStorage.getItem(PENDING_KEY) ?? "{}") as Record<string, PendingOpen>;
+    return all[owner.toLowerCase()] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function writePending(owner: string, pending: PendingOpen | null): void {
+  if (typeof window === "undefined") return;
+  try {
+    const all = JSON.parse(window.localStorage.getItem(PENDING_KEY) ?? "{}") as Record<string, PendingOpen>;
+    if (pending) all[owner.toLowerCase()] = pending;
+    else delete all[owner.toLowerCase()];
+    window.localStorage.setItem(PENDING_KEY, JSON.stringify(all));
+  } catch {
+    // storage unavailable — the in-memory copy still drives this session
+  }
+}
 
 export interface PrivateOpenInput {
   market: EventMarket;
@@ -28,24 +63,40 @@ async function post(body: PrivateOpenRequest): Promise<PrivateOpenResult> {
 }
 
 /**
- * The private open: one wallet signature over a message that names the bet, then the desk does the rest.
- * The signature is also the secret the bet's three keys derive from, so a reply that never arrived is
- * answered by sending the same request again — `retry` re-posts the last authorisation, nothing is re-signed.
+ * The private open: one wallet signature over a message that names the bet, then the desk does the rest. A
+ * reply that never arrived leaves the authorisation pending; the next open re-sends it instead of signing anew.
  */
 export function usePrivateOpen() {
   const { signMessageAsync } = useSignMessage();
   const { address } = useWalletSession();
   const queryClient = useQueryClient();
   const [busy, setBusy] = useState(false);
-  const last = useRef<PrivateOpenRequest | null>(null);
+  const [pending, setPending] = useState<PendingOpen | null>(null);
+  useEffect(() => setPending(readPending(address)), [address]);
 
   const send = useCallback(
-    async (body: PrivateOpenRequest): Promise<PrivateOpenResult> => {
+    async (entry: PendingOpen): Promise<PrivateOpenResult> => {
+      const owner = entry.request.owner;
       setBusy(true);
       try {
-        const result = await post(body);
-        if (result.status === "opened") upsertPrivateTicket(result.ticket);
-        if (result.status !== "unknown") await invalidateAfterWrite(queryClient, { wallet: body.owner as Address, marketId: body.marketId as EventMarket["marketId"] });
+        let result: PrivateOpenResult;
+        try {
+          result = await post(entry.request);
+        } catch (error) {
+          // The route itself failed to answer: the charge may or may not have landed, so keep the authorisation.
+          writePending(owner, entry);
+          setPending(entry);
+          throw error;
+        }
+        if (result.status === "unknown") {
+          writePending(owner, entry);
+          setPending(entry);
+        } else {
+          writePending(owner, null);
+          setPending(null);
+          if (result.status === "opened") upsertPrivateTicket(result.ticket);
+          await invalidateAfterWrite(queryClient, { wallet: owner as Address, marketId: entry.request.marketId as EventMarket["marketId"] });
+        }
         return result;
       } finally {
         setBusy(false);
@@ -70,14 +121,17 @@ export function usePrivateOpen() {
         issuedAtMs,
       });
       const signature = await signMessageAsync({ message });
-      const body: PrivateOpenRequest = { owner: address, marketId: market.marketId, side, stakeBase: stakeBase.toString(), minQuantityRaw: minQuantityRaw.toString(), issuedAtMs, signature };
-      last.current = body;
-      return send(body);
+      const request: PrivateOpenRequest = { owner: address, marketId: market.marketId, side, stakeBase: stakeBase.toString(), minQuantityRaw: minQuantityRaw.toString(), issuedAtMs, signature };
+      return send({ request, asset: market.asset, intervalSec: market.intervalSec });
     },
     [address, signMessageAsync, send],
   );
 
-  const retry = useCallback(() => (last.current ? send(last.current) : Promise.resolve(null)), [send]);
+  /** Re-sends the pending authorisation, if any — the only way a lost reply is ever answered. */
+  const resume = useCallback(async (): Promise<PrivateOpenResult | null> => {
+    const entry = readPending(address) ?? pending;
+    return entry ? send(entry) : null;
+  }, [address, pending, send]);
 
-  return { open, retry, busy, canRetry: last.current !== null };
+  return { open, resume, pending, busy };
 }

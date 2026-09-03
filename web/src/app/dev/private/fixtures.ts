@@ -1,7 +1,7 @@
 import type { PrivateBudget, PrivateClaim, PrivateDeskState, PrivateQuote, PrivateTicket } from "@masayume/core/private";
 import { toMarketId, type Address, type Hex } from "@masayume/core/types";
 import { claimDomain, deriveSlotKeys, signPrivateClaim } from "@masayume/markets/private";
-import { createWalletClient, http } from "viem";
+import { createWalletClient, http, stringToHex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
 // Canned readings; nothing here is a real position, address or deployment — except the signatures, which are
@@ -37,7 +37,7 @@ export const BUDGET_SHORT: PrivateBudget = { balanceBase: 4n * UNIT, allowanceBa
 export const QUOTE: PrivateQuote = { side: "up", stakeBase: 10n * UNIT, quantityRaw: 19_230_000n, costBase: 9_999_600n, limitYesRaw: 520_000n, priceRaw: 520_000n, decimals: DECIMALS, quotedAtMs: FIXTURE_NOW_MS };
 
 function claim(seed: string, outcomeIdx: 0 | 1, stakeBase: bigint, issuedAtMs: number): PrivateClaim {
-  const keys = deriveSlotKeys(`0x${Buffer.from(seed).toString("hex")}`);
+  const keys = deriveSlotKeys(stringToHex(seed));
   return { owner: OWNER, slotId: keys.slotId, creditKey: keys.creditKey, marketId: MARKET, outcomeIdx, stakeBase: stakeBase.toString(), issuedAtMs };
 }
 

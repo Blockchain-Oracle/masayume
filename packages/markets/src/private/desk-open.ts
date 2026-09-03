@@ -1,4 +1,4 @@
-import type { PrivateClaim, PrivateOpenResult, PrivateTicket } from "@masayume/core/private";
+import { privateAuthFresh, type PrivateClaim, type PrivateOpenResult, type PrivateTicket } from "@masayume/core/private";
 import { SIDE_TO_OUTCOME, type Address, type Hex, type MarketId, type Side } from "@masayume/core/types";
 import { formatBaseUnits } from "@masayume/core/units";
 import { MULTICALL3_ADDRESS } from "../chain";
@@ -18,6 +18,8 @@ export interface DeskOpenInput {
   stakeBase: bigint;
   minQuantityRaw: bigint;
   authSignature: Hex;
+  /** When the owner signed. A charge needs a fresh one; a resume of a charge that already landed does not. */
+  issuedAtMs: number;
   asset: string;
   intervalSec: number;
   expirySec: number;
@@ -60,6 +62,9 @@ export async function openPrivateBet(desk: DeskClient, input: DeskOpenInput): Pr
     let state = await readOpenState(desk, contract, owner, keys.chargeKey, keys.slotId);
     try {
       if (state.charged === 0n) {
+        // Freshness gates only a NEW charge: an authorisation whose charge already landed is resumed however old it is,
+        // because refusing it would strand the money it already moved.
+        if (!privateAuthFresh(input.issuedAtMs, Date.now())) return { status: "refused", reason: "That authorisation has expired — confirm again.", technical: "auth expired", refundedBase: "0", txs };
         if (state.paused) return { status: "refused", reason: "Private mode is paused right now.", technical: "IsPaused()", refundedBase: "0", txs };
         if (state.balance < stakeBase) return { status: "refused", reason: `Your private balance is ${amount(state.balance)}; this bet needs ${amount(stakeBase)}.`, technical: "Insufficient", refundedBase: "0", txs };
         if (state.allowance < stakeBase) return { status: "refused", reason: `Your private spending limit has ${amount(state.allowance)} left; this bet needs ${amount(stakeBase)}.`, technical: "OverAllowance", refundedBase: "0", txs };

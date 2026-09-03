@@ -110,7 +110,7 @@ export function PrivateBalancePanel({ inline, className }: { inline?: boolean; c
         <Cell label={PRIVATE.panel.cells.allowance}>{budget ? <Money value={budget.allowanceBase} decimals={decimals} /> : "—"}</Cell>
         <Cell label={PRIVATE.panel.cells.spendable}>{budget ? <Money value={budget.spendableBase} decimals={decimals} className={cn(budget.spendableBase > 0n && "vault-cell-value-live")} /> : "—"}</Cell>
         <Cell label={PRIVATE.panel.cells.desk}>{shortHex(desk.desk)}</Cell>
-        <Cell label={PRIVATE.quote.maxLoss}>{`${formatBaseUnits(desk.params.maxStakeBase, decimals, { minDp: 0 })} ${symbol}`}</Cell>
+        <Cell label={PRIVATE.panel.cells.cap}>{`${formatBaseUnits(desk.params.maxStakeBase, decimals, { minDp: 0 })} ${symbol}`}</Cell>
       </div>
       <p className="vault-loading">{PRIVATE.panel.trust}</p>
       <p className="vault-loading">{PRIVATE.panel.correlation}</p>

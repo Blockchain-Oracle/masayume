@@ -76,8 +76,8 @@ export function PrivateClaims({ claims, pinnedDesk, contract, chainId, owner, de
   const restore = useCallback(
     async (file: File) => {
       try {
-        const added = importPrivateClaims(await file.text());
-        setRestored(added > 0 ? PRIVATE.claims.restored(added) : PRIVATE.claims.nothingNew);
+        const { added, skipped } = importPrivateClaims(await file.text());
+        setRestored(added > 0 ? PRIVATE.claims.restored(added, skipped) : skipped > 0 ? PRIVATE.claims.skipped(skipped) : PRIVATE.claims.nothingNew);
         onChanged?.();
       } catch {
         setRestored(PRIVATE.claims.unreadable);
@@ -149,12 +149,16 @@ export function PrivateClaims({ claims, pinnedDesk, contract, chainId, owner, de
                 <span className="pc-stake">
                   {formatBaseUnits(stake, decimals)} {symbol}
                 </span>
-                {/* What you actually won. A settled row that only shows the stake makes a person do arithmetic to find out how they did. */}
+                {/* What you actually won. A settled row that only shows the stake makes a person do arithmetic to find out how they did —
+                    but only when this browser saw the settlement; a row credited elsewhere shows what came home, never a made-up loss. */}
                 {payout !== null && c.status !== "open" && (
                   <span className={cn("pc-payout", payout >= stake ? "is-win" : "is-loss")}>
                     {payout >= stake ? "+" : "−"}
                     {formatBaseUnits(payout >= stake ? payout - stake : stake - payout, decimals)}
                   </span>
+                )}
+                {payout === null && c.status === "credited" && c.creditedBase !== undefined && (
+                  <span className="pc-stake">{PRIVATE.claims.home(formatBaseUnits(BigInt(c.creditedBase), decimals), symbol)}</span>
                 )}
                 <span className="pc-when">{sinceLabel(c.openedAtMs, nowMs)}</span>
               </div>

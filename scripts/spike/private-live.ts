@@ -74,7 +74,7 @@ try {
   const keys = deriveSlotKeys(authSignature);
   console.log("keys", json(keys));
 
-  const opened = await openPrivateBet(desk, { owner: owner.address, marketId: window.marketId, side: "up", stakeBase: stake, minQuantityRaw: (quote.quantityRaw * 95n) / 100n, authSignature, asset: window.asset, intervalSec: window.intervalSec, expirySec: window.expirySec });
+  const opened = await openPrivateBet(desk, { owner: owner.address, marketId: window.marketId, side: "up", stakeBase: stake, minQuantityRaw: (quote.quantityRaw * 95n) / 100n, authSignature, issuedAtMs, asset: window.asset, intervalSec: window.intervalSec, expirySec: window.expirySec });
   console.log("open", json(opened));
   if (opened.status !== "opened") throw new Error(`open: ${opened.status}`);
   const t = opened.ticket;
@@ -83,7 +83,7 @@ try {
   console.log("budget after", json(unwrap(await getPrivateBudget(owner.address))));
 
   // Idempotent: the same authorisation again returns the same slot's ticket without a second charge.
-  const again = await openPrivateBet(desk, { owner: owner.address, marketId: window.marketId, side: "up", stakeBase: stake, minQuantityRaw: 0n, authSignature, asset: window.asset, intervalSec: window.intervalSec, expirySec: window.expirySec });
+  const again = await openPrivateBet(desk, { owner: owner.address, marketId: window.marketId, side: "up", stakeBase: stake, minQuantityRaw: 0n, authSignature, issuedAtMs, asset: window.asset, intervalSec: window.intervalSec, expirySec: window.expirySec });
   console.log("open again (resumed, nothing sent)", json(again.status === "opened" ? { slot: again.ticket.claim.slotId, txs: again.ticket.txs } : again));
 
   const early = await cashOutPrivateBet(desk, t.claim, t.signature);

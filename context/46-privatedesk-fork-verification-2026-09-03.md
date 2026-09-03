@@ -99,8 +99,22 @@ a live maker's ask at 0.518):
 | the same authorisation sent again | the same slot's ticket, **nothing sent**: `chargedOf` 10, the slot funded and minted — resumed from the contract | — |
 | cash out before the bell | `{ status: "open", expirySec }` — nothing moved | — |
 
-The three sends land in ~2 s at ten blocks a second; the whole open, reads included, in ~6 s. The `private` gas
-lane is 4M on that measurement (`constants/gas.ts`).
+The three sends land in ~2 s at ten blocks a second; the whole open, reads included, in ~6 s.
+
+Then the whole lifecycle on the 15-minute lane (Window 73483, BTC 15m, `WAIT=1`): 10 on UP sized to **32.679
+contracts for 9.999774** at ~0.306 (charge / fund / mint the same **278,380 / 454,255 / 1,917,880**); the Window
+closed and the side lost; the desk's cash-out ran `settleSlot` **487,256** (payout 0), `sweepSlotToPool`
+**249,887** (the dust, 0.000226), `creditFromPool` **268,553**; the same claim presented again answered
+`{ status: "done", creditedBase }` with nothing sent; the owner's `withdraw` **85,992**, the balance to zero.
+The `private` gas lane is 4M on the mint (`constants/gas.ts`).
+
+**Two review findings fixed the same day** (the code-reviewer agent over the surfaces): an open the desk answered
+`unknown` was retried by signing a NEW message — new keys, a second charge — against the toast's own promise; now
+the authorisation is kept per owner in `localStorage` (`masayume.private.pending`) and the next tap re-sends it
+until the desk says opened or refused, and the desk checks the 5-minute freshness only for a charge that has not
+landed, so a resume is never refused as stale. And an allowance that ran short (every charge spends allowance; a
+refund restores the balance, never the desk's permission) was treated as a balance shortfall and asked the wallet
+for money; now a zero-amount `depositAndAllow(0, balance)` re-allows, said so on the note and the CTA.
 
 **The lost claim, seen once.** The first live run was moved to the background and its output pipe never drained,
 so its ticket was never printed: slot `0x7de3…7f78` (funded at block 478411176) holds 8.4 tUSDC of position and

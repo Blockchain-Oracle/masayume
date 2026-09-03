@@ -465,7 +465,14 @@ What is where:
   creation **36,142,430** gas; admin = deployer; the desk signer `0x8aF0208D3B3428d03E036912312cD892Da8362AF`
   (`~/.config/masayume/private-desk.env`, 1.5 STT). `pnpm --filter @masayume/scripts spike:private-live` drives it
   through the real adapter (`HOUSE_KEY` the owner, `PRIVATE_DESK_PRIVATE_KEY` the desk, `WAIT=1` to settle).
-  **Measured live:** see context/46 §Live on Shannon.
+  **Measured live:** charge 278,380, fund 454,255, mint 1,917,880; settle 487,256, sweep 249,887, credit 268,553; the
+  owner's withdraw 85,992 (`private` lane 4M). Two bets ran end to end (a 4h Window still open; a 15m Window settled, lost,
+  the dust home); the same authorisation re-sent resumed without a second charge; a claim presented twice answered
+  "done". **One slot (`0x7de3…7f78`, Window 73121) holds 8.4 + 1.6 with no claim anywhere** — the first run's output pipe
+  never drained — the operator can `settleSlot` after the bell, then sweep and credit the deployer (context/46 §The lost claim).
+  The code-reviewer agent's five findings were fixed the same session (a resumable pending authorisation instead of a
+  re-sign after `unknown`; the allowance shortfall as a re-allow; no silent flip off Private over the cap; "done" never
+  fabricates a loss; the backup validated row by row).
 
 6. `/surface` — replace the Yosuku SVI content with the real DreamDEX book/term structure.
 Remember Somnia's gas schedule when deploying (context/41 §Live on Shannon) and the faucet's one wallet a
