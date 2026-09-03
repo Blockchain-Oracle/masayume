@@ -24,8 +24,13 @@
 }
 
 /* section mb-8; the `.mt-6` body under each SectionHead */
-.pl-section { margin-bottom: 32px; }
-.pl-section-body { margin-top: 24px; }
+/* Named `pl-block`, not `pl-section`: `pl-` is also Tailwind's padding-left namespace, and
+ * bridge.css defines `--spacing-section`, so `.pl-section` was silently minted as a real utility
+ * (`padding-left: 64px`) that nothing here competed with. Every section on /parlay and /games/range
+ * carried a phantom 64px indent — a sixth of a phone's width. Before adding any `pl-<name>` class,
+ * check that `--spacing-<name>` does not exist in bridge.css. */
+.pl-block { margin-bottom: 32px; }
+.pl-block-body { margin-top: 24px; }
 
 /* ── §03 How a parlay pays: grid sm:grid-cols-3 gap-4 ── */
 .pl-how { display: grid; gap: 16px; }

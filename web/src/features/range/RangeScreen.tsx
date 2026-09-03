@@ -51,23 +51,23 @@ function Page({ reserve }: { reserve: RangeReserveState }) {
         </h1>
       </div>
 
-      <section className="pl-section" aria-label={sections.build.title}>
+      <section className="pl-block" aria-label={sections.build.title}>
         <SectionHead number={sections.build.number} title={sections.build.title} desc={sections.build.desc} />
-        <div className="pl-section-body">
+        <div className="pl-block-body">
           <RangeBuilder reserve={reserve} symbol={symbol} />
         </div>
       </section>
 
-      <section className="pl-section" aria-label={sections.rounds.title}>
+      <section className="pl-block" aria-label={sections.rounds.title}>
         <SectionHead number={sections.rounds.number} title={sections.rounds.title} desc={sections.rounds.desc} />
-        <div className="pl-section-body">
+        <div className="pl-block-body">
           <RangeSlip symbol={symbol} decimals={reserve.decimals} staleAfterSec={reserve.params.staleAfterSec} />
         </div>
       </section>
 
-      <section className="pl-section" aria-label={sections.how.title}>
+      <section className="pl-block" aria-label={sections.how.title}>
         <SectionHead number={sections.how.number} title={sections.how.title} />
-        <div className="pl-section-body pl-how">
+        <div className="pl-block-body pl-how">
           {RANGE.how.map((card) => (
             <div key={card.n} className="pl-how-card">
               <div className="pl-how-n">{card.n}</div>

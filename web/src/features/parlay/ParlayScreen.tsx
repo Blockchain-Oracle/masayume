@@ -49,23 +49,23 @@ function Page({ reserve }: { reserve: ParlayReserveState }) {
         </h1>
       </div>
 
-      <section className="pl-section" aria-label={sections.build.title}>
+      <section className="pl-block" aria-label={sections.build.title}>
         <SectionHead number={sections.build.number} title={sections.build.title} desc={sections.build.desc} />
-        <div className="pl-section-body">
+        <div className="pl-block-body">
           <ParlayBuilder reserve={reserve} symbol={symbol} />
         </div>
       </section>
 
-      <section className="pl-section" aria-label={sections.tickets.title}>
+      <section className="pl-block" aria-label={sections.tickets.title}>
         <SectionHead number={sections.tickets.number} title={sections.tickets.title} desc={sections.tickets.desc} />
-        <div className="pl-section-body">
+        <div className="pl-block-body">
           <ParlaySlip symbol={symbol} decimals={reserve.decimals} />
         </div>
       </section>
 
-      <section className="pl-section" aria-label={sections.how.title}>
+      <section className="pl-block" aria-label={sections.how.title}>
         <SectionHead number={sections.how.number} title={sections.how.title} />
-        <div className="pl-section-body pl-how">
+        <div className="pl-block-body pl-how">
           {PARLAY.how.map((c) => (
             <div key={c.n} className="pl-how-card">
               <div className="pl-how-n">{c.n}</div>

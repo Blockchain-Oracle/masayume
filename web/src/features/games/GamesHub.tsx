@@ -1,0 +1,88 @@
+"use client";
+
+import { RANGE_NOT_DEPLOYED, type RangeReserveState } from "@masayume/core/range";
+import { isOk, type Reading } from "@masayume/core/schemas";
+import { useRangeReserve } from "@masayume/markets/react";
+import Link from "next/link";
+import SectionHead from "@/components/shell/SectionHead";
+import { diagnosisCopy } from "@/lib/copy";
+import { gameEntriesInGroup, type GameEntry } from "./catalog";
+import { GAMES } from "./copy";
+import { GameCard, type CardStatus } from "./GameCard";
+import { GameProfileCard } from "./GameProfileCard";
+import { useGames } from "./GamesProvider";
+import { PendingPlate } from "./PendingPlate";
+
+/**
+ * `/games` — the selection, and everything the shell knows about the player.
+ *
+ * The three groups come from core's own grouping, so a mode cannot appear here under a section its
+ * economic kind disagrees with. Availability is read, not asserted: Range asks the deployed reserve
+ * whether it is live, and every unbuilt mode names the slice it is waiting for. An active match
+ * always renders above the selection, because resuming has to beat starting a new one.
+ */
+export function GamesHub() {
+  const reserve = useRangeReserve();
+  const { activeMatchId } = useGames();
+  const status = (entry: GameEntry): CardStatus =>
+    entry.id === "range" ? rangeStatus(reserve) : entry.readiness.kind === "built" ? { kind: "live" } : { kind: "pending", dependency: entry.readiness.dependency };
+
+  return (
+    <div className="container gm-page">
+      <div className="gm-hero">
+        <span className="gm-eyebrow">{GAMES.eyebrow}</span>
+        <h1 className="page-title">
+          {GAMES.title}
+          <span className="accent">.</span>
+        </h1>
+        <p className="gm-intro">{GAMES.intro}</p>
+      </div>
+
+      {activeMatchId && (
+        <div className="gm-plate gm-resume">
+          <p className="gm-plate-title">{GAMES.resume.title}</p>
+          <p className="gm-plate-body">{GAMES.resume.body}</p>
+          <Link href="/games/duel" className="gm-resume-cta">
+            {GAMES.resume.cta}
+          </Link>
+        </div>
+      )}
+
+      {(["prediction", "duel", "arcade"] as const).map((group) => {
+        const head = GAMES.sections[group];
+        return (
+          <section key={group} className="gm-section" aria-label={head.title}>
+            <SectionHead number={head.number} title={head.title} desc={head.desc} />
+            <div className="gm-grid">
+              {gameEntriesInGroup(group).map((entry) => (
+                <GameCard key={entry.id} entry={entry} status={status(entry)} />
+              ))}
+            </div>
+          </section>
+        );
+      })}
+
+      <section className="gm-section" aria-label={GAMES.sections.profile.title}>
+        <SectionHead {...GAMES.sections.profile} />
+        <div className="gm-two">
+          <GameProfileCard />
+          <PendingPlate title={GAMES.achievements.title} body={GAMES.achievements.pending} dependency={GAMES.achievements.dependency} />
+        </div>
+      </section>
+
+      <section className="gm-section" aria-label={GAMES.sections.history.title}>
+        <SectionHead {...GAMES.sections.history} />
+        <PendingPlate title={GAMES.history.title} body={GAMES.history.pending} dependency={GAMES.history.dependency} />
+      </section>
+    </div>
+  );
+}
+
+/** Range is the one mode with a contract behind it, so its card reports the contract, not the repo. */
+function rangeStatus(reading: Reading<RangeReserveState | null> | null): CardStatus {
+  if (reading === null) return { kind: "loading" };
+  if (!isOk(reading)) return { kind: "unavailable", why: diagnosisCopy(reading.error.kind).headline };
+  if (reading.value === null) return { kind: "unavailable", why: RANGE_NOT_DEPLOYED };
+  if (reading.value.paused) return { kind: "unavailable", why: GAMES.card.paused };
+  return { kind: "live" };
+}

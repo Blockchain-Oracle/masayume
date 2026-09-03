@@ -1,0 +1,261 @@
+/* The /games shell — rail, hub, cards, plates and the settings sheet's rows.
+ *
+ * Two rules this file follows deliberately:
+ *   1. Dark values first, then a `[data-theme="light"]` override, exactly as parlay-page.css does.
+ *      The games frame FOLLOWS the theme (see GamesShell's note), so `var(--white)` is the correct
+ *      ink here — it is the token that remaps to #141210 on cream, which is what makes it safe.
+ *   2. Every colour is a Yosuku token or an alpha step over it. No new hue enters the system: the
+ *      accent choices are vermilion and the venue's own two sides.
+ */
+
+.gm-frame { --gm-accent: var(--vermilion); }
+.gm-frame[data-accent="up"] { --gm-accent: var(--profit); }
+.gm-frame[data-accent="down"] { --gm-accent: var(--loss); }
+/* `default` is the address's own hue, so the frame contributes no accent and the avatar decides. */
+.gm-frame[data-accent="default"] { --gm-accent: var(--vermilion); }
+
+/* One switch for every stage animation. The explicit setting has to be able to beat the OS in both
+ * directions, which a bare prefers-reduced-motion media query cannot do. */
+/* Matched on the attribute rather than on `.gm-frame`, because the settings sheet is portalled to
+ * document.body and so is not a descendant of the frame — it has to carry the attribute itself. */
+[data-reduced-motion="true"],
+[data-reduced-motion="true"] *,
+[data-reduced-motion="true"] *::before,
+[data-reduced-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* ── The rail ─────────────────────────────────────────────────────────────── */
+
+.gm-rail {
+  position: sticky;
+  top: calc(var(--appstrip) + 92px);
+  z-index: 40;
+  background: rgba(5, 5, 5, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+[data-theme="light"] .gm-rail { background: rgba(251, 247, 238, 0.84); border-bottom-color: rgba(20, 18, 16, 0.1); }
+
+@media (max-width: 720px) {
+  .gm-rail { top: calc(var(--appstrip) + 66px); }
+  /* On a phone the economic label wrapped mid-phrase between the mode name and the settings
+   * control. It is the one thing on this bar that must never be hard to read, so it takes a row of
+   * its own rather than being shortened or truncated. */
+  .gm-rail-inner { flex-wrap: wrap; row-gap: 6px; padding-top: 6px; padding-bottom: 6px; min-height: 0; }
+  .gm-rail-back, .gm-rail-here { order: 1; }
+  .gm-rail-sep { order: 2; }
+  .gm-rail-mode { order: 3; }
+  .gm-rail-right { order: 4; }
+  .gm-rail .gm-econ { order: 5; flex: 1 0 100%; }
+}
+
+.gm-rail-inner { display: flex; align-items: center; gap: 12px; min-height: 44px; }
+.gm-rail-back,
+.gm-rail-here {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: var(--font-display); font-weight: 700; font-size: 12px;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--gray-400);
+}
+.gm-rail-back { transition: color 200ms var(--ease); }
+.gm-rail-back:hover { color: var(--vermilion); }
+.gm-rail-chevron { width: 14px; height: 14px; }
+.gm-rail-sep { width: 1px; height: 14px; background: rgba(255, 255, 255, 0.14); }
+[data-theme="light"] .gm-rail-sep { background: rgba(20, 18, 16, 0.16); }
+.gm-rail-mode { font-family: var(--font-display); font-weight: 700; font-size: 13px; color: var(--white); }
+.gm-rail-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+.gm-rail-resume {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--vermilion) 45%, transparent);
+  color: var(--vermilion);
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+}
+.gm-rail-resume-dot { width: 6px; height: 6px; border-radius: 9999px; background: var(--vermilion); }
+.gm-rail-settings {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-width: 32px; height: 32px; padding: 0 8px; border-radius: 8px;
+  color: var(--gray-400); transition: color 200ms var(--ease), background 200ms var(--ease);
+}
+.gm-rail-settings-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; }
+@media (max-width: 720px) {
+  .gm-rail-settings-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
+.gm-rail-settings:hover { color: var(--white); background: rgba(255, 255, 255, 0.06); }
+[data-theme="light"] .gm-rail-settings:hover { background: rgba(20, 18, 16, 0.06); }
+
+/* ── The economic label — the one chip every mode must wear ───────────────── */
+
+.gm-econ {
+  display: inline-flex; align-items: center; white-space: nowrap;
+  padding: 3px 8px; border-radius: 9999px;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em;
+  border: 1px solid rgba(255, 255, 255, 0.12); color: var(--gray-400);
+}
+[data-theme="light"] .gm-econ { border-color: rgba(20, 18, 16, 0.14); }
+/* Money at risk reads in the brand accent; a mode that risks nothing stays quiet. */
+.gm-econ--market-order,
+.gm-econ--market-order-and-pot,
+.gm-econ--house-position {
+  border-color: color-mix(in srgb, var(--vermilion) 40%, transparent);
+  background: color-mix(in srgb, var(--vermilion) 8%, transparent);
+  color: var(--vermilion);
+}
+
+/* ── The hub ──────────────────────────────────────────────────────────────── */
+
+.gm-page { padding-top: 28px; padding-bottom: 64px; }
+.gm-hero { margin-bottom: 40px; }
+.gm-eyebrow {
+  display: block; margin-bottom: 12px;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--vermilion);
+}
+.gm-intro { margin-top: 16px; max-width: 62ch; font-size: 14px; line-height: 1.7; color: var(--gray-400); }
+.gm-section { margin-bottom: 32px; }
+.gm-grid { margin-top: 24px; display: grid; gap: 12px; grid-template-columns: 1fr; }
+.gm-two { margin-top: 24px; display: grid; gap: 12px; grid-template-columns: 1fr; }
+@media (min-width: 720px) {
+  .gm-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .gm-two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1100px) {
+  .gm-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* ── A mode card ──────────────────────────────────────────────────────────── */
+
+.gm-card {
+  position: relative; display: flex; flex-direction: column; gap: 10px;
+  border-radius: 16px; padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(23, 23, 23, 0.4);
+  transition: border-color 200ms var(--ease), background 200ms var(--ease), transform 200ms var(--easeOut);
+}
+[data-theme="light"] .gm-card { border-color: rgba(20, 18, 16, 0.11); background: rgba(251, 247, 238, 0.94); }
+a.gm-card:hover { border-color: color-mix(in srgb, var(--vermilion) 40%, transparent); transform: translateY(-2px); }
+.gm-card--pending { opacity: 0.72; }
+
+.gm-card-head { display: flex; align-items: center; gap: 10px; }
+.gm-card-icon { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; color: var(--vermilion); background: color-mix(in srgb, var(--vermilion) 10%, transparent); }
+.gm-card-icon svg { width: 15px; height: 15px; }
+.gm-card-name { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--white); }
+.gm-card-blurb { font-size: 13px; line-height: 1.6; color: var(--gray-400); }
+.gm-card-foot { margin-top: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.gm-card-waiting { font-family: var(--font-mono); font-size: 10px; line-height: 1.5; color: var(--gray-500); }
+.gm-card-open {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--vermilion);
+}
+
+.gm-badge {
+  margin-left: auto;
+  padding: 2px 8px; border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.12); color: var(--gray-500);
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase;
+}
+[data-theme="light"] .gm-badge { border-color: rgba(20, 18, 16, 0.14); }
+.gm-badge--live { border-color: color-mix(in srgb, var(--profit) 45%, transparent); color: var(--profit); }
+
+/* ── Plates: profile, resume, and the sections that have no writer yet ────── */
+
+.gm-plate {
+  display: flex; flex-direction: column; gap: 8px;
+  border-radius: 16px; padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(23, 23, 23, 0.4);
+}
+[data-theme="light"] .gm-plate { border-color: rgba(20, 18, 16, 0.11); background: rgba(251, 247, 238, 0.94); }
+.gm-plate-title { font-family: var(--font-display); font-weight: 700; font-size: 14px; color: var(--white); }
+.gm-plate-body { font-size: 13px; line-height: 1.65; color: var(--gray-400); }
+.gm-plate-note,
+.gm-plate-meta { font-family: var(--font-mono); font-size: 10px; line-height: 1.6; color: var(--gray-500); }
+
+.gm-resume {
+  margin-bottom: 32px;
+  border-color: color-mix(in srgb, var(--vermilion) 40%, transparent);
+  background: color-mix(in srgb, var(--vermilion) 5%, transparent);
+}
+.gm-resume-cta {
+  align-self: flex-start; margin-top: 4px;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--vermilion);
+}
+
+.gm-profile-id { display: flex; align-items: center; gap: 12px; }
+.gm-avatar {
+  width: 36px; height: 36px; border-radius: 9999px; flex-shrink: 0;
+  background: hsl(calc(var(--gm-hue, 0) * 1deg) 58% 52%);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
+}
+[data-theme="light"] .gm-avatar { box-shadow: 0 0 0 2px rgba(20, 18, 16, 0.08); }
+/* An explicit accent replaces the address hue rather than ringing it, so the choice is unmistakable. */
+.gm-avatar:not([data-accent="default"]) { background: var(--gm-accent); }
+.gm-profile-name { display: flex; flex-direction: column; gap: 2px; }
+.gm-profile-you { font-family: var(--font-display); font-weight: 700; font-size: 13px; color: var(--white); }
+.gm-profile-addr { font-size: 11px; color: var(--gray-500); }
+
+.gm-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 4px; }
+.gm-stat-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gray-500); }
+.gm-stat-value { font-family: var(--font-display); font-weight: 800; font-size: 20px; color: var(--gray-600); font-variant-numeric: tabular-nums; }
+
+/* ── The settings sheet's rows ────────────────────────────────────────────── */
+
+/* A bottom sheet is full-bleed, but a settings row 1900px wide puts its label and its switch on
+ * opposite sides of a desktop monitor. Cap the reading measure and centre it. */
+.gm-settings { display: flex; flex-direction: column; gap: 18px; padding: 0 16px 20px; width: 100%; max-width: 640px; margin: 0 auto; }
+.gm-settings > button:last-child { align-self: flex-start; }
+.gm-set-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.gm-set-row--stack { flex-direction: column; align-items: stretch; gap: 10px; }
+.gm-set-text { display: flex; flex-direction: column; gap: 3px; }
+.gm-set-label { font-family: var(--font-display); font-weight: 700; font-size: 13px; color: var(--white); }
+/* gray-500 on the sheet's raised surface measured 3.78:1 dark / 4.07:1 light at 12px. These hints
+ * carry real instructions ("your system currently asks for reduced motion"), so they take the same
+ * ink as the sheet's own description — 7.1:1 and 6.3:1. */
+.gm-set-hint { font-size: 12px; line-height: 1.55; color: var(--gray-400); }
+.gm-set-scope { font-family: var(--font-mono); font-size: 10px; line-height: 1.6; color: var(--gray-500); }
+
+.gm-seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.gm-seg-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 12px; border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.12); color: var(--gray-400);
+  font-size: 12px;
+  transition: border-color 200ms var(--ease), color 200ms var(--ease), background 200ms var(--ease);
+}
+[data-theme="light"] .gm-seg-btn { border-color: rgba(20, 18, 16, 0.14); }
+.gm-seg-btn[data-on="true"] {
+  border-color: color-mix(in srgb, var(--vermilion) 45%, transparent);
+  background: color-mix(in srgb, var(--vermilion) 10%, transparent);
+  color: var(--vermilion);
+}
+.gm-seg-swatch { width: 12px; height: 12px; border-radius: 9999px; background: var(--gray-500); }
+.gm-seg-btn[data-accent="vermilion"] .gm-seg-swatch { background: var(--vermilion); }
+.gm-seg-btn[data-accent="up"] .gm-seg-swatch { background: var(--profit); }
+.gm-seg-btn[data-accent="down"] .gm-seg-swatch { background: var(--loss); }
+/* `default` has no fixed colour — it is whatever hue the address resolves to. */
+.gm-seg-btn[data-accent="default"] .gm-seg-swatch {
+  background: linear-gradient(135deg, var(--vermilion) 0 34%, var(--profit) 34% 67%, var(--loss) 67% 100%);
+}
+
+/* The settings sheet must sit above the fixed ticker (850) and header (800) — at the base z-index
+ * of 50 its own title, description and close button rendered underneath them. Same rungs the
+ * mobile navigation drawer already uses. */
+.gm-sheet-overlay { z-index: 980; }
+.gm-sheet {
+  z-index: 990;
+  /* shadcn's `bg-popover` is a mid grey that belongs to no part of this palette; it read as a
+   * foreign panel dropped on Yosuku's near-black. `--ms-surface-1` is the card surface the rest of
+   * the app already uses, and it is theme-aware, so one value serves both. */
+  background: var(--ms-surface-1);
+  border-top: 1px solid var(--ms-hairline);
+  color: var(--white);
+}
+.gm-sheet [data-slot="sheet-title"] { font-family: var(--font-display); font-weight: 800; color: var(--white); }
+.gm-sheet [data-slot="sheet-description"] { color: var(--gray-400); }
+
+.gm-sheet [data-slot="sheet-header"] { width: 100%; max-width: 640px; margin: 0 auto; }
