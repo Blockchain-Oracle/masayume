@@ -4,7 +4,7 @@
     "name": "masayume",
     "productType": "consumer prediction-market app on Somnia (Yosuku source-led port over DreamDEX Event Contracts)",
     "stack": [
-      "next 15 app router",
+      "next 16 app router",
       "react 19",
       "tailwind 4",
       "@base-ui/react",
@@ -119,6 +119,10 @@
     {
       "date": "2026-09-02",
       "decision": "Leverage surfaces: BoostCard (breakdown card: multiple + line, composition bar, one rolling payout figure, facts, knock-out meter, the reference's sentence), KnockoutMeter (track/fill/threshold), Odometer (spring count-up on base units, settles exactly), chips with a sliding highlight. Patterns from 21st: unlumen/count-up, ruixen.ui/segmented-button-group, hero_ui/heroui-meter. motion added project-wide; reduced motion honoured."
+    },
+    {
+      "date": "2026-09-03",
+      "decision": "Navigation uses a hybrid information architecture: compact desktop primary links plus Build and Explore menus; mobile keeps Markets, Reels, Games, Portfolio and a More drawer. A typed registry is canonical, account actions stay separate, internal routes use Next Link, and existing Base UI/Sheet primitives provide accessible interaction."
     }
   ],
   "evidence": [
@@ -126,5 +130,5 @@
     "web/src/styles/ticket.css",
     "docs/implementation/parity-ledger.md \u00a7LeverageReserve"
   ],
-  "generatedAt": "2026-09-02T19:25:45.890Z"
+  "generatedAt": "2026-09-03T12:00:00.000Z"
 }
