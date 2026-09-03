@@ -8,6 +8,7 @@
     ".": "./src/index.ts",
     "./chain": "./src/chain.ts",
     "./env": "./src/env.ts",
+    "./games": "./src/games/index.ts",
     "./identity": "./src/identity.ts",
     "./leverage": "./src/leverage/index.ts",
     "./maker": "./src/maker/index.ts",

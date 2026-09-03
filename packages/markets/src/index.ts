@@ -3,6 +3,7 @@ export * from "./chain";
 export * from "./collateral";
 export * from "./env";
 export * from "./errors";
+export * from "./games";
 export * from "./identity";
 export * from "./mappers";
 export * from "./parlay";

@@ -2,6 +2,7 @@ import type { Diagnosis } from "../types/diagnosis";
 import type { EventMarket, MarketId, OutcomeIdx, Side } from "../types/market";
 import type { Address, Hex } from "../types/primitives";
 import type { Quote } from "../types/trading";
+import type { ArenaIntent } from "../games/arena";
 import type { ParlayIntent } from "../parlay/types";
 import type { RangeIntent } from "../range/types";
 import type { MakerIntent } from "../maker/types";
@@ -93,7 +94,8 @@ export type TxIntent =
   | RangeIntent
   | MakerIntent
   | LeverageIntent
-  | PrivateIntent;
+  | PrivateIntent
+  | ArenaIntent;
 
 export function isVaultIntent(intent: TxIntent): intent is VaultIntent {
   return intent.kind.startsWith("vault-");
@@ -121,6 +123,10 @@ export function isLeverageIntent(intent: TxIntent): intent is LeverageIntent {
 
 export function isPrivateIntent(intent: TxIntent): intent is PrivateIntent {
   return intent.kind.startsWith("private-");
+}
+
+export function isArenaIntent(intent: TxIntent): intent is ArenaIntent {
+  return intent.kind.startsWith("arena-");
 }
 
 export type TxOutcome =

@@ -1,3 +1,4 @@
+export * from "./arena";
 export * from "./commitment";
 export * from "./deck";
 export * from "./lifecycle";

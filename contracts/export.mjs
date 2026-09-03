@@ -19,6 +19,7 @@ const contracts = [
   { name: "market-maker-vault", artifact: "MarketMakerVault.sol/MarketMakerVault.json", exportName: "marketMakerVaultAbi", optional: true },
   { name: "leverage-reserve", artifact: "LeverageReserve.sol/LeverageReserve.json", exportName: "leverageReserveAbi", optional: true },
   { name: "private-desk", artifact: "PrivateDesk.sol/PrivateDesk.json", exportName: "privateDeskAbi", optional: true },
+  { name: "game-arena", artifact: "GameArena.sol/GameArena.json", exportName: "gameArenaAbi", optional: true },
 ];
 
 mkdirSync(join(target, "contracts"), { recursive: true });

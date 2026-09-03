@@ -18,12 +18,14 @@ import { resolveRangeDeployment } from "../range/deployment";
 import { resolveMakerDeployment } from "../maker/deployment";
 import { resolveLeverageDeployment } from "../leverage/deployment";
 import { resolvePrivateDeployment } from "../private/deployment";
+import { resolveArenaDeployment } from "../games/deployment";
 import { resolveVaultDeployment } from "../vault/deployment";
 import type { ParlayDeployment } from "@masayume/core/parlay";
 import type { RangeDeployment } from "@masayume/core/range";
 import type { MakerDeployment } from "@masayume/core/maker";
 import type { LeverageDeployment } from "@masayume/core/leverage";
 import type { PrivateDeployment } from "@masayume/core/private";
+import type { ArenaDeployment } from "@masayume/core/games";
 import type { VaultDeployment } from "@masayume/core/vault";
 
 type ExchangeConfig = ConstructorParameters<typeof SomniaMarkets>[0];
@@ -38,6 +40,7 @@ let rangeDeployment: RangeDeployment | null = null;
 let makerDeployment: MakerDeployment | null = null;
 let leverageDeployment: LeverageDeployment | null = null;
 let privateDeployment: PrivateDeployment | null = null;
+let arenaDeployment: ArenaDeployment | null = null;
 let version = 0;
 let wsIndex = 0;
 const listeners = new Set<() => void>();
@@ -68,6 +71,7 @@ export function configureMarkets(env: MarketsEnv, options: { wsIndex?: number } 
   makerDeployment = resolveMakerDeployment(env);
   leverageDeployment = resolveLeverageDeployment(env);
   privateDeployment = resolvePrivateDeployment(env);
+  arenaDeployment = resolveArenaDeployment(env);
   version += 1;
   mark("runtime.configured");
   if (previous) void previous.close().catch(() => undefined);
@@ -106,6 +110,11 @@ export function getRangeDeployment(): RangeDeployment | null {
 /** The MarketMakerVault for the configured chain, or null where none is deployed — every maker read branches on this. */
 export function getMakerDeployment(): MakerDeployment | null {
   return makerDeployment;
+}
+
+/** The GameArena for the configured chain, or null where none is deployed — every duel read branches on this. */
+export function getArenaDeployment(): ArenaDeployment | null {
+  return arenaDeployment;
 }
 
 /** Bumps whenever the singleton is rebuilt so React providers can re-key. */

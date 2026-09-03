@@ -6,7 +6,7 @@ export const SDK_GAS_ENVELOPE_WEI = SDK_GAS_LIMIT * SDK_MAX_FEE_PER_GAS_WEI;
 /** Native balance must cover the envelope times this factor before we let a wallet sign. */
 export const GAS_SAFETY_BPS = 12_000;
 
-export type GasLane = "order" | "faucet" | "redeem" | "approve" | "vault" | "vault-order" | "parlay" | "range" | "maker" | "leverage" | "private";
+export type GasLane = "order" | "faucet" | "redeem" | "approve" | "vault" | "vault-order" | "parlay" | "range" | "maker" | "leverage" | "private" | "arena";
 
 /** Gas ceiling per write lane, passed to the SDK per call. measured: pending Story 1.5b — every lane uses the SDK default until real usage is recorded on Shannon. */
 export const GAS_CEILING: Record<GasLane, bigint> = {
@@ -35,4 +35,10 @@ export const GAS_CEILING: Record<GasLane, bigint> = {
   // (one book walk, one IOC across a live maker's level, the credit sweep); settle 487,256, sweep 249,887, credit 268,553;
   // the owner's withdraw 85,992. A 4M ceiling leaves the mint twice its room and keeps the desk key's envelope at 0.29 STT a send.
   private: 4_000_000n,
+  // Measured on a Shannon fork 2026-09-03 (GameArena, three live 1h/4h Windows, six confirmed picks):
+  // createMatch 185,484; joinMatch 17,909; a three-card revealDeck 189,470; the worst placePick 463,270
+  // (one book walk, one IOC across a live maker's levels, the credit sweep); the worst settleCard 498,313
+  // (two redemptions through the module); finalize 9,727. A 4M ceiling is eight times the worst lane, which
+  // leaves room for a five-card reveal and a deeper book without a redeploy of the envelope.
+  arena: 4_000_000n,
 };
