@@ -166,6 +166,7 @@ async function closeOut(
   challenger: Player,
   token: Address,
   cash: (base: bigint) => string,
+  pnl: (base: bigint) => string,
 ): Promise<void> {
   // A deck nobody completed stays PICKING until someone closes it, and `finalize` refuses that status.
   // The crank is permissionless and the settler would make it; a drive that owns the match makes it here.
@@ -197,7 +198,7 @@ async function closeOut(
   const done = await getArenaMatch(matchId);
   if (!isOk(done) || !done.value) throw new Error("the match is unreadable after finalize");
   check("the match is finalized", done.value.match.status === "finalized", done.value.match.status);
-  log(`pnl creator ${cash(done.value.creatorPnlBase)} · challenger ${cash(done.value.challengerPnlBase)}`);
+  log(`pnl creator ${pnl(done.value.creatorPnlBase)} · challenger ${pnl(done.value.challengerPnlBase)}`);
 
   for (const player of [creator, challenger]) {
     const credit = await getArenaCredit(player.address);
@@ -242,7 +243,10 @@ async function main(): Promise<void> {
   const collateral = await loadCollateral();
   if (!isOk(collateral)) throw new Error(`collateral unreadable: ${collateral.error.technical}`);
   const { address: token, decimals, symbol } = collateral.value;
-  const cash = (base: bigint) => `${formatBaseUnits(base, decimals)} ${symbol}`;
+  // Six decimal places, not the surface default of two: a duel is played in cents, and a 0.009 fill
+  // rounded to "0.00" makes the whole settle report say nothing.
+  const cash = (base: bigint) => `${formatBaseUnits(base, decimals, { maxDp: decimals, minDp: 2 })} ${symbol}`;
+  const pnl = (base: bigint) => `${formatBaseUnits(base, decimals, { maxDp: decimals, minDp: 2, signed: true })} ${symbol}`;
 
   const state = await getArenaState();
   if (!isOk(state) || !state.value) throw new Error("no arena on this network");
@@ -273,7 +277,7 @@ async function main(): Promise<void> {
     const view = await getArenaMatch(resuming as Bytes32);
     if (!isOk(view) || !view.value) throw new Error(`MATCH_ID ${resuming} is unreadable`);
     log(`resuming ${resuming} · status ${view.value.match.status} · ${view.value.cards.length} card(s)`);
-    await closeOut(resuming as Bytes32, view.value.cards, creator, challenger, token, cash);
+    await closeOut(resuming as Bytes32, view.value.cards, creator, challenger, token, cash, pnl);
     return;
   }
 
@@ -353,7 +357,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  await closeOut(matchId, cards, creator, challenger, token, cash);
+  await closeOut(matchId, cards, creator, challenger, token, cash, pnl);
 }
 
 void main()
