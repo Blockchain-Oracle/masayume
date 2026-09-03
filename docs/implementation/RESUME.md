@@ -50,7 +50,9 @@ changed on chain to match (`setParams` `0x261fe1cc…2b13`, gas 93,678, read bac
 **Seventeenth session (2026-09-03, context/54): the duel was driven through a real pick.**
 `spike:duel-full` deals, creates, joins, reveals from the journal, plays every card on both sides and
 then settles, finalizes and claims; `PHASE` bounds the spend and `MATCH_ID` resumes a drive interrupted
-during the wait. Three defects came out of it — the queue's countdown was `null` in the dead zone
+during the wait. **It closed**: match `0xb46c4fee…b2f2`, four cards, `picked 1111/1111`, all four
+settled, finalized, and the winner's credit claimed to the wallet exactly (creator −0.038871 tUSDC,
+challenger +0.029955; every card resolved DOWN and the DOWN seat swept). Three defects came out of it — the queue's countdown was `null` in the dead zone
 because `candidates()` filtered out the very Windows whose successors make the next deck (now 7s where
 it was null); two seats contend for one binary pool's liquidity, so a pick can lose a race and must
 retry with a loosening floor (`spike/pick.ts`); and the spikes never exited, which is why an old spike

@@ -123,7 +123,49 @@ a code change and a policy-version bump — no `setParams`, no gas. **It waits o
 it trades availability the same way the 2026-09-03 deck-supply decision did, and that one was
 theirs.
 
-## 6. The spikes never exited
+## 6. What the first full duel actually did
+
+Match `0xb46c4fee…b2f2` on `GameArena` `0xec71…f0dF`, free tier, four cards (BTC and ETH at 15m and
+1h), read back from chain after `finalize`:
+
+```
+status finalized · picked0 1111 picked1 1111 · settled 1111
+pnl creator -0.038871 · challenger +0.029955
+  card 0 seat 0 up   · 17000 raw · cost +0.009639 · payout 0.00
+  card 0 seat 1 down · 21000 raw · cost +0.009723 · payout +0.021
+  card 1 seat 0 up   · 21000 raw · cost +0.009912 · payout 0.00
+  card 1 seat 1 down · 12000 raw · cost +0.009648 · payout +0.012
+  card 2 seat 0 up   · 20000 raw · cost +0.0097   · payout 0.00
+  card 2 seat 1 down · 18000 raw · cost +0.00981  · payout +0.018
+  card 3 seat 0 up   · 20000 raw · cost +0.00962  · payout 0.00
+  card 3 seat 1 down · 18000 raw · cost +0.009864 · payout +0.018
+credit left for both players: 0.00
+```
+
+Every card resolved DOWN, so the challenger — who takes DOWN on every card in this drive — swept.
+That is luck, not a result: the drive fixes the sides so that exactly one seat wins each card and a
+winner is decidable, which is the property being proven, not the outcome.
+
+Three things in it are worth keeping.
+
+- **`settleCard` is per card and the payouts are credited per card**; `finalize` only allocated the
+  side-pot, which on the free tier is zero, and cost 66,853 gas against ~1.0–1.8M for a settle. The
+  pot is cheap; walking the book is not.
+- **The claim swept the credit exactly** — the check compares the wallet delta to `creditOf` before
+  the call, and both players' credit read 0.00 afterwards.
+- **The same 0.01 stake bought 12,000–21,000 raw** depending on card and side. On card 0 the DOWN
+  side was the cheaper one and it won, so the book had UP as the likelier outcome on all four cards
+  and was wrong on all four.
+
+The run's own exit was 1, and honestly so: three checks failed, all one root cause — the lost pick
+race of §3, which was rescued out of band by `spike:pick-one` after the drive had already recorded
+the failure and moved on. The settle half ran clean.
+
+**Not proven:** the `lockPicks` crank added to `closeOut`. All eight picks landed, so the match
+auto-locked and that branch never executed against the chain. It mirrors the settler's own tested
+precondition, but it has run in a type checker and nowhere else.
+
+## 7. The spikes never exited
 
 `closeRuntime()` resolves, but something in the SDK's transport keeps a handle on the loop:
 `spike:arena-params` sat for fourteen minutes after its `setParams` had confirmed and its read-back
@@ -135,7 +177,7 @@ cleanly still exits on its own.
 Worth knowing when reading an old spike log: piping a spike through `tail` showed **nothing at all**,
 because the pipe buffers until the process exits and the process never did.
 
-## 7. Gate
+## 8. Gate
 
 `pnpm typecheck`, `pnpm invariants` (14/14, 0 warnings), `pnpm test` (278), `pnpm build`.
 Contracts untouched.
