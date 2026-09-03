@@ -14,10 +14,16 @@ export interface HistoryReading {
   retry: () => void;
 }
 
-/** The connected wallet's projection plus the retry every boundary hands its error state. */
-export function useHistoryReading(): HistoryReading {
+/**
+ * The connected wallet's projection plus the retry every boundary hands its error state.
+ *
+ * `enabled` is how the Portfolio holds this back: it is the page's most expensive read, and
+ * starting it alongside the balance and the open positions meant the numbers a portfolio is
+ * opened for queued behind a multi-page fill scan.
+ */
+export function useHistoryReading(enabled = true): HistoryReading {
   const { address } = useWalletSession();
-  const reading = useWalletHistory(address);
+  const reading = useWalletHistory(address, enabled);
   const queryClient = useQueryClient();
   const retry = useCallback(() => {
     if (address) void queryClient.invalidateQueries({ queryKey: keys.history(address) });

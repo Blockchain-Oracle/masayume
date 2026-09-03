@@ -9,6 +9,15 @@ export const OPENING_PRINT_POLL_MS = 3_000;
 export const VERDICT_POLL_MS = 3_000;
 export const CLOCK_RESYNC_MS = 60_000;
 
+/**
+ * Settled history is an archive, not a live number: a Window that has closed does not reopen.
+ * The expensive multi-page fill scan therefore revalidates slowly, and stays correct through
+ * the three things that actually change it — a confirmed write, an account change, and the tab
+ * regaining focus. Polling it on the market cadence put that scan in permanent competition with
+ * the reads a portfolio is actually opened for.
+ */
+export const SETTLED_HISTORY_POLL_MS = 300_000;
+
 /** No-entry buffer before expiry: max(30, min(300, interval × 0.4)) seconds (canon #9). */
 export const HEADROOM_MIN_SEC = 30;
 export const HEADROOM_MAX_SEC = 300;

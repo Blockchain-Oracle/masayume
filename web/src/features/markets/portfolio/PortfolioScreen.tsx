@@ -1,21 +1,24 @@
 "use client";
 
 import { isOk } from "@masayume/core/schemas";
-import { usePositions } from "@masayume/markets/react";
+import { useClaimables, usePositions } from "@masayume/markets/react";
 import { useRouter } from "next/navigation";
 import { SectionHeader } from "@/components/chrome";
+import { ErrorState } from "@/components/states";
 import { PrivateBalancePanel } from "@/features/private";
 import { TradingBalancePanel, useVaultOpenBets } from "@/features/vault";
 import { XWalletCard } from "@/features/x";
 import "@/features/x/x-card.css";
 import { CLAIM, PORTFOLIO } from "@/lib/copy";
 import { useWalletSession } from "@/lib/wallet-session";
+import { useBalancePlate } from "../balance";
 import { LiveClaimPlate } from "../claims";
 import { RecordSection, TraderEdgeLink, useHistoryReading } from "../history";
 import { useVenue } from "../useVenue";
 import { BetsPanel } from "./BetsPanel";
 import { ConnectCard } from "./ConnectCard";
 import { LedgerPlate, PLATE, PlateDisclosure, PoolRows, useMoney } from "./plate";
+import { usePortfolioTiers } from "./useTiers";
 
 /**
  * Portfolio — the money, the open bets, and what is waiting to be collected.
@@ -41,12 +44,21 @@ import { LedgerPlate, PLATE, PlateDisclosure, PoolRows, useMoney } from "./plate
 export function PortfolioScreen() {
   const router = useRouter();
   const { address } = useWalletSession();
-  const { boot } = useVenue();
+  const { boot, venueId } = useVenue();
   const symbol = boot && isOk(boot) ? boot.value.collateral.symbol : "tUSDC";
-  const history = useHistoryReading();
   const money = useMoney();
   const positions = usePositions(address);
   const vaultBets = useVaultOpenBets(address);
+  const plate = useBalancePlate();
+  const claimables = useClaimables(address, venueId);
+
+  // The critical tier: the balance, what is open, and what can be collected. Everything a
+  // portfolio is actually opened for, and the only reads allowed to run first.
+  const tiers = usePortfolioTiers([plate.kind === "connected" ? plate.reading : null, positions, claimables]);
+  // The deferred tier waits for that answer. The settled-history scan is the page's most
+  // expensive read and it describes Windows that have already closed; nothing about it is
+  // urgent enough to compete with the number at the top of the page.
+  const history = useHistoryReading(tiers.criticalSettled);
   const openBets = (positions && isOk(positions) ? positions.value.length : 0) + (vaultBets && isOk(vaultBets) ? vaultBets.value.length : 0);
   const settled = history.reading && isOk(history.reading) ? history.reading.value.rounds.length : 0;
 
@@ -56,6 +68,16 @@ export function PortfolioScreen() {
       <div className="mx-auto flex w-full max-w-(--content-reading) flex-col gap-4 px-gutter py-8">
         <ConnectCard />
         <XWalletCard />
+      </div>
+    );
+  }
+
+  // Every critical read failed on the connection: that is one fact, and it is said once. A page
+  // of competing "Try again" buttons describes the same outage five times and fixes none of them.
+  if (tiers.outage) {
+    return (
+      <div className="mx-auto flex w-full max-w-(--content-reading) flex-col gap-4 px-gutter py-8">
+        <ErrorState diagnosis={tiers.outage} retry={tiers.retry} />
       </div>
     );
   }
