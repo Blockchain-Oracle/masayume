@@ -720,6 +720,32 @@ that card only. **A reviewed global pass over the other 811 `text-gray-*` utilit
 Behaviour is unchanged everywhere else (verified: on `/markets` the container inherits the root's
 value, and a clean load draws dark-on-cream).
 
+## Two CSS traps that have now each cost a surface
+
+Both were found by the owner on a phone after every gate was green, and both are the kind that
+recur. Check for them before adding a class or a truncating row.
+
+**`pl-` is Tailwind's padding-left namespace.** `bridge.css` defines `--spacing-section: 64px`, so
+Tailwind v4 minted a real `.pl-section { padding-left: var(--spacing-section) }` utility. The parlay
+CSS never set `padding-left`, so nothing competed with it, and every section on `/parlay` and
+`/games/range` carried a phantom 64px indent at every width — on a 390px phone that left content
+290px wide. Renamed to `.pl-block`. **Before adding any `p[lrtbxy]-<name>`, `m*-<name>`, `gap-<name>`,
+`w-<name>` or `h-<name>` class, check that `--spacing-<name>` is not in bridge.css.**
+
+**`text-overflow: ellipsis` does nothing on a flex item without `min-width: 0`.** A flex item defaults
+to `min-width: auto`, which resolves to min-content, and the min-content of a `nowrap` string is the
+whole string — so the item never shrinks and the ellipsis never appears. `.pl-bd-what` demanded 281px
+this way, which put the Ticket's min-content at 350–357px and pushed the whole `/games/range`
+document wider than the screen; the Window plate and wallet row looked "shifted" only because the
+document was scrolling. `.pl-picker-label` was always safe because its parent `.pl-picker` carries
+the `min-width: 0`. **A truncating row needs `min-width: 0` on the item itself or on the flex parent
+that owns its width.**
+
+The check that catches both in one line, run at 334px on every route that changed:
+`document.documentElement.scrollWidth > document.documentElement.clientWidth`. The `/dev/*` fixtures
+are where the connected Ticket, rounds, leverage, earn, private and vault states render, so sweep
+those as well as the product routes — a disconnected page hides the components that overflow.
+
 ## Known, not fixed
 
 - The venue's `getOpenPositionsWithPnL` (the open-bets rows) clamps a sell beyond inventory to zero and
