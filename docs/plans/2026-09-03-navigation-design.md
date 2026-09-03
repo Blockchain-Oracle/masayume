@@ -14,7 +14,7 @@ The redesign must make the full product legible without pretending that every ro
 
 Use a hybrid hierarchy:
 
-- Desktop keeps the highest-frequency destinations visible and groups the rest into two descriptive menus.
+- Desktop keeps the highest-frequency destinations visible and groups the rest into three descriptive menus.
 - Mobile keeps four high-frequency destinations in the bottom bar and uses a fifth `More` action to open a complete drawer.
 - Account destinations remain in the wallet/account menu.
 - Child journeys stay local to their parent feature rather than becoming global navigation.
@@ -25,20 +25,25 @@ This keeps the fast paths one tap away while giving every global destination a p
 
 ### Desktop
 
-`Markets · Reels · Games · Build ▾ · Explore ▾ · Portfolio`
+`Markets · Reels · Games ▾ · Build ▾ · Explore ▾ · Portfolio`
 
-`Build` contains:
+`Games` contains:
 
-- Create — create a new market.
-- Strategies — discover repeatable trading approaches.
-- Agents — manage automated market agents.
-- X-trade — turn a post into a trade.
+- Start: Games hub, Practice.
+- Prediction: Duel, Lucky, Range, Moonshot.
+- Arcade: Line Rider, Candle Hop.
+
+`Build` is grouped as:
+
+- Create: Create, Creators, Creator recovery.
+- Automate: Strategies, Agents, Playbook Studio, X-trade.
 
 `Explore` is grouped as:
 
-- Trade: Parlay, Sensei.
-- Proof: Leaderboard, Stats, Market Surface, Trader Edge.
-- Learn: News, How it works, Docs, Status, Download.
+- Trade: Earn, Parlay, Sensei.
+- Community: Social, Leaderboard, Waitlist.
+- Proof: Stats, Market Surface, Trader Edge.
+- Learn: News, How it works, Docs, Status, Download, Demo, Pitch.
 
 ### Mobile
 
@@ -46,7 +51,7 @@ The persistent bottom bar contains exactly:
 
 `Markets · Reels · Games · Portfolio · More`
 
-`More` opens a full-height, safe-area-aware drawer. The drawer exposes the same Build, Trade, Proof, and Learn groups as desktop, with an icon and a short description for each item. It must expose active-route state and close after a destination is selected.
+`More` opens a full-height, safe-area-aware drawer. The drawer is the complete map: every game mode, Build, Trade, Community, Proof, Learn, and Account utility, each with an icon and short description. It exposes active-route state and closes after a destination is selected. When a nested game route is active, Games—not both Games and More—owns the bottom-bar active state.
 
 ### Account
 
@@ -55,13 +60,17 @@ The account menu owns:
 - wallet and balance information;
 - Portfolio;
 - Claims;
-- wallet actions such as copy, network switching, and disconnect.
+- Add funds;
+- X recovery;
+- wallet actions such as network switching and connection state.
 
 There is no global `Profile` destination because the product does not currently have a real profile route.
 
-### Contextual and excluded routes
+### Contextual and internal routes
 
-Game modes remain under Games. Claim flows remain reachable from account and the relevant transaction journey. Fund, creator recovery, demo, pitch, developer, redirects, unfinished placeholders, and internal auth flows do not receive global navigation entries.
+Game modes remain under the Games group rather than becoming eight top-level destinations. Capability-pending routes remain navigable because an honest dependency state is still part of the product.
+
+Only non-destinations stay outside the registry: redirects (`/`, `/bell`, `/beta`, `/markets-live`, `/pool`), internal `/dev/*` review tools, the native-auth bridge, and dynamic market detail routes already owned by Markets. Every other real page has an explicit fast-path, drawer, grouped-menu, or account home.
 
 Trader Edge is surfaced in Explore because it is a meaningful proof/analysis destination, while its deeper portfolio actions remain contextual.
 
@@ -79,7 +88,7 @@ One typed navigation registry is the source of truth. Each entry defines:
 The registry feeds:
 
 - the desktop header;
-- the desktop Build and Explore menus;
+- the desktop Games, Build, and Explore menus;
 - the mobile bottom bar;
 - the mobile More drawer;
 - the X-trade island's route links where applicable.
@@ -104,9 +113,9 @@ The supplied 21st.dev references informed the grouped link cards, icon-led scann
 
 ## Acceptance criteria
 
-- Desktop has six visible navigation targets including two grouped menus.
+- Desktop has six visible navigation targets including three grouped menus.
 - Mobile has five total bottom-bar actions and no compressed or overlapping labels.
-- Every approved global route appears exactly once in the hierarchy, apart from intentional account shortcuts.
+- The audited accepted route list is exported beside the registry; a focused test fails when one loses its navigation home.
 - Active state works for aliases and nested routes.
 - Opening and closing menus/drawer is keyboard accessible.
 - Mobile drawer is usable at narrow widths and respects bottom safe area.

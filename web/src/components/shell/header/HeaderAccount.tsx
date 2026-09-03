@@ -100,6 +100,12 @@ export function HeaderAccount({ onOpenMenu }: { onOpenMenu?: () => void }) {
                 <Link href="/claims" className="header-account-link" role="menuitem" onClick={() => setOpen(false)}>
                   Claims
                 </Link>
+                <Link href="/fund" className="header-account-link" role="menuitem" onClick={() => setOpen(false)}>
+                  Add funds
+                </Link>
+                <Link href="/claim" className="header-account-link" role="menuitem" onClick={() => setOpen(false)}>
+                  X recovery
+                </Link>
               </div>
             )}
           </div>

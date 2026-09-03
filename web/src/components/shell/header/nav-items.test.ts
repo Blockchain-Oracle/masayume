@@ -4,6 +4,7 @@ import {
   isActiveNavItem,
   MOBILE_DRAWER_SECTIONS,
   MOBILE_NAV,
+  NAVIGABLE_ROUTE_PATHS,
   NAV_ITEMS,
 } from "./nav-items";
 
@@ -22,8 +23,17 @@ describe("navigation registry", () => {
 
   it("gives every drawer destination exactly one home", () => {
     const ids = MOBILE_DRAWER_SECTIONS.flatMap((section) => section.items.map((item) => item.id));
-    expect(ids).toHaveLength(15);
+    expect(ids).toHaveLength(34);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("gives every accepted user-facing route an explicit navigation home", () => {
+    const destinations = [...MOBILE_NAV, ...MOBILE_DRAWER_SECTIONS.flatMap((section) => section.items)].map(
+      (item) => item.href.split("?")[0],
+    );
+    const missing = NAVIGABLE_ROUTE_PATHS.filter((path) => !destinations.includes(path));
+
+    expect(missing).toEqual([]);
   });
 
   it("keeps Trader Edge in Explore without also activating Portfolio", () => {
@@ -33,6 +43,8 @@ describe("navigation registry", () => {
 
   it("maps nested game and market routes to their top-level destinations", () => {
     expect(isActiveNavItem("/games/range", NAV_ITEMS.games)).toBe(true);
+    expect(isActiveNavItem("/games/range", NAV_ITEMS.range)).toBe(true);
+    expect(isActiveNavItem("/games/range", NAV_ITEMS.gamesHub)).toBe(false);
     expect(isActiveNavItem("/markets/example", NAV_ITEMS.markets)).toBe(true);
   });
 

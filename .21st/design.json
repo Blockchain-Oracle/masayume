@@ -122,7 +122,7 @@
     },
     {
       "date": "2026-09-03",
-      "decision": "Navigation uses a hybrid information architecture: compact desktop primary links plus Build and Explore menus; mobile keeps Markets, Reels, Games, Portfolio and a More drawer. A typed registry is canonical, account actions stay separate, internal routes use Next Link, and existing Base UI/Sheet primitives provide accessible interaction."
+      "decision": "Navigation uses a hybrid information architecture: compact desktop primary links plus Games, Build and Explore menus; mobile keeps Markets, Reels, Games, Portfolio and a complete More drawer. A typed registry includes every accepted user-facing route, account actions stay contextual, internal routes use Next Link, and existing Base UI/Sheet primitives provide accessible interaction."
     }
   ],
   "evidence": [

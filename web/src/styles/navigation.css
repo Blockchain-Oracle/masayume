@@ -44,8 +44,9 @@
   transform: translateY(-0.4rem) scale(0.98);
 }
 
-.nav-menu-popup--build { width: min(34rem, calc(100vw - 2rem)); }
-.nav-menu-popup--explore { width: min(50rem, calc(100vw - 2rem)); }
+.nav-menu-popup--games { width: min(52rem, calc(100vw - 2rem)); }
+.nav-menu-popup--build { width: min(44rem, calc(100vw - 2rem)); }
+.nav-menu-popup--explore { width: min(64rem, calc(100vw - 2rem)); }
 
 .nav-menu-intro {
   display: flex;
@@ -75,7 +76,8 @@
   padding: 0.55rem;
 }
 
-.nav-menu-popup--build .nav-menu-sections { grid-template-columns: 1fr; }
+.nav-menu-popup--build .nav-menu-sections { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.nav-menu-popup--explore .nav-menu-sections { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
 .nav-menu-section {
   min-width: 0;
@@ -114,7 +116,6 @@
 }
 
 .nav-menu-links { display: grid; gap: 0.15rem; }
-.nav-menu-popup--build .nav-menu-links { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
 .nav-menu-link {
   display: grid;

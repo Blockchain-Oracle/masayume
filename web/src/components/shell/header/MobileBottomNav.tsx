@@ -11,7 +11,8 @@ import { isActiveNavItem, MOBILE_DRAWER_SECTIONS, MOBILE_NAV, MOBILE_OVERFLOW } 
 export function MobileBottomNav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const moreActive = MOBILE_OVERFLOW.some((item) => isActiveNavItem(pathname, item));
+  const fastPathActive = MOBILE_NAV.some((item) => isActiveNavItem(pathname, item));
+  const moreActive = !fastPathActive && MOBILE_OVERFLOW.some((item) => isActiveNavItem(pathname, item));
 
   useEffect(() => setOpen(false), [pathname]);
 
