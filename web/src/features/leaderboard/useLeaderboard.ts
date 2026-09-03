@@ -17,5 +17,5 @@ async function readLeaderboard(): Promise<Reading<BoardData>> {
 
 /** The reference's `useLeaderboard`: fetch the route, refresh every two minutes while visible. */
 export function useLeaderboard(): Reading<BoardData> | null {
-  return useReadingQuery(LEADERBOARD_KEY, readLeaderboard, { pollMs: POLL_MS });
+  return useReadingQuery(LEADERBOARD_KEY, readLeaderboard, { pollMs: POLL_MS, needs: [] });
 }

@@ -25,7 +25,7 @@ async function readStrategies(): Promise<Reading<StrategiesPayload>> {
 
 /** The reference's 30 s catalogue poll (`load` + `setInterval(load, 30_000)`), visibility-gated. */
 export function useStrategies(): Reading<StrategiesPayload> | null {
-  return useReadingQuery(STRATEGIES_KEY, readStrategies, { pollMs: POLL_MS });
+  return useReadingQuery(STRATEGIES_KEY, readStrategies, { pollMs: POLL_MS, needs: [] });
 }
 
 async function readHealth(ids: string): Promise<Reading<HealthPayload>> {
@@ -39,7 +39,7 @@ async function readHealth(ids: string): Promise<Reading<HealthPayload>> {
 /** The runner's heartbeat, polled once a minute — the reference's `/api/desk/health` cadence. */
 export function useStrategyHealth(strategyIds: readonly string[]): Reading<HealthPayload> | null {
   const ids = strategyIds.join(",");
-  return useReadingQuery(strategyHealthKey(ids), () => readHealth(ids), { pollMs: HEALTH_POLL_MS, enabled: ids.length > 0 });
+  return useReadingQuery(strategyHealthKey(ids), () => readHealth(ids), { pollMs: HEALTH_POLL_MS, enabled: ids.length > 0, needs: [] });
 }
 
 /** The connected wallet's consents, read off the registry itself. */

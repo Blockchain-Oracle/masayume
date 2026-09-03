@@ -17,5 +17,5 @@ async function readTraction(): Promise<Reading<TractionData>> {
 }
 
 export function useTraction(): Reading<TractionData> | null {
-  return useReadingQuery(TRACTION_KEY, readTraction, { pollMs: POLL_MS });
+  return useReadingQuery(TRACTION_KEY, readTraction, { pollMs: POLL_MS, needs: [] });
 }

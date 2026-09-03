@@ -14,6 +14,7 @@ import { SessionKeyProvider, SessionRecovery } from "@/features/session";
 import { BRAND } from "@/lib/copy";
 import { webEnv } from "@/lib/env";
 import { MarketsBoot } from "./MarketsBoot";
+import { usePersistedReadCache } from "./persist";
 import { createQueryClient } from "./query-client";
 import { rainbowKitTheme } from "./rainbowkit-theme";
 import { UserSessionProvider } from "./UserSessionProvider";
@@ -22,6 +23,7 @@ import { wagmiConfig } from "./wagmi";
 /** Client composition root: wallet session → query cache → wallet UI → shared read runtime → isolated signing session → boot gate → session key. */
 export function AppProviders({ children }: { children: ReactNode }) {
   const [queryClient] = useState(createQueryClient);
+  usePersistedReadCache(queryClient);
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>

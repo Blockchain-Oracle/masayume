@@ -18,5 +18,5 @@ async function readStatus(): Promise<Reading<StatusPayload>> {
 
 /** Polled while the tab is visible; a hidden tab probes nothing. */
 export function useStatus(): Reading<StatusPayload> | null {
-  return useReadingQuery(STATUS_KEY, readStatus, { pollMs: POLL_MS });
+  return useReadingQuery(STATUS_KEY, readStatus, { pollMs: POLL_MS, needs: [] });
 }

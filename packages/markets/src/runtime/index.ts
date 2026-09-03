@@ -11,7 +11,7 @@ export {
   ensureMarkets,
   exchangeVersion,
   getClient,
-  probeWsUrls,
   rotateRpc,
   subscribeExchange,
 } from "./read-runtime";
+export { checkEndpoints, endpointHealth, selectReadEndpoint, type EndpointHealth } from "./health";

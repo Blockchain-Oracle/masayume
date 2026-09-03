@@ -21,5 +21,5 @@ async function readNews(): Promise<Reading<Article[]>> {
  * fails ("silent — keep stale data"); the reading query does the same, flagging them stale.
  */
 export function useNews(): Reading<Article[]> | null {
-  return useReadingQuery(NEWS_KEY, readNews, { pollMs: POLL_MS });
+  return useReadingQuery(NEWS_KEY, readNews, { pollMs: POLL_MS, needs: [] });
 }
