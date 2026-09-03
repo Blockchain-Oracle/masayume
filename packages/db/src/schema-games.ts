@@ -4,9 +4,10 @@
  *
  * The boundary this file must not blur: `GameArena` is the economic truth. `duel_matches` and
  * `duel_cards` are an **indexed projection** of its events, kept so a history page is one query rather
- * than a log replay — never a second opinion. Every economic row therefore carries the chain's own
- * `(chainId, txHash, logIndex)` as `log_key`, so re-indexing is idempotent, and any disagreement is
- * settled by re-reading the arena rather than by trusting a row here. Ratings, follows, settings and
+ * than a log replay — never a second opinion. Every economic row is therefore keyed by the chain's own
+ * identity for the fact it records — a match id, or a pick's `chainId:matchId:cardIndex:seat`
+ * coordinates — so re-indexing a block is idempotent, and any disagreement is settled by re-reading the
+ * arena rather than by trusting a row here. Ratings, follows, settings and
  * arcade scores have no chain counterpart at all; they are this store's own.
  *
  * Writers (AD-7): `game_profiles`, `game_settings`, `game_follows` and `arcade_scores` → web (each
@@ -14,6 +15,20 @@
  * the settler). Web never writes a rating: a ladder a browser can post to is not a ladder.
  */
 export const GAMES_SCHEMA_SQL = `
+-- Slice 7 re-keyed duel_cards from the chain's log identity to the pick's own coordinates — the table
+-- below says why. Nothing had written it (the projector is its first writer), so the old shape is
+-- dropped rather than migrated, and only where it is actually present. This guard can go once no
+-- database in use predates 2026-09-03.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = current_schema() AND table_name = 'duel_cards' AND column_name = 'log_key'
+  ) THEN
+    DROP TABLE duel_cards;
+  END IF;
+END $$;
+
 CREATE TABLE IF NOT EXISTS game_profiles (
   -- Lowercased 0x address, verified from a signature before upsert.
   wallet        TEXT        PRIMARY KEY,
@@ -60,6 +75,27 @@ CREATE TABLE IF NOT EXISTS game_ratings (
 CREATE INDEX IF NOT EXISTS game_ratings_ladder_idx
   ON game_ratings (rating DESC);
 
+-- One row per player per terminal match, and the reason the ladder can be re-projected safely.
+--
+-- The projector may re-read a block: a cursor is a high-water mark, not a promise, and a restart or a
+-- rewind replays what it already saw. Every other row it writes is an upsert, so replaying is a no-op —
+-- but a rating is an INCREMENT, and an increment applied twice is a ladder nobody can audit. So the
+-- delta is recorded here first, under a primary key the chain decided, and the rating only moves when
+-- that insert is the one that won.
+CREATE TABLE IF NOT EXISTS game_rating_events (
+  match_id         TEXT        NOT NULL,
+  wallet           TEXT        NOT NULL,
+  delta            INTEGER     NOT NULL,
+  rating_after     INTEGER     NOT NULL,
+  -- Bumped when the formula changes, so an old row is never mistaken for one this K would have produced.
+  formula_version  INTEGER     NOT NULL DEFAULT 1,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (match_id, wallet)
+);
+
+CREATE INDEX IF NOT EXISTS game_rating_events_wallet_idx
+  ON game_rating_events (wallet, created_at DESC);
+
 CREATE TABLE IF NOT EXISTS duel_matches (
   -- The arena's own match id, hex. Unique per chain, so the chain id rides along for a multi-chain read.
   match_id        TEXT        PRIMARY KEY,
@@ -76,6 +112,13 @@ CREATE TABLE IF NOT EXISTS duel_matches (
   policy_version  INTEGER     NOT NULL,
   -- Base units as decimal strings, never floats — the same rule the strategy fills follow.
   pot_per_player  TEXT        NOT NULL,
+  -- The revealed deck's market ids, in deck order. Null until the deck is opened. Kept so a history
+  -- page renders without a chain read; the arena's own "deckOf" remains the authority.
+  cards           JSONB,
+  -- Only the refund event carries this, and the record cannot re-derive it: a creator who cancelled
+  -- an unjoined match and one whose join window ran out leave identical state behind.
+  refund_reason   TEXT        CHECK (refund_reason IN
+                    ('creator-cancelled','join-timeout','reveal-unavailable','both-incomplete')),
   winner          TEXT,
   creator_pnl     TEXT,
   challenger_pnl  TEXT,
@@ -90,8 +133,10 @@ CREATE INDEX IF NOT EXISTS duel_matches_challenger_idx
   ON duel_matches (challenger, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS duel_cards (
-  -- The chain's own log identity for the fill: re-indexing the same event twice writes the same row.
-  log_key       TEXT        PRIMARY KEY,
+  -- The pick's own coordinates, "chainId:matchId:cardIndex:seat" (core's "arenaPickKey"). NOT the chain's
+  -- log identity: one card emits "PickFilled" and later "CardSettled", so a log-keyed row would store a
+  -- settled card twice instead of filling in its payout. Re-indexing either event writes the same row.
+  pick_key      TEXT        PRIMARY KEY,
   match_id      TEXT        NOT NULL,
   card_index    INTEGER     NOT NULL,
   player        TEXT        NOT NULL,
@@ -108,6 +153,39 @@ CREATE TABLE IF NOT EXISTS duel_cards (
 
 CREATE INDEX IF NOT EXISTS duel_cards_match_idx
   ON duel_cards (match_id, card_index);
+
+CREATE INDEX IF NOT EXISTS duel_cards_player_idx
+  ON duel_cards (player, filled_at_sec DESC);
+
+-- How far the projector has read. One row per (chain, contract, purpose), so a restart resumes from the
+-- last block it wrote rather than from the deployment — and re-reading a block is harmless, because every
+-- row it writes is keyed by something the chain already decided.
+CREATE TABLE IF NOT EXISTS game_cursors (
+  name        TEXT        PRIMARY KEY,
+  block       BIGINT      NOT NULL,
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- The reveal material for a committed deck, encrypted at rest.
+--
+-- The rule this table exists for: no durable reveal, no join. The deckmaster writes here BEFORE it
+-- publishes a commitment, because a commitment whose preimage was lost is a match that can only ever
+-- refund. "revealDeck" is permissionless, so anyone holding this material can open the deck — which is
+-- why it is sealed with a key that is not in the database, and why the row is deleted once the arena
+-- has the cards in the clear.
+CREATE TABLE IF NOT EXISTS duel_decks (
+  match_id        TEXT        PRIMARY KEY,
+  chain_id        INTEGER     NOT NULL,
+  arena           TEXT        NOT NULL,
+  policy_version  INTEGER     NOT NULL,
+  -- Which lane the policy dealt from: '15m', '1h' or 'mixed' when the venue ran too few of one cadence.
+  lane            TEXT        NOT NULL CHECK (lane IN ('15m', '1h', 'mixed')),
+  cards           JSONB       NOT NULL,
+  -- AES-256-GCM, base64url: iv, ciphertext and tag in one string. The key lives in the environment.
+  sealed          TEXT        NOT NULL,
+  revealed_at     TIMESTAMPTZ,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
 -- Arcade scores are product state and say so on every board: "arcade score · not on-chain".
 CREATE TABLE IF NOT EXISTS arcade_scores (
@@ -128,4 +206,9 @@ CREATE INDEX IF NOT EXISTS arcade_scores_board_idx
 
 CREATE INDEX IF NOT EXISTS arcade_scores_wallet_idx
   ON arcade_scores (wallet, created_at DESC);
+
+-- Slice 7 added three columns to tables slice 1 may already have created. Both forms are here on
+-- purpose: the CREATE above is what a fresh database gets, and these are what an existing one needs.
+ALTER TABLE duel_matches ADD COLUMN IF NOT EXISTS cards JSONB;
+ALTER TABLE duel_matches ADD COLUMN IF NOT EXISTS refund_reason TEXT;
 `;

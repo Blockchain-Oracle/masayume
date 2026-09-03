@@ -175,3 +175,31 @@ export function announceDeparture(ctx: RoomContext, connection: RoomConnection):
   const presence = ctx.hub.presenceOf(key);
   if (presence) ctx.hub.broadcast(key, presence);
 }
+
+/**
+ * Re-sends every connection in a match's room a whole snapshot.
+ *
+ * This is how the projector answers an event it cannot translate into a delta — a deck reveal, whose
+ * log carries market ids where a stage needs Windows. Building it once and addressing it per connection
+ * costs one chain read rather than one per player, and every player lands on identical state, which is
+ * the property a delta cannot promise.
+ */
+export async function resnapshotRoom(ctx: RoomContext, matchId: Bytes32): Promise<number> {
+  const ref = roomRef(ctx.chainId, ctx.arena, matchId);
+  const built = await buildMatchSnapshot(matchId, ctx.chainId);
+  if (!built.ok) {
+    ctx.log(`${matchId}: cannot re-snapshot the room: ${built.why}`);
+    return 0;
+  }
+  if (built.warning) ctx.log(built.warning);
+
+  const state = encodeMatchState(built.state);
+  const serverTimeMs = marketsProvider.nowMs();
+  let sent = 0;
+  for (const connection of ctx.hub.connections()) {
+    if (connection.room?.key !== ref.key) continue;
+    ctx.hub.send(connection, { type: "snapshot", serverTimeMs, wallet: connection.wallet, room: ref, state });
+    sent += 1;
+  }
+  return sent;
+}

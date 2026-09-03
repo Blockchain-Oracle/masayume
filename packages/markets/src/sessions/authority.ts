@@ -25,6 +25,8 @@ export type AuthorityKind =
   | "leverage-keeper"
   /** Claim/settlement advancement. Cannot redirect a payout. */
   | "claim-actor"
+  /** The duel arena's settler: cranks lock, settle, finalize and refund, all of which anyone may crank. */
+  | "game-settler"
   /** Pays policy-approved gas. Never has user-fund authority. */
   | "sponsor";
 
@@ -39,6 +41,11 @@ const DELEGATED: ReadonlySet<AuthorityKind> = new Set<AuthorityKind>([
   "claim-actor",
   "sponsor",
 ]);
+
+/**
+ * `game-settler` is deliberately absent from that set. It acts on nobody's behalf: every call it makes
+ * is permissionless, so there is no grant to hold and nothing it could do that a player could not.
+ */
 
 export function isDelegated(authority: AuthorityKind): boolean {
   return DELEGATED.has(authority);

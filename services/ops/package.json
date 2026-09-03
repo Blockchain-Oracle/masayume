@@ -8,7 +8,8 @@
     "start": "tsx src/main.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "spike:room": "tsx src/spike/room-drive.ts",
-    "spike:arena-open": "tsx src/spike/arena-open.ts"
+    "spike:arena-open": "tsx src/spike/arena-open.ts",
+    "spike:duel-live": "tsx src/spike/duel-live.ts"
   },
   "dependencies": {
     "@masayume/core": "workspace:*",
@@ -21,6 +22,7 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "@types/ws": "^8.18.1",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

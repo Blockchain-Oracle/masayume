@@ -151,6 +151,45 @@ export function stakeTierIdOf(tier: number): StakeTierId {
 }
 
 /**
+ * Everything the arena ever says, as data — `IGameArena`'s events in its own vocabulary.
+ *
+ * The projector reads these rather than raw logs, so exactly one module knows the ABI and everything
+ * downstream reasons about a match instead of about a topic. `MatchJoined` has no client message on
+ * purpose: a joined match is still `committed` to both players, and the reveal that follows within
+ * seconds is what they actually see change.
+ */
+export type ArenaEvent =
+  | { kind: "created"; matchId: Bytes32; creator: Address; tier: number; potBase: bigint; deckHash: Bytes32; deckSize: number; joinDeadlineSec: number }
+  | { kind: "joined"; matchId: Bytes32; challenger: Address; potBase: bigint; revealDeadlineSec: number }
+  | { kind: "revealed"; matchId: Bytes32; policyVersion: number; cards: readonly MarketId[]; pickDeadlineSec: number }
+  | {
+      kind: "picked";
+      matchId: Bytes32;
+      player: Address;
+      marketId: MarketId;
+      cardIndex: number;
+      pick: Pick;
+      quantity: bigint;
+      costBase: bigint;
+      refundBase: bigint;
+    }
+  /** `forfeitedBy` is the seat that never finished; null when both did and the match is simply settling. */
+  | { kind: "locked"; matchId: Bytes32; status: ArenaStatus; forfeitedBy: Address | null }
+  | { kind: "settled"; matchId: Bytes32; player: Address; marketId: MarketId; cardIndex: number; payoutBase: bigint; pnlBase: bigint }
+  | { kind: "finalized"; matchId: Bytes32; winner: Address | null; creatorPnlBase: bigint; challengerPnlBase: bigint; potAwardedBase: bigint }
+  | { kind: "refunded"; matchId: Bytes32; reason: RefundReason; perPlayerBase: bigint }
+  | { kind: "claimed"; player: Address; amountBase: bigint; by: Address };
+
+/** One event with the chain identity that orders it — and the identity the database inserts against. */
+export interface ArenaEventLog {
+  event: ArenaEvent;
+  blockNumber: bigint;
+  txHash: Bytes32;
+  logIndex: number;
+  blockTimeSec: number;
+}
+
+/**
  * Everything a duel ever asks the chain to do, as data. The permissionless ones are marked: any caller
  * may crank them, and the money still goes where the arena already recorded it should.
  */

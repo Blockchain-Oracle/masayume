@@ -4,6 +4,7 @@ export * from "./deck";
 export * from "./lifecycle";
 export * from "./limits";
 export * from "./matchmaking";
+export * from "./projection";
 export * from "./protocol";
 export * from "./rating";
 export * from "./room-token";

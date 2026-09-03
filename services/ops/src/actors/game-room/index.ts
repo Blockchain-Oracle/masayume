@@ -1,7 +1,9 @@
+import { activeMatchFor } from "@masayume/db";
+import type { Address, Bytes32 } from "@masayume/core/types";
 import { ensureMarkets, parseMarketsEnv } from "@masayume/markets";
 import { resolveArenaDeployment } from "@masayume/markets/games";
 import { readRoomEnv, ROOM_ENV } from "./env";
-import { createRoomHub, type RoomHub } from "./hub";
+import { createRoomHub } from "./hub";
 import type { RoomContext } from "./handlers";
 import { startRoomServer } from "./server";
 
@@ -15,11 +17,11 @@ type Log = (why: string) => void;
  * applies to a missing key. And with no `GameArena` on the configured chain there is no match to
  * reconstruct, so a room would be a socket that can only ever answer "unknown match".
  *
- * The hub is returned so the projector and the settler can broadcast into rooms without either of them
- * owning the transport: chain events reach a browser through this one socket registry, and nothing else
- * in ops writes to a client.
+ * The context is returned so the projector and the settler can broadcast into rooms without either of
+ * them owning the transport: chain events reach a browser through this one socket registry, and nothing
+ * else in ops writes to a client.
  */
-export async function startGameRoom(log: Log): Promise<RoomHub | null> {
+export async function startGameRoom(log: Log): Promise<RoomContext | null> {
   const env = readRoomEnv();
   if (!env.secret) {
     log(`no ${ROOM_ENV.secret} of at least 16 characters; the duel room is not listening`);
@@ -40,10 +42,17 @@ export async function startGameRoom(log: Log): Promise<RoomHub | null> {
     chainId: deployment.chainId,
     arena: deployment.gameArena,
     log,
-    // Both arrive in the slices that own them; until then the queue refuses honestly and `hello`
-    // answers from the match id the browser already knows rather than from a directory.
+    /** The matchmaker arrives with the queue; until then `queue.join` refuses honestly. */
     matchmaker: null,
-    directory: null,
+    /**
+     * A browser that has lost its own memory asks the projection what it is in. Without a database the
+     * answer is "nothing I can prove", and the client falls back to the match id it already holds —
+     * never to a guess.
+     */
+    directory: {
+      activeMatchFor: async (wallet: Address) =>
+        (await activeMatchFor(wallet, deployment.chainId, deployment.gameArena)) as Bytes32 | null,
+    },
   };
 
   const server = startRoomServer({ ctx, env: { ...env, secret: env.secret } });
@@ -52,5 +61,5 @@ export async function startGameRoom(log: Log): Promise<RoomHub | null> {
   const stop = () => void server.close().then(() => log("closed"));
   process.once("SIGINT", stop);
   process.once("SIGTERM", stop);
-  return hub;
+  return ctx;
 }

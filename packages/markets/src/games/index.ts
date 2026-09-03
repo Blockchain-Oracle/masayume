@@ -1,5 +1,6 @@
 export { resolveArenaDeployment } from "./deployment";
 export { diagnoseArena } from "./errors";
+export { arenaHeadBlock, listArenaEvents } from "./logs";
 export {
   cardsOutstanding,
   getArenaCredit,
