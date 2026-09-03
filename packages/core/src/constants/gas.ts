@@ -35,10 +35,14 @@ export const GAS_CEILING: Record<GasLane, bigint> = {
   // (one book walk, one IOC across a live maker's level, the credit sweep); settle 487,256, sweep 249,887, credit 268,553;
   // the owner's withdraw 85,992. A 4M ceiling leaves the mint twice its room and keeps the desk key's envelope at 0.29 STT a send.
   private: 4_000_000n,
-  // Measured on a Shannon fork 2026-09-03 (GameArena, three live 1h/4h Windows, six confirmed picks):
-  // createMatch 185,484; joinMatch 17,909; a three-card revealDeck 189,470; the worst placePick 463,270
-  // (one book walk, one IOC across a live maker's levels, the credit sweep); the worst settleCard 498,313
-  // (two redemptions through the module); finalize 9,727. A 4M ceiling is eight times the worst lane, which
-  // leaves room for a five-card reveal and a deeper book without a redeploy of the envelope.
-  arena: 4_000_000n,
+  // GameArena (0xec71…f0dF). Measured LIVE on Shannon 2026-09-03: createMatch 1,104,046; cancelMatch 54,343.
+  // Measured on a fork the same day (three live Windows, six confirmed picks): createMatch 185,484; joinMatch
+  // 17,909; a three-card revealDeck 189,470; the worst placePick 463,270; the worst settleCard 498,313;
+  // finalize 9,727. Fork gas is NOT live gas — the same createMatch ran 6x on Shannon, because Foundry replays
+  // Shannon's state under the standard EVM schedule and Somnia charges far more for storage. So the ceiling is
+  // anchored on the closest lane already measured live instead: PrivateDesk's mint, one book walk + one IOC +
+  // the sweep, at 1,917,880. A pick is that plus one record. 8M rather than 4M because the failure is
+  // asymmetric: an under-provisioned pick forfeits a card and its side-pot, while over-provisioning only asks
+  // the player for 0.048 STT of envelope instead of 0.024.
+  arena: 8_000_000n,
 };
