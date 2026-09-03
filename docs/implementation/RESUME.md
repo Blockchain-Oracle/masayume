@@ -52,6 +52,7 @@ session; context/48) — every Stage 5 item is done. Next: the user's browser re
 | `38f5e65` | Stage 5 — `LeverageReserve` contract, port, the Ticket's live leverage, the portfolio's boosts, the keeper, fork-verified on Shannon (context/45); not deployed |
 | `8679953` | Stage 5 — `RangeReserve`, `MarketMakerVault` and `LeverageReserve` deployed and supplied on Shannon; the module regenerated |
 | `0879bf7` | Stage 5 — the boost stake-first and the reserve redeployed at `0x5484…2D23`; the leverage surfaces redesigned with 21st.dev; range headroom; the actors load the collateral |
+| `893779a` | Stage 5 — `/surface` on the venue's book (structure, depth, slippage ladder, term structure); `@masayume/core/surface`, `useBooks`; the crossed-book finding (context/48) |
 | `9a2637f` | Stage 5 — the maker vault books the venue's exact escrow (its lazy refund panicked the first vault) and is redeployed at `0xc904…9e79`; the maker lane measured |
 | `5f54e5e` | Stage 5 — `PrivateDesk` contract (the budget, the slot, the pool between), fork-verified on Shannon; the desk's resumable open and cash-out in the port (context/46) |
 | `cc4490e` | Stage 5 — the private route's surfaces from source; the desk in `/api/private/*`; `PrivateDesk` deployed on Shannon at `0x4356…7c67` |
