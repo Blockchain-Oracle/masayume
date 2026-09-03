@@ -3,6 +3,7 @@ import { isOk } from "@masayume/core/schemas";
 import type { Hex } from "@masayume/core/types";
 import { closeRuntime, createMemoryJournal, createSubmitterSession, ensureMarkets, parseMarketsEnv } from "@masayume/markets";
 import { getArenaState, resolveArenaDeployment, writeGameArena } from "@masayume/markets/games";
+import { finish } from "./finish";
 
 /**
  * Reads the arena's parameters, and with `APPLY=1` writes the owner's approved set.
@@ -69,7 +70,9 @@ async function main(): Promise<void> {
   await closeRuntime();
 }
 
-void main().catch((error: unknown) => {
-  console.error(error);
-  process.exit(1);
-});
+void main()
+  .then(() => finish(0))
+  .catch((error: unknown) => {
+    console.error(error);
+    finish(1);
+  });

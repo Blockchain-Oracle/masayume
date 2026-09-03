@@ -4,6 +4,7 @@ import { isOk } from "@masayume/core/schemas";
 import { closeRuntime, ensureMarkets, marketsProvider, parseMarketsEnv, resolveVenueId } from "@masayume/markets";
 import { getArenaState } from "@masayume/markets/games";
 import { dealHeadroomSec } from "../actors/matchmaker/deckmaster";
+import { finish } from "./finish";
 
 /**
  * How often can a deck actually be dealt on this venue?
@@ -103,7 +104,9 @@ async function main(): Promise<void> {
   await closeRuntime();
 }
 
-void main().catch((error: unknown) => {
-  console.error(error);
-  process.exit(1);
-});
+void main()
+  .then(() => finish(0))
+  .catch((error: unknown) => {
+    console.error(error);
+    finish(1);
+  });

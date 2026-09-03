@@ -46,9 +46,19 @@ Shannon by three spikes (`spike:room`, `spike:duel-live`, `spike:queue`). Next i
 stage.** **The owner answered the deck-supply question the same session** and the arena's parameters were
 changed on chain to match (`setParams` `0x261fe1cc…2b13`, gas 93,678, read back from Shannon): join
 180→60s, reveal 120→45s, `minDeckSize` 3→2. That took the duel from **dealable 40% of the time to
-89%**, measured by `spike:deck-supply`. The one thing still waiting on a go: **a full picked-through
-duel has not been driven live**, because each pick spends real tUSDC (about 0.04 for a two-card duel at
-a cent a card). context/51 §4 is the rest of what is open. The 21st.dev
+89%**, measured by `spike:deck-supply`.
+**Seventeenth session (2026-09-03, context/54): the duel was driven through a real pick.**
+`spike:duel-full` deals, creates, joins, reveals from the journal, plays every card on both sides and
+then settles, finalizes and claims; `PHASE` bounds the spend and `MATCH_ID` resumes a drive interrupted
+during the wait. Three defects came out of it — the queue's countdown was `null` in the dead zone
+because `candidates()` filtered out the very Windows whose successors make the next deck (now 7s where
+it was null); two seats contend for one binary pool's liquidity, so a pick can lose a race and must
+retry with a loosening floor (`spike/pick.ts`); and the spikes never exited, which is why an old spike
+piped through `tail` printed nothing at all (`spike/finish.ts`). **One decision is open and it is the
+owner's** — `minCardLifeSec` is a floor at reveal while the pick window runs 180s after it, so the last
+120s of a slow player's pick window is refusable; closing that means a 570s deal headroom and 89.2% →
+84.2% availability (context/54 §5 has the four-way measurement and the recommendation).
+context/51 §4 is the rest of what is open. The 21st.dev
 redesign pass on the other surfaces (the leverage ones are done) and the user's own look at Stage 5 (the ledger's
 Needs-user-review rows are all still open) follow.
 
@@ -101,8 +111,9 @@ Needs-user-review rows are all still open) follow.
 | `0108b5d` | Stage 6 slice 7c — the projector (log → rows and room messages, replay-safe) and the settler (every permissionless crank, tested preconditions) |
 | `a897e28` | Stage 6 slice 7d — the queue, the seed commit-reveal, the sealed deck journalled before any commitment; three defects the live drive found |
 | `a724b94` | Read path 4 — boot readiness through context (the `skipToken` double-observer produced a "Missing queryFn" error instead of the real RPC failure); the sixteen-item Explore menu bounded to `--available-height` so its last five destinations are reachable |
+| `7889340` | Stage 6 — `spike:duel-full`, the duel driven end to end; the deckmaster's countdown un-blinded, the pick retry, the spike exit (context/54) |
 
-Everything is green: `pnpm typecheck`, `pnpm invariants` (14/14, 0 warnings), `pnpm test` (222),
+Everything is green: `pnpm typecheck`, `pnpm invariants` (14/14, 0 warnings), `pnpm test` (278),
 `forge test --no-match-contract Fork` (213), `pnpm build`.
 
 **The duel room** (`services/ops`) needs `ROOM_TOKEN_SECRET` (the same value web mints with — a different
@@ -113,7 +124,11 @@ material is journalled to `GAME_DECK_JOURNAL` (default `.masayume/deck-journal.j
 spikes are `pnpm --filter @masayume/ops spike:room` (transport, `MATCH_ID` optional),
 `spike:queue` (two sockets through the whole ceremony) and `PLAYER_KEY=… MATCH_ID=… FROM_BLOCK=…
 spike:duel-live` (a real transaction reaching a live socket); `PLAYER_KEY=… CHALLENGER=… spike:arena-open`
-opens a free-tier match and prints the venue's candidate table.
+opens a free-tier match and prints the venue's candidate table. **`CREATOR_KEY=… CHALLENGER_KEY=…
+spike:duel-full` drives a whole duel** — `PHASE=preflight` reads only and prices the drive,
+`PHASE=picks` stops at the lock, and `MATCH_ID=…` resumes one interrupted during the print wait;
+`spike:pick-one` places a single card with retry. Both need `GAME_DECK_KEY` and write to
+`GAME_DECK_JOURNAL`.
 
 **The live actors** (`pnpm --filter @masayume/ops start` with `DRY_RUN=0 MAKER_PRIVATE_KEY=… LEVERAGE_KEEPER_PRIVATE_KEY=…`,
 keys in `~/.config/masayume/market-maker.env` / `leverage-keeper.env`) ran on Shannon on 2026-09-02: the maker quoted

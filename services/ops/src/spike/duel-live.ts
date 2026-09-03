@@ -7,6 +7,7 @@ import { WebSocket } from "ws";
 import { startDuelProjector } from "../actors/duel-projector";
 import { startGameRoom } from "../actors/game-room";
 import { roomMac } from "../actors/game-room/token";
+import { finish } from "./finish";
 
 /**
  * The whole chain-to-browser path, live: a socket joins a real Shannon match, a real transaction changes
@@ -111,7 +112,9 @@ async function main(): Promise<void> {
   setTimeout(() => process.exit(process.exitCode ?? 0), 500).unref();
 }
 
-void main().catch((error: unknown) => {
-  console.error(error);
-  process.exit(1);
-});
+void main()
+  .then(() => finish(0))
+  .catch((error: unknown) => {
+    console.error(error);
+    finish(1);
+  });

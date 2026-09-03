@@ -6,6 +6,7 @@ import type { Address, Bytes32, Hex, MarketId } from "@masayume/core/types";
 import { closeRuntime, createMemoryJournal, createSubmitterSession, ensureMarkets, loadCollateral, marketsProvider, parseMarketsEnv, resolveVenueId } from "@masayume/markets";
 import { getArenaState, sendArenaIntent } from "@masayume/markets/games";
 import { keccak256 } from "viem";
+import { finish } from "./finish";
 
 /**
  * Opens one free-tier match on the deployed arena, so the room's reconnect can be proven against a real
@@ -97,7 +98,9 @@ async function main(): Promise<void> {
   await closeRuntime();
 }
 
-void main().catch((error: unknown) => {
-  console.error(error);
-  process.exit(1);
-});
+void main()
+  .then(() => finish(0))
+  .catch((error: unknown) => {
+    console.error(error);
+    finish(1);
+  });
