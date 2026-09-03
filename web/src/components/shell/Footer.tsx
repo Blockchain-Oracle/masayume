@@ -1,11 +1,13 @@
+import Link from "next/link";
+
 export default function Footer() {
   return (
     <footer className="footer">
       <div className="container">
         <div className="footer-row">
-          <a href="/docs" data-cursor="hover">
+          <Link href="/docs" data-cursor="hover">
             Docs
-          </a>
+          </Link>
         </div>
       </div>
     </footer>

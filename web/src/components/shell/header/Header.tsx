@@ -1,103 +1,78 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useState } from "react";
 import MasayumeMark from "../MasayumeMark";
 import ThemeToggle from "../ThemeToggle";
+import { DesktopNavMenu } from "./DesktopNavMenu";
 import { HeaderAccount } from "./HeaderAccount";
 import { MobileBottomNav } from "./MobileBottomNav";
-import { isActiveHref, PRIMARY_NAV, SECONDARY_NAV } from "./nav-items";
-import { useFloatingMenus } from "./useFloatingMenus";
+import { DESKTOP_NAV, isActiveNavItem, type NavGroup } from "./nav-items";
+
+const MOBILE_MAX_WIDTH = 720;
 
 export default function Header() {
   const pathname = usePathname();
-  const [showMore, setShowMore] = useState(false);
-  const moreMenuRef = useRef<HTMLDivElement>(null);
-  const mobileMoreRef = useRef<HTMLDivElement>(null);
-  const refs = useRef<ReadonlyArray<RefObject<HTMLElement | null>>>([moreMenuRef, mobileMoreRef]);
-  useFloatingMenus(refs.current, () => setShowMore(false));
+  const [openGroup, setOpenGroup] = useState<NavGroup["id"] | null>(null);
 
-  // Navigating away closes anything floating, so a menu never survives a route change.
+  useEffect(() => setOpenGroup(null), [pathname]);
+
   useEffect(() => {
-    setShowMore(false);
-  }, [pathname]);
-
-  const secondaryActive = SECONDARY_NAV.some((link) => isActiveHref(pathname, link.href));
+    const closeAtMobileWidth = () => {
+      if (window.innerWidth <= MOBILE_MAX_WIDTH) setOpenGroup(null);
+    };
+    closeAtMobileWidth();
+    window.addEventListener("resize", closeAtMobileWidth);
+    return () => window.removeEventListener("resize", closeAtMobileWidth);
+  }, []);
 
   return (
     <>
       <header className="header">
-        <a className="logo" href="/markets" aria-label="Masayume markets" data-cursor="hover">
-          <span className="logo-mark">
-            <MasayumeMark />
-          </span>
+        <Link className="logo" href="/markets" aria-label="Masayume markets" data-cursor="hover">
+          <span className="logo-mark"><MasayumeMark /></span>
           <span>MASAYUME</span>
-        </a>
+        </Link>
 
         <nav className="nav" aria-label="Primary navigation">
           <div className="nav-links">
-            {PRIMARY_NAV.map((link) => {
-              const active = isActiveHref(pathname, link.href);
+            {DESKTOP_NAV.map((entry) => {
+              if (entry.kind === "group") {
+                return (
+                  <DesktopNavMenu
+                    key={entry.group.id}
+                    group={entry.group}
+                    pathname={pathname}
+                    open={openGroup === entry.group.id}
+                    onOpenChange={(open) => setOpenGroup(open ? entry.group.id : null)}
+                  />
+                );
+              }
+
+              const active = isActiveNavItem(pathname, entry.item);
               return (
-                <a
-                  key={link.name}
-                  href={link.href}
+                <Link
+                  key={entry.item.id}
+                  href={entry.item.href}
                   className={`nav-link ${active ? "active" : ""}`}
                   aria-current={active ? "page" : undefined}
                   data-cursor="hover"
                 >
-                  {link.name}
-                  {link.beta && <sup className="nav-beta">beta</sup>}
-                </a>
+                  {entry.item.name}
+                </Link>
               );
             })}
-
-            <div className="nav-more" ref={moreMenuRef}>
-              <button
-                type="button"
-                className={`nav-link nav-more-button ${secondaryActive ? "active" : ""} ${showMore ? "open" : ""}`}
-                onClick={() => setShowMore((prev) => !prev)}
-                aria-haspopup="menu"
-                aria-expanded={showMore}
-                aria-controls="secondary-nav-menu"
-                data-cursor="hover"
-              >
-                More
-                <ChevronDown aria-hidden="true" />
-              </button>
-              {showMore && (
-                <div className="nav-more-menu" id="secondary-nav-menu" role="menu">
-                  {SECONDARY_NAV.map((link) => {
-                    const active = isActiveHref(pathname, link.href);
-                    const Icon = link.icon;
-                    return (
-                      <a
-                        key={link.name}
-                        href={link.href}
-                        className={`nav-more-link ${active ? "active" : ""}`}
-                        role="menuitem"
-                        aria-current={active ? "page" : undefined}
-                        data-cursor="hover"
-                      >
-                        {Icon && <Icon aria-hidden="true" />}
-                        <span>{link.name}</span>
-                      </a>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
           </div>
 
           <div className="header-right">
             <ThemeToggle />
-            <HeaderAccount onOpenMenu={() => setShowMore(false)} />
+            <HeaderAccount onOpenMenu={() => setOpenGroup(null)} />
           </div>
         </nav>
       </header>
 
-      <MobileBottomNav ref={mobileMoreRef} showMore={showMore} onToggleMore={() => setShowMore((prev) => !prev)} />
+      <MobileBottomNav />
     </>
   );
 }

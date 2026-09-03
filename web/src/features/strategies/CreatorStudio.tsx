@@ -2,6 +2,7 @@
 
 import { describeSpec, encodeStrategyMetadata } from "@masayume/core/strategies";
 import { parseDecimalToBaseUnits } from "@masayume/core/units";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { notify } from "@/lib/toast";
 import { AgentPortrait } from "./AgentPortrait";
@@ -73,9 +74,9 @@ export function CreatorStudio({ writes, decimals, symbol, asset, houseRunner }: 
               {S.launch}
             </button>
           )}
-          <a href="/markets?sensei=1" className="strat-sensei">
+          <Link href="/markets?sensei=1" className="strat-sensei">
             {S.sensei}
-          </a>
+          </Link>
         </div>
       </div>
 

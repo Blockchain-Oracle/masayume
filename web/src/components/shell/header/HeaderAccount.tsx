@@ -3,6 +3,7 @@
 import { isOk } from "@masayume/core/schemas";
 import { formatBaseUnits } from "@masayume/core/units";
 import { ConnectButton as RainbowConnectButton } from "@rainbow-me/rainbowkit";
+import Link from "next/link";
 import { useRef, useState, type RefObject } from "react";
 import { useBalancePlate } from "@/features/markets/balance";
 import { BANNER, CONNECT } from "@/lib/copy";
@@ -93,12 +94,12 @@ export function HeaderAccount({ onOpenMenu }: { onOpenMenu?: () => void }) {
                     <span className="val">{amount(sheet?.venueCreditBase ?? null)}</span>
                   </div>
                 </div>
-                <a href="/portfolio" className="header-account-link" role="menuitem" onClick={() => setOpen(false)}>
+                <Link href="/portfolio" className="header-account-link" role="menuitem" onClick={() => setOpen(false)}>
                   Portfolio
-                </a>
-                <a href="/claims" className="header-account-link" role="menuitem" onClick={() => setOpen(false)}>
+                </Link>
+                <Link href="/claims" className="header-account-link" role="menuitem" onClick={() => setOpen(false)}>
                   Claims
-                </a>
+                </Link>
               </div>
             )}
           </div>

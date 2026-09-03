@@ -7,6 +7,7 @@ import Footer from "./Footer";
 import GrainOverlay from "./GrainOverlay";
 import Header from "./header/Header";
 import Marquee from "./Marquee";
+import { MobileBottomNav } from "./header/MobileBottomNav";
 
 /**
  * Routes the reference renders WITHOUT the app's ticker, header and footer — each of those pages
@@ -28,6 +29,7 @@ export function ShellChrome({ children }: { children: ReactNode }) {
       <>
         <CustomCursor />
         <main className="page-island">{children}</main>
+        <MobileBottomNav />
       </>
     );
   }

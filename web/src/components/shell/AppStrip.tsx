@@ -11,6 +11,7 @@
 // no native build (native is Blocked — no native source), so claiming one would be false.
 // The installable PWA is real, and testnet collateral is a fact worth stating up front.
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { isIslandRoute } from "./ShellChrome";
 import { useEffect, useState } from "react";
 
@@ -67,7 +68,7 @@ export default function AppStrip() {
 
   return (
     <div className={`appstrip ${shown ? "is-in" : ""}`} role="region" aria-label="Install Masayume">
-      <a className="appstrip-msg" href="/download" data-cursor="hover">
+      <Link className="appstrip-msg" href="/download" data-cursor="hover">
         {/* A phone, not chevrons — the strip is about installing, so the mark is the thing
             itself. The pulse lives on the screen fill so it reads as a device waking up. */}
         <svg className="appstrip-lead" viewBox="0 0 14 20" aria-hidden="true">
@@ -85,7 +86,7 @@ export default function AppStrip() {
             <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </span>
-      </a>
+      </Link>
       <button
         type="button"
         className="appstrip-x"

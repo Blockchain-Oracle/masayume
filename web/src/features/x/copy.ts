@@ -40,15 +40,6 @@ export const TRADE_FROM_X = {
   title: "Trade from X",
   crumb: "/ X-trade",
   openApp: "open the app",
-  /** The strip routes like the app's primary nav (reference L95–102). */
-  nav: [
-    { href: "/markets", label: "Markets" },
-    { href: "/reels", label: "Reels" },
-    { href: "/earn", label: "Earn" },
-    { href: "/strategies", label: "Strategies" },
-    { href: "/leaderboard", label: "Leaderboard" },
-    { href: "/portfolio", label: "Portfolio" },
-  ],
   eyebrow: "X-trade",
   headline: "Trade by tweeting.",
   payoff: "Un⁠-⁠drainably.",

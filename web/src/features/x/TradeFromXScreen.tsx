@@ -9,6 +9,7 @@ import { ConnectButton } from "@/features/markets/wallet";
 import { useVenue } from "@/features/markets/useVenue";
 import { useWalletSession } from "@/lib/wallet-session";
 import { MARKETS_PATH } from "@/lib/routes";
+import { ISLAND_NAV } from "@/components/shell/header/nav-items";
 import { CapabilityReceipt } from "./CapabilityReceipt";
 import { TRADE_FROM_X, X_HANDLE } from "./copy";
 import { CustodyRail } from "./CustodyRail";
@@ -57,9 +58,9 @@ export function TradeFromXScreen() {
             MASAYUME <span className="xt-brand-crumb">{TRADE_FROM_X.crumb}</span>
           </Link>
           <nav className="xt-nav" aria-label="Primary">
-            {TRADE_FROM_X.nav.map((item) => (
+            {ISLAND_NAV.map((item) => (
               <Link key={item.href} href={item.href} className="xt-nav-link">
-                {item.label}
+                {item.name}
               </Link>
             ))}
           </nav>

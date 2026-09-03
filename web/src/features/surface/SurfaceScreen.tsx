@@ -3,6 +3,7 @@
 import { isOk, type Reading } from "@masayume/core/schemas";
 import type { LaneSet } from "@masayume/core/types";
 import { formatCadence } from "@masayume/core/market";
+import Link from "next/link";
 import { SectionHead } from "@/components/shell";
 import { ErrorState, ReadingBoundary, StaleTick } from "@/components/states";
 import { useChainNowMs } from "../markets/useChainNow";
@@ -42,9 +43,9 @@ export function SurfaceScreen() {
   return (
     <div className="container sf-page">
       <nav className="sf-crumbs" aria-label="Breadcrumb">
-        <a href="/">
+        <Link href="/">
           {SURFACE.crumbRoot}
-        </a>
+        </Link>
         <span className="sf-crumbs-sep">/</span>
         <span className="sf-crumbs-here">{SURFACE.crumb}</span>
       </nav>

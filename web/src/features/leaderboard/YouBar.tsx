@@ -1,4 +1,5 @@
 import { formatBaseUnits, shortHex } from "@masayume/core/units";
+import Link from "next/link";
 import { LEADERBOARD } from "./copy";
 import { glyphFromAddress } from "./glyph";
 import type { BoardData, BoardRanking } from "./protocol";
@@ -48,9 +49,9 @@ export function YouBar({ address, data }: YouBarProps) {
           <span className="v">{you ? String(you.trader.bestStreak).padStart(2, "0") : LEADERBOARD.dash}</span>
         </div>
       </div>
-      <a className="you-cta" href="/portfolio">
+      <Link className="you-cta" href="/portfolio">
         {words.cta}
-      </a>
+      </Link>
     </div>
   );
 }

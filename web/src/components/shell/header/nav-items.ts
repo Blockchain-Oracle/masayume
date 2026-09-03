@@ -1,77 +1,128 @@
 import {
+  Activity,
+  BarChart3,
   BookOpen,
   Bot,
+  ChartCandlestick,
   ChartLine,
   ChartNoAxesCombined,
+  CircleHelp,
+  Download,
   GalleryVerticalEnd,
   Gamepad2,
   MessageSquare,
   Newspaper,
+  ScanSearch,
   Sparkles,
   Trophy,
-  X as XLogo,
   WalletCards,
+  X as XLogo,
   type LucideIcon,
 } from "lucide-react";
 
-export type NavLink = {
+export type NavItem = {
+  id: string;
   name: string;
   href: string;
-  icon?: LucideIcon;
+  description: string;
+  icon: LucideIcon;
   beta?: boolean;
+  match?: { paths: readonly string[]; exact?: boolean };
 };
 
-// Earn is deliberately NOT in the nav, matching the reference.
-//
-// /earn still WORKS as a URL: anyone who has supplied capital needs a way back to their
-// money. It regains a nav slot when the vault it points at is live and accepting supply.
-export const PRIMARY_NAV: NavLink[] = [
-  { name: "Markets", href: "/markets" },
-  { name: "Reels", href: "/reels" },
-  // 'Create', not 'Earn'. The creator studio is about making — a card, a code, attribution
-  // on chain. It is renamed the day the builder-fee rail actually pays, not before.
-  { name: "Create", href: "/creator/studio" },
-  { name: "Strategies", href: "/strategies", beta: true },
-  // Games are a first-class Masayume destination (additive), so they take a slot of their
-  // own rather than displacing anything the reference already promised.
-  { name: "Games", href: "/games", icon: Gamepad2 },
-  { name: "Leaderboard", href: "/leaderboard", icon: Trophy },
-  { name: "Portfolio", href: "/portfolio" },
+export type NavSection = {
+  id: string;
+  name: string;
+  description: string;
+  items: readonly NavItem[];
+};
+
+export type NavGroup = {
+  id: "build" | "explore";
+  name: string;
+  description: string;
+  sections: readonly NavSection[];
+};
+
+export const NAV_ITEMS = {
+  markets: { id: "markets", name: "Markets", href: "/markets", description: "Trade live price windows.", icon: ChartLine, match: { paths: ["/markets", "/markets-live"] } },
+  reels: { id: "reels", name: "Reels", href: "/reels", description: "Scan market stories quickly.", icon: GalleryVerticalEnd },
+  games: { id: "games", name: "Games", href: "/games", description: "Play market-powered games.", icon: Gamepad2 },
+  portfolio: { id: "portfolio", name: "Portfolio", href: "/portfolio", description: "Track positions, money, and activity.", icon: WalletCards, match: { paths: ["/portfolio"], exact: true } },
+  create: { id: "create", name: "Create", href: "/creator/studio", description: "Create and publish a market.", icon: Sparkles, match: { paths: ["/creator/studio", "/creators"] } },
+  strategies: { id: "strategies", name: "Strategies", href: "/strategies", description: "Explore repeatable trading approaches.", icon: Bot, beta: true },
+  agents: { id: "agents", name: "Agents", href: "/agents", description: "Manage automated market agents.", icon: Bot },
+  xTrade: { id: "x-trade", name: "X-trade", href: "/trade-from-x", description: "Turn a post into a bounded trade.", icon: XLogo },
+  parlay: { id: "parlay", name: "Parlay", href: "/parlay", description: "Combine several market outcomes.", icon: ChartNoAxesCombined },
+  sensei: { id: "sensei", name: "Sensei", href: "/markets?sensei=1", description: "Ask the market assistant.", icon: MessageSquare, match: { paths: [] } },
+  leaderboard: { id: "leaderboard", name: "Leaderboard", href: "/leaderboard", description: "See the strongest verified records.", icon: Trophy },
+  stats: { id: "stats", name: "Stats", href: "/stats", description: "Inspect protocol and market activity.", icon: BarChart3 },
+  surface: { id: "surface", name: "Market Surface", href: "/surface", description: "Read the market structure at a glance.", icon: ScanSearch },
+  edge: { id: "edge", name: "Trader Edge", href: "/portfolio/edge", description: "Review your trading edge report.", icon: ChartCandlestick },
+  news: { id: "news", name: "News", href: "/news", description: "Follow the stories moving markets.", icon: Newspaper },
+  howItWorks: { id: "how-it-works", name: "How it works", href: "/how-it-works", description: "Understand the product from end to end.", icon: CircleHelp },
+  docs: { id: "docs", name: "Docs", href: "/docs", description: "Read technical and product documentation.", icon: BookOpen },
+  status: { id: "status", name: "Status", href: "/status", description: "Check connected services and contracts.", icon: Activity },
+  download: { id: "download", name: "Download", href: "/download", description: "Install Masayume as a web app.", icon: Download },
+} as const satisfies Record<string, NavItem>;
+
+const BUILD_SECTION: NavSection = {
+  id: "build",
+  name: "Build",
+  description: "Create and automate",
+  items: [NAV_ITEMS.create, NAV_ITEMS.strategies, NAV_ITEMS.agents, NAV_ITEMS.xTrade],
+};
+
+export const BUILD_GROUP: NavGroup = {
+  id: "build",
+  name: "Build",
+  description: "Create markets and automate how you trade.",
+  sections: [BUILD_SECTION],
+};
+
+export const EXPLORE_GROUP: NavGroup = {
+  id: "explore",
+  name: "Explore",
+  description: "Trade tools, proof, and product knowledge.",
+  sections: [
+    { id: "trade", name: "Trade", description: "More ways to make a call", items: [NAV_ITEMS.parlay, NAV_ITEMS.sensei] },
+    { id: "proof", name: "Proof", description: "Records and market evidence", items: [NAV_ITEMS.leaderboard, NAV_ITEMS.stats, NAV_ITEMS.surface, NAV_ITEMS.edge] },
+    { id: "learn", name: "Learn", description: "News, guidance, and help", items: [NAV_ITEMS.news, NAV_ITEMS.howItWorks, NAV_ITEMS.docs, NAV_ITEMS.status, NAV_ITEMS.download] },
+  ],
+};
+
+export type DesktopNavEntry = { kind: "link"; item: NavItem } | { kind: "group"; group: NavGroup };
+
+export const DESKTOP_NAV: readonly DesktopNavEntry[] = [
+  { kind: "link", item: NAV_ITEMS.markets },
+  { kind: "link", item: NAV_ITEMS.reels },
+  { kind: "link", item: NAV_ITEMS.games },
+  { kind: "group", group: BUILD_GROUP },
+  { kind: "group", group: EXPLORE_GROUP },
+  { kind: "link", item: NAV_ITEMS.portfolio },
 ];
 
-export const SECONDARY_NAV: NavLink[] = [
-  // Opens the Sensei drawer rather than a page of its own, so the same assistant cannot
-  // exist twice behind two layouts and drift.
-  { name: "Sensei", href: "/markets?sensei=1", icon: MessageSquare },
-  { name: "X-trade", href: "/trade-from-x", icon: XLogo },
-  { name: "Parlay", href: "/parlay", icon: ChartNoAxesCombined },
-  // The reference cut its /news route as "broken" (93d09c1) but kept the feed component and
-  // its RSS route; here the wire is live, so it gets the More slot the reference once gave it.
-  { name: "News", href: "/news", icon: Newspaper },
-  { name: "Docs", href: "/docs", icon: BookOpen },
+export const MOBILE_NAV: readonly NavItem[] = [NAV_ITEMS.markets, NAV_ITEMS.reels, NAV_ITEMS.games, NAV_ITEMS.portfolio];
+export const MOBILE_DRAWER_SECTIONS: readonly NavSection[] = [BUILD_SECTION, ...EXPLORE_GROUP.sections];
+export const MOBILE_OVERFLOW: readonly NavItem[] = MOBILE_DRAWER_SECTIONS.flatMap((section) => section.items);
+
+/** The X-trade island keeps its own visual chrome but reads routes from this same registry. */
+export const ISLAND_NAV: readonly NavItem[] = [
+  NAV_ITEMS.markets,
+  NAV_ITEMS.reels,
+  NAV_ITEMS.games,
+  NAV_ITEMS.strategies,
+  NAV_ITEMS.leaderboard,
+  NAV_ITEMS.portfolio,
 ];
 
-/**
- * The phone's bottom bar. Anything primary that does not fit here is derived into the More
- * sheet below, so a link can never be primary on desktop and unreachable on mobile.
- */
-export const MOBILE_NAV: NavLink[] = [
-  { name: "Markets", href: "/markets", icon: ChartLine },
-  { name: "Reels", href: "/reels", icon: GalleryVerticalEnd },
-  { name: "Games", href: "/games", icon: Gamepad2 },
-  { name: "Create", href: "/creator/studio", icon: Sparkles },
-  { name: "Strategies", href: "/strategies", icon: Bot },
-  { name: "Portfolio", href: "/portfolio", icon: WalletCards },
-];
+export function isActiveNavItem(pathname: string | null, item: NavItem): boolean {
+  if (!pathname) return false;
+  const fallbackPath = item.href.split("?")[0] ?? item.href;
+  const match = item.match ?? { paths: [fallbackPath] };
+  return match.paths.some((path) => pathname === path || (!match.exact && pathname.startsWith(`${path}/`)));
+}
 
-/** Whatever the bottom bar cannot fit, plus the secondary set — by construction. */
-export const MOBILE_OVERFLOW: NavLink[] = [
-  ...PRIMARY_NAV.filter((link) => !MOBILE_NAV.some((tab) => tab.href === link.href)),
-  ...SECONDARY_NAV,
-];
-
-export function isActiveHref(pathname: string | null, href: string): boolean {
-  const path = href.split("?")[0] ?? href;
-  if (path === "/") return pathname === "/";
-  return pathname === path || (pathname?.startsWith(`${path}/`) ?? false);
+export function isActiveNavGroup(pathname: string | null, group: NavGroup): boolean {
+  return group.sections.some((section) => section.items.some((item) => isActiveNavItem(pathname, item)));
 }

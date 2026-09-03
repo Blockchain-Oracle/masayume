@@ -2,6 +2,7 @@
 
 import { rankAgents, type StrategyRecord } from "@masayume/core/strategies";
 import { addressUrl } from "@masayume/core/urls";
+import Link from "next/link";
 import { useMemo } from "react";
 import { CapabilityPending } from "@/components/shell";
 import { ReadingBoundary } from "@/components/states";
@@ -48,9 +49,9 @@ export function AgentsScreen() {
   return (
     <div className="container pt-7 pb-12">
       <div className="strat-mono-11 mb-7 flex items-center gap-3 tracking-[0.18em] uppercase text-gray-500">
-        <a href="/" className="transition-colors hover:text-ink">
+        <Link href="/" className="transition-colors hover:text-ink">
           {AGENTS.crumb.root}
-        </a>
+        </Link>
         <span className="text-gray-700">/</span>
         <span className="text-ink">{AGENTS.crumb.here}</span>
       </div>

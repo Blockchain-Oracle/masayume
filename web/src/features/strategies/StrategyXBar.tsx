@@ -1,4 +1,5 @@
 import { ArrowUpRightIcon, Link2Icon, XIcon } from "lucide-react";
+import Link from "next/link";
 import { STRATEGIES } from "./copy";
 import "./strategies.css";
 
@@ -22,9 +23,9 @@ export function StrategyXBar() {
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        <a href="/claim" className="strat-xbar-btn text-ink">
+        <Link href="/claim" className="strat-xbar-btn text-ink">
           <Link2Icon aria-hidden="true" /> {STRATEGIES.x.connect}
-        </a>
+        </Link>
         <a href={DISCOVER_URL} target="_blank" rel="noreferrer" className="strat-xbar-btn strat-xbar-btn--v">
           {STRATEGIES.x.browse} <ArrowUpRightIcon aria-hidden="true" />
         </a>
