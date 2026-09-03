@@ -60,17 +60,16 @@ export const privateClaimSchema = z.object({
   issuedAtMs: z.number().int().positive(),
 });
 
-/** `POST /api/private/open` — the bet the owner signed, verbatim, plus the signature that proves it. */
+/**
+ * `POST /api/private/open` — the bet the owner signed, plus the signature that proves it. Only the facts
+ * travel: the route rebuilds the message from the chain's own Window and the collateral, so a caller's
+ * strings can never describe a different bet from the one charged.
+ */
 export const privateOpenRequestSchema = z.object({
   owner: addressSchema,
   marketId: bytes32Schema,
-  asset: z.string().min(1).max(16),
-  cadenceText: z.string().min(1).max(16),
-  expirySec: z.number().int().positive(),
   side: z.enum(["up", "down"]),
   stakeBase: decimalString,
-  stakeText: z.string().min(1).max(32),
-  symbol: z.string().min(1).max(16),
   /** The owner's guard against a book that moved since the quote: fewer contracts than this and the desk refunds. */
   minQuantityRaw: decimalString,
   issuedAtMs: z.number().int().positive(),

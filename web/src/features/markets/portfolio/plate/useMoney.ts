@@ -3,7 +3,7 @@
 import { isOk } from "@masayume/core/schemas";
 import type { Address } from "@masayume/core/types";
 import { shortHex } from "@masayume/core/units";
-import { useVaultSnapshot } from "@masayume/markets/react";
+import { usePrivateBudget, usePrivateDesk, useVaultSnapshot } from "@masayume/markets/react";
 import { useXGrant, useXStatus } from "@/features/x";
 import { useWalletSession } from "@/lib/wallet-session";
 import { useBalancePlate } from "../../balance";
@@ -43,6 +43,8 @@ export function useMoney(): Money {
   const vault = useVaultSnapshot(address);
   const x = useXStatus();
   const xGrant = useXGrant();
+  const desk = usePrivateDesk();
+  const privateBudget = usePrivateBudget(address);
 
   const reading = plate.kind === "connected" ? plate.reading : null;
   const sheet = reading && isOk(reading) ? reading.value : null;
@@ -68,12 +70,16 @@ export function useMoney(): Money {
             ? PLATE.pools.x.unlinked
             : null,
     });
-    if (snapshot && snapshot.account.privateAvailableBase > 0n) {
+    // The desk's balance plus the vault's private bucket, as the reference summed its tickets and the vault.
+    const deskDeployed = desk !== null && isOk(desk) && desk.value !== null;
+    const deskBase = privateBudget && isOk(privateBudget) ? privateBudget.value.balanceBase : null;
+    const vaultPrivate = snapshot?.account.privateAvailableBase ?? 0n;
+    if (deskDeployed || vaultPrivate > 0n) {
       pools.push({
         id: "private",
         label: PLATE.pools.private.label,
         note: PLATE.pools.private.note,
-        amountBase: snapshot.account.privateAvailableBase,
+        amountBase: deskDeployed && deskBase === null ? null : (deskBase ?? 0n) + vaultPrivate,
         action: null,
         blockedReason: null,
       });

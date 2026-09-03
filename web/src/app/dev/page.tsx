@@ -19,6 +19,7 @@ const FIXTURES = [
   { href: "/dev/session", label: "Session key", note: "tap-trading chip, manager, route control, enable sheet — canned states, then live" },
   { href: "/dev/vault", label: "Trading Balance", note: "every vault state from canned readings, the pool row, open vault bets, then live" },
   { href: "/dev/parlay", label: "Parlay", note: "every slip card and every ticket state from canned readings; the builder is live on /parlay" },
+  { href: "/dev/private", label: "Private", note: "the route control, the budget line, the desk's quote rows, the claims list with real signatures, then the live panel" },
 ] as const;
 
 export default function DevIndexPage() {

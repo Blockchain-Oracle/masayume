@@ -49,7 +49,7 @@ function fundingBlocker(funding: FundingCheck | null): BlockerKind | null {
 }
 
 /** Everything before the quote: the session, the Window, the stake against what can back it. */
-function commonBlocker(i: TicketBlockerInput): BlockerKind | null {
+export function commonBlocker(i: TicketBlockerInput): BlockerKind | null {
   if (!i.session.isConnected) return i.session.isConnecting ? "connecting" : "disconnected";
   if (!i.session.isRightChain) return "wrong-chain";
   // The signer binds one effect after the session settles; treat the gap as still connecting.

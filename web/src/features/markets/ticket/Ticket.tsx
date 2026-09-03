@@ -11,6 +11,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Money } from "@/components/data";
 import { BlockedButton } from "@/components/states";
 import { BoostCard, LEVERAGE, useLeverageQuote, useLeverageWrites } from "@/features/leverage";
+import { PRIVATE, PrivateCta, PrivateNote, PrivateQuoteRows, usePrivateTicket } from "@/features/private";
 import { RangeTicketBody } from "@/features/range";
 import { RouteControl, SESSION, SessionControl, useTicketRoute, type FundingSource } from "@/features/session";
 import { diagnosisCopy, TICKET } from "@/lib/copy";
@@ -61,8 +62,9 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
   const walletAvailableBase = balances ? balances.spendableBase + balances.venueCreditBase : null;
   const onchain = useOnchain(market.marketId);
 
-  // Where the escrow comes from: the wallet, the Trading Balance, or — armed — the session key inside its caps.
+  // Where the escrow comes from: the wallet, the Trading Balance, the private desk's slot, or — armed — the session key inside its caps.
   const [source, setSource] = useState<FundingSource>("wallet");
+  const privateMode = source === "private";
   // Call a side, or call a band; the band needs the RangeReserve (Stage 5) and takes the wallet route only.
   const [mode, setMode] = useState<BetMode>("dir");
   const rangeReading = useRangeReserve();
@@ -74,11 +76,11 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
   const boosted = multiple > 1 && leverageReserve !== null;
   const leverageBps = leverageBpsOf(multiple);
 
-  const quoteState = useQuote({ market, side, stakeBase, nowMs: t.nowMs, enabled: hasSigner && phase === "trading" && !boosted });
-  const routing = useTicketRoute({ market, side, stakeBase, quote: quoteState.quote, onchain: onchain?.ok ? onchain.value : null, source, walletAvailableBase, symbol });
+  const quoteState = useQuote({ market, side, stakeBase, nowMs: t.nowMs, enabled: hasSigner && phase === "trading" && !boosted && !privateMode });
+  const routing = useTicketRoute({ market, side, stakeBase, quote: quoteState.quote, onchain: onchain?.ok ? onchain.value : null, source: privateMode ? "wallet" : source, walletAvailableBase, symbol });
   const availableBase = routing.availableBase;
-  // The reference locks the higher chips for a private bet ("placed at 1x"); ours lock off the wallet route and under a pause.
-  const leverageLock = leverageReserve?.paused ? LEVERAGE.paused : source !== "wallet" || routing.armed ? LEVERAGE.lockedForRoute : null;
+  // The reference locks the higher chips for a private bet ("placed at 1x"); ours also lock off the wallet route and under a pause.
+  const leverageLock = privateMode ? LEVERAGE.lockedForPrivate : leverageReserve?.paused ? LEVERAGE.paused : source !== "wallet" || routing.armed ? LEVERAGE.lockedForRoute : null;
   useEffect(() => {
     if (leverageLock && multiple !== 1) setMultiple(1);
   }, [leverageLock, multiple]);
@@ -88,14 +90,8 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
 
   const bet = usePlaceBet({ submitter: routing.submitter, wallet: routing.wallet });
   const displayed = bet.requoted ?? quoteState.quote;
-  const walletRoute = routing.route.kind === "wallet";
+  const walletRoute = routing.route.kind === "wallet" && !privateMode;
   const funding = useFundingCheck(walletRoute ? address : null, onchain?.ok ? onchain.value : null, displayed);
-
-  // A new stake or side starts a new composition; the previous outcome no longer describes it.
-  useEffect(() => {
-    bet.reset();
-    setPlacedBoost(null);
-  }, [stakeBase, side, bet.reset]);
 
   const base: TicketBlockerInput = {
     session,
@@ -111,6 +107,19 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
     quoteStale: quoteState.stale,
     funding: walletRoute ? funding : null,
   };
+  // The private route (the reference's Private): the desk's readiness, the owner's budget, the desk's quote, its own ladder.
+  const priv = usePrivateTicket({ market, side, stakeBase, enabled: privateMode && hasSigner, symbol, walletSpendableBase: balances?.spendableBase ?? null, base });
+  // Off by default and never silently on: the option drops back to the wallet the moment the desk cannot run, the stake is over its cap, or the bet is a band.
+  useEffect(() => {
+    if (privateMode && (!priv.ready || priv.overCap || mode === "range")) setSource("wallet");
+  }, [privateMode, priv.ready, priv.overCap, mode]);
+
+  // A new stake or side starts a new composition; the previous outcome no longer describes it.
+  useEffect(() => {
+    bet.reset();
+    setPlacedBoost(null);
+  }, [stakeBase, side, bet.reset]);
+
   const blocker = boosted ? deriveBoostBlocker({ ...base, funding: null }, boost) : deriveBlocker(base);
   const ctx: BlockerContext = {
     cadence: formatCadence(market.intervalSec),
@@ -120,7 +129,16 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
     fillableStakeText: displayed?.partial ? `${formatBaseUnits(displayed.fillableStakeBase, decimals)} ${symbol}` : undefined,
   };
   const showFaucet = session.isRightChain && hasSigner && walletRoute && balances?.spendableBase === 0n;
-  const showRoute = routing.deployed && ((routing.vaultAvailableBase ?? 0n) > 0n || routing.armed);
+  const showRoute = (routing.deployed && ((routing.vaultAvailableBase ?? 0n) > 0n || routing.armed)) || priv.deployed;
+  const privateOption = priv.deployed
+    ? {
+        label: PRIVATE.route.label,
+        enabled: !priv.probing && priv.ready && !priv.overCap && mode === "dir",
+        title: mode === "range" ? PRIVATE.route.titleRange : priv.probing ? PRIVATE.route.titleProbing : !priv.ready ? PRIVATE.route.titleUnavailable(priv.reason ?? "not ready") : priv.overCap && priv.ctx.privateCapText ? PRIVATE.route.titleOverCap(priv.ctx.privateCapText) : PRIVATE.route.titleReady,
+        retry: !priv.probing && !priv.ready ? priv.retryStatus : null,
+        retryLabel: PRIVATE.route.retry,
+      }
+    : undefined;
 
   const place = () => {
     if (!side || !displayed) return;
@@ -153,7 +171,8 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
 
   // The Call: once the fill is confirmed the ticket body is the shareable card, with
   // "Place another" bringing the composer back (reference Ticket624Drawer L807–836).
-  const booked = placedBoost?.booked ?? (bet.state.outcome?.status === "confirmed" ? bet.state.outcome.booked : null);
+  const booked = placedBoost?.booked ?? priv.placed ?? (bet.state.outcome?.status === "confirmed" ? bet.state.outcome.booked : null);
+  const privParts = { priv, side, stakeBase, decimals, symbol };
 
   return (
     <section
@@ -176,6 +195,7 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
           onAnother={() => {
             bet.reset();
             setPlacedBoost(null);
+            priv.reset();
             t.setStakeText("");
           }}
         />
@@ -210,17 +230,18 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
           symbol={symbol}
           armed={routing.armed}
           deployed={routing.deployed}
+          privateOption={privateOption}
         />
       )}
       <SideSegments side={side} onSelect={t.selectSide} />
-      <StakeInput value={t.stakeText} onChange={t.setStakeText} decimals={decimals} symbol={symbol} costBase={boosted ? (boost.quote?.stakeBase ?? null) : (displayed?.expectedCostBase ?? null)} />
-      {routing.sourceLabel && <p className="tk-control-label">{routing.sourceLabel}</p>}
-      {routing.fallbackReason && (
+      <StakeInput value={t.stakeText} onChange={t.setStakeText} decimals={decimals} symbol={symbol} costBase={boosted ? (boost.quote?.stakeBase ?? null) : privateMode ? (priv.quote?.costBase ?? null) : (displayed?.expectedCostBase ?? null)} />
+      {!privateMode && routing.sourceLabel && <p className="tk-control-label">{routing.sourceLabel}</p>}
+      {!privateMode && routing.fallbackReason && (
         <p role="status" className="type-caption text-warning">
           {routing.fallbackReason}
         </p>
       )}
-      <QuickChips availableBase={availableBase} decimals={decimals} onPick={t.setStakeBase} />
+      <QuickChips availableBase={privateMode ? (priv.budget?.spendableBase ?? null) : availableBase} decimals={decimals} onPick={t.setStakeBase} />
       <LeverageChips
         value={multiple}
         onChange={setMultiple}
@@ -230,6 +251,8 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
       />
       {boosted ? (
         <BoostCard quote={boost.quote} loading={boost.loading} error={boost.error} retry={boost.retry} stakeBase={stakeBase} side={side} multiple={multiple} decimals={decimals} symbol={symbol} />
+      ) : privateMode ? (
+        <PrivateQuoteRows {...privParts} />
       ) : (
         <QuoteStrip
           reading={quoteState.reading}
@@ -243,9 +266,10 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
         />
       )}
       {!boosted && walletRoute && funding?.ok && <FundingNote funding={funding} decimals={decimals} symbol={symbol} />}
-      {routing.route.kind === "vault" && routing.vaultAvailableBase !== null && (
+      {routing.route.kind === "vault" && !privateMode && routing.vaultAvailableBase !== null && (
         <p className="type-caption text-ink-secondary">{SESSION.route.vaultNote(`${formatBaseUnits(routing.vaultAvailableBase, decimals)} ${symbol}`)}</p>
       )}
+      {privateMode && <PrivateNote priv={priv} stakeBase={stakeBase} decimals={decimals} symbol={symbol} />}
       {t.advancedFrom && <AutoAdvanceNote from={t.advancedFrom} to={market} />}
       <OutcomeNote state={bet.state} decimals={decimals} symbol={symbol} onDismiss={bet.reset} />
       {showFaucet ? (
@@ -260,6 +284,8 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
             TICKET.buyPlain
           )}
         </BlockedButton>
+      ) : privateMode ? (
+        <PrivateCta {...privParts} ctx={ctx} />
       ) : (
         <TicketCta blocker={blocker} ctx={ctx} side={side} costBase={displayed?.maxCostBase ?? null} decimals={decimals} symbol={symbol} onClick={place} />
       )}

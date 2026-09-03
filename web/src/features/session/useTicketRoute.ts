@@ -9,7 +9,8 @@ import { SESSION } from "./copy";
 import { refusalText } from "./refusal";
 import { useSessionKey } from "./SessionKeyProvider";
 
-export type FundingSource = "wallet" | "vault";
+/** Where a bet is paid from: the wallet, the Trading Balance, or — the reference's Private — the desk's slot off the private balance. */
+export type FundingSource = "wallet" | "vault" | "private";
 
 export interface TicketRoute {
   route: OrderRoute;

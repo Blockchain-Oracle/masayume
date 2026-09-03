@@ -58,7 +58,7 @@ describe("the wire schemas", () => {
   });
 
   it("accepts the open request the browser sends", () => {
-    const parsed = privateOpenRequestSchema.safeParse({ ...INPUT, stakeBase: "10000000", minQuantityRaw: "15000000", signature: "0xab" });
+    const parsed = privateOpenRequestSchema.safeParse({ owner: INPUT.owner, marketId: INPUT.marketId, side: "up", stakeBase: "10000000", minQuantityRaw: "15000000", issuedAtMs: INPUT.issuedAtMs, signature: "0xab" });
     expect(parsed.success).toBe(true);
   });
 });

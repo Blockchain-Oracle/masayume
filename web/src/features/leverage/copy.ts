@@ -10,6 +10,8 @@ export const LEVERAGE = {
   multiple: (x: number) => `${x}×`,
   /** The reference: "Private bets are placed at 1x." Ours: a boost is bought by the reserve, so it takes the wallet route. */
   lockedForRoute: "Boosts are placed from the wallet. Choose Wallet to bet at 2× or 3×.",
+  /** The reference's exact title on the chips under a private bet (`Ticket624Drawer.tsx` L1080). */
+  lockedForPrivate: "Private bets are placed at 1x.",
   notDeployed: LEVERAGE_NOT_DEPLOYED,
   paused: "The leverage reserve is paused: no new boosts. Live ones still settle, cash out and knock out.",
   strip: {

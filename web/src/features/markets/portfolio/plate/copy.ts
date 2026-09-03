@@ -23,7 +23,9 @@ export const PLATE = {
     },
     private: {
       label: "Private",
-      note: "Cash-outs you moved aside. Only you can withdraw it.",
+      /** The desk's balance plus the vault's private bucket; the reference summed its tickets and the vault the same way (`portfolio/page.tsx` L195). */
+      note: "Private bets spend from this. Only you can withdraw it.",
+      manage: "Manage",
     },
   },
   connect: {

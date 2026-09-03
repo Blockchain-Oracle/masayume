@@ -27,6 +27,13 @@ export const BLOCKER_KINDS = [
   "daily-stop",
   "stop-unverified",
   "no-exit",
+  // The private route's own ladder — the reference's `privBlocker` (`Ticket624Drawer.tsx` L443–448).
+  "private-probing",
+  "private-unavailable",
+  "private-below-min",
+  "private-over-cap",
+  "private-unreadable",
+  "private-refused",
 ] as const;
 
 export type BlockerKind = (typeof BLOCKER_KINDS)[number];
@@ -40,6 +47,8 @@ export interface BlockerContext {
   nextStartText?: string;
   fillableStakeText?: string;
   quoteAgeSec?: number;
+  privateMinText?: string;
+  privateCapText?: string;
 }
 
 const DEFAULT_CHAIN = "Somnia Shannon";
@@ -102,5 +111,17 @@ export function blockerLabel(kind: BlockerKind, ctx: BlockerContext = {}): strin
       return "Can't verify your Daily Stop — try again";
     case "no-exit":
       return "No exit right now — no bids at this size";
+    case "private-probing":
+      return "Checking private mode…";
+    case "private-unavailable":
+      return "Private mode is not available right now";
+    case "private-below-min":
+      return `Private bets start at ${ctx.privateMinText ?? DEFAULT_MIN_STAKE}`;
+    case "private-over-cap":
+      return ctx.privateCapText ? `Private bets are capped at ${ctx.privateCapText}` : "Over the private cap";
+    case "private-unreadable":
+      return "Could not read your private balance just now — try again in a moment";
+    case "private-refused":
+      return "The desk refused this bet — see why above";
   }
 }

@@ -4,6 +4,7 @@ import { isOk } from "@masayume/core/schemas";
 import { usePositions } from "@masayume/markets/react";
 import { useRouter } from "next/navigation";
 import { SectionHeader } from "@/components/chrome";
+import { PrivateBalancePanel } from "@/features/private";
 import { TradingBalancePanel, useVaultOpenBets } from "@/features/vault";
 import { XWalletCard } from "@/features/x";
 import "@/features/x/x-card.css";
@@ -64,7 +65,7 @@ export function PortfolioScreen() {
       {/* ONE number first (reference L295–329): the plate answers "how much can I bet right now" once; every
           pool that is not spendable here is a row inside the same plate, never merged into the figure. */}
       <LedgerPlate money={money} symbol={symbol} openBets={openBets} settled={settled} onPrimary={() => router.push("/markets")}>
-        <PoolRows pools={money.pools} decimals={money.decimals} symbol={symbol} panels={{ x: <XWalletCard compact /> }} />
+        <PoolRows pools={money.pools} decimals={money.decimals} symbol={symbol} panels={{ x: <XWalletCard compact />, private: <PrivateBalancePanel inline /> }} />
         {/* The reference's disclosure row carries creator earnings; ours carries the Trading Balance's own controls. */}
         <PlateDisclosure title={PLATE.vaultDisclosure}>
           <TradingBalancePanel inline />
