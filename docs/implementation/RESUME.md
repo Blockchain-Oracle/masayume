@@ -575,7 +575,63 @@ and the ledger's §`/surface` first. What is where:
 Remember Somnia's gas schedule when deploying (context/41 §Live on Shannon) and the faucet's one wallet a
 day. Deploy nothing without the owner's go.
 
-## Stage 6 — research complete; build not started
+## Stage 6 — slices 1 and 2 built
+
+**Slice 1 (`c2e5f13`)** is the games' pure core and its off-chain tables: `packages/core/src/games/**`
+(types with the economic kind attached to the mode rather than the screen, the match as a discriminated
+union with one total reducer, transparent Elo, ±100 matchmaking widening, PnL as payout − measured cost,
+the deck policy, and the canonical twelve-word commitment preimage with a golden vector) and
+`packages/db/src/schema-games.ts`. No React, wallet, RPC or database anywhere in the core. Two defects the
+tests found and fixed: the reducer refused a chain `finalized` without the intervening `cardSettled`
+events, so a client offline through settlement showed an active match forever; and `forfeited` was marked
+terminal when a forfeited match still settles its cards.
+
+**Slice 2 (`ea51462`)** is the shared `/games` shell. `app/games/layout.tsx` owns the four things every mode
+owes a player — the way back, the mode's economic label (read from core, never restated), the
+sound/haptics/motion controls, and the active match, which always beats offering a fresh queue. The hub reads
+availability rather than asserting it: Range asks the deployed reserve whether it is live, paused or
+unreadable, and every other mode names the slice it waits for. Profile shows only what is already true;
+rating, record and streak read *unrecorded*, because the arena and projector that write them do not exist and
+a zero would claim a ladder had ranked this player. History and achievements say the same at section level.
+Settings are real and device-local — each switch fires the cue it governs, vibration support is reported
+rather than assumed, motion is three-state for the same reason `game_settings.reduced_motion` is nullable.
+
+Two deliberate divergences, both recorded in doc 06's decision log: **the frame follows the theme** rather than
+being doc 06's "dark stage" (the owner's 2026-09-01 reel-card ruling; the arcade canvas in slice 4 is the one
+genuine dark island), and **settings stay on the device** rather than syncing to `game_settings`, because
+signing a message to change a sound toggle is the wrong trade and the games have no session to hang it on yet.
+
+Three real defects came out of slice 2's browser review, all fixed in that commit:
+
+- **`.pl-section` collided with Tailwind's `pl-*` padding-left namespace.** `bridge.css` defines
+  `--spacing-section: 64px`, so Tailwind minted a genuine `.pl-section { padding-left: 64px }` utility that the
+  parlay CSS never competed with. Every section on `/parlay` and `/games/range` carried a phantom 64px indent at
+  every width; on a 390px phone that left content 290px wide, which is what the owner saw and reported.
+  Renamed to `.pl-block`. **Before adding any `pl-<name>` class, check `--spacing-<name>` is not in
+  bridge.css.**
+- **`ensureSchema` raced itself into a 500.** `CREATE TABLE IF NOT EXISTS` is idempotent but not race-safe: two
+  concurrent callers both find the table missing and both insert its `pg_type` row, and the loser gets `23505`
+  — which surfaced as a 500 on `/api/x/status`. The `let migrated` boolean could not help; it is set after the
+  await. Now a cached promise collapses in-process callers and `pg_advisory_xact_lock` serialises across
+  processes. Verified with twelve concurrent DB requests, all 200.
+- **The profile card branched on wallet connection during SSR**, so an injected wallet reconnecting at
+  hydration threw away and rebuilt the subtree.
+
+Also fixed: the settings sheet rendered under the fixed ticker and header (z 800/850 beat its 50) and wore
+shadcn's popover grey; it now sits at the nav drawer's rung on the app's own card surface. The rail gives the
+economic label its own row on phones. Reduced motion is matched on the attribute, not on `.gm-frame`, so it
+reaches the sheet, which portals outside the frame.
+
+Measured at 1440 and 390 in both themes: no console errors, no horizontal overflow down to 320px, every ink
+step at or above 4.2:1 (the two marginal ones are the app's own vermilion and gray-500 meta treatments, which
+belong to the open global gray-ramp pass). **Not reproduced:** the owner reported the wallet connect modal as
+unresponsive on mobile; RainbowKit's modal renders correctly at 390px and 320px in an emulated phone, so this
+needs their device and a screenshot before it can be chased.
+
+**Next is slice 6/7/8** — `GameArena`, the ops/realtime work, and the Duel stage with Practice merged into it,
+in the owner's answered build order. Slice 3 (Practice) merges into slice 8's stage.
+
+## Stage 6 research — the standing proposal
 
 The executable proposal is `docs/architecture/yosuku-source-led-migration/06-game-architecture.md`; the evidence,
 library/provenance check, ABI composition proof and production boot timings are in
