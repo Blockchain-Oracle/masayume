@@ -1243,6 +1243,29 @@ never justify fabricated public data.
 | `/games/line-rider` | PIPS-derived arcade | Additive | **Shell** — honest dependency state (Stage 6) |
 | `/games/candle-hop` | PIPS-derived arcade | Additive | **Shell** — honest dependency state (Stage 6) |
 
+### Proposed Stage 6 acceptance additions (research only)
+
+These rows add capability-level acceptance without rewriting the route rows above. Architecture and evidence:
+`docs/architecture/yosuku-source-led-migration/06-game-architecture.md` and
+`context/52-games-research-2026-09-03.md`.
+
+| Capability | Source / adaptation | Data authority | Proposed acceptance |
+|---|---|---|---|
+| Shared Games layout + resume | Yosuku shell; PIPS selection/progression | Chain + DB active-match projection | All eight routes share profile/settings/stage chrome; active non-terminal match resumes before new selection |
+| Practice | Flicky solo loop, adapted | Live public spot + local deterministic state | No wallet position, payout, opponent, MMR, streak or leaderboard write; no-stake label throughout |
+| Ranked / Free Duel | Flicky lifecycle; DreamDEX gateway adaptation | GameArena + DreamDEX receipts/outcomes | Free has no side-pot but real capped picks; Ranked adds separately escrowed pot; reconnect and every timeout/refund branch work |
+| Atomic pick | Leverage/EventVault gateway pattern | One GameArena transaction receipt | IOC fill and pick record are one transaction; actual cost/quantity stored; zero fill reverts; partial fill shown truthfully |
+| Lucky audit | PIPS seeded reel, adapted from strike to Window scan | Commitment + candidate-set hash + real quote/receipt | Player can recompute draw; sees Window/side/quote/slippage/gas payer before signing; result/history from receipts |
+| Range integration | Existing Stage 5 route | Live RangeReserve + OracleHub | Shared game chrome/history only; no second read or settlement source |
+| Moonshot A | PIPS reach mechanic on Range model | Proposed MoonshotReserve + OracleHub | Target solved from selected multiple, prefunded and real; unavailable until fork-verified, deployed and supplied |
+| Arcade pair | PIPS mechanics independently reimplemented | Postgres server-checked score | Deterministic engine/version/trace checks; label scores off-chain and not cheat-proof; pause/reduced motion work |
+| Matchmaking + room | Flicky pattern, adapted | Ephemeral ops process; chain/DB rebuild | Rating bands widen with wait; authenticated typed protocol; restart/reconnect reconstructs; messages cannot settle/pay |
+| Game profile + friends | Additive Masayume layer | Postgres, linked identity evidence | Unique handle; directional follows by profile; Friends board filters verified results, never invents activity |
+| Unified leaderboard + seasons | PIPS board shape; Flicky season pattern | Receipts for economics; DB ratings/scores; optional prize contract | Overall/Prediction/Arcade/Friends/Seasons in `/leaderboard`; no prize claim before funded contract receipt |
+| Audio/haptics/accessibility | PIPS interaction discipline | User setting + platform support | Explicit sound control, best-effort haptics, keyboard/pointer parity, reduced motion, hidden-tab pause |
+| Share result | Flicky artifact pattern; Masayume proof links | Verified terminal match + stored artifact hash | Portrait card contains mode/opponent/result/proof URL, never unverifiable balance or fabricated statistic |
+| Stage 6 provenance | PIPS/Flicky behavior references | Pinned sources; no repo-level reusable licence | Independent implementation only; no copied unlicensed UI, engine or server source |
+
 ## Feature families
 
 Tracked separately so the route table cannot hide a missing capability.

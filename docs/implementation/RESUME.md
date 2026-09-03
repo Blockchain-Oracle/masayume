@@ -557,7 +557,24 @@ and the ledger's §`/surface` first. What is where:
 Remember Somnia's gas schedule when deploying (context/41 §Live on Shannon) and the faucet's one wallet a
 day. Deploy nothing without the owner's go.
 
-## Stage 6 — not started
+## Stage 6 — research complete; build not started
+
+The executable proposal is `docs/architecture/yosuku-source-led-migration/06-game-architecture.md`; the evidence,
+library/provenance check, ABI composition proof and production boot timings are in
+`context/52-games-research-2026-09-03.md`. It recommends folders under one `/games` layout; Practice → arcade →
+Lucky → GameArena/ops → Duel → Moonshot A; direct `ws` in the long-lived ops service; no new browser game/state
+library; atomic GameArena IOC + pick recording (ABI/fork composition is confirmed, GameArena gas/fork testing is
+still required); one unified leaderboard with game/friends/season sections; and a separate prefunded
+`MoonshotReserve` rather than changing the live Range contract. Owner decisions remain stake/card caps, deck policy,
+Moonshot A, directional follows, season prizes, Free-Duel economics and whether the standing Shannon deploy go
+covers the new custody contract. No Stage 6 product or contract code was written in the research pass.
+
+The parallel production measurement found fast Next HTML (about 307 ms shell; 2–26 ms route TTFB) but 1.1–5.5 s
+combined boot reads and roughly 20.8 s to useful Markets content in the sampled browser reload. The first fix is not
+“more cache”: instrument, split the global boot by dependency, restore rejected query errors, correct loading/empty
+states, then add allowlisted IndexedDB persistence and Portfolio critical/deferred tiers. See
+`docs/architecture/performance-read-architecture-2026-09-03.md`. The owner-reported signed-in Portfolio retry storm
+was not reproduced in the disconnected measurement and still needs a wallet-scoped trace.
 
 Doc 04 is the authority; `reference/pips` and `reference/flicky` supply the mechanics; Yosuku stays the visual
 authority. **Read context/51 §3 first**: the per-mode mapping onto DreamDEX (GameArena places each pick as an IOC

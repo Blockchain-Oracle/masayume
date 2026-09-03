@@ -19,6 +19,7 @@ Masayume is the Yosuku product experience migrated from Sui/DeepBook Predict to 
 4. [03-feature-adaptation-ledger.md](03-feature-adaptation-ledger.md) — how every Yosuku capability becomes real on Somnia/DreamDEX.
 5. [04-game-system.md](04-game-system.md) — first-class PIPS/Flicky-derived game architecture inside the Yosuku product language.
 6. [05-migration-and-agency-handoff.md](05-migration-and-agency-handoff.md) — implementation order and non-negotiable handoff rules.
+7. [06-game-architecture.md](06-game-architecture.md) — Stage 6's executable proposal, research decisions, data/realtime/contracts and dependency-ordered slices.
 
 ## Governing decision
 
