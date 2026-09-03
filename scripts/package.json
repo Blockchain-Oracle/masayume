@@ -23,7 +23,8 @@
     "spike:range-oracle": "tsx spike/range-oracle.ts",
     "spike:live-windows": "tsx spike/live-windows.ts",
     "spike:stage5-live": "tsx spike/stage5-live.ts",
-    "spike:private-live": "tsx spike/private-live.ts"
+    "spike:private-live": "tsx spike/private-live.ts",
+    "spike:boot-timing": "tsx spike/boot-timing.ts"
   },
   "dependencies": {
     "@masayume/core": "workspace:*",

@@ -6,13 +6,13 @@ Date: 2026-09-03
 
 ## Executive diagnosis
 
-Masayume already uses TanStack Query, but the current problems are not solved by adding more caching alone. Five systems currently compound one another:
+Masayume already uses TanStack Query, but the current problems are not solved by adding more caching alone. The production measurements put the causes in this order:
 
-1. provider errors are converted into resolved `ReadingErr` values, so TanStack Query often records an infrastructure failure as a successful query;
-2. Markets SDK reads use one WebSocket RPC with a short request timeout and no application-level HTTP fallback;
-3. Portfolio mounts several expensive query families together, including deep historical scans and per-position fan-out;
-4. the full wallet/markets/session provider stack is mounted for every route, including lightweight documentation and demo routes;
-5. raw internal anchors perform document navigations and discard the in-memory QueryClient.
+1. every market/wallet query is held behind one boot barrier whose chain reads take 1.1–5.5 seconds in the measured sample;
+2. the global provider/query cascade then delayed useful Markets data to roughly 20.8 seconds even though the static shell painted around 0.3 seconds;
+3. provider errors are converted into resolved `ReadingErr` values, so TanStack Query often records an infrastructure failure as a successful query;
+4. Portfolio mounts several expensive query families together, including deep historical scans and per-position fan-out;
+5. the full wallet/markets/session provider stack is mounted for every route, including lightweight documentation and demo routes.
 
 The result matches the reported behavior: a hard refresh has no last-good cache, several independent reads can fail at once, the UI exposes repeated `Try again` states, and revisiting a route can start the whole chain again.
 
@@ -22,7 +22,7 @@ The result matches the reported behavior: a hard refresh has no last-good cache,
 
 `web/src/providers/query-client.ts` currently uses a five-second default `staleTime`, retries once, and refetches on window focus. It has no persisted cache and no explicit garbage-collection policy.
 
-`packages/markets/src/react/useReadingQuery.ts` and `packages/markets/src/provider/withReading.ts` convert thrown failures into `ReadingErr` values. The query promise therefore resolves. TanStack Query cannot apply its normal error state, retry policy, or previous-data behavior to those failures.
+`packages/markets/src/react/useReadingQuery.ts` and `packages/markets/src/provider/reading.ts` convert thrown failures into `ReadingErr` values. The query promise therefore resolves. TanStack Query cannot apply its normal error state, retry policy, or previous-data behavior to those failures.
 
 `packages/markets/src/provider/reading.ts` keeps a last-good value in a module-level Map. This helps only after one success in the current document; it disappears on a full reload.
 
@@ -32,7 +32,9 @@ The result matches the reported behavior: a hard refresh has no last-good cache,
 
 The installed Markets SDK performs chain reads over WebSocket with a four-second request timeout. Wagmi separately has an HTTP fallback transport, but SDK reads do not use it.
 
-A small live sample on 2026-09-03 found both configured Somnia testnet RPCs responsive, while three indexer requests varied from roughly half a second to more than six seconds. This is a diagnostic snapshot, not an SLA, but it shows why a short, single-path timeout plus page-level fan-out can create intermittent whole-page failure.
+A production-mode diagnostic on 2026-09-03 timed the three boot reads concurrently against both configured endpoints. Endpoint 0 completed in 5,457 / 1,158 / 2,579 ms; endpoint 1 in 4,917 / 1,124 / 1,170 ms. Clock and collateral share the SDK WebSocket path and commonly completed together at 1.1–4.1 s; venue/indexer resolution varied from 0.5 s to 5.5 s. Both endpoints were usable, so swapping the URL alone is not a fix. This is a nine-read snapshot, not an SLA.
+
+The boot query is not merely a status panel. `useReadingQuery` disables every non-boot query until clock, collateral and venue all succeed (`packages/markets/src/react/useReadingQuery.ts:18-53`), although those boot reads are only mutually parallel (`packages/markets/src/provider/boot.ts:14-17`). Public lane/metadata reads that do not truly need all three are therefore delayed by the slowest dependency.
 
 Somnia's official network information and RPC-provider guidance support configuring multiple independent endpoints for production: [network information](https://docs.somnia.network/developer/network-info), [RPC providers](https://docs.somnia.network/developer/deployment-and-production/ecosystem/ecosystem-tools/rpc).
 
@@ -51,6 +53,17 @@ After writes, `invalidateAfterWrite` invalidates a broad set of query families i
 A local production-build manifest estimate showed roughly 2.1–2.5 MiB of raw JavaScript represented across several route chunk unions. This is not an on-wire or field measurement, but it is enough to justify measuring and splitting provider boundaries before adding more client libraries.
 
 There are currently no route `loading.tsx` boundaries and no field Web Vitals reporting.
+
+### Production timing baseline
+
+`pnpm build && pnpm start` ruled out the development compiler as the primary cause:
+
+- `next build` compiled in 5.3 s, typechecked in 10.5 s and generated 72 pages in 1.8 s;
+- production HTTP TTFB was 26 ms on the first `/markets` request and about 2 ms warm; `/portfolio` was 5 ms first and about 2 ms warm;
+- in a browser reload, the static shell appeared around 307 ms;
+- the unresolved Markets hero still showed “Pick a Window above to read it here,” and useful ETH/BTC cards did not appear until roughly 20.8 s.
+
+The server/static route is fast; the bottleneck is after hydration in the client runtime, boot gate and downstream query/provider work. The disconnected browser could not reproduce the owner's signed-in Portfolio retry storm, so its exact query-family breakdown remains an instrumentation task rather than a claimed measurement.
 
 ### Markets hero state
 
@@ -73,7 +86,23 @@ Retries should apply only to transient transport, timeout, and indexer failures.
 
 Longer term, provider methods should return domain values and throw typed infrastructure errors directly, removing the second cache embedded in `Reading` wrappers.
 
-### 2. Centralize endpoint health and failover
+Current TanStack Query v5 documentation confirms that a rejected query function is required for error/retry state, while `skipToken` derives `enabled: false`. Disabled queries are useful for true dependencies, not as a global readiness barrier. Keep `Reading<T>` at the port/UI seam, but make the Query adapter throw `ReadingError` for first-load infrastructure failures and translate cached refresh failures back to stale readings.
+
+### 2. Decompose boot by dependency
+
+Split readiness into independently cached facts:
+
+- runtime configured — synchronous, no network;
+- chain clock — needed for countdown/time-sensitive writes, not for every editorial/public list;
+- collateral metadata — needed for formatting and money writes; safely persist by chain/address;
+- venue identity — needed for venue-scoped reads; safely persist with a short revalidation;
+- endpoint health — observational, never a render gate.
+
+Each query declares the facts it actually needs. Public/indexer lane discovery can start immediately after runtime configuration and venue hint, then reconcile when the live venue resolution returns. Wallet balance/position writes continue to wait for exact collateral and live venue truth. This removes the slowest-read barrier without weakening transaction safety.
+
+Render allowlisted persisted market metadata immediately for returning users, marked aged until revalidated. Persistence and boot decomposition are complementary: persistence improves warm reloads; decomposition improves both cold and warm loads.
+
+### 3. Centralize endpoint health and failover
 
 Create one read-health controller for the Markets runtime:
 
@@ -88,7 +117,7 @@ Viem's WebSocket transport has reconnect/retry behavior, and its fallback transp
 
 Preferred long-term SDK seam: allow a caller-supplied public client or a read-only fallback transport. Until then, use the centralized controller around runtime construction and make rotation observable.
 
-### 3. Persist only safe, useful query data
+### 4. Persist only safe, useful query data
 
 Use `PersistQueryClientProvider` so cache restoration finishes before fetching resumes. Set query `gcTime` at least as long as persistence `maxAge`, and include a cache buster containing application schema/build, chain, and venue identity. TanStack's persistence contract is documented at [persistQueryClient](https://tanstack.com/query/latest/docs/framework/react/plugins/persistQueryClient).
 
@@ -109,7 +138,7 @@ Do not persist:
 
 Purge account-scoped data on disconnect or account change. Persistence improves reload behavior; it must not become an identity leak.
 
-### 4. Reshape Portfolio around critical data
+### 5. Reshape Portfolio around critical data
 
 Define two rendering tiers.
 
@@ -134,7 +163,7 @@ Move all read definitions into typed `queryOptions` factories with stable keys c
 
 The `stacks-20` repository is useful as a pattern reference for centralized query options, identity-rich keys, `skipToken`, route intent preloading, and long-lived history. It is not a drop-in solution: its cache is also memory-only and its transport and chain model differ.
 
-### 5. Split provider and route boundaries
+### 6. Split provider and route boundaries
 
 Keep the root layout and visual shell server-first. Mount wallet/markets/session providers only inside the trading/authenticated route group that needs them. Treat the header wallet control as a small client island.
 
@@ -144,17 +173,18 @@ Lazy-load heavy, interaction-triggered surfaces such as wallet modals, Sensei, c
 
 Use route `loading.tsx` files where server navigation can block. Next.js uses them for immediate skeleton feedback and interruptible navigation: [linking and navigation](https://nextjs.org/docs/app/getting-started/linking-and-navigating).
 
-### 6. Preserve client navigation
+### 7. Preserve client navigation
 
 Replace internal raw anchors with Next.js `Link`. Client navigation preserves shared layouts and in-memory application state, while Link also participates in framework prefetching where applicable: [Next.js Link](https://nextjs.org/docs/app/api-reference/components/link).
 
 This is the one performance-related correction included with the navigation implementation because it is intrinsic to navigation behavior.
 
-### 7. Instrument before tuning further
+### 8. Instrument before tuning further
 
 Add a small isolated Web Vitals client component using `useReportWebVitals` or `instrumentation-client.ts`. Record LCP, INP, CLS, FCP, and TTFB plus domain milestones:
 
-- `boot.ready`;
+- `runtime.configured`, `clock.ready`, `collateral.ready`, `venue.ready`, and `boot.ready`;
+- first successful SDK JSON-RPC and first successful indexer request;
 - `lanes.first_success`;
 - `portfolio.critical_ready`;
 - query-family latency, error type, retry count, and stale-data use;
@@ -173,8 +203,11 @@ Measure field percentiles and lab traces. The Web Vitals `good` thresholds at th
 - capture cold reload, warm revisit, account switch, and degraded-endpoint baselines;
 - define explicit product budgets from real observations.
 
+Initial budgets to validate rather than assume: static shell under 1 s, cached meaningful market content under 1 s, cold public market content under 3 s p75, and Portfolio critical content under 4 s p75 on the supported network. Record actual p50/p75/p95 before treating these as release gates.
+
 ### Phase B — correctness before caching
 
+- split boot into dependency-specific queries and remove the global gate from independent public reads;
 - restore rejected-promise error semantics;
 - introduce typed retry classification;
 - correct Markets hero loading/empty/error states;
