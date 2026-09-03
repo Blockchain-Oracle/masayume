@@ -39,8 +39,15 @@ fork- and gas-proven. Deck policy, friends, seasons and Free Duel economics stan
 **Moonshot is the one decision still open** — and doc 06 §Moonshot now records that its option A needs no new
 contract: the deployed `RangeReserve` parameters price every rung of the 2×–25× ladder as a saturated band.
 **Fifteenth session (2026-09-03): Stage 6 slices 1 and 2 are in, and slice 6 — `GameArena` — is built,
-fork-verified, deployed on Shannon at `0xec71…f0dF` and smoke-tested live (§Stage 6 below). Next is slice
-7 (ops/realtime) then slice 8 (the Duel stage).** context/51 §4 is the rest of what is open. The 21st.dev
+fork-verified, deployed on Shannon at `0xec71…f0dF` and smoke-tested live (§Stage 6 below).**
+**Sixteenth session (2026-09-03): slice 7 is done in four commits — the room's protocol and token, the
+`ws` server, the projector and settler, and the queue with durable decks. Everything is proven against
+Shannon by three spikes (`spike:room`, `spike:duel-live`, `spike:queue`). Next is slice 8, the Duel
+stage.** Two things from slice 7 want the owner: the deck policy now has a **mixed-cadence lane**
+(the venue runs two assets, so three same-cadence Windows never exist — a deviation from §Owner
+decisions 4, recorded in the ledger), and **a full picked-through duel has not been driven live**
+because each pick spends real tUSDC (about 0.06 for a three-card duel at a cent a card) and real money
+waits on a go. context/51 §4 is the rest of what is open. The 21st.dev
 redesign pass on the other surfaces (the leverage ones are done) and the user's own look at Stage 5 (the ledger's
 Needs-user-review rows are all still open) follow.
 
@@ -88,10 +95,24 @@ Needs-user-review rows are all still open) follow.
 | `809fc10` | Read path 2 — Portfolio critical/deferred tiers, one error per outage, settled history de-polled |
 | `e7d40a0` | Read path 3 — five HTTP-only pages un-gated, endpoint health as a real `eth_chainId` round trip, public-only read persistence |
 | `a1ba6ed`, `f20a513` | Stage 6 slice 6 — `GameArena`, its gateway and commitment library, 39 tests, fork-verified on Shannon; deployed at `0xec71…f0dF` and smoke-tested live; the ABI, deployment resolver, read/write port and `arena` gas lane |
+| `c13aa8b` | Stage 6 slice 7a — the room's wire form, its typed protocol (no client message can carry an amount) and its token; `logKey` → `pickKey` |
+| `40110fb` | Stage 6 slice 7b — the `ws` room in ops, the snapshot rebuilt from chain, the web mint route; the deck's mixed lane, forced by the venue |
+| `0108b5d` | Stage 6 slice 7c — the projector (log → rows and room messages, replay-safe) and the settler (every permissionless crank, tested preconditions) |
+| `a897e28` | Stage 6 slice 7d — the queue, the seed commit-reveal, the sealed deck journalled before any commitment; three defects the live drive found |
 | `a724b94` | Read path 4 — boot readiness through context (the `skipToken` double-observer produced a "Missing queryFn" error instead of the real RPC failure); the sixteen-item Explore menu bounded to `--available-height` so its last five destinations are reachable |
 
 Everything is green: `pnpm typecheck`, `pnpm invariants` (14/14, 0 warnings), `pnpm test` (222),
 `forge test --no-match-contract Fork` (213), `pnpm build`.
+
+**The duel room** (`services/ops`) needs `ROOM_TOKEN_SECRET` (the same value web mints with — a different
+one in each process refuses every token, loudly) and `GAME_DECK_KEY` (32 bytes of hex; without it the
+queue refuses to pair rather than committing a deck whose reveal it could not keep). The sealed reveal
+material is journalled to `GAME_DECK_JOURNAL` (default `.masayume/deck-journal.jsonl`, gitignored) —
+**that file, not the database row, is the durable copy**; losing it refunds every open match. The three
+spikes are `pnpm --filter @masayume/ops spike:room` (transport, `MATCH_ID` optional),
+`spike:queue` (two sockets through the whole ceremony) and `PLAYER_KEY=… MATCH_ID=… FROM_BLOCK=…
+spike:duel-live` (a real transaction reaching a live socket); `PLAYER_KEY=… CHALLENGER=… spike:arena-open`
+opens a free-tier match and prints the venue's candidate table.
 
 **The live actors** (`pnpm --filter @masayume/ops start` with `DRY_RUN=0 MAKER_PRIVATE_KEY=… LEVERAGE_KEEPER_PRIVATE_KEY=…`,
 keys in `~/.config/masayume/market-maker.env` / `leverage-keeper.env`) ran on Shannon on 2026-09-02: the maker quoted
