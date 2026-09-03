@@ -92,9 +92,26 @@
 
 /* per-leg breakdown: space-y-1; rows flex items-center justify-between text-[11px] */
 .pl-breakdown { display: flex; flex-direction: column; gap: 4px; }
-.pl-bd-row { display: flex; align-items: center; justify-content: space-between; font-size: 11px; }
-/* text-gray-500 truncate */
-.pl-bd-what { color: var(--gray-500); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pl-bd-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; }
+/* text-gray-500 truncate
+ *
+ * `min-width: 0` is what makes the truncate real. A flex item defaults to `min-width: auto`, which
+ * resolves to min-content — and the min-content of a `nowrap` string is the whole string. So the
+ * ellipsis never engaged: this row demanded 281px, which forced the ticket to 323px and the page
+ * wider than a phone, and every other part of /games/range looked shifted because the document
+ * itself was scrolling. `.pl-picker-label` next door has always been fine for exactly this reason —
+ * its parent `.pl-picker` carries the `min-width: 0`. */
+.pl-bd-what { flex: 1 1 auto; min-width: 0; color: var(--gray-500); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pl-bd-prob { flex-shrink: 0; }
+/* On a phone the band's own numbers are the point of this line, so it wraps rather than being cut
+ * with an ellipsis. The reference's single truncated row is kept from the tablet width up. */
+@media (max-width: 720px) {
+  .pl-bd-row { flex-wrap: wrap; align-items: baseline; }
+  .pl-bd-what { white-space: normal; overflow: visible; }
+  /* Once the description wraps, `space-between` drops the print to the start of the next line where
+   * it reads as a stray number. Keep it on the right edge, where it sits on one line. */
+  .pl-bd-prob { margin-left: auto; }
+}
 /* text-emerald-400/80 / text-rose-400/80 */
 .pl-bd-side--up { color: color-mix(in srgb, var(--profit) 80%, transparent); }
 .pl-bd-side--down { color: color-mix(in srgb, var(--loss) 80%, transparent); }
