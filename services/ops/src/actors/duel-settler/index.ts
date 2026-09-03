@@ -1,9 +1,10 @@
 import type { ArenaIntent } from "@masayume/core/games";
 import { isOk } from "@masayume/core/schemas";
 import type { Bytes32, Hex, MarketId } from "@masayume/core/types";
-import { isDbConfigured, listLiveMatches } from "@masayume/db";
+import { getDeck, isDbConfigured, listLiveMatches, markDeckRevealed } from "@masayume/db";
 import { createMemoryJournal, createSubmitterSession, ensureMarkets, loadCollateral, marketsProvider, parseMarketsEnv, type SubmitterSession } from "@masayume/markets";
 import { getArenaMatch, getArenaState, resolveArenaDeployment, sendArenaIntent } from "@masayume/markets/games";
+import { deckKey, fromJournal, open } from "../matchmaker/seal";
 import { decideMatch, isDone, type SettlerAction } from "./decide";
 
 type Log = (why: string) => void;
@@ -39,8 +40,40 @@ export function readSettlerEnv(env: NodeJS.ProcessEnv = process.env): SettlerEnv
   };
 }
 
-function intentOf(action: SettlerAction): ArenaIntent {
+/**
+ * The reveal material for a match, from the database or, failing that, the journal that is written
+ * first. Null when it cannot be opened at all — in which case nothing is sent, and the arena's own
+ * reveal deadline turns the match into a refund. That is the designed failure: an operator who loses a
+ * deck returns both pots rather than deciding a duel nobody could play.
+ */
+async function revealIntent(matchId: Bytes32, log: Log): Promise<ArenaIntent | null> {
+  const key = deckKey();
+  if (!key) return null;
+  const sealed = (await getDeck(matchId))?.sealed ?? fromJournal(matchId);
+  if (!sealed) {
+    log(`${matchId}: committed but no reveal material is on hand; the reveal deadline will refund it`);
+    return null;
+  }
+  try {
+    const material = open(sealed, key);
+    return {
+      kind: "arena-reveal",
+      matchId,
+      serverSeed: material.serverSeed as Bytes32,
+      clientSeeds: material.clientSeeds as readonly Bytes32[],
+      cards: material.cards as readonly MarketId[],
+    };
+  } catch (error) {
+    log(`${matchId}: the sealed deck would not open: ${error instanceof Error ? error.message : String(error)}`);
+    return null;
+  }
+}
+
+function intentOf(action: SettlerAction): ArenaIntent | null {
   switch (action.kind) {
+    case "arena-reveal":
+      // Built by `revealIntent`, which has to read and decrypt; this branch never fires.
+      return null;
     case "arena-lock":
       return { kind: "arena-lock", matchId: action.matchId };
     case "arena-settle-card":
@@ -69,13 +102,16 @@ async function settleableCards(cards: readonly MarketId[], log: Log): Promise<Se
 
 async function crank(session: SubmitterSession | null, dryRun: boolean, action: SettlerAction, log: Log): Promise<boolean> {
   const label = `${action.kind} ${action.matchId}${"cardIndex" in action ? `#${action.cardIndex}` : ""}`;
+  const intent = action.kind === "arena-reveal" ? await revealIntent(action.matchId, log) : intentOf(action);
+  if (!intent) return false;
   if (dryRun || !session) {
     log(`DRY ${label}: ${action.why}`);
     return false;
   }
   try {
-    const sent = await sendArenaIntent(session.contracts, intentOf(action));
+    const sent = await sendArenaIntent(session.contracts, intent);
     log(`${label}: ${action.why} · ${sent.hash} · gas ${sent.receipt.gasUsed}`);
+    if (action.kind === "arena-reveal") await markDeckRevealed(action.matchId);
     return true;
   } catch (error) {
     // A revert here is usually a race that someone else already won, which is the system working.

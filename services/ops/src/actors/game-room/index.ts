@@ -5,6 +5,7 @@ import { resolveArenaDeployment } from "@masayume/markets/games";
 import { readRoomEnv, ROOM_ENV } from "./env";
 import { createRoomHub } from "./hub";
 import type { RoomContext } from "./handlers";
+import { createMatchmaker } from "../matchmaker";
 import { startRoomServer } from "./server";
 
 type Log = (why: string) => void;
@@ -42,7 +43,6 @@ export async function startGameRoom(log: Log): Promise<RoomContext | null> {
     chainId: deployment.chainId,
     arena: deployment.gameArena,
     log,
-    /** The matchmaker arrives with the queue; until then `queue.join` refuses honestly. */
     matchmaker: null,
     /**
      * A browser that has lost its own memory asks the projection what it is in. Without a database the
@@ -54,6 +54,9 @@ export async function startGameRoom(log: Log): Promise<RoomContext | null> {
         (await activeMatchFor(wallet, deployment.chainId, deployment.gameArena)) as Bytes32 | null,
     },
   };
+
+  // The matchmaker needs the context it is part of, so it is attached rather than constructed with it.
+  ctx.matchmaker = createMatchmaker(ctx);
 
   const server = startRoomServer({ ctx, env: { ...env, secret: env.secret } });
   log(`listening on ws://${env.host}:${env.port} for arena ${deployment.gameArena} on chain ${deployment.chainId}`);

@@ -16,6 +16,8 @@ import type { Bytes32, MarketId } from "@masayume/core/types";
  */
 
 export type SettlerAction =
+  /** Opening a committed deck. Permissionless too: the commitment, not a key, proves it was fixed first. */
+  | { kind: "arena-reveal"; matchId: Bytes32; why: string }
   | { kind: "arena-lock"; matchId: Bytes32; why: string }
   | { kind: "arena-settle-card"; matchId: Bytes32; cardIndex: number; why: string }
   | { kind: "arena-finalize"; matchId: Bytes32; why: string }
@@ -48,7 +50,10 @@ export function decideMatch(input: SettleInput): readonly SettlerAction[] {
 
   if (match.status === "activeUnrevealed") {
     const deadline = match.joinedAtSec + params.revealWindowSec;
-    return nowSec > deadline ? [{ kind: "arena-refund-unrevealed", matchId, why: `the deck was never opened by ${deadline}` }] : [];
+    if (nowSec > deadline) return [{ kind: "arena-refund-unrevealed", matchId, why: `the deck was never opened by ${deadline}` }];
+    // Both pots are in and the deck is committed: open it. The caller supplies the material, and when it
+    // cannot, this is simply not sent — and the refund above is what the deadline then produces.
+    return [{ kind: "arena-reveal", matchId, why: `both pots are in; the deck closes at ${deadline}` }];
   }
 
   if (match.status === "picking") {

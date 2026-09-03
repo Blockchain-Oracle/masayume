@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { addressSchema, type Address } from "../types/primitives";
+import { addressSchema, bytes32Schema, type Address } from "../types/primitives";
 import type { MatchEvent } from "./lifecycle";
 import { decodeDeckCards, decodeMatchState, decodeOutcome, decodeReceipt, wireCommitmentSchema, wireDeckCardSchema, wireMatchStateSchema, wireOutcomeSchema, wireReceiptSchema } from "./wire";
 
@@ -101,10 +101,19 @@ export const clientMessageSchema = z.discriminatedUnion("type", [
     mode: modeSchema,
     tier: tierSchema,
     region: z.string().min(1).max(24),
-    /** Published before the deck exists: the player's half of the seed, hashed. */
-    clientSeedCommitment: z.string().min(1).max(160),
+    /** `keccak256(seed)`, published before the deck exists — see `seed.reveal`. */
+    clientSeedCommitment: bytes32Schema,
   }),
   z.object({ type: z.literal("queue.leave") }),
+  /**
+   * The other half of the queue's commitment, sent once `match.found` names an opponent.
+   *
+   * The ceremony is what makes the deck honest: a player commits to a seed while nobody knows who they
+   * will face, and reveals it only after the pairing is fixed. The deckmaster checks the reveal against
+   * the commitment before it hashes anything, so neither a player nor the server can choose a seed after
+   * seeing the other's — which is exactly the property `GameArena.revealDeck` re-checks on chain.
+   */
+  z.object({ type: z.literal("seed.reveal"), matchId: matchIdSchema, seed: bytes32Schema }),
   z.object({ type: z.literal("pick.pending"), matchId: matchIdSchema, cardIndex: cardIndexSchema }),
   z.object({ type: z.literal("chat"), matchId: matchIdSchema, body: z.string().min(1).max(CHAT_MAX_CHARS * 2) }),
   z.object({ type: z.literal("reaction"), matchId: matchIdSchema, reaction: z.enum(REACTIONS) }),

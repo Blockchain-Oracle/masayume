@@ -51,8 +51,8 @@ export function isCompatible(a: QueueEntry, b: QueueEntry, nowMs: number): boole
  * The opponent for `self` out of one queue: the compatible entry that has waited longest, so the queue
  * drains oldest-first rather than by rating proximity. Returns null when nobody is in band yet.
  */
-export function findOpponent(self: QueueEntry, queue: readonly QueueEntry[], nowMs: number): QueueEntry | null {
-  let best: QueueEntry | null = null;
+export function findOpponent<T extends QueueEntry>(self: T, queue: readonly T[], nowMs: number): T | null {
+  let best: T | null = null;
   for (const candidate of queue) {
     if (!isCompatible(self, candidate, nowMs)) continue;
     if (!best || candidate.queuedAtMs < best.queuedAtMs) best = candidate;

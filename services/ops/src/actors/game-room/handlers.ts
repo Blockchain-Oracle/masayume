@@ -27,6 +27,8 @@ import { buildMatchSnapshot } from "./snapshot";
 export interface Matchmaker {
   join(connection: RoomConnection, request: Extract<ClientMessage, { type: "queue.join" }>): Promise<void>;
   leave(connection: RoomConnection): void;
+  /** The second half of the queue's commitment, checked against the hash the player queued with. */
+  revealSeed(connection: RoomConnection, message: Extract<ClientMessage, { type: "seed.reveal" }>): Promise<void>;
 }
 
 /** Where a fresh browser learns which match it is already in, without being told by the browser. */
@@ -149,6 +151,15 @@ export async function handleMessage(ctx: RoomContext, connection: RoomConnection
       ctx.matchmaker?.leave(connection);
       return;
 
+    case "seed.reveal": {
+      if (!ctx.matchmaker) {
+        ctx.hub.send(connection, roomError("queue-unavailable", "matchmaking is not running on this room", "seed.reveal"));
+        return;
+      }
+      await ctx.matchmaker.revealSeed(connection, message);
+      return;
+    }
+
     /** Advisory only, and deliberately without the side: the opponent learns *that* you are deciding. */
     case "pick.pending":
       relay(ctx, connection, message.matchId, { type: "pick.pending", matchId: message.matchId, player: connection.wallet, cardIndex: message.cardIndex }, "pick.pending");
@@ -169,6 +180,7 @@ export async function handleMessage(ctx: RoomContext, connection: RoomConnection
 
 /** A player leaving is a presence change for whoever is left, not a silent disappearance. */
 export function announceDeparture(ctx: RoomContext, connection: RoomConnection): void {
+  ctx.matchmaker?.leave(connection);
   const key = connection.room?.key;
   ctx.hub.close(connection);
   if (!key) return;

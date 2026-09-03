@@ -25,6 +25,8 @@ export const ROOM_RATES: Readonly<Record<ClientMessageType, RateRule>> = {
   hello: { burst: 2, perSec: 0.1 },
   "queue.join": { burst: 3, perSec: 0.2 },
   "queue.leave": { burst: 3, perSec: 0.2 },
+  /** One per pairing; a second only because a dropped socket may have to redo the ceremony. */
+  "seed.reveal": { burst: 3, perSec: 0.2 },
   /** A swipe in progress: generous, because this one is per gesture rather than per action. */
   "pick.pending": { burst: 10, perSec: 2 },
   chat: { burst: 4, perSec: 0.5 },

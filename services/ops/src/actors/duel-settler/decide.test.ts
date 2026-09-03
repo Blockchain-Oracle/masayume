@@ -44,8 +44,8 @@ describe("what the settler may crank", () => {
     expect(decide(match("waiting", { createdAtSec: NOW - 400 }))[0]?.kind).toBe("arena-refund-unjoined");
   });
 
-  it("waits for the reveal window before refunding a deck that was never opened", () => {
-    expect(decide(match("activeUnrevealed", { joinedAtSec: NOW - 100 }))).toEqual([]);
+  it("opens a committed deck while it can, and refunds it once the window has closed", () => {
+    expect(decide(match("activeUnrevealed", { joinedAtSec: NOW - 100 }))[0]?.kind).toBe("arena-reveal");
     expect(decide(match("activeUnrevealed", { joinedAtSec: NOW - 200 }))[0]?.kind).toBe("arena-refund-unrevealed");
   });
 

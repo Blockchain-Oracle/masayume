@@ -35,3 +35,6 @@ reference/
 
 # forge broadcast receipts: the essentials are recorded in context/4x and deployments/<chainId>.json
 contracts/broadcast/
+
+# the deckmaster's reveal journal: the operator's own durable copy, never the repo's
+.masayume/

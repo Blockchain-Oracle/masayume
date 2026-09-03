@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "spike:room": "tsx src/spike/room-drive.ts",
     "spike:arena-open": "tsx src/spike/arena-open.ts",
-    "spike:duel-live": "tsx src/spike/duel-live.ts"
+    "spike:duel-live": "tsx src/spike/duel-live.ts",
+    "spike:queue": "tsx src/spike/queue-drive.ts"
   },
   "dependencies": {
     "@masayume/core": "workspace:*",
