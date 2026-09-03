@@ -18,8 +18,22 @@ export type Seat = 0 | 1;
 export const SEAT_CREATOR: Seat = 0;
 export const SEAT_CHALLENGER: Seat = 1;
 
+/**
+ * The identity of one pick, everywhere off-chain: the coordinates the contract itself keys by
+ * (`cardIndex * 2 + seat`), with the chain and match that scope them.
+ *
+ * A pick's chain log identity would be the wrong key. `PickFilled` and the later `CardSettled` are two
+ * different logs about the same pick, so keying by log would give a settled card two receipts instead of
+ * one with a payout — and the lifecycle counts two receipts per card to decide a deck is complete. These
+ * coordinates are derivable from a log, from a state read and from the database alike, which is what lets
+ * a reconnect's snapshot and a live delta fold onto each other instead of stacking up.
+ */
+export function arenaPickKey(chainId: number, matchId: string, cardIndex: number, seat: Seat): string {
+  return `${chainId}:${matchId.toLowerCase()}:${cardIndex}:${seat}`;
+}
+
 /** `IGameArena.RefundReason`, in the contract's enum order. */
-export const ARENA_REFUND_REASONS: readonly RefundReason[] = ["creator-timeout", "join-timeout", "reveal-unavailable", "both-incomplete"];
+export const ARENA_REFUND_REASONS: readonly RefundReason[] = ["creator-cancelled", "join-timeout", "reveal-unavailable", "both-incomplete"];
 
 export function arenaRefundReasonOf(index: number): RefundReason {
   const reason = ARENA_REFUND_REASONS[index];

@@ -1,14 +1,16 @@
 import { describe, expect, it } from "vitest";
 import type { Address } from "../types/primitives";
+import { arenaPickKey } from "./arena";
 import { cardPnl, playerPnl, scoreForCreator, settleMatch } from "./scoring";
 import type { CardReceipt, Pick } from "./types";
 
 const CREATOR = "0xaaaa111111111111111111111111111111111111" as Address;
 const CHALLENGER = "0xbbbb111111111111111111111111111111111111" as Address;
+const MATCH_ID = `0x${"11".repeat(32)}`;
 const POT = 5_000_000n; // 5 tUSDC at six decimals.
 
 function receipt(player: Address, cardIndex: number, costBase: bigint, payoutBase: bigint | null, pick: Pick = "up"): CardReceipt {
-  return { cardIndex, player, pick, quantity: 1_000_000n, costBase, payoutBase, logKey: `0xtx:${player}:${cardIndex}` };
+  return { cardIndex, player, pick, quantity: 1_000_000n, costBase, payoutBase, pickKey: arenaPickKey(50_312, MATCH_ID, cardIndex, player === CREATOR ? 0 : 1) };
 }
 
 describe("duel scoring", () => {

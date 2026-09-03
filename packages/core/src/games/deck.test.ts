@@ -31,6 +31,7 @@ describe("deck selection", () => {
     if (!result.ok) return;
     expect(result.cards).toHaveLength(4);
     expect(result.cards.map((c) => c.index)).toEqual([0, 1, 2, 3]);
+    expect(result.lane).toBe("15m");
     expect(result.cards[0]?.expirySec).toBeLessThan(result.cards[1]?.expirySec ?? 0);
   });
 
@@ -54,8 +55,34 @@ describe("deck selection", () => {
     const result = selectDeck(mixed, POLICY, NOW);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    // A fallback deck is all 1h: mixing cadences would give one card five times another's time to move.
+    // One cadence is still preferred while three of it qualify — it is the nicest deck to read.
     expect(result.cards.every((c) => c.intervalSec === INTERVAL_1H_SEC)).toBe(true);
+    expect(result.lane).toBe("1h");
+  });
+
+  /** Shannon's real shape on 2026-09-03: two assets, one Window per cadence, so two of each is the most there is. */
+  it("deals a mixed deck when no single cadence has three, because the venue may never run three", () => {
+    const venue = [
+      candidate(1, { asset: "BTC" }),
+      candidate(2, { asset: "ETH" }),
+      candidate(10, { asset: "BTC", intervalSec: INTERVAL_1H_SEC, expirySec: NOW + 2_200 }),
+      candidate(11, { asset: "ETH", intervalSec: INTERVAL_1H_SEC, expirySec: NOW + 2_200 }),
+    ];
+    const result = selectDeck(venue, POLICY, NOW);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.lane).toBe("mixed");
+    expect(result.cards).toHaveLength(4);
+    // Soonest first, so the deck still plays in the order the Windows settle.
+    expect(result.cards.map((c) => c.intervalSec)).toEqual([INTERVAL_15M_SEC, INTERVAL_15M_SEC, INTERVAL_1H_SEC, INTERVAL_1H_SEC]);
+  });
+
+  it("still refuses a mixed deck below three, and never mixes 5m in", () => {
+    const thin = [candidate(1), candidate(10, { intervalSec: INTERVAL_1H_SEC, expirySec: NOW + 2_200 }), candidate(20, { intervalSec: INTERVAL_5M_SEC })];
+    const result = selectDeck(thin, POLICY, NOW);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.refusal.eligible).toBe(2);
   });
 
   it("drops Windows that are untradeable, unsupported, wide, thin, too close or past the horizon", () => {

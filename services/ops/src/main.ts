@@ -2,6 +2,7 @@
  * The single long-running ops service (AD-8). Each actor is a single writer over its own key and
  * registers here; every cycle logs a structured why-string, and idle is a heartbeat, never silence.
  */
+import { startGameRoom } from "./actors/game-room";
 import { startLeverageKeeper } from "./actors/leverage-keeper";
 import { startMarketMaker } from "./actors/market-maker";
 import { startStrategyRunner } from "./actors/strategy-runner";
@@ -20,4 +21,5 @@ void startStrategyRunner(log("strategy-runner"));
 void startXRelay(log("x-relay"));
 void startMarketMaker(log("market-maker"));
 void startLeverageKeeper(log("leverage-keeper"));
+void startGameRoom(log("game-room"));
 setInterval(() => console.log(whyString("ops", "idle heartbeat")), HEARTBEAT_MS);

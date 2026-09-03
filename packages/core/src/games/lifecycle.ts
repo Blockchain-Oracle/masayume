@@ -10,8 +10,9 @@ import type { CardReceipt, DeckCard, DeckCommitment, DuelMode, MatchPlayers, Sta
  * chain and database snapshots are the only things allowed to move economic UI, so a server snapshot
  * overrides whatever the client believed (`06-game-architecture.md` §Matchmaking, realtime and reconnect).
  *
- * Sequence numbers are deliberately absent: they are advisory. Idempotency comes from the chain's
- * `(chainId, txHash, logIndex)` on each receipt, which is why `pickConfirmed` can be applied twice.
+ * Sequence numbers are deliberately absent: they are advisory. Idempotency comes from each receipt's
+ * `pickKey` — the card and seat it belongs to — which is why `pickConfirmed` can be applied twice, and
+ * why a card's settlement fills in the receipt its pick already wrote.
  */
 
 export type MatchPhase =
@@ -33,8 +34,12 @@ export type MatchPhase =
 /** `forfeited` is deliberately absent: a forfeited match still settles its cards and allocates its pot. */
 const TERMINAL: ReadonlySet<MatchPhase> = new Set<MatchPhase>(["finalized", "cancelled", "expired", "refunded"]);
 
-/** Why a match ended without a winner. Operator failure refunds; a player's absence forfeits. */
-export type RefundReason = "creator-timeout" | "join-timeout" | "reveal-unavailable" | "both-incomplete";
+/**
+ * Why a match ended without a winner, in `IGameArena.RefundReason`'s own order and its own words —
+ * `creator-cancelled` is a creator withdrawing an unjoined match, not a clock running out. Nobody's
+ * fault refunds; a player's absence forfeits.
+ */
+export type RefundReason = "creator-cancelled" | "join-timeout" | "reveal-unavailable" | "both-incomplete";
 
 export interface MatchEntry {
   mode: DuelMode;
@@ -113,9 +118,9 @@ function receiptsOf(state: MatchState): readonly CardReceipt[] {
   return "receipts" in state ? state.receipts : [];
 }
 
-/** Receipts are keyed by the chain's own log identity, so replaying one is a no-op rather than a double count. */
+/** Receipts are keyed by the pick's own coordinates, so replaying one is a no-op rather than a double count. */
 function withReceipt(receipts: readonly CardReceipt[], receipt: CardReceipt): readonly CardReceipt[] {
-  const at = receipts.findIndex((r) => r.logKey === receipt.logKey);
+  const at = receipts.findIndex((r) => r.pickKey === receipt.pickKey);
   if (at === -1) return [...receipts, receipt];
   const next = [...receipts];
   next[at] = receipt;

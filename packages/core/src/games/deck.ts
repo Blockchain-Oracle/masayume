@@ -9,6 +9,18 @@ import type { DeckCard } from "./types";
  * path fits inside one (`06-game-architecture.md` §Owner decisions 4). The headroom rule is Flicky's —
  * soonest-settling first, but only Windows with real time left, so a deck cannot be dealt cards that
  * lock before a player can reach them.
+ *
+ * **The mixed lane is not a third preference; it is what the venue forced.** Driven live on Shannon on
+ * 2026-09-03, the venue runs two assets, one Window per cadence: at any moment there are exactly two
+ * live 15m Windows and two live 1h ones, so a three-card deck of a single cadence is not merely rare —
+ * it is impossible. Refusing to deal would have made the duel undeliverable. The single-cadence lanes
+ * stay first because they are the nicest to read, and a mixed deck is dealt only when neither has three.
+ *
+ * What the single-cadence rule was protecting is protected by the filters that remain: every card must
+ * be tradable now, must still have real life left, and must settle inside the match horizon — so a
+ * mixed deck varies in how long each card runs, never in whether a player can reach it. Both players
+ * hold identical cards either way; the asymmetry a mixed deck introduces is between cards, not between
+ * players, and each card carries its own countdown on the stage.
  */
 
 export const DECK_MIN = 3;
@@ -43,7 +55,10 @@ export interface DeckPolicy {
 
 export type DeckRefusal = { kind: "too-few-eligible"; eligible: number; needed: number };
 
-export type DeckSelection = { ok: true; cards: readonly DeckCard[] } | { ok: false; refusal: DeckRefusal };
+/** Which lane dealt the deck — recorded so a session can see when the venue was too thin for one cadence. */
+export type DeckLane = "15m" | "1h" | "mixed";
+
+export type DeckSelection = { ok: true; cards: readonly DeckCard[]; lane: DeckLane } | { ok: false; refusal: DeckRefusal };
 
 function isEligible(candidate: DeckCandidate, policy: DeckPolicy, nowSec: number): boolean {
   if (!candidate.trading) return false;
@@ -81,19 +96,15 @@ function toCards(candidates: readonly DeckCandidate[]): readonly DeckCard[] {
   }));
 }
 
-/**
- * Deals a deck, or says why it cannot. The 1h lane is a fallback rather than a supplement: mixing
- * cadences would give one card five times another's time to move, which reads as unfairness even
- * though both sides hold it.
- */
+/** Deals a deck, or says why it cannot: one cadence where the venue has three, mixed where it does not. */
 export function selectDeck(candidates: readonly DeckCandidate[], policy: DeckPolicy, nowSec: number): DeckSelection {
   const eligible = distinctWindows(candidates.filter((c) => isEligible(c, policy, nowSec)).sort(byUrgency));
   const preferred = eligible.filter((c) => c.intervalSec === INTERVAL_15M_SEC);
-  if (preferred.length >= DECK_MIN) return { ok: true, cards: toCards(preferred) };
+  if (preferred.length >= DECK_MIN) return { ok: true, cards: toCards(preferred), lane: "15m" };
 
   const fallback = eligible.filter((c) => c.intervalSec === INTERVAL_1H_SEC);
-  if (fallback.length >= DECK_MIN) return { ok: true, cards: toCards(fallback) };
+  if (fallback.length >= DECK_MIN) return { ok: true, cards: toCards(fallback), lane: "1h" };
 
-  const best = Math.max(preferred.length, fallback.length);
-  return { ok: false, refusal: { kind: "too-few-eligible", eligible: best, needed: DECK_MIN } };
+  if (eligible.length >= DECK_MIN) return { ok: true, cards: toCards(eligible), lane: "mixed" };
+  return { ok: false, refusal: { kind: "too-few-eligible", eligible: eligible.length, needed: DECK_MIN } };
 }

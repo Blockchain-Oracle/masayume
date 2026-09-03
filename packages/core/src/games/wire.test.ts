@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { toMarketId } from "../types/market";
 import type { Address, Bytes32 } from "../types/primitives";
+import { arenaPickKey } from "./arena";
 import { reduce, type MatchEvent, type MatchState } from "./lifecycle";
 import type { CardReceipt, DeckCard } from "./types";
 import { decodeMatchState, encodeMatchState, wireMatchStateSchema } from "./wire";
@@ -8,6 +9,7 @@ import { decodeMatchState, encodeMatchState, wireMatchStateSchema } from "./wire
 const CREATOR = "0xaaaa111111111111111111111111111111111111" as Address;
 const CHALLENGER = "0xbbbb111111111111111111111111111111111111" as Address;
 const PLAYERS = { creator: CREATOR, challenger: CHALLENGER };
+const MATCH_ID = "0xm1";
 const COMMITMENT = { hash: `0x${"ab".repeat(32)}` as Bytes32, size: 3, policyVersion: 1 };
 
 const CARDS: readonly DeckCard[] = [0, 1, 2].map((i) => ({
@@ -19,7 +21,7 @@ const CARDS: readonly DeckCard[] = [0, 1, 2].map((i) => ({
 }));
 
 function receipt(player: Address, cardIndex: number, payoutBase: bigint | null = null): CardReceipt {
-  return { cardIndex, player, pick: "up", quantity: 10n ** 20n, costBase: 12_345_678_901_234_567_890n, payoutBase, logKey: `0xtx:${player}:${cardIndex}` };
+  return { cardIndex, player, pick: "up", quantity: 10n ** 20n, costBase: 12_345_678_901_234_567_890n, payoutBase, pickKey: arenaPickKey(50_312, MATCH_ID, cardIndex, player === CREATOR ? 0 : 1) };
 }
 
 const TO_PICKING: readonly MatchEvent[] = [

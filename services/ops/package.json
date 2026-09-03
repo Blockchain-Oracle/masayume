@@ -6,16 +6,21 @@
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "start": "tsx src/main.ts",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "spike:room": "tsx src/spike/room-drive.ts",
+    "spike:arena-open": "tsx src/spike/arena-open.ts"
   },
   "dependencies": {
     "@masayume/core": "workspace:*",
     "@masayume/db": "workspace:*",
     "@masayume/markets": "workspace:*",
-    "tsx": "catalog:"
+    "tsx": "catalog:",
+    "viem": "catalog:",
+    "ws": "8.21.3"
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "@types/ws": "^8.18.1",
     "typescript": "catalog:"
   }
 }

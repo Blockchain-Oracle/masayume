@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { toMarketId } from "../types/market";
 import type { Address, Bytes32 } from "../types/primitives";
+import { arenaPickKey } from "./arena";
 import { activeMatchId, canQueue, IDLE, isTerminal, reduce, transition, type MatchEvent, type MatchState } from "./lifecycle";
 import type { CardReceipt, DeckCard } from "./types";
 
@@ -18,7 +19,7 @@ const CARDS: readonly DeckCard[] = [0, 1, 2].map((i) => ({
 }));
 
 function receipt(player: Address, cardIndex: number, payoutBase: bigint | null = null): CardReceipt {
-  return { cardIndex, player, pick: "up", quantity: 1n, costBase: 100n, payoutBase, logKey: `0xtx:${player}:${cardIndex}` };
+  return { cardIndex, player, pick: "up", quantity: 1n, costBase: 100n, payoutBase, pickKey: arenaPickKey(50_312, "0xm1", cardIndex, player === CREATOR ? 0 : 1) };
 }
 
 const TO_PICKING: readonly MatchEvent[] = [
@@ -69,6 +70,20 @@ describe("match lifecycle", () => {
     expect(twice.receipts).toHaveLength(1);
     // Replaying the full deck twice still locks exactly once rather than over-counting into completion.
     expect(reduce([...ALL_PICKS, ...ALL_PICKS], picking).phase).toBe("locked");
+  });
+
+  it("folds a card's settlement into the receipt its pick already wrote", () => {
+    const locked = reduce(ALL_PICKS, reduce(TO_PICKING));
+    expect(locked.phase).toBe("locked");
+    if (locked.phase !== "locked") return;
+    expect(locked.receipts).toHaveLength(6);
+
+    const settling = transition(locked, { kind: "cardSettled", receipt: receipt(CREATOR, 0, 300n) });
+    expect(settling.phase).toBe("settling");
+    if (settling.phase !== "settling") return;
+    // Six receipts still, one of them now paid — not seven, which is what a log-identity key would give.
+    expect(settling.receipts).toHaveLength(6);
+    expect(settling.receipts.find((r) => r.player === CREATOR && r.cardIndex === 0)?.payoutBase).toBe(300n);
   });
 
   it("forfeits the absent player and refunds when both are absent", () => {

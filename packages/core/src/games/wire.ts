@@ -38,7 +38,7 @@ export const wireDeckCardSchema = z.object({
   expirySec: z.number().int().positive(),
 });
 
-/** `logKey` is `(chainId, txHash, logIndex)` collapsed — the only identity a duplicate delta is caught by. */
+/** `pickKey` is the pick's coordinates (`arenaPickKey`) — the identity a duplicate or a settlement is folded on. */
 export const wireReceiptSchema = z.object({
   cardIndex: z.number().int().min(0).max(7),
   player: addressSchema,
@@ -46,7 +46,7 @@ export const wireReceiptSchema = z.object({
   quantity: unsigned,
   costBase: unsigned,
   payoutBase: unsigned.nullable(),
-  logKey: z.string().min(1).max(160),
+  pickKey: z.string().min(1).max(160),
 });
 
 export const wireCommitmentSchema = z.object({
@@ -81,7 +81,7 @@ export const wireMatchStateSchema = z.discriminatedUnion("phase", [
   z.object({ phase: z.literal("finalized"), ...identity, outcome: wireOutcomeSchema, receipts: z.array(wireReceiptSchema).max(10) }),
   z.object({ phase: z.literal("cancelled"), ...entry }),
   z.object({ phase: z.literal("expired"), ...entry }),
-  z.object({ phase: z.literal("refunded"), ...identity, reason: z.enum(["creator-timeout", "join-timeout", "reveal-unavailable", "both-incomplete"]) }),
+  z.object({ phase: z.literal("refunded"), ...identity, reason: z.enum(["creator-cancelled", "join-timeout", "reveal-unavailable", "both-incomplete"]) }),
   z.object({ phase: z.literal("forfeited"), ...identity, incomplete: z.array(addressSchema).max(2) }),
 ]);
 
@@ -98,7 +98,7 @@ export function encodeReceipt(receipt: CardReceipt): WireReceipt {
     quantity: receipt.quantity.toString(),
     costBase: receipt.costBase.toString(),
     payoutBase: receipt.payoutBase === null ? null : receipt.payoutBase.toString(),
-    logKey: receipt.logKey,
+    pickKey: receipt.pickKey,
   };
 }
 
@@ -110,7 +110,7 @@ export function decodeReceipt(wire: WireReceipt): CardReceipt {
     quantity: BigInt(wire.quantity),
     costBase: BigInt(wire.costBase),
     payoutBase: wire.payoutBase === null ? null : BigInt(wire.payoutBase),
-    logKey: wire.logKey,
+    pickKey: wire.pickKey,
   };
 }
 

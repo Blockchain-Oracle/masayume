@@ -153,8 +153,16 @@ export interface CardReceipt {
   quantity: bigint;
   costBase: bigint;
   payoutBase: bigint | null;
-  /** `(chainId, txHash, logIndex)` collapsed to one key: the only idempotency the projector trusts. */
-  logKey: string;
+  /**
+   * `chainId:matchId:cardIndex:seat` — the pick's own coordinates, from `arenaPickKey`.
+   *
+   * Not the chain's `(chainId, txHash, logIndex)`, and the difference matters: one card produces two
+   * logs, `PickFilled` and later `CardSettled`, so a log-identity key would append a second receipt for
+   * a card that settled instead of filling in its payout — and `picksComplete`, which counts two
+   * receipts per card, would lock a match that is one pick short. A pick is unique per card per seat by
+   * the contract's own mask, so its coordinates are the identity a state read and a log both derive.
+   */
+  pickKey: string;
 }
 
 export interface MatchPlayers {
