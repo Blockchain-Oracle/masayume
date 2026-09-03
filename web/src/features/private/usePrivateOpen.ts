@@ -4,10 +4,12 @@ import { formatCadence } from "@masayume/core/copy";
 import { privateOpenMessage, type PrivateOpenRequest, type PrivateOpenResult } from "@masayume/core/private";
 import type { Address, EventMarket, Side } from "@masayume/core/types";
 import { formatBaseUnits } from "@masayume/core/units";
+import { sizePrivateForStake } from "@masayume/markets/private";
 import { invalidateAfterWrite } from "@masayume/markets/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 import { useSignMessage } from "wagmi";
+import { diagnosisCopy } from "@/lib/copy";
 import { useWalletSession } from "@/lib/wallet-session";
 import { upsertPrivateTicket } from "./claims-store";
 
@@ -53,8 +55,8 @@ export interface PrivateOpenInput {
   chainId: number;
   side: Side;
   stakeBase: bigint;
-  /** The guard against a book that moved since the quote: fewer contracts than this and the desk refunds. */
-  minQuantityRaw: bigint;
+  /** The guard's floor, in basis points, under the size the desk contract affords the stake — read after the signature, not from the ticket's polled quote. */
+  fillFloorBps: bigint;
   symbol: string;
 }
 
@@ -109,7 +111,7 @@ export function usePrivateOpen() {
   );
 
   const open = useCallback(
-    async ({ market, contract, chainId, side, stakeBase, minQuantityRaw, symbol }: PrivateOpenInput): Promise<PrivateOpenResult | null> => {
+    async ({ market, contract, chainId, side, stakeBase, fillFloorBps, symbol }: PrivateOpenInput): Promise<PrivateOpenResult | null> => {
       if (!address) return null;
       const issuedAtMs = Date.now();
       const message = privateOpenMessage({
@@ -126,6 +128,13 @@ export function usePrivateOpen() {
         issuedAtMs,
       });
       const signature = await signMessageAsync({ message });
+      // The signature covers the stake, never the size, so the guard is taken from a sizing read now — after the
+      // wallet popup — instead of the ticket's polled quote, which is up to REQUOTE_MS old before the popup even
+      // opens. On a thin Window the size a stake affords moves a sixth in three seconds (measured on the 15m lane),
+      // and the desk pre-flights this same read before it charges a cent.
+      const sized = await sizePrivateForStake(market.marketId, side, stakeBase);
+      if (!sized.ok) throw new Error(sized.error.technical || diagnosisCopy(sized.error.kind).body);
+      const minQuantityRaw = (sized.value.quantityRaw * fillFloorBps) / 10_000n;
       const request: PrivateOpenRequest = { owner: address, marketId: market.marketId, side, stakeBase: stakeBase.toString(), minQuantityRaw: minQuantityRaw.toString(), issuedAtMs, signature };
       return send({ request, asset: market.asset, intervalSec: market.intervalSec });
     },

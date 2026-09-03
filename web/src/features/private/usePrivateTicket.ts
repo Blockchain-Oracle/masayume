@@ -21,7 +21,7 @@ import { usePrivateWrites } from "./usePrivateWrites";
 
 /** The reference tops up "a few bets' worth" — four stakes — and never more than the wallet holds. */
 const TOP_UP_STAKES = 4n;
-/** The open refuses a fill more than 5% under the quoted size; the stake never changes. */
+/** The open refuses a fill more than 5% under the size read after the signature; the stake never changes. */
 const FILL_FLOOR_BPS = 9_500n;
 
 export interface PrivateTicketInput {
@@ -180,8 +180,7 @@ export function usePrivateTicket({ market, side, stakeBase, enabled, symbol, wal
     }
     setBusy("open");
     try {
-      const q = quote.quote;
-      settle(await opener.open({ market, contract: desk.deployment.privateDesk, chainId: desk.deployment.chainId, side, stakeBase, minQuantityRaw: (q.quantityRaw * FILL_FLOOR_BPS) / 10_000n, symbol }), side);
+      settle(await opener.open({ market, contract: desk.deployment.privateDesk, chainId: desk.deployment.chainId, side, stakeBase, fillFloorBps: FILL_FLOOR_BPS, symbol }), side);
     } catch (error) {
       notify.warning(PRIVATE.cta.notPlaced, error instanceof Error ? error.message : String(error));
     } finally {
