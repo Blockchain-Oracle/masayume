@@ -63,6 +63,8 @@ surfaces (the leverage ones are done), then Stage 6 (doc 04).**
 | `5f54e5e`…`9f07642` | Stage 5 — `PrivateDesk` after two reviews, redeployed at `0x4D27…28bB`; the resumable authorisation; the live drive (context/46) |
 | `ce17add` | Stage 5 — every reading query waits for the boot (the portfolio alerts and the hidden faucet card, found in a browser) |
 | `724209a` | Stage 5 — the private open's guard is read after the signature (the desk refused a 12 s-old quote twice; the 15m book moves a sixth in three seconds) |
+| `b8e620d` | Stage 5 — the browser review: every Stage 5 surface driven with the demo wallet (a parlay, an earn supply, a 2× boost); nine defects fixed, the ETH bands priceable, the vault exit settling every closed Window (context/49) |
+| `9298d9c` | Stage 5 — the ports diffed against the reference source by six agents (context/50); the cheap exact-replication misses fixed across all six surfaces; six ledger rows corrected |
 
 Everything is green: `pnpm typecheck`, `pnpm invariants` (14/14, 0 warnings), `pnpm test` (151),
 `forge test --no-match-contract Fork` (173), `pnpm build`.
