@@ -51,7 +51,7 @@ export const wireReceiptSchema = z.object({
 
 export const wireCommitmentSchema = z.object({
   hash: bytes32Schema,
-  size: z.number().int().min(3).max(5),
+  size: z.number().int().min(2).max(5),
   policyVersion: z.number().int().min(0),
 });
 

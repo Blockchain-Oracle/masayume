@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { deckCommitmentPreimage, selectDeck, type DeckCandidate, type DeckCard, type DeckLane } from "@masayume/core/games";
+import { deckCommitmentPreimage, nextDealableSec, selectDeck, type ArenaParams, type DeckCandidate, type DeckCard, type DeckLane } from "@masayume/core/games";
 import { phase } from "@masayume/core/lifecycle";
 import { isOk } from "@masayume/core/schemas";
 import type { Address, Bytes32, Hex, MarketId } from "@masayume/core/types";
@@ -20,11 +20,23 @@ import { DECK_KEY_ENV, deckKey, journal, seal, type RevealMaterial } from "./sea
  * another's guarantees — and it is bumped here, beside the rules it names.
  */
 
-/** Bumped whenever the selection rules change. The mixed lane (2026-09-03) is version 2. */
-export const DECK_POLICY_VERSION = 2;
+/**
+ * Bumped whenever the selection rules change. Version 3 (2026-09-03) is the owner-approved floor of two
+ * cards, every eligible Window taken rather than one cadence preferred, and headroom sized against the
+ * arena's own deadlines instead of a guessed margin.
+ */
+export const DECK_POLICY_VERSION = 3;
 
 /** A duel should finish inside an hour: every card must settle within it, or the match outlives its players. */
 const HORIZON_SEC = Number(process.env.GAME_DECK_HORIZON_SEC ?? 60 * 60);
+
+/**
+ * Time between dealing a deck and the creator's `createMatch` landing — human signing plus a block.
+ *
+ * It is a real term in the headroom budget, not a fudge: the arena's join and reveal windows are counted
+ * from creation, so anything spent before creation is spent on top of them.
+ */
+const CREATE_LATENCY_SEC = Number(process.env.GAME_DECK_CREATE_LATENCY_SEC ?? 45);
 
 export interface DealtDeck {
   cards: readonly DeckCard[];
@@ -41,7 +53,7 @@ export interface DealtDeck {
  * pair — outside a duel's horizon, and a deck is briefly impossible. That is a wait, not a failure, and
  * two players who have already been paired should not be thrown out of the queue for it.
  */
-export type DealOutcome = { ok: true; deck: DealtDeck } | { ok: false; why: string; retry: boolean };
+export type DealOutcome = { ok: true; deck: DealtDeck } | { ok: false; why: string; retry: boolean; nextDeckInSec?: number | null };
 
 const bytes32 = (): Bytes32 => `0x${randomBytes(32).toString("hex")}`;
 
@@ -55,7 +67,7 @@ export function seedCommitment(seed: Bytes32): Bytes32 {
   return keccak256(seed);
 }
 
-async function candidates(minCardLifeSec: number): Promise<readonly DeckCandidate[] | null> {
+async function candidates(headroomSec: number): Promise<readonly DeckCandidate[] | null> {
   const venue = await resolveVenueId(parseMarketsEnv().venueId);
   if (!isOk(venue) || !venue.value.venueId) return null;
   const lanes = await marketsProvider.listLiveLanes(venue.value.venueId);
@@ -74,7 +86,27 @@ async function candidates(minCardLifeSec: number): Promise<readonly DeckCandidat
       spreadRaw: 0n,
       depthRaw: 1n,
     }))
-    .filter((c) => c.expirySec - Math.floor(nowMs / 1_000) > minCardLifeSec);
+    .filter((c) => c.expirySec - Math.floor(nowMs / 1_000) > headroomSec);
+}
+
+/**
+ * Seconds until the venue can next supply a deck, 0 when it already can, or null when it is unreadable
+ * or further out than the projection looks. The queue's countdown, and nothing else's.
+ */
+export async function deckSupply(params: DealInput["params"]): Promise<number | null> {
+  const headroomSec = dealHeadroomSec(params);
+  const pool = await candidates(headroomSec);
+  if (!pool) return null;
+  const nowSec = Math.floor(marketsProvider.nowMs() / 1_000);
+  const policy = {
+    supportedAssets: [...new Set(pool.map((c) => c.asset))],
+    maxSpreadRaw: 2n ** 128n,
+    minDepthRaw: 0n,
+    horizonSec: HORIZON_SEC,
+    minHeadroomSec: headroomSec,
+  };
+  if (selectDeck(pool, policy, nowSec).ok) return 0;
+  return nextDealableSec(pool, policy, nowSec);
 }
 
 export interface DealInput {
@@ -82,7 +114,22 @@ export interface DealInput {
   chainId: number;
   arena: Address;
   clientSeeds: readonly Bytes32[];
-  minCardLifeSec: number;
+  /** The arena's own deadlines. Headroom is derived from all three, never from `minCardLifeSec` alone. */
+  params: Pick<ArenaParams, "minCardLifeSec" | "joinWindowSec" | "revealWindowSec">;
+}
+
+/**
+ * How much life a card must have when the deck is DEALT.
+ *
+ * The arena checks `minCardLifeSec` at **reveal**, and a reveal may legally land after the whole join
+ * window and the whole reveal window have elapsed since creation. So a deck sized only to
+ * `minCardLifeSec` can be dealt on a Window that is perfectly legal now and dead by the time anyone can
+ * open it — `revealDeck` reverts, nobody can open the deck, and the match refunds at its reveal
+ * deadline. That is a silent bug in the happy path, because two players who sign in seconds never see
+ * it; it appears exactly when one of them is slow, which is what those windows exist for.
+ */
+export function dealHeadroomSec(params: DealInput["params"]): number {
+  return params.minCardLifeSec + params.joinWindowSec + params.revealWindowSec + CREATE_LATENCY_SEC;
 }
 
 /**
@@ -95,28 +142,29 @@ export async function dealDeck(input: DealInput, onWarning?: (why: string) => vo
   const key = deckKey();
   if (!key) return { ok: false, why: `no ${DECK_KEY_ENV}, so a deck's reveal could not be kept`, retry: false };
 
-  const pool = await candidates(input.minCardLifeSec);
+  const headroomSec = dealHeadroomSec(input.params);
+  const pool = await candidates(headroomSec);
   if (!pool) return { ok: false, why: "the venue's live Windows are unreadable", retry: true };
 
-  const selection = selectDeck(
-    pool,
-    {
-      supportedAssets: [...new Set(pool.map((c) => c.asset))],
-      maxSpreadRaw: 2n ** 128n,
-      minDepthRaw: 0n,
-      horizonSec: HORIZON_SEC,
-      minHeadroomSec: input.minCardLifeSec,
-    },
-    Math.floor(marketsProvider.nowMs() / 1_000),
-  );
+  const nowSec = Math.floor(marketsProvider.nowMs() / 1_000);
+  const policy = {
+    supportedAssets: [...new Set(pool.map((c) => c.asset))],
+    maxSpreadRaw: 2n ** 128n,
+    minDepthRaw: 0n,
+    horizonSec: HORIZON_SEC,
+    minHeadroomSec: headroomSec,
+  };
+  const selection = selectDeck(pool, policy, nowSec);
   if (!selection.ok) {
     // The count of live Windows rides along: "0 of 3" from an empty venue and "0 of 3" from a venue whose
     // Windows are all locked are different operational problems, and the log has to tell them apart.
     const trading = pool.filter((c) => c.trading).length;
+    const inSec = nextDealableSec(pool, policy, nowSec);
     return {
       ok: false,
       retry: true,
-      why: `only ${selection.refusal.eligible} of ${selection.refusal.needed} Windows qualify right now (${trading} trading of ${pool.length} live, horizon ${HORIZON_SEC}s, headroom ${input.minCardLifeSec}s)`,
+      nextDeckInSec: inSec,
+      why: `only ${selection.refusal.eligible} of ${selection.refusal.needed} Windows qualify (${trading} trading of ${pool.length} live, horizon ${HORIZON_SEC}s, headroom ${headroomSec}s)${inSec === null ? "" : `; the next deck is dealable in ${inSec}s`}`,
     };
   }
 

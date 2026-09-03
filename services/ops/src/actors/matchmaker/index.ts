@@ -10,6 +10,7 @@ import {
   type StakeTierId,
 } from "@masayume/core/games";
 import { isOk } from "@masayume/core/schemas";
+import { deckSupply } from "./deckmaster";
 import type { Address, Bytes32 } from "@masayume/core/types";
 import { readRatings } from "@masayume/db";
 import { getArenaState } from "@masayume/markets/games";
@@ -123,7 +124,7 @@ export function createMatchmaker(ctx: RoomContext): Matchmaker {
       chainId: ctx.chainId,
       arena: ctx.arena,
       clientSeeds: seeds,
-      minCardLifeSec: state.value.params.minCardLifeSec,
+      params: state.value.params,
     }, ctx.log);
     if (!dealt.ok) {
       if (!dealt.retry) return dissolve(pairing, dealt.why);
@@ -131,7 +132,9 @@ export function createMatchmaker(ctx: RoomContext): Matchmaker {
       if (!pairing.toldWaiting) {
         pairing.toldWaiting = true;
         ctx.log(`${pairing.matchId}: holding — ${dealt.why}`);
-        for (const player of pairing.players) tell(player, roomError("queue-unavailable", "waiting for the next Windows to open", "queue.join"));
+        const wait = dealt.nextDeckInSec;
+        const when = wait === null || wait === undefined ? "shortly" : `in about ${Math.ceil(wait / 15) * 15}s`;
+        for (const player of pairing.players) tell(player, roomError("queue-unavailable", `the venue has no Windows to deal right now; the next ones open ${when}`, "queue.join"));
       }
       return;
     }
@@ -195,6 +198,39 @@ export function createMatchmaker(ctx: RoomContext): Matchmaker {
     }
   }
 
+  /**
+   * How far off the next dealable deck is, refreshed once a tick and shared by every queued player.
+   *
+   * Cached rather than computed per player: it is a property of the venue, not of a wallet, and asking
+   * the indexer once per waiting player per tick would be a read amplification with no new information.
+   */
+  let nextDeckInSec: number | null = null;
+  /** Debounce: when the last read STARTED. Separate from `supplyKnown` on purpose — see below. */
+  let supplyAtMs = 0;
+  /**
+   * Whether a supply read has ever completed.
+   *
+   * Not derivable from `supplyAtMs`, which is stamped when a read *starts* so two ticks cannot both
+   * fire one. Reading "known" off that timestamp reported `nextDeckInSec: null` — "no deck for the
+   * foreseeable future" — during the seconds the very first read was still in flight.
+   */
+  let supplyKnown = false;
+
+  /** Absent until the first read lands, then a number or a real null. The protocol's own distinction. */
+  const supply = () => (supplyKnown ? { nextDeckInSec } : {});
+
+  async function refreshSupply(nowMs: number): Promise<void> {
+    if (supplyAtMs !== 0 && nowMs - supplyAtMs < QUEUE_TICK_MS) return;
+    supplyAtMs = nowMs;
+    const state = await getArenaState();
+    if (!isOk(state) || !state.value) return;
+    nextDeckInSec = await deckSupply(state.value.params);
+    supplyKnown = true;
+  }
+
+  // Warm before anyone queues, so the common case is a real countdown rather than "not known yet".
+  void refreshSupply(Date.now());
+
   const sweeper = setInterval(() => {
     const nowMs = Date.now();
     for (const pairing of [...pairings.values()]) {
@@ -209,10 +245,11 @@ export function createMatchmaker(ctx: RoomContext): Matchmaker {
       void commit(pairing);
     }
     for (const key of [...queues.keys()]) sweepQueue(key, nowMs);
+    if (queues.size > 0) void refreshSupply(nowMs);
     for (const [key, waiting] of queues) {
       for (const entry of waiting) {
         const waitedMs = nowMs - entry.queuedAtMs;
-        tell(entry, { type: "queue.update", waitingCount: waiting.length, bandNow: searchBand(waitedMs), waitedMs });
+        tell(entry, { type: "queue.update", waitingCount: waiting.length, bandNow: searchBand(waitedMs), waitedMs, ...supply() });
       }
       if (waiting.length === 0) queues.delete(key);
     }
@@ -245,7 +282,7 @@ export function createMatchmaker(ctx: RoomContext): Matchmaker {
       if (opponent) return pair(entry, opponent);
 
       queues.set(key, [...queue, entry]);
-      ctx.hub.send(connection, { type: "queue.update", waitingCount: queue.length + 1, bandNow: searchBand(0), waitedMs: 0 });
+      ctx.hub.send(connection, { type: "queue.update", waitingCount: queue.length + 1, bandNow: searchBand(0), waitedMs: 0, ...supply() });
       ctx.log(`${connection.wallet} queued at ${key} (rating ${entry.rating}); ${queue.length + 1} waiting`);
     },
 

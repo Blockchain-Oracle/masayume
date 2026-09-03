@@ -23,13 +23,33 @@ import type { DeckCard } from "./types";
  * players, and each card carries its own countdown on the stage.
  */
 
-export const DECK_MIN = 3;
+/**
+ * Two, not three, and the reason is the venue's supply rather than a preference.
+ *
+ * Somnia runs two assets with one Window per cadence, so a cadence yields at most TWO live Windows —
+ * and the 15m cadence is too short to absorb the arena's own deadlines (join + reveal + card life is
+ * 540s of a 900s cycle at the deployed parameters), which leaves the 1h pair as the dependable supply.
+ * At three, a deck was dealable 40% of the time; at two, 90% (owner's decision, 2026-09-03, measured by
+ * `spike:supply`). Doc 06 §Owner decisions 4 said three to five; this is the approved deviation.
+ *
+ * A two-card duel is a coarser contest — more ties, more luck — which is why it stays the floor rather
+ * than the target: `selectDeck` still takes every eligible Window up to `DECK_MAX`, so a deck is four
+ * cards whenever the venue has four.
+ */
+export const DECK_MIN = 2;
 export const DECK_MAX = 5;
 export const INTERVAL_15M_SEC = 900;
 export const INTERVAL_1H_SEC = 3_600;
 /** Excluded by policy, not by capability: 5m returns only with a measured end-to-end timing. */
 export const INTERVAL_5M_SEC = 300;
-/** A card must still have this long to run when the deck is dealt. */
+/**
+ * A card must still have this long to run when the deck is dealt.
+ *
+ * A default, not the rule: the real figure is the arena's own `minCardLifeSec` plus its join and reveal
+ * windows, because the contract checks card life at REVEAL and a reveal may legally land after both of
+ * those have elapsed. The deckmaster computes it from the deployed parameters; this constant is only
+ * what a caller gets for not saying.
+ */
 export const MIN_HEADROOM_SEC = 600;
 
 export interface DeckCandidate {
@@ -55,7 +75,7 @@ export interface DeckPolicy {
 
 export type DeckRefusal = { kind: "too-few-eligible"; eligible: number; needed: number };
 
-/** Which lane dealt the deck — recorded so a session can see when the venue was too thin for one cadence. */
+/** What the deck turned out to be, recorded so a session can see when the venue was thin. Descriptive. */
 export type DeckLane = "15m" | "1h" | "mixed";
 
 export type DeckSelection = { ok: true; cards: readonly DeckCard[]; lane: DeckLane } | { ok: false; refusal: DeckRefusal };
@@ -96,15 +116,50 @@ function toCards(candidates: readonly DeckCandidate[]): readonly DeckCard[] {
   }));
 }
 
-/** Deals a deck, or says why it cannot: one cadence where the venue has three, mixed where it does not. */
+function laneOf(cards: readonly DeckCard[]): DeckLane {
+  const cadences = new Set(cards.map((card) => card.intervalSec));
+  if (cadences.size > 1) return "mixed";
+  return cadences.has(INTERVAL_15M_SEC) ? "15m" : "1h";
+}
+
+/**
+ * When a deck could next be dealt, in seconds from `nowSec`, or null if not within `withinSec`.
+ *
+ * The venue's schedule is deterministic — a Window expires at E and its successor runs E → E+interval —
+ * so a queue can say "next deck in 3:12" rather than "waiting", which is the difference between a
+ * product that is briefly unavailable and one that looks broken. Projection is a per-second scan because
+ * the candidate set is four items and the span is minutes; the arithmetic to solve it in closed form
+ * would be longer than the loop and wrong at the boundaries.
+ */
+export function nextDealableSec(candidates: readonly DeckCandidate[], policy: DeckPolicy, nowSec: number, withinSec = 900): number | null {
+  for (let ahead = 1; ahead <= withinSec; ahead += 1) {
+    const at = nowSec + ahead;
+    const eligible = candidates.filter((candidate) => {
+      // The successor Window of the same series, once this one has expired.
+      let expirySec = candidate.expirySec;
+      while (expirySec <= at) expirySec += candidate.intervalSec;
+      return isEligible({ ...candidate, expirySec, trading: true }, policy, at);
+    });
+    if (distinctWindows(eligible).length >= DECK_MIN) return ahead;
+  }
+  return null;
+}
+
+/**
+ * Deals a deck: every eligible Window, soonest-settling first, up to five.
+ *
+ * There is no cadence preference any more, and removing it was forced by the floor moving to two. A rule
+ * that preferred a single cadence would deal a TWO-card deck while four Windows sat eligible, because two
+ * is now enough to satisfy it — a worse contest for no reason. Taking everything gives four cards when the
+ * venue has four and two when it has two, which is what the owner approved on 2026-09-03.
+ *
+ * The cost is that a mixed deck's last card settles later than its first, so the pot waits on the slowest
+ * — up to `horizonSec`. That is bounded rather than unbounded, and it is why the horizon is an hour: the
+ * player swipes in one sitting, and the cards then resolve one at a time through `settlement.progress`.
+ */
 export function selectDeck(candidates: readonly DeckCandidate[], policy: DeckPolicy, nowSec: number): DeckSelection {
   const eligible = distinctWindows(candidates.filter((c) => isEligible(c, policy, nowSec)).sort(byUrgency));
-  const preferred = eligible.filter((c) => c.intervalSec === INTERVAL_15M_SEC);
-  if (preferred.length >= DECK_MIN) return { ok: true, cards: toCards(preferred), lane: "15m" };
-
-  const fallback = eligible.filter((c) => c.intervalSec === INTERVAL_1H_SEC);
-  if (fallback.length >= DECK_MIN) return { ok: true, cards: toCards(fallback), lane: "1h" };
-
-  if (eligible.length >= DECK_MIN) return { ok: true, cards: toCards(eligible), lane: "mixed" };
-  return { ok: false, refusal: { kind: "too-few-eligible", eligible: eligible.length, needed: DECK_MIN } };
+  if (eligible.length < DECK_MIN) return { ok: false, refusal: { kind: "too-few-eligible", eligible: eligible.length, needed: DECK_MIN } };
+  const cards = toCards(eligible);
+  return { ok: true, cards, lane: laneOf(cards) };
 }

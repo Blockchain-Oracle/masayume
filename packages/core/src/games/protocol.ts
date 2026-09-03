@@ -144,6 +144,20 @@ export const serverMessageSchema = z.discriminatedUnion("type", [
     /** The rating band this player's own search has widened to — the queue screen's honest progress. */
     bandNow: z.number().int().min(0),
     waitedMs: z.number().int().min(0),
+    /**
+     * Seconds until the venue can next supply a deck, or 0 when it can already.
+     *
+     * The venue rolls its Windows on a fixed schedule and a duel needs Windows with real life left, so
+     * there are stretches — about six minutes an hour at the deployed parameters — when no deck exists
+     * to deal.
+     *
+     * Three values, three different things, and a screen must not conflate them: a number is a
+     * countdown; `null` is "further out than the projection looked", which is a real answer and not a
+     * "soon"; and **absent** is "not known yet", which is what a client sees before the server's first
+     * supply read lands. Rendering absent as null would put "no deck for the foreseeable future" in
+     * front of someone whose deck is one tick away.
+     */
+    nextDeckInSec: z.number().int().min(0).nullish(),
   }),
   z.object({
     type: z.literal("match.found"),
@@ -157,7 +171,7 @@ export const serverMessageSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("deck.revealed"),
     matchId: matchIdSchema,
-    cards: z.array(wireDeckCardSchema).min(3).max(5),
+    cards: z.array(wireDeckCardSchema).min(2).max(5),
     /** The arena's own `pickDeadlineSec`, in milliseconds — never a countdown the client started itself. */
     deadlineMs: z.number().int().positive(),
   }),

@@ -10,7 +10,9 @@
     "spike:room": "tsx src/spike/room-drive.ts",
     "spike:arena-open": "tsx src/spike/arena-open.ts",
     "spike:duel-live": "tsx src/spike/duel-live.ts",
-    "spike:queue": "tsx src/spike/queue-drive.ts"
+    "spike:queue": "tsx src/spike/queue-drive.ts",
+    "spike:deck-supply": "tsx src/spike/deck-supply.ts",
+    "spike:arena-params": "tsx src/spike/arena-params.ts"
   },
   "dependencies": {
     "@masayume/core": "workspace:*",

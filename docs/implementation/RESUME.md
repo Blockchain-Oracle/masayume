@@ -43,11 +43,12 @@ fork-verified, deployed on Shannon at `0xec71…f0dF` and smoke-tested live (§S
 **Sixteenth session (2026-09-03): slice 7 is done in four commits — the room's protocol and token, the
 `ws` server, the projector and settler, and the queue with durable decks. Everything is proven against
 Shannon by three spikes (`spike:room`, `spike:duel-live`, `spike:queue`). Next is slice 8, the Duel
-stage.** Two things from slice 7 want the owner: the deck policy now has a **mixed-cadence lane**
-(the venue runs two assets, so three same-cadence Windows never exist — a deviation from §Owner
-decisions 4, recorded in the ledger), and **a full picked-through duel has not been driven live**
-because each pick spends real tUSDC (about 0.06 for a three-card duel at a cent a card) and real money
-waits on a go. context/51 §4 is the rest of what is open. The 21st.dev
+stage.** **The owner answered the deck-supply question the same session** and the arena's parameters were
+changed on chain to match (`setParams` `0x261fe1cc…2b13`, gas 93,678, read back from Shannon): join
+180→60s, reveal 120→45s, `minDeckSize` 3→2. That took the duel from **dealable 40% of the time to
+89%**, measured by `spike:deck-supply`. The one thing still waiting on a go: **a full picked-through
+duel has not been driven live**, because each pick spends real tUSDC (about 0.04 for a two-card duel at
+a cent a card). context/51 §4 is the rest of what is open. The 21st.dev
 redesign pass on the other surfaces (the leverage ones are done) and the user's own look at Stage 5 (the ledger's
 Needs-user-review rows are all still open) follow.
 

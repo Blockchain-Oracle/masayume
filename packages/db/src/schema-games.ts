@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS duel_matches (
   status          TEXT        NOT NULL CHECK (status IN
                     ('waiting','activeUnrevealed','picking','settling','finalized','refunded','forfeited')),
   deck_hash       TEXT        NOT NULL,
-  deck_size       INTEGER     NOT NULL CHECK (deck_size BETWEEN 3 AND 5),
+  deck_size       INTEGER     NOT NULL CHECK (deck_size BETWEEN 2 AND 5),
   policy_version  INTEGER     NOT NULL,
   -- Base units as decimal strings, never floats — the same rule the strategy fills follow.
   pot_per_player  TEXT        NOT NULL,
@@ -211,4 +211,9 @@ CREATE INDEX IF NOT EXISTS arcade_scores_wallet_idx
 -- purpose: the CREATE above is what a fresh database gets, and these are what an existing one needs.
 ALTER TABLE duel_matches ADD COLUMN IF NOT EXISTS cards JSONB;
 ALTER TABLE duel_matches ADD COLUMN IF NOT EXISTS refund_reason TEXT;
+
+-- The owner lowered minDeckSize to 2 on 2026-09-03 (the venue supplies two Windows per cadence), so a
+-- database created before that carries a CHECK no legal deck can satisfy.
+ALTER TABLE duel_matches DROP CONSTRAINT IF EXISTS duel_matches_deck_size_check;
+ALTER TABLE duel_matches ADD CONSTRAINT duel_matches_deck_size_check CHECK (deck_size BETWEEN 2 AND 5);
 `;

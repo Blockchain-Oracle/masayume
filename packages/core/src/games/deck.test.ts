@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { toMarketId } from "../types/market";
-import { DECK_MAX, DECK_MIN, INTERVAL_15M_SEC, INTERVAL_1H_SEC, INTERVAL_5M_SEC, selectDeck, type DeckCandidate, type DeckPolicy } from "./deck";
+import { DECK_MAX, DECK_MIN, INTERVAL_15M_SEC, INTERVAL_1H_SEC, INTERVAL_5M_SEC, nextDealableSec, selectDeck, type DeckCandidate, type DeckPolicy } from "./deck";
 
 const NOW = 1_700_000_000;
 
@@ -25,7 +25,7 @@ function candidate(n: number, overrides: Partial<DeckCandidate> = {}): DeckCandi
 }
 
 describe("deck selection", () => {
-  it("deals three to five distinct 15m Windows, soonest first", () => {
+  it("deals two to five distinct Windows, soonest first", () => {
     const result = selectDeck([candidate(3), candidate(1), candidate(2), candidate(4)], POLICY, NOW);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -46,22 +46,8 @@ describe("deck selection", () => {
     expect(selectDeck(fives, POLICY, NOW).ok).toBe(false);
   });
 
-  it("falls back to the 1h lane only when fewer than three 15m Windows qualify", () => {
-    const mixed = [
-      candidate(1),
-      candidate(2),
-      ...Array.from({ length: 3 }, (_, i) => candidate(10 + i, { intervalSec: INTERVAL_1H_SEC, expirySec: NOW + 3_600 + i * 60 })),
-    ];
-    const result = selectDeck(mixed, POLICY, NOW);
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    // One cadence is still preferred while three of it qualify — it is the nicest deck to read.
-    expect(result.cards.every((c) => c.intervalSec === INTERVAL_1H_SEC)).toBe(true);
-    expect(result.lane).toBe("1h");
-  });
-
-  /** Shannon's real shape on 2026-09-03: two assets, one Window per cadence, so two of each is the most there is. */
-  it("deals a mixed deck when no single cadence has three, because the venue may never run three", () => {
+  /** Shannon's real shape: two assets, one Window per cadence, so four eligible Windows is a full house. */
+  it("takes every eligible Window rather than preferring one cadence, so four beats two", () => {
     const venue = [
       candidate(1, { asset: "BTC" }),
       candidate(2, { asset: "ETH" }),
@@ -71,18 +57,31 @@ describe("deck selection", () => {
     const result = selectDeck(venue, POLICY, NOW);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.lane).toBe("mixed");
     expect(result.cards).toHaveLength(4);
-    // Soonest first, so the deck still plays in the order the Windows settle.
+    expect(result.lane).toBe("mixed");
+    // Soonest first, so the deck resolves in the order its cards settle.
     expect(result.cards.map((c) => c.intervalSec)).toEqual([INTERVAL_15M_SEC, INTERVAL_15M_SEC, INTERVAL_1H_SEC, INTERVAL_1H_SEC]);
   });
 
-  it("still refuses a mixed deck below three, and never mixes 5m in", () => {
-    const thin = [candidate(1), candidate(10, { intervalSec: INTERVAL_1H_SEC, expirySec: NOW + 2_200 }), candidate(20, { intervalSec: INTERVAL_5M_SEC })];
-    const result = selectDeck(thin, POLICY, NOW);
+  /** The dead zone: the 15m pair is inside its headroom exclusion, leaving only the 1h pair. */
+  it("deals the two-card deck the owner approved when only one cadence is left", () => {
+    const deadZone = [
+      candidate(10, { asset: "BTC", intervalSec: INTERVAL_1H_SEC, expirySec: NOW + 2_200 }),
+      candidate(11, { asset: "ETH", intervalSec: INTERVAL_1H_SEC, expirySec: NOW + 2_200 }),
+    ];
+    const result = selectDeck(deadZone, POLICY, NOW);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.cards).toHaveLength(DECK_MIN);
+    expect(result.lane).toBe("1h");
+  });
+
+  it("refuses one card, and never counts a 5m Window towards a deck", () => {
+    const alone = [candidate(1), candidate(20, { intervalSec: INTERVAL_5M_SEC }), candidate(21, { intervalSec: INTERVAL_5M_SEC })];
+    const result = selectDeck(alone, POLICY, NOW);
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.refusal.eligible).toBe(2);
+    expect(result.refusal).toEqual({ kind: "too-few-eligible", eligible: 1, needed: DECK_MIN });
   });
 
   it("drops Windows that are untradeable, unsupported, wide, thin, too close or past the horizon", () => {
@@ -98,6 +97,22 @@ describe("deck selection", () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.refusal).toEqual({ kind: "too-few-eligible", eligible: 0, needed: DECK_MIN });
+  });
+
+  /**
+   * The countdown a queue shows instead of "waiting". Two 15m Windows sit inside their headroom
+   * exclusion; their successors begin at expiry, so the deck becomes dealable the moment they roll.
+   */
+  it("says when the venue can next supply a deck", () => {
+    const stale = [candidate(1, { expirySec: NOW + 100 }), candidate(2, { expirySec: NOW + 100 })];
+    expect(selectDeck(stale, POLICY, NOW).ok).toBe(false);
+    // At NOW+100 the pair rolls to a fresh 900s Window, which clears the 600s default headroom at once.
+    expect(nextDealableSec(stale, POLICY, NOW)).toBe(100);
+  });
+
+  it("returns null rather than a guess when nothing is dealable inside the projection", () => {
+    const never = [candidate(1, { asset: "SOL" }), candidate(2, { asset: "SOL" })];
+    expect(nextDealableSec(never, POLICY, NOW, 300)).toBeNull();
   });
 
   it("counts one Window once, however many times the venue lists it", () => {
