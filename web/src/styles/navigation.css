@@ -29,7 +29,14 @@
 
 .nav-menu-popup {
   max-width: calc(100vw - 2rem);
-  overflow: hidden;
+  /* Explore carries sixteen destinations. On a short laptop viewport that column is taller than
+     the space under the header, and `overflow: hidden` made the last five unreachable rather
+     than merely off-screen. Base UI publishes the room it actually has; the menu now respects it
+     and scrolls inside itself. */
+  max-height: var(--available-height, 100vh);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border: 1px solid var(--nav-panel-border);
   border-radius: 0.75rem;
   background: var(--nav-panel-background);

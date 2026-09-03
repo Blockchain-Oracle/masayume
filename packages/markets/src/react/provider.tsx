@@ -3,6 +3,7 @@
 import { SomniaMarketsProvider } from "@somnia-chain/markets-sdk/react";
 import { useEffect, useState, type ReactNode } from "react";
 import type { MarketsEnv } from "../env";
+import { BootFactsProvider } from "./BootFactsProvider";
 import { selectReadEndpoint } from "../runtime/health";
 import { activeWsIndex, configureMarkets, ensureMarkets, exchangeVersion, getClient, subscribeExchange } from "../runtime/read-runtime";
 
@@ -30,7 +31,7 @@ export function MarketsProvider({ env, children }: { env: MarketsEnv; children: 
 
   return (
     <SomniaMarketsProvider key={version} client={getClient()}>
-      {children}
+      <BootFactsProvider env={env}>{children}</BootFactsProvider>
     </SomniaMarketsProvider>
   );
 }

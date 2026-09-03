@@ -1,16 +1,13 @@
 import { err, type Reading } from "@masayume/core/schemas";
 import type { DiagnosisKind } from "@masayume/core/types";
-import { skipToken, useQuery, type QueryKey } from "@tanstack/react-query";
+import { useQuery, type QueryKey } from "@tanstack/react-query";
 import { diagnose } from "../errors/error-map";
 import { ReadingError } from "../errors/reading-error";
-import { keys } from "./keys";
+import { BOOT_FACTS, type BootFact } from "./boot-fact";
+import { useBootFacts } from "./boot-facts-context";
 
 const DEFAULT_STALE_MS = 5_000;
 const MAX_READ_RETRIES = 2;
-
-/** The boot facts a read can depend on. */
-export const BOOT_FACTS = ["clock", "collateral", "venue"] as const;
-export type BootFact = (typeof BOOT_FACTS)[number];
 
 /**
  * Infrastructure, not domain.
@@ -49,25 +46,6 @@ export interface ReadingQueryOptions<T> {
   needs?: readonly BootFact[];
 }
 
-const FACT_KEYS: Record<BootFact, QueryKey> = {
-  clock: keys.clock(),
-  collateral: keys.collateral(),
-  venue: keys.venue(),
-};
-
-/** Observes one boot fact's cache entry — never fetches it, so declaring a need cannot start a read. */
-function useFactReady(fact: BootFact, required: boolean): boolean {
-  const query = useQuery<Reading<unknown>>({ queryKey: FACT_KEYS[fact], queryFn: skipToken });
-  return !required || query.data?.ok === true;
-}
-
-function useNeedsMet(needs: readonly BootFact[]): boolean {
-  const clock = useFactReady("clock", needs.includes("clock"));
-  const collateral = useFactReady("collateral", needs.includes("collateral"));
-  const venue = useFactReady("venue", needs.includes("venue"));
-  return clock && collateral && venue;
-}
-
 /**
  * TanStack Query over a port read.
  *
@@ -90,7 +68,8 @@ export function useReadingQuery<T>(
   options: ReadingQueryOptions<T> = {},
 ): Reading<T> | null {
   const { pollMs, enabled = true, staleTimeMs, needs = BOOT_FACTS } = options;
-  const needsMet = useNeedsMet(needs);
+  const facts = useBootFacts();
+  const needsMet = needs.every((fact) => facts[fact]);
   const query = useQuery({
     queryKey,
     queryFn: async () => {
@@ -112,4 +91,4 @@ export function useReadingQuery<T>(
   return null;
 }
 
-export { isInfrastructureFailure };
+export { BOOT_FACTS, isInfrastructureFailure, type BootFact };

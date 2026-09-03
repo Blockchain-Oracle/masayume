@@ -20,7 +20,9 @@ export {
   useVenueFact,
   type MarketsBoot,
 } from "./useMarketsBoot";
-export { BOOT_FACTS, useReadingQuery, type BootFact, type PollInterval, type ReadingQueryOptions } from "./useReadingQuery";
+export { BOOT_FACTS, type BootFact } from "./boot-fact";
+export { useBootFacts, type BootFactReadiness } from "./boot-facts-context";
+export { useReadingQuery, type PollInterval, type ReadingQueryOptions } from "./useReadingQuery";
 export {
   useBalanceSheet,
   useBookParams,
