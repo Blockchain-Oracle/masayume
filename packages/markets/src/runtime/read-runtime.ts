@@ -10,6 +10,7 @@
  */
 import { SOMNIA_TESTNET_PRICE_FEED, SomniaMarkets } from "@somnia-chain/markets-sdk";
 import { resolveAddresses } from "../addresses";
+import { mark } from "../perf/milestones";
 import { SOMNIA_SHANNON } from "../chain";
 import type { MarketsEnv } from "../env";
 import { resolveParlayDeployment } from "../parlay/deployment";
@@ -70,6 +71,7 @@ export function configureMarkets(env: MarketsEnv, options: { wsIndex?: number } 
   leverageDeployment = resolveLeverageDeployment(env);
   privateDeployment = resolvePrivateDeployment(env);
   version += 1;
+  mark("runtime.configured");
   if (previous) void previous.close().catch(() => undefined);
   for (const listener of listeners) listener();
 }

@@ -8,6 +8,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { WagmiProvider } from "wagmi";
 import { AlertsWatcher } from "@/features/alerts";
+import { PerfProbe } from "@/features/perf";
 import { WriteRecovery } from "@/features/recovery";
 import { SessionKeyProvider, SessionRecovery } from "@/features/session";
 import { BRAND } from "@/lib/copy";
@@ -24,6 +25,8 @@ export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
+        {/* Measures the read path and publishes it for a measurement run; it changes nothing. */}
+        <PerfProbe />
         <RainbowKitProvider theme={rainbowKitTheme} initialChain={SOMNIA_SHANNON} modalSize="compact" appInfo={{ appName: BRAND.name }}>
           <MarketsProvider env={webEnv.markets}>
             <UserSessionProvider>

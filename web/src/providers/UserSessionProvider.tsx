@@ -1,5 +1,6 @@
 "use client";
 
+import { mark } from "@masayume/markets/perf";
 import { SubmitterSessionProvider } from "@masayume/markets/react";
 import { createContext, useContext, type ReactNode } from "react";
 import type { WalletClient } from "viem";
@@ -22,7 +23,10 @@ const OwnerWalletClientContext = createContext<WalletClient | null>(null);
  */
 export function UserSessionProvider({ children }: { children: ReactNode }) {
   const { data: walletClient } = useWalletClient();
-  const { isRightChain } = useWalletSession();
+  const { isRightChain, isConnecting } = useWalletSession();
+  // Settled either way: a wallet that reconnected and a browser with no wallet at all are both
+  // "known", and only the unresolved middle is worth waiting on.
+  if (!isConnecting) mark("wallet.ready");
 
   return (
     <OwnerWalletClientContext.Provider value={isRightChain && walletClient ? (walletClient as WalletClient) : null}>

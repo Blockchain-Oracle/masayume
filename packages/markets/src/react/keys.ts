@@ -5,7 +5,12 @@ const APP = "masayume";
 
 /** Query keys for every port read; SDK factories are reused where the SDK defines one so caches never fork. */
 export const keys = {
+  /** The boot facts share this prefix, so invalidating it retries all three at once. */
   boot: () => [QUERY_KEY_SCOPE, APP, "boot"] as const,
+  /** Collateral decimals — read once per chain, needed before any money is formatted or moved. */
+  collateral: () => [QUERY_KEY_SCOPE, APP, "boot", "collateral"] as const,
+  /** The live venue id — needed by venue-scoped reads, which is most public market discovery. */
+  venue: () => [QUERY_KEY_SCOPE, APP, "boot", "venue"] as const,
   lanes: (venueId: string | null) => [QUERY_KEY_SCOPE, APP, "lanes", venueId] as const,
   market: (marketId: string | null) => [QUERY_KEY_SCOPE, APP, "market", marketId] as const,
   /** A set of Windows read together, keyed on their joined ids. */
@@ -50,7 +55,8 @@ export const keys = {
   privateSlot: (slotId: string | null) => [QUERY_KEY_SCOPE, APP, "privateSlot", slotId] as const,
   balanceSheet: (wallet: string | null) => [QUERY_KEY_SCOPE, APP, "balanceSheet", wallet] as const,
   nextWindow: (marketId: MarketId | null) => [QUERY_KEY_SCOPE, APP, "nextWindow", marketId] as const,
-  clock: () => [QUERY_KEY_SCOPE, APP, "clock"] as const,
+  /** Nested under the boot prefix so the boot fact and `useClock` are one cache entry, not two chain reads. */
+  clock: () => [QUERY_KEY_SCOPE, APP, "boot", "clock"] as const,
   onchain: (marketId: MarketId | null) => marketOnchainKey(marketId),
   fee: (marketId: MarketId | null) => marketFeesKey(marketId),
 };

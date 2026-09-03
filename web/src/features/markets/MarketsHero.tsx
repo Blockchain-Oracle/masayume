@@ -1,8 +1,10 @@
 "use client";
 
+import { isOk } from "@masayume/core/schemas";
 import type { MarketId, Side } from "@masayume/core/types";
+import { mark } from "@masayume/markets/perf";
 import type { ReactNode } from "react";
-import { EmptyState } from "@/components/states";
+import { EmptyState, ErrorState, LoadingState } from "@/components/states";
 import { MARKETS } from "@/lib/copy";
 import { HeroChart } from "./hero/HeroChart";
 import type { LanesState } from "./lanes";
@@ -26,8 +28,23 @@ export interface MarketsHeroProps {
  * the lanes below became a way to change the hero rather than a list you pick from
  * and then scroll past.
  */
+/**
+ * What the hero shows before it has a Window.
+ *
+ * These were one branch — "Pick a Window above to read it here" — shown whenever the lane set
+ * was not yet a value. That sentence asks the reader to act, so a cold load and a dead RPC both
+ * looked like the app waiting for a click it never needed. They are three different facts and
+ * they get three different faces: still loading, actually broken, genuinely empty.
+ */
+function HeroPlaceholder({ lanes }: { lanes: LanesState }) {
+  if (lanes.reading === null) return <LoadingState shape="chart" label="Loading live Windows" />;
+  if (!isOk(lanes.reading)) return <ErrorState diagnosis={lanes.reading.error} retry={lanes.retry} />;
+  return <EmptyState why={MARKETS.noLiveWindows.why} />;
+}
+
 export function MarketsHero({ selection, lanes, onSelect, onOpenRoom, renderTicket }: MarketsHeroProps) {
   const laneList = lanes.laneSet?.lanes ?? [];
+  if (selection.market) mark("route.useful", "markets.hero");
   return (
     <section className="page-hero markets-hero">
       <span className="crop tl" />
@@ -50,7 +67,7 @@ export function MarketsHero({ selection, lanes, onSelect, onOpenRoom, renderTick
             />
           ) : (
             <div className="hero-chart mh-hero-empty">
-              <EmptyState why={lanes.laneSet === null ? MARKETS.heroPlaceholder.why : MARKETS.noLiveWindows.why} />
+              <HeroPlaceholder lanes={lanes} />
             </div>
           )}
           {renderTicket(selection)}

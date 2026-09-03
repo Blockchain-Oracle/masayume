@@ -12,8 +12,15 @@ export { useAssetPrice } from "./useAssetPrice";
 export { useBook } from "./useBook";
 export { useBooks } from "./useBooks";
 export { useHoldings } from "./useHoldings";
-export { bootMarkets, useMarketsBoot, type MarketsBoot } from "./useMarketsBoot";
-export { useReadingQuery, type PollInterval, type ReadingQueryOptions } from "./useReadingQuery";
+export {
+  bootMarkets,
+  useClockFact,
+  useCollateralFact,
+  useMarketsBoot,
+  useVenueFact,
+  type MarketsBoot,
+} from "./useMarketsBoot";
+export { BOOT_FACTS, useReadingQuery, type BootFact, type PollInterval, type ReadingQueryOptions } from "./useReadingQuery";
 export {
   useBalanceSheet,
   useBookParams,

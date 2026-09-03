@@ -26,11 +26,18 @@ import { getMakerSharesOf, getMakerVaultState, listMakerHistory, listMakerOpenWi
 import { getLeverageMark, getLeverageReserveState, listLeveragePositionsOf } from "../leverage/read";
 import { getPrivateBudget, getPrivateDeskState, getPrivateSlot } from "../private/read";
 import { getVaultHoldings, getVaultSnapshot } from "../vault/read";
+import { mark } from "../perf/milestones";
 import { keys } from "./keys";
 import { useReadingQuery } from "./useReadingQuery";
 
 export function useLanes(venueId: Bytes32 | null): Reading<LaneSet> | null {
-  return useReadingQuery(keys.lanes(venueId), () => listLiveLanes(venueId as Bytes32), { pollMs: MARKETS_POLL_MS, enabled: venueId !== null });
+  const reading = useReadingQuery(keys.lanes(venueId), () => listLiveLanes(venueId as Bytes32), {
+    pollMs: MARKETS_POLL_MS,
+    enabled: venueId !== null,
+    needs: ["venue"],
+  });
+  if (reading && isOk(reading)) mark("lanes.first");
+  return reading;
 }
 
 /** Labels and expiries for a set of Windows in one round (no opening prints) — a table of ten does not wait ten times. */

@@ -5,6 +5,8 @@ import { isOk, type Reading } from "@masayume/core/schemas";
 import type { Bytes32, Lane, LaneSet } from "@masayume/core/types";
 import { laneNextStart } from "@masayume/markets";
 import { keys, useLanes, useReadingQuery } from "@masayume/markets/react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 import { numberCodec, usePersistedState } from "@/lib/persisted";
 
 const LANE_KEY = "masayume.lane";
@@ -19,12 +21,16 @@ export interface LanesState {
   /** The pinned cadence has no live Window right now — it stays selected and shows "Between rounds" instead of jumping. */
   pinnedMissing: boolean;
   pin: (intervalSec: number) => void;
+  /** Refetches the lane list — the one action a failed lane read should offer. */
+  retry: () => void;
 }
 
 export function useLanesState(venueId: Bytes32 | null): LanesState {
   const reading = useLanes(venueId);
   const laneSet = reading && isOk(reading) ? reading.value : null;
   const [pinned, pin] = usePersistedState(LANE_KEY, NO_PIN, numberCodec);
+  const queryClient = useQueryClient();
+  const retry = useCallback(() => void queryClient.invalidateQueries({ queryKey: keys.lanes(venueId) }), [queryClient, venueId]);
 
   const lanes = laneSet?.lanes ?? [];
   const pinnedLane = pinned === NO_PIN ? null : (lanes.find((lane) => lane.intervalSec === pinned) ?? null);
@@ -38,6 +44,7 @@ export function useLanesState(venueId: Bytes32 | null): LanesState {
     activeIntervalSec: pinnedMissing ? pinned : (activeLane?.intervalSec ?? null),
     pinnedMissing,
     pin,
+    retry,
   };
 }
 
