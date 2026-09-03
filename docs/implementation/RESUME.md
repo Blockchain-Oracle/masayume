@@ -29,8 +29,17 @@ and every doc-04 mode mapped onto DreamDEX, five decisions put to the owner.** *
 the `codex/navigation-ia` worktree was merged — `main` fast-forwarded to `287dac6` and carries the grouped
 navigation, the Stage 6 game architecture and the read-path research — and the read-path remediation was then built
 and measured on this branch (`e964c0d`…`a724b94`; §Stage 6 below and the architecture doc's §Implementation record).
-Nothing is pushed or deployed. Next: Stage 6 (doc 04) once the owner answers context/51 §3's five decisions and
-doc 06's eight — the games are the only stage left to build; context/51 §4 is the rest of what is open.** The 21st.dev
+Nothing is pushed or deployed.** **Fourteenth session (2026-09-03): `main` fast-forwarded to `89c0e8f`, so it
+now carries the read-path work as well — `main`, `feat/yosuku-source-led-shell` and everything merged from
+`codex/navigation-ia` are one line of history, 94 commits ahead of `origin/main` and unpushed. **The owner
+answered doc 06's decisions**: build order is context/51's (Practice + the Duel stage together, carrying
+`GameArena` and the ops/realtime work, then Lucky, then the arcade pair, then Moonshot); ranked tiers are
+Flicky's Free + 1/5/10 tUSDC with a 1 tUSDC per-card cap; the standing Shannon go covers `GameArena` once it is
+fork- and gas-proven. Deck policy, friends, seasons and Free Duel economics stand at doc 06's recommendations.
+**Moonshot is the one decision still open** — and doc 06 §Moonshot now records that its option A needs no new
+contract: the deployed `RangeReserve` parameters price every rung of the 2×–25× ladder as a saturated band.
+Next: Stage 6, starting at doc 06's slice 1 (`packages/core/src/games/**` and `packages/db/src/schema-games.ts`);
+context/51 §4 is the rest of what is open.** The 21st.dev
 redesign pass on the other surfaces (the leverage ones are done) and the user's own look at Stage 5 (the ledger's
 Needs-user-review rows are all still open) follow.
 

@@ -186,14 +186,59 @@ Demo: enter Games → Practice tutorial → Lucky commitment and real quote → 
 
 ## Owner decisions
 
-1. **Order:** recommend Practice → arcade pair → Lucky → GameArena/ops → Duel → Moonshot A. This lowers risk before custody/realtime work; approve or reorder.
-2. **Moonshot:** recommend A, separate `MoonshotReserve`; B only if another deployment/liquidity pool is not wanted.
-3. **Ranked tiers:** recommend Free plus 1/5/10 tUSDC side-pots; per-card order cap 1 tUSDC initially. Approve amounts.
-4. **Deck policy:** recommend 3–5 distinct 15m Windows, widening to 1h; add 5m only after measured end-to-end headroom. Approve.
-5. **GameArena deployment:** architecture does not deploy. After unit/fork/gas gates, confirm whether the standing Shannon go applies to this new custody contract.
-6. **Friends:** recommend directional follows (no approval handshake) over mutual friendship; blocking/privacy can follow. Approve.
-7. **Seasons:** recommend recognition-only first; no prize copy until a funded prize contract exists. Approve.
-8. **Free Duel wording/economics:** recommend no side-pot but real capped market orders; Practice is the truly no-money mode. Approve.
+Answered by the owner on 2026-09-03 (fourteenth session).
+
+1. **Order — ANSWERED: context/51's, not this document's.** Practice and the Duel stage are built together
+   (they share the swipe loop), carrying `GameArena` and the ops/realtime work with them; then Lucky, then the
+   arcade pair, then Moonshot. Risk and the demo spine both land first. Slices 1, 2, 6, 7, 8 of the list above
+   therefore run before 3, 4, 5, and slice 3 (Practice) merges into slice 8's stage.
+2. **Moonshot — OPEN, under discussion.** See §Moonshot: the deployed `RangeReserve` parameters admit every
+   rung of the 2/3/5/10/25x ladder, so option A does not require a new contract as this document assumed.
+3. **Ranked tiers — ANSWERED: Flicky's.** Free plus 1 / 5 / 10 tUSDC side-pots, per-card order cap 1 tUSDC.
+4. **Deck policy — taken as recommended** (owner did not object): 3-5 distinct 15m Windows, widening to 1h;
+   5m only after measured end-to-end headroom.
+5. **`GameArena` deployment — ANSWERED: the standing Shannon go covers it.** Once unit-green, fork-verified and
+   gas-proven, the arena deploys and is supplied without a further ask, as the five Stage 5 contracts were.
+   The proof gates are not waived: no deployment without the atomic-pick fork test and a measured gas envelope.
+6. **Friends — taken as recommended:** directional follows, no approval handshake.
+7. **Seasons — taken as recommended:** recognition only; no prize copy until a funded prize contract exists.
+8. **Free Duel — taken as recommended:** no side-pot, real capped market orders; Practice is the no-money mode.
+
+## Moonshot — what the deployed parameters allow
+
+This document costed option A as "a small contract addition, deploy, supply". Reading the live contract against
+its deployment script (2026-09-03) shows that is wrong, and the correction is worth recording.
+
+A Moonshot is a one-sided bet: for LONG, P(close > K), with K solved so the round pays the chosen multiple M.
+`RangeReserve` already prices exactly that as a band whose far edge saturates. `RangeMath.cdfE6` returns
+`P_ONE` at |z| >= 4, so `bandProbE6(opening, K, farPrint, ...)` is `1 - Phi(z_K - mu)` = P(close > K); a SHORT is
+the mirror band `(nearZeroPrint, K)`. Both satisfy `_price`'s `lowPrint > 0 && highPrint > lowPrint` guard.
+
+The strike is closed-form, not a search. Stake is `maxPayout * p * (1 + margin)`, so `M = 1 / (p * (1 + margin))`
+and therefore `p = 1 / (M * (1 + margin))`. `RangeMath.probitE4` already inverts Phi -- it is there for the
+book centre -- so `z_K = probitE4(centerQE6) + probitE4(P_ONE - p)` and K follows from `zOf` read backwards.
+
+Against `DeployRangeReserve.launchParams()` (`marginBps` 1200, `minProbRaw` 20_000, `maxPayoutCap` 500e6,
+`maxExpiryLocked` 1000e6, `one` 1e6), the admissible multiples are:
+
+| Multiple | Implied p | Inside `minProbRaw` (0.02)? |
+|---|---|---|
+| 2x | 0.446 | yes |
+| 3x | 0.298 | yes |
+| 5x | 0.179 | yes |
+| 10x | 0.089 | yes |
+| 25x | 0.036 | yes |
+| ceiling | 0.020 | ~44.6x, where `LongShot` begins |
+| floor | 0.893 | ~1.12x, where `Underpriced` begins |
+
+Every rung of the PIPS ladder is already priceable by the contract that is live and supplied on Shannon. What A
+actually costs is the knob UI and a solver mirrored in `@masayume/core/range`; what it does not cost is a
+contract, a deployment or new liquidity.
+
+The real constraint is `maxExpiryLocked` = 1000 tUSDC of contingent liability per expiry. A 25x round at the
+500 tUSDC payout cap locks roughly 482 tUSDC of house money, so two such rounds exhaust one expiry's budget.
+That is a liquidity and per-round-cap question for the owner, not an engineering one, and it is tunable through
+`setParams` without a redeploy.
 
 ## Decision log
 
@@ -204,3 +249,7 @@ Demo: enter Games → Practice tutorial → Lucky commitment and real quote → 
 | 2026-09-03 / architecture | Range model and PIPS Moonshot evidence cited above | Recommend separate MoonshotReserve option A | Real target/multiple, new funded contract | Owner pending |
 | 2026-09-03 / architecture | PIPS/Flicky license evidence cited above | Reimplement behavior; copy no unlicensed code | Same mechanics in Yosuku language | Required provenance rule |
 | 2026-09-03 / architecture | Existing product leaderboard + PIPS board shape | One leaderboard with game/friends/season sections | One identity and ranking home | Owner pending |
+| 2026-09-03 / owner | Session 14 answers | Build order is context/51's: Practice + Duel first, arena and realtime with them | The pitch-defining mode exists earliest; arcade and Lucky follow | Approved |
+| 2026-09-03 / owner | Session 14 answers | Ranked tiers Free + 1/5/10 tUSDC, per-card cap 1 tUSDC | A deck cannot spend more than its tier | Approved |
+| 2026-09-03 / owner | Session 14 answers | The standing Shannon go covers `GameArena` once fork- and gas-proven | The arena is live without a further ask; proof gates unchanged | Approved |
+| 2026-09-03 / claude | `DeployRangeReserve.launchParams`, `RangeMath.cdfE6`/`probitE4` | Moonshot A needs no new contract: a saturated band on the live `RangeReserve` prices every rung 2x-25x | The aim mechanic survives with no new deployment or liquidity | Owner pending |
