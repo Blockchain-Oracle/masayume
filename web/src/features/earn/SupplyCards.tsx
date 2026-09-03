@@ -24,6 +24,7 @@ export function SupplyCard({ connected, vault, symbol, walletBase, busy, onSuppl
   const { supply } = EARN;
   const [amount, setAmount] = useState("");
   const { decimals, paused } = vault;
+  // null while the balance sheet is still reading: the line says so, and nothing is sized off a zero that is not one.
   const wallet = walletBase ?? 0n;
   const walletText = formatBaseUnits(wallet, decimals, { minDp: 2, maxDp: 2, group: false });
 
@@ -31,6 +32,7 @@ export function SupplyCard({ connected, vault, symbol, walletBase, busy, onSuppl
     if (paused) return;
     let base = parseDecimalToBaseUnits(amount || "0", decimals) ?? 0n;
     if (base <= 0n) return onMessage(supply.enterAmount);
+    if (walletBase === null) return onMessage(supply.walletReading);
     if (wallet <= 0n) return onMessage(supply.noFunds(symbol));
     if (base > wallet) base = wallet;
     onSupply(base);
@@ -50,11 +52,11 @@ export function SupplyCard({ connected, vault, symbol, walletBase, busy, onSuppl
         <>
           <div className="ea-field-head">
             <span className="ea-k">{supply.amount}</span>
-            <span className="ea-wallet">{supply.wallet(money2(wallet, decimals), symbol)}</span>
+            <span className="ea-wallet">{walletBase === null ? supply.walletPending : supply.wallet(money2(wallet, decimals), symbol)}</span>
           </div>
           <div className="earn-field ea-field">
             <input value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))} placeholder="0.00" inputMode="decimal" className="ea-input" aria-label={supply.amount} />
-            <button type="button" onClick={() => setAmount(walletText)} className="ea-max" data-cursor="hover">
+            <button type="button" onClick={() => setAmount(walletText)} disabled={walletBase === null} className="ea-max" data-cursor="hover">
               {supply.max}
             </button>
             <span className="ea-input-unit">{symbol}</span>

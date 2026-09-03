@@ -23,6 +23,7 @@ export {
   useLeverageMark,
   useLeverageReserve,
   useMarket,
+  useMarketsLite,
   useMyLeveragePositions,
   useMyParlays,
   useMakerHistory,

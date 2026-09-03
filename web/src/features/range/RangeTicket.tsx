@@ -10,7 +10,7 @@ import { Countdown } from "@/components/data";
 import { diagnosisCopy } from "@/lib/copy";
 import { AmountField, ErrorBlock, PlaceButton, Row, type PlaceStep } from "../parlay/TicketParts";
 import { RANGE } from "./copy";
-import { formatMultiplierTenths, formatProbE6, usd0, utilizationPct } from "./format";
+import { formatMultiplierTenths, formatProbE6, usd0, usdOnGrid, utilizationPct } from "./format";
 
 export type SolveMode = "fixStake" | "fixPayout";
 
@@ -41,7 +41,8 @@ export interface RangeTicketProps {
   onReset: () => void;
 }
 
-const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
+/** The reference's whole dollars where the asset trades in the tens of thousands; cents on ETH's $0.20 grid. */
+const usd = (n: number) => usdOnGrid(n, n < 10_000 ? 2 : 0);
 
 /** The band's ticket in the parlay ticket's grammar: the multiple, the solver, the breakdown, the place control, the footnotes. */
 export function RangeTicket(props: RangeTicketProps) {

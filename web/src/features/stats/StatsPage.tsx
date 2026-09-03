@@ -59,7 +59,7 @@ export function StatsPage() {
         </div>
       </section>
 
-      <main className="container stats-main">
+      <div className="container stats-main">
         <div className="stats-body">
           {!t && !failed ? (
             <div className="stats-reading">{STATS.reading}</div>
@@ -95,7 +95,7 @@ export function StatsPage() {
             <div className="stats-unreachable">{STATS.unreachable}</div>
           )}
         </div>
-      </main>
+      </div>
     </div>
   );
 }

@@ -28,6 +28,10 @@ order", never "optional" or "cut".
 
 | Date | Decision | Reference | User-visible consequence | Approval |
 |---|---|---|---|---|
+| 2026-09-03 | **Band presets follow the asset's price.** The reference's ±$15/30/55 and its $5 centre grid are BTC dollars; carried to another asset by its price ratio to the level they were tuned at (`PRESET_ANCHOR_USD` 77,000), the grid snapped to the nearest nice step, edges printed in cents under $10k. Found in a browser: on ETH every band was refused as a near-certainty (ETH 4h Balanced spanned $414, thirteen σ) | `ticket624.core.ts` L222–230; `Ticket624Drawer.tsx` L64–66; context/49 §1 | BTC keeps the reference's numbers to the dollar; ETH 5m Balanced ±$1.00 prices at 3.2× · 28.0% inside — the same odds band as BTC's | **Needs user review** — an adaptation where the reference had one asset |
+| 2026-09-03 | **An exit from the maker vault settles every closed Window first, not one.** The vault names its blockers one at a time; the page asks again after each settle (≤16) and its own note reads every open Window in one round. Found in a browser: four Windows were closed at once, the page settled one and the withdraw was refused `UnsettledWindow` | `MarketMakerVault.withdraw`, `unsettledExpired()`; context/49 §2 | "Withdraw" works when several Windows have closed; each settle is a signature | No approval needed |
+| 2026-09-03 | **A table of Windows reads its labels in one round** (`getMarketsLite`, no opening prints) and a balance that has not landed prints "…", never 0.00 — the earn card said "wallet 0.00" for ten seconds over a wallet holding 10,006 | doc 05 §No fake-data; context/49 §3–4 | `/earn`'s ten rows name themselves together; the wallet line is honest while reading | No approval needed |
+| 2026-09-03 | **The LP Provider badge reads the maker vault's shares** — the reference's own `plpBalance > 0` (`lib/badges.ts` L48–52); it stays locked with its dependency named only where no vault is deployed. "Needs Earn (Stage 5)" was false once the vault went live | `lib/badges.ts`; context/49 §9 | A supplier's portfolio shows the badge unlocked; withdrawing every share locks it again (the vault keeps no per-wallet supply history) | **Needs user review** — the same narrowing as the Room's gate |
 | 2026-09-03 | **`/surface` reads the venue's book back, not a volatility model.** The reference's SVI smile, strike ladder and ATM term structure become the top of the book, cumulative depth, a stake ladder walked as an IOC taker fills, and every live Window of the asset priced off its own book (doc 03 §Surface). No new port method: the page reads the coordinator's books, the pool params and the fee | doc 03 §Surface; `web/src/features/surface/`, `@masayume/core/surface`; context/48 | The route is live on real structure; nothing on it is estimated | Adapted — the class doc 03 assigns |
 | 2026-09-03 | **A crossed book is shown as crossed** (bid ≥ ask): no mid, no spread, the UP tile takes the ask. Caught live on the 5m lane at two minutes to the close — a maker re-laying its whole ladder (200/330/460 a level) every few seconds; the contract's book and the store's agreed level for level across three probe passes (context/48) | `bookStructure.crossed`; `spike:book-cross` | "crossed" in vermilion where a negative spread would have been printed | Truth (doc 00 allowed change 4) |
 | 2026-09-03 | **The private open's guard is read after the signature, not off the polled quote.** Driven from a browser on the 15m lane the desk refused twice before a cent moved (`sizeForStake 4424000 < guard 4973250`); the desk's sizing for a fixed 2 tUSDC stake moved from 3.868 to 3.220 contracts in three seconds (context/47 §Finding 2) while the ticket's quote was up to `REQUOTE_MS` (12 s) old before the wallet popup opened. The signature covers the stake, never the size, so `usePrivateOpen` now sizes again right before the desk is asked and puts the 5% floor under that; the floor is unchanged, and the leverage open still takes its guard off the polled quote | `Ticket624Drawer.tsx` L541–583 (the reference re-signs on a failure and sends `min_quantity 0`) | A moved book is still "quote again", but the guard is measured seconds, not tens of seconds, before the desk's own pre-flight; a failed mint is refunded on the spot (seen live: `BelowMinQuantity(12121000, 14503650)`, four desk transactions, the stake back) |  |
@@ -274,7 +278,7 @@ any signature and returns `requote` instead of sending when the book moved. Read
 
 **`/parlay` (`web/src/features/parlay/`)** — the reference's page, `ParlayBuilder` and `ParlaySlip` ported from
 source; the reference's own `SectionHeader` is now `components/shell/SectionHead.tsx` verbatim (its
-`.section-head` rules were already in part-05/06); fixtures on `/dev/parlay`.
+`.section-head` rules were already in part-05/06); fixtures on `/dev/parlay`. **Driven in a browser 2026-09-03** (context/49): the BTC close streak preset, three legs quoted off the live books (34×, 2.60% combined), approve then open from the demo wallet, the slip's ticket "In play · 0/3 · 43.8×"; the chain charged 3.92 for the 171.70 the ticket had quoted at 5.00 as the odds lengthened between quote and open — Set-stake mode fixes the payout, as recorded above.
 
 | Reference | Ours | Class | Approval |
 |---|---|---|---|
@@ -348,11 +352,11 @@ not. Inside only, as the reference. The wallet route only (the reserve takes the
 
 **`/games/range` (`features/range/RangeScreen.tsx`)** — the reference has no range page; the surface is its Ticket's
 range mode on the parlay page's frame (the same `pl-*` CSS: hero, §01 plate + ticket, §02 slip, §03 how it pays),
-with the Window picker on the plate and both sides offered. Fixtures on `/dev/range`. **Not seen in a browser.**
+with the Window picker on the plate and both sides offered. Fixtures on `/dev/range`. **Seen in a browser 2026-09-03** (context/49): the picker, the band on ETH priced after the preset fix, the Ticket's rows unwrapped; no round was placed with a signature.
 
 | Reference | Ours | Class | Approval |
 |---|---|---|---|
-| Presets ±$15/30/55, scaled 0.5 / 1 / 4 for 1m / 5m / 1h | the same three; other cadences scale by √time from the 5-minute anchor (15m ≈ 1.7, 4h ≈ 6.9, 1d 16) | Adapted — lanes the reference did not have | No approval needed |
+| Presets ±$15/30/55, scaled 0.5 / 1 / 4 for 1m / 5m / 1h; a $5 centre grid; whole dollars | the same three on BTC to the dollar; other cadences scale by √time from the 5-minute anchor (15m ≈ 1.7, 4h ≈ 6.9, 1d 16); other assets scale by price ratio to the level the dollars were tuned at, with the grid snapped to a nice step and edges in cents under $10k (ETH: ±$0.40/$1.00/$1.80 on $0.20 at 5m) | Adapted — lanes and assets the reference did not have; the price scaling is the decision-log row of 2026-09-03 | **Needs user review** |
 | "BTC must finish inside" · "BTC now" | `{asset} must finish inside` · `{asset} now` — the venue lists ETH too | Truth correction | No approval needed |
 | The band drawn as a shaded region on the price chart (`drawPriceLine` `band`) | **not drawn** — the chart card and the Ticket are siblings; lifting the band into the hero is a follow-up | Pending | **Needs user review** |
 | Gas-free footnote ("Gas-free · settles on its own, right on the price.") | "Settles on its own, right on the oracle's print." | Truth correction — no sponsor on this lane | No approval needed |
@@ -393,15 +397,15 @@ for supply/withdraw/merge; hooks `useMakerVault` / `useMakerWindows` / `useMaker
 **`/earn` (`web/src/features/earn/`)** — the reference's page from source: the hero "Earn the *spread*." with the
 live panel (share price 4 dp, the delta chip above par, vault value, utilization + meter), §01 the deposit card
 (amount, Max, the wallet-scaled quick amounts, Supply) and your position (value, shares at the share price,
-Withdraw). Fixtures on `/dev/earn`. **Not seen in a browser.**
+Withdraw). Fixtures on `/dev/earn`. **Driven in a browser 2026-09-03** (context/49): a 50 tUSDC supply landed (50.13 shares at 0.9973), the withdraw was refused by the vault until the exit settled every closed Window — fixed — and five layout and honesty defects came out of the page (a nested `<main>`, "wallet 0.00" while reading, the cards overflowing a phone, labels resolving one a second, a Base UI console error).
 
 | Reference | Ours | Class | Approval |
 |---|---|---|---|
 | Panel label "Closed pool · 4-16" / "Predict PLP" (its own truth correction for a retired pool) | "Live · maker vault" / "Paused · maker vault" / "No maker key · quotes off" · "Masayume MM" | Truth correction | No approval needed |
 | A decorative sparkline beside "Up from 1.0000 at launch" (drew no data; the reference's own comment: "No history source ⇒ no sparkline") | not drawn; "Below 1.0000 — the vault is carrying a loss" when so | Truth correction (doc 05 §No fake-data) | No approval needed |
 | §01 meta "withdraw anytime" | "withdraw what is idle, any time"; the Withdraw button takes what `liquid` covers and names what is still deployed | Truth correction | No approval needed |
-| "Withdraw all" | "Withdraw N idle" when capital is deployed; a closed unsettled Window is settled first (the page sends the permissionless crank) | Adapted | **Needs user review** |
-| — | §02 the Windows table with Merge / Settle | Additive | **Needs user review** |
+| "Withdraw all" | "Withdraw N idle" when capital is deployed; every closed unsettled Window is settled first (the page sends the permissionless crank, one signature each, asking the vault again after each — four were closed at once when the flow ran, context/49) | Adapted | **Needs user review** |
+| — | §02 the Windows table with Merge / Settle; its labels read in one round (`useMarketsLite`), "…" only until they land | Additive | **Needs user review** |
 | The leverage-reserve handlers on the same page (`doSupplyReserve`, `doSettle`) | their JSX is gone from the pinned source (orphaned handlers); the leverage reserve has no supplier UI and is supplied by the house — §LeverageReserve | Adapted | No approval needed |
 
 **Fork verification** — context/44: against Shannon's real contracts on Window 70978 (ETH 4h), a pair at
@@ -445,8 +449,7 @@ line — then the CTA "Buy UP 2× for <stake>". The Call carries the reference's
 out before close.", `BetPlacedCard.tsx` L123–127) on screen and its PNG line (`openBetShareCard.ts` L360) in the
 export. `/portfolio` lists the wallet's boosts under its open bets (`LeverageBetRow`: the multiple, your equity at
 the mark, the line, Cash out / Settle) and the last five that settled, knocked out or cashed out. Fixtures on
-`/dev/leverage`; a boosted Call on `/dev/share`. **Not seen in a browser** — typecheck, invariants (0 warnings),
-141 vitest, 154 forge, build.
+`/dev/leverage`; a boosted Call on `/dev/share`. **Driven in a browser 2026-09-03** (context/49): the chips, the boost card at 2× and 3× (real quotes: 106.62 payout on 9¢ odds, 16.42 on 45¢), a 2× open on BTC 5m for 4.99, The Call with the caveat (its unit line now precedes it, as the reference's order has it), the portfolio row "LIVE · 2× BOOSTED · Yours now 3.07 · Cash out".
 
 | Reference | Ours | Class | Approval |
 |---|---|---|---|
@@ -917,7 +920,7 @@ Three facts about the venue this had to learn, kept because they explain the cod
 | Eight rows then more | `HISTORY_ROWS = 8` | `HistoryRows.tsx` | Exact | **Done** |
 | Equity curve | `EquitySparkline.tsx` (mounted only in `LiveDesk`); `equityRef` effect on the portfolio page | `history/EquitySparkline.tsx` | Exact | **Done** — colours in `history.css`; below zero muted, never red |
 | Reputation | `getReputationData` TIERS | `history/ReputationPanel.tsx` | Adapted | **Done** — tier, record, progress; bonus/fee % dropped (decision log) |
-| Badges | `BadgeDisplay.tsx`, `computeBadges` | `history/BadgeGrid.tsx` | Exact layout | **Done** — LP Provider locked, "Needs Earn (Stage 5)" |
+| Badges | `BadgeDisplay.tsx`, `computeBadges` | `history/BadgeGrid.tsx` | Exact layout | **Done** — LP Provider reads the maker vault's shares (the reference's `plpBalance > 0`); "Needs the Earn vault" only where none is deployed |
 | CSV export | `csvExport.ts` (imported, never mounted) | `history/useCsvDownload.ts` | Adapted | **Done** — built in the browser from the rows shown |
 | Trader Edge link | `TraderEdgeLink.tsx` + module CSS | `history/TraderEdgeLink.tsx`, `trader-edge-link.css` | Exact | **Done** |
 | `/portfolio/edge` — intro, connect / reading / failed / none / report states | `app/portfolio/edge/page.tsx` | `features/edge/*`, `edge.css`, `edge-report.css` | Exact structure; adapted facts | **Done** — framer-motion entrance as a CSS keyframe honouring reduced motion |
@@ -1199,7 +1202,7 @@ Portfolio and More all remain.
 | `/earn` | `app/earn/page.tsx` | Adapted via `MarketMakerVault` | Masayume contract | **Done** from source (Stage 5); live once the vault is deployed — §MarketMakerVault |
 | `/strategies` | `app/strategies/page.tsx` | Adapted | `StrategyRegistry` + DB | **Shell** — honest dependency state (Stage 4) |
 | `/agents` | `app/agents/page.tsx` | Adapted | Registry + fill projection | **Shell** — waits on the `StrategyRegistry` alone now (Stage 4) |
-| `/parlay` | `app/parlay/page.tsx` | Adapted via `ParlayReserve` | Masayume contract + the venue's books | **Done** — contract, port and page built, fork-verified, live on Shannon (`0x50Ce…C151`, 5,000 tUSDC supplied) and driven through the adapter on a fork and live (see §ParlayReserve); awaits the user's browser review |
+| `/parlay` | `app/parlay/page.tsx` | Adapted via `ParlayReserve` | Masayume contract + the venue's books | **Done** — contract, port and page built, fork-verified, live on Shannon (`0x50Ce…C151`, 5,000 tUSDC supplied) and driven through the adapter on a fork and live (see §ParlayReserve); driven in a browser 2026-09-03 (context/49); awaits the user's review |
 | `/surface` | `app/surface/page.tsx` | Adapted — real DreamDEX structures, not SVI | The coordinator's books, pool params, the fee | **Done** — see §`/surface`; awaits the user's browser review |
 | `/trade-from-x` | `app/trade-from-x/page.tsx` | Adapted | X provider + `EventVault` grant | **Shell** — honest dependency state (Stage 4) |
 | `/claim` | `app/claim/page.tsx` | Adapted to DreamDEX redemption | Chain receipts | **Partial** — `/claims` implemented |

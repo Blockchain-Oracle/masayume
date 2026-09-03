@@ -91,10 +91,16 @@ describe("reputation and badges", () => {
     expect(reputationOf(40, 30, 0).progressToNext).toBe(100);
   });
 
-  it("locks the LP badge with its dependency named instead of dropping it", () => {
-    const badges = computeBadges({ fillCount: 3, currentWinStreak: 3, stakeBase: 1_000n * ONE, decidedRounds: 10, winRate: 0.7, decimals: 6 });
+  it("locks the LP badge with its dependency named where no maker vault is deployed", () => {
+    const badges = computeBadges({ fillCount: 3, currentWinStreak: 3, stakeBase: 1_000n * ONE, decidedRounds: 10, winRate: 0.7, decimals: 6, lpSharesRaw: null });
     expect(badges.map((b) => [b.id, b.earned])).toEqual([["first_trade", true], ["winning_streak", true], ["lp_provider", false], ["whale", true], ["oracle", true]]);
     expect(badges[2]?.pending).toBe("earn");
+  });
+
+  it("earns the LP badge on a live share balance, as the reference's plpBalance > 0", () => {
+    const base = { fillCount: 0, currentWinStreak: 0, stakeBase: 0n, decidedRounds: 0, winRate: 0, decimals: 6 };
+    expect(computeBadges({ ...base, lpSharesRaw: 0n })[2]).toEqual({ id: "lp_provider", earned: false, pending: null });
+    expect(computeBadges({ ...base, lpSharesRaw: 1n })[2]).toEqual({ id: "lp_provider", earned: true, pending: null });
   });
 });
 

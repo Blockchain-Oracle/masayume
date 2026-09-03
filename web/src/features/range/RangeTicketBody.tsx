@@ -20,7 +20,7 @@ import { QuickChips } from "../markets/ticket/QuickChips";
 import { StakeInput } from "../markets/ticket/StakeInput";
 import { BandControl } from "./BandControl";
 import { RANGE } from "./copy";
-import { formatProbE6, usd0 } from "./format";
+import { formatProbE6, usdBand } from "./format";
 import { useRangeDraft } from "./useRangeDraft";
 import { useRangeQuote } from "./useRangeQuote";
 import { useRangeWrites } from "./useRangeWrites";
@@ -104,7 +104,7 @@ export function RangeTicketBody(p: RangeTicketBodyProps) {
 
   const place = useCallback(async () => {
     if (!band || !quote) return;
-    const bandText = `${usd0(band.lowPrint)} – ${usd0(band.highPrint)}`;
+    const bandText = `${usdBand(band.lowPrint)} – ${usdBand(band.highPrint)}`;
     const outcome = await writes.open({ ...band, maxPayoutBase: quote.maxPayoutBase, maxStakeBase: mulBpsCeil(quote.stakeBase, 10_000 + RANGE_STAKE_HEADROOM_BPS) });
     if (!outcome) return;
     if (outcome.status === "confirmed") {
@@ -155,15 +155,15 @@ export function RangeTicketBody(p: RangeTicketBodyProps) {
             <Money value={quote.maxPayoutBase} decimals={decimals} symbol={symbol} />
           </Row>
           <Row label={RANGE.ticket.pays}>{`${formatProbE6(quote.insideProbE6)}% inside`}</Row>
-          <Row label="">
-            <span className="type-caption text-ink-muted">{RANGE.ticket.upTo(formatBaseUnits(mulBpsCeil(quote.stakeBase, 10_000 + RANGE_STAKE_HEADROOM_BPS), decimals), symbol)}</span>
-          </Row>
         </dl>
       ) : (
         <p className="type-caption text-ink-muted">{RANGE.ticket.needBand}</p>
       )}
+      {quote && !quoteState.error && (
+        <p className="type-caption text-ink-muted text-right">{RANGE.ticket.upTo(formatBaseUnits(mulBpsCeil(quote.stakeBase, 10_000 + RANGE_STAKE_HEADROOM_BPS), decimals), symbol)}</p>
+      )}
       <BlockedButton blocker={blocker} ctx={ctx} tone="primary" size="lg" className="w-full" onClick={() => void place()}>
-        {draft.lowUsd !== null && draft.highUsd !== null ? RANGE.cta.place(usd0(draft.lowPrint as bigint), usd0(draft.highPrint as bigint)) : RANGE.cta.placePlain}
+        {draft.lowUsd !== null && draft.highUsd !== null ? RANGE.cta.place(usdBand(draft.lowPrint as bigint), usdBand(draft.highPrint as bigint)) : RANGE.cta.placePlain}
       </BlockedButton>
       <p className="type-caption text-ink-muted">
         {RANGE.cta.footnote} {reserve.paused ? RANGE.ticket.reservePaused : null}

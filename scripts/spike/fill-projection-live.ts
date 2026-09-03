@@ -25,5 +25,5 @@ await runSpike(async ({ env }) => {
   console.log("edge:", json({ ...edge, equity: edge.equity.length, windows: edge.windows.map((w) => `${w.key}:${w.count}/${w.netBase}`) }));
   const decided = edge.wins + edge.losses;
   console.log("reputation:", json(reputationOf(decided, edge.wins, edge.currentWinStreak)));
-  console.log("badges:", json(computeBadges({ fillCount: h.fillCount, currentWinStreak: edge.currentWinStreak, stakeBase: edge.stakeBase, decidedRounds: decided, winRate: decided ? edge.wins / decided : 0, decimals: h.decimals })));
+  console.log("badges:", json(computeBadges({ fillCount: h.fillCount, currentWinStreak: edge.currentWinStreak, stakeBase: edge.stakeBase, decidedRounds: decided, winRate: decided ? edge.wins / decided : 0, decimals: h.decimals , lpSharesRaw: null })));
 });

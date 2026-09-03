@@ -7,7 +7,7 @@ import { formatBaseUnits, formatClock, remainingSec } from "@masayume/core/units
 import { Loader2, Target, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RANGE } from "./copy";
-import { formatMultiplierTenths, usd0, usd2 } from "./format";
+import { formatMultiplierTenths, usdBand, usd2 } from "./format";
 import type { RangeRoundView } from "./useRangeRounds";
 import type { RangeBusyKey } from "./useRangeWrites";
 
@@ -65,7 +65,7 @@ export function RangeCard({ round, nowMs, symbol, decimals, staleAfterSec, busy,
         <div className="pl-cleg">
           <div className="pl-cleg-main">
             <div className="pl-cleg-name">
-              <span className="rg-card-side">{slip.band(usd0(round.lowPrint), usd0(round.highPrint), round.side)}</span>
+              <span className="rg-card-side">{slip.band(usdBand(round.lowPrint), usdBand(round.highPrint), round.side)}</span>
               <span className="pl-cleg-line"> · {slip.opening(usd2(round.openingPrint))}</span>
             </div>
             {round.closingPrint !== null && <div className="rg-card-close">{slip.closed(usd2(round.closingPrint), inside)}</div>}

@@ -23,7 +23,7 @@ const HISTORY_VALUE: WalletHistory = { rounds: ROUNDS, openCount: 2, fillCount: 
 const EDGE = computeTraderEdge(ROUNDS, 2);
 const DECIDED = EDGE.wins + EDGE.losses;
 const REPUTATION = reputationOf(DECIDED, EDGE.wins, EDGE.currentWinStreak);
-const BADGES = computeBadges({ fillCount: 14, currentWinStreak: EDGE.currentWinStreak, stakeBase: EDGE.stakeBase, decidedRounds: DECIDED, winRate: DECIDED ? EDGE.wins / DECIDED : 0, decimals: DECIMALS });
+const BADGES = computeBadges({ fillCount: 14, currentWinStreak: EDGE.currentWinStreak, stakeBase: EDGE.stakeBase, decidedRounds: DECIDED, winRate: DECIDED ? EDGE.wins / DECIDED : 0, decimals: DECIMALS, lpSharesRaw: 0n });
 
 export default function DevHistoryPage() {
   const [receiptFor, setReceiptFor] = useState<SettledRound | null>(null);

@@ -2,6 +2,8 @@ import { PRINT_DECIMALS } from "@masayume/core/range";
 import { formatOracleRaw } from "@masayume/core/units";
 
 const CENTS = 100n;
+/** Under this print a band's edges need cents to be told apart (ETH at $2.4k sits on a $0.20 grid). */
+const CENTS_MATTER_BELOW = 10_000_00n;
 
 /** Whole dollars, grouped, from a print in cents — the reference's `fmtUsd0`. */
 export function usd0(print: bigint): string {
@@ -13,13 +15,23 @@ export function usd2(print: bigint): string {
   return `$${formatOracleRaw(print, PRINT_DECIMALS, 2)}`;
 }
 
-/** A print in cents → whole dollars as a number, for the band arithmetic the reference does in dollars. */
+/** A band edge: the reference's whole dollars where the asset trades in the tens of thousands, cents below that. */
+export function usdBand(print: bigint): string {
+  return print < CENTS_MATTER_BELOW ? usd2(print) : usd0(print);
+}
+
+/** A dollar amount on the band's grid — `$5`, `$0.20`, `$1,240`. */
+export function usdOnGrid(usd: number, decimals: number): string {
+  return `$${usd.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+}
+
+/** A print in cents → dollars with cents, for the band arithmetic the reference does in dollars. */
 export function printToUsd(print: bigint): number {
-  return Number(print / CENTS);
+  return Number(print) / 100;
 }
 
 export function usdToPrint(usd: number): bigint {
-  return BigInt(Math.round(usd)) * CENTS;
+  return BigInt(Math.round(usd * Number(CENTS)));
 }
 
 /** `multiplier.toFixed(1)` without a float — the reference's slip figure. */

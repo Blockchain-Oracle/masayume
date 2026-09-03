@@ -14,7 +14,7 @@ import { settlementFeeBps } from "../provider/fees";
 import { listWalletHistory } from "../provider/history";
 import { listClaimables } from "../provider/claimables";
 import { syncClock } from "../provider/clock-sync";
-import { getMarket, listLiveLanes } from "../provider/markets";
+import { getMarket, getMarketsLite, listLiveLanes } from "../provider/markets";
 import { nextWindow } from "../provider/next-window";
 import { getOnchain } from "../provider/onchain";
 import { listOpenPositions } from "../provider/positions";
@@ -31,6 +31,15 @@ import { useReadingQuery } from "./useReadingQuery";
 
 export function useLanes(venueId: Bytes32 | null): Reading<LaneSet> | null {
   return useReadingQuery(keys.lanes(venueId), () => listLiveLanes(venueId as Bytes32), { pollMs: MARKETS_POLL_MS, enabled: venueId !== null });
+}
+
+/** Labels and expiries for a set of Windows in one round (no opening prints) — a table of ten does not wait ten times. */
+export function useMarketsLite(marketIds: readonly MarketId[]): Reading<Map<MarketId, EventMarket>> | null {
+  const signature = marketIds.join(",");
+  return useReadingQuery(keys.marketsLite(signature), () => getMarketsLite(signature ? (signature.split(",") as MarketId[]) : []), {
+    pollMs: MARKETS_POLL_MS,
+    enabled: marketIds.length > 0,
+  });
 }
 
 export function useMarket(marketId: MarketId | null): Reading<EventMarket | null> | null {

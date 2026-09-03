@@ -6,7 +6,7 @@ import { SectionHeader } from "@/components/chrome";
 import { EARN, PositionCard, SupplyCard, VaultPanel, WindowsTable } from "@/features/earn";
 import "@/features/parlay/parlay-page.css";
 import "@/features/earn/earn-page.css";
-import { FIXTURE_NOW_MS, FIXTURE_SYMBOL, HISTORY, OPEN, VAULT } from "./fixtures";
+import { FIXTURE_NOW_MS, FIXTURE_SYMBOL, HISTORY, MARKETS, OPEN, VAULT } from "./fixtures";
 
 const noop = () => undefined;
 const UNIT = 10n ** 6n;
@@ -55,10 +55,10 @@ export function EarnFixtures() {
       </FixtureGrid>
       <FixtureGrid>
         <Fixture label="Windows — open and recent">
-          <WindowsTable open={OPEN} history={HISTORY} decimals={6} symbol={FIXTURE_SYMBOL} nowMs={FIXTURE_NOW_MS} busy={null} canSign onMerge={noop} onSettle={noop} />
+          <WindowsTable open={OPEN} history={HISTORY} markets={MARKETS} decimals={6} symbol={FIXTURE_SYMBOL} nowMs={FIXTURE_NOW_MS} busy={null} canSign onMerge={noop} onSettle={noop} />
         </Fixture>
         <Fixture label="Windows — none">
-          <WindowsTable open={[]} history={[]} decimals={6} symbol={FIXTURE_SYMBOL} nowMs={FIXTURE_NOW_MS} busy={null} canSign={false} onMerge={noop} onSettle={noop} />
+          <WindowsTable open={[]} history={[]} markets={new Map()} decimals={6} symbol={FIXTURE_SYMBOL} nowMs={FIXTURE_NOW_MS} busy={null} canSign={false} onMerge={noop} onSettle={noop} />
         </Fixture>
       </FixtureGrid>
     </div>

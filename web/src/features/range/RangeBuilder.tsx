@@ -20,7 +20,7 @@ import { ConnectButton } from "../markets/wallet";
 import type { PlaceStep } from "../parlay/TicketParts";
 import { BandControl } from "./BandControl";
 import { RANGE } from "./copy";
-import { usd0 } from "./format";
+import { usd0, usdBand } from "./format";
 import { RangeTicket, type SolveMode } from "./RangeTicket";
 import { useRangeDraft } from "./useRangeDraft";
 import { useRangeQuote } from "./useRangeQuote";
@@ -104,7 +104,7 @@ export function RangeBuilder({ reserve, symbol }: RangeBuilderProps) {
     if (outcome.status === "confirmed") {
       setTxHash(outcome.txHash);
       setStep("success");
-      notify.neutral(RANGE.ticket.toast(`${band.side} ${usd0(band.lowPrint)} – ${usd0(band.highPrint)}`, formatBaseUnits(outcome.stakeBase, decimals), formatBaseUnits(quote.maxPayoutBase, decimals, { maxDp: 0, minDp: 0 }), symbol));
+      notify.neutral(RANGE.ticket.toast(`${band.side} ${usdBand(band.lowPrint)} – ${usdBand(band.highPrint)}`, formatBaseUnits(outcome.stakeBase, decimals), formatBaseUnits(quote.maxPayoutBase, decimals, { maxDp: 0, minDp: 0 }), symbol));
       setTimeout(() => setStep("idle"), SUCCESS_RESET_MS);
       return;
     }

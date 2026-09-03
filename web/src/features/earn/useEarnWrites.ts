@@ -11,6 +11,9 @@ import { EARN } from "./copy";
 
 export type EarnBusy = "supply" | "withdraw" | `merge:${string}` | `settle:${string}`;
 
+/** The vault caps its open Windows (`maxOpenWindows`); this is the most settles one exit will send before giving up. */
+const MAX_SETTLES_BEFORE_WITHDRAW = 16;
+
 /** Every vault write from the page through the session's lane; every read the write can change is refetched afterwards. */
 export function useEarnWrites() {
   const submitter = useSubmitter();
@@ -55,16 +58,20 @@ export function useEarnWrites() {
     [submitter, run],
   );
 
-  /** Settles a closed Window first when one blocks the exit (anyone may), then redeems the shares. */
+  /**
+   * Settles every closed Window that blocks the exit (anyone may), then redeems the shares. The vault names the
+   * blockers one at a time, so this asks again after each settle — a first cut settled one and the withdraw was
+   * refused on the next (four were closed at once, context/49).
+   */
   const withdraw = useCallback(
     (shares: bigint) => {
       if (!submitter) return;
       void run("withdraw", async () => {
-        const stale = await getMakerUnsettledExpired();
-        if (stale.ok && stale.value) {
+        for (let round = 0; round < MAX_SETTLES_BEFORE_WITHDRAW; round += 1) {
+          const stale = await getMakerUnsettledExpired();
+          if (!stale.ok || !stale.value) break;
           setMsg(EARN.position.settling);
-          const settled = await submitter.submitTx({ kind: "maker-settle", marketId: stale.value });
-          const failure = outcomeMessage(settled);
+          const failure = outcomeMessage(await submitter.submitTx({ kind: "maker-settle", marketId: stale.value }));
           if (failure) return failure;
         }
         return outcomeMessage(await submitter.submitTx({ kind: "maker-withdraw", shares }));

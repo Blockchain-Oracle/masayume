@@ -2,10 +2,8 @@
 
 import type { MakerWindowView } from "@masayume/core/maker";
 import { formatCadence } from "@masayume/core/market";
-import { isOk } from "@masayume/core/schemas";
-import type { MarketId } from "@masayume/core/types";
+import type { EventMarket, MarketId } from "@masayume/core/types";
 import { formatBaseUnits } from "@masayume/core/units";
-import { useMarket } from "@masayume/markets/react";
 import { EARN } from "./copy";
 import { money2 } from "./format";
 import type { EarnBusy } from "./useEarnWrites";
@@ -13,6 +11,8 @@ import type { EarnBusy } from "./useEarnWrites";
 interface WindowsTableProps {
   open: MakerWindowView[];
   history: MakerWindowView[];
+  /** Every Window the rows name, read in one round by the screen; a row whose Window has not landed prints "…". */
+  markets: ReadonlyMap<MarketId, EventMarket>;
   decimals: number;
   symbol: string;
   nowMs: number;
@@ -22,10 +22,8 @@ interface WindowsTableProps {
   onSettle: (marketId: MarketId) => void;
 }
 
-function Row({ view, decimals, symbol, nowMs, busy, canSign, onMerge, onSettle }: { view: MakerWindowView } & Omit<WindowsTableProps, "open" | "history">) {
+function Row({ view, market, decimals, symbol, nowMs, busy, canSign, onMerge, onSettle }: { view: MakerWindowView; market: EventMarket | null } & Omit<WindowsTableProps, "open" | "history" | "markets">) {
   const { windows } = EARN;
-  const reading = useMarket(view.marketId);
-  const market = reading && isOk(reading) ? reading.value : null;
   const closed = market !== null && nowMs > 0 && market.expirySec * 1000 <= nowMs;
   const pairs = view.yesRaw < view.noRaw ? view.yesRaw : view.noRaw;
   const contracts = (raw: bigint) => formatBaseUnits(raw, decimals, { minDp: 0, maxDp: 2 });
@@ -86,7 +84,7 @@ export function WindowsTable(props: WindowsTableProps) {
         </thead>
         <tbody>
           {rows.map((view) => (
-            <Row key={`${view.marketId}:${view.settled ? "s" : "o"}`} view={view} decimals={props.decimals} symbol={props.symbol} nowMs={props.nowMs} busy={props.busy} canSign={props.canSign} onMerge={props.onMerge} onSettle={props.onSettle} />
+            <Row key={`${view.marketId}:${view.settled ? "s" : "o"}`} view={view} market={props.markets.get(view.marketId) ?? null} decimals={props.decimals} symbol={props.symbol} nowMs={props.nowMs} busy={props.busy} canSign={props.canSign} onMerge={props.onMerge} onSettle={props.onSettle} />
           ))}
         </tbody>
       </table>

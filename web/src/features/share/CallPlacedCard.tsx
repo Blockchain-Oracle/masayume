@@ -73,11 +73,11 @@ export function CallPlacedCard({ card, nowMs, actions }: CallPlacedCardProps) {
               </div>
             </div>
           </div>
-          {card.leverage && <p className="call-lev-note">{SHARE.call.leverageNote(callMultiple(card))}</p>}
           <p className="call-fee-note">
             {card.symbol}
             {card.feeBps !== null ? ` · ${SHARE.call.afterFee}` : ""}
           </p>
+          {card.leverage && <p className="call-lev-note">{SHARE.call.leverageNote(callMultiple(card))}</p>}
 
           <div className="call-settles">
             <div className="call-settles-row">

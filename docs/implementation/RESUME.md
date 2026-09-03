@@ -19,8 +19,12 @@ items 2, 3 and 4 — `RangeReserve`, `MarketMakerVault` and `LeverageReserve` �
 and the Ticket's Private option, is **live on Shannon too** (2026-09-03, ninth session, `0x4D27…28bB` after a security
 redeploy). The user has
 not yet reviewed any Stage 5 surface. Item 6, `/surface`, is **built and inspected in a browser** (2026-09-03, tenth
-session; context/48) — every Stage 5 item is done. Next: the user's browser review of the Stage 5 surfaces, the
-21st.dev redesign pass on the other surfaces (the leverage ones are done), then Stage 6 (doc 04).**
+session; context/48) — every Stage 5 item is done. **The browser review of every Stage 5 surface ran on 2026-09-03
+(eleventh session; context/49)**: a parlay, an earn supply, a 2× boost placed from the pages with the demo wallet, the
+Ticket's every state, the tour at two widths in both themes; ten defects, nine fixed (§Stage 5 item 7 below), the
+boot's ten-to-seventeen-second latency measured and left. Next: the user's own look at the Stage 5 surfaces (the
+ledger's Needs-user-review rows are all still open), the boot latency, the 21st.dev redesign pass on the other
+surfaces (the leverage ones are done), then Stage 6 (doc 04).**
 
 | Commit | What |
 |---|---|
@@ -66,7 +70,7 @@ Everything is green: `pnpm typecheck`, `pnpm invariants` (14/14, 0 warnings), `p
 **The live actors** (`pnpm --filter @masayume/ops start` with `DRY_RUN=0 MAKER_PRIVATE_KEY=… LEVERAGE_KEEPER_PRIVATE_KEY=…`,
 keys in `~/.config/masayume/market-maker.env` / `leverage-keeper.env`) ran on Shannon on 2026-09-02: the maker quoted
 and merged live, the keeper watches the leverage reserve. `spike:live-windows` lists Trading ids; `spike:stage5-live`
-drives a boost and a band through the adapters and measures the lanes. Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`). **To drive a surface in a real browser with the demo wallet**, use the scripted-wallet driver in context/47 (Playwright over the installed Chrome, the key in Node, `personal_sign` and `eth_sendTransaction` handled) and run it under `caffeinate -i` — this Mac sleeps mid-run otherwise. The Claude Chrome extension was not connected on 2026-09-03.
+drives a boost and a band through the adapters and measures the lanes. Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`). **To drive a surface in a real browser with the demo wallet**, use the scripted-wallet driver in context/47 (Playwright over the installed Chrome, the key in Node, `personal_sign` and `eth_sendTransaction` handled) and run it under `caffeinate -i` — this Mac sleeps mid-run otherwise. The Claude Chrome extension was not connected on 2026-09-03 (checked again in the eleventh session). The scratchpad recipe from context/49 (`driver.mjs`, `lib.mjs`, one script per pass) is the fastest restart.
 
 **Never touch or commit** the untracked `context/screens/` and `prompt.md`. They are the user's.
 
@@ -500,6 +504,35 @@ and the ledger's §`/surface` first. What is where:
   the close.
 - Not done: the hero's top-of-book and the rail's cards do not name a crossed book (they show two takeable prices,
   which is true); the ladder reads the canonical ten levels only; `/surface` is not in the nav (nor in the reference's).
+
+**7. The browser review — 2026-09-03 (eleventh session).** Read context/49 first. What it changed:
+- `features/range/presets.ts` — the band presets follow the asset's price (the reference's BTC dollars carried by
+  price ratio to `PRESET_ANCHOR_USD`; a nice-step centre grid; cents under $10k). ETH was unpriceable before it.
+  `useRangeDraft` exposes `unit`, `decimals`, `axisHalf`; `BandControl` and both tickets format on the grid.
+- `features/earn/useEarnWrites.ts` — the withdraw settles every closed Window the vault names, not the first;
+  `EarnScreen` reads every Window it shows through the new `useMarketsLite` (`getMarketsLite`, no opening prints) —
+  one round for the table's labels and the unsettled note; `SupplyCards` prints "wallet …" while the sheet reads;
+  `earn-page.css` gives `.ea-cards` an explicit column so a phone does not overflow; the page's own `<main>` is a
+  `<div>` (also `/leaderboard`, `/claim`, `/stats` — the shell owns the landmark).
+- `components/ui/button.tsx` — `nativeButton` is false whenever `render` is given (an anchor); the Base UI console
+  error on every mobile load is gone.
+- `projection/badges.ts` — LP Provider is the reference's `plpBalance > 0` on the maker vault's shares;
+  `RecordSection` passes them; the label "Needs the Earn vault" only where none is deployed.
+- `share/CallPlacedCard.tsx` — the unit line precedes the boost caveat; `RangeTicketBody` — the headroom line is a
+  caption, not a `<dl>` row (it was squeezing "You pay" onto two lines).
+- **Measured, not fixed**: every wallet- or market-scoped read lands 10–17 s after a fresh load (the plate, the
+  hero, the 2× chip, the earn labels) with one Chrome and nothing else running; the RPC answers in under a second
+  and the main thread is busy for under half a second in total, so it is waiting, not working. context/49
+  §Measured and left has the table and the candidates. Take it before the redesign pass.
+- **For the user's eye**, unchanged: the Sensei ring over the Ticket's bottom-right corner at 1280×900; the plate's
+  "0.00 · Get test tUSDC" for the first sixteen seconds (the reference's own); the 1× quote's "Cost 3.18 · Max loss
+  4.99 · Buy UP for 4.99"; Set-stake parlays charging less than typed when odds lengthen.
+- **Process**: six Explore agents were spawned to diff the ports against the reference source; one ran
+  `git checkout main` under the live dev server and none reported. The memory rule now forbids git state changes in
+  every agent prompt; check `git reflog -1` after any agent batch.
+- **Left on chain by the review** (demo wallet): a 3-leg parlay in play (4h leg closes 14:00 UTC — settle and claim
+  from `/parlay` when it lands), 50.13 shares in the maker vault, a 2× boost on a 5m Window that has since settled
+  (settle from `/portfolio`).
 
 Remember Somnia's gas schedule when deploying (context/41 §Live on Shannon) and the faucet's one wallet a
 day. Deploy nothing without the owner's go.

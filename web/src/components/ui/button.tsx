@@ -43,11 +43,14 @@ function Button({
   className,
   variant = "default",
   size = "default",
+  nativeButton,
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+  // A `render={<Link />}` is an anchor: Base UI wants to know, or it logs a console error on every mount.
   return (
     <ButtonPrimitive
       data-slot="button"
+      nativeButton={nativeButton ?? props.render === undefined}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />

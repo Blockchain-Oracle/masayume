@@ -33,6 +33,8 @@ export const EARN = {
   supply: {
     amount: "Amount",
     wallet: (balance: string, symbol: string) => `wallet ${balance} ${symbol}`,
+    walletPending: "wallet …",
+    walletReading: "Still reading your wallet balance — a moment.",
     max: "Max",
     connect: "Connect a wallet to supply.",
     button: (symbol: string) => `Supply ${symbol}`,

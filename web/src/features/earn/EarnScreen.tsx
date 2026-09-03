@@ -1,9 +1,10 @@
 "use client";
 
-import type { MakerVaultState } from "@masayume/core/maker";
+import type { MakerVaultState, MakerWindowView } from "@masayume/core/maker";
+import type { EventMarket, MarketId } from "@masayume/core/types";
 import { isOk } from "@masayume/core/schemas";
-import { useBalanceSheet, useMakerHistory, useMakerShares, useMakerVault, useMakerWindows, useMarket } from "@masayume/markets/react";
-import { useEffect, useState } from "react";
+import { useBalanceSheet, useMakerHistory, useMakerShares, useMakerVault, useMakerWindows, useMarketsLite } from "@masayume/markets/react";
+import { useEffect, useMemo, useState } from "react";
 import { CapabilityPending, SectionHead } from "@/components/shell";
 import { ReadingBoundary } from "@/components/states";
 import { useWalletSession } from "@/lib/wallet-session";
@@ -16,14 +17,6 @@ import { VaultPanel } from "./VaultPanel";
 import { WindowsTable } from "./WindowsTable";
 import "../parlay/parlay-page.css";
 import "./earn-page.css";
-
-/** True when any open Window is past its expiry — the contract refuses a withdrawal until it is settled. */
-function useAnyExpired(marketIds: readonly string[], nowMs: number): boolean {
-  const first = useMarket((marketIds[0] as never) ?? null);
-  const second = useMarket((marketIds[1] as never) ?? null);
-  const rows = [first, second].filter((r) => r && isOk(r)).map((r) => (r as { value: { expirySec: number } }).value);
-  return nowMs > 0 && rows.some((m) => m.expirySec * 1000 <= nowMs);
-}
 
 /** `/earn` — `reference/yosuku/app/earn/page.tsx`: the hero with the live panel, §01 supply and your position; ours adds §02, where the capital is. */
 export function EarnScreen() {
@@ -64,9 +57,19 @@ function Page({ vault }: { vault: MakerVaultState }) {
 
   const walletBase = sheet && isOk(sheet) ? sheet.value.spendableBase : null;
   const held = shares && isOk(shares) ? shares.value : { shares: 0n, worthBase: 0n };
-  const openViews = open && isOk(open) ? open.value : [];
-  const historyViews = history && isOk(history) ? history.value : [];
-  const unsettledExpired = useAnyExpired(openViews.map((v) => v.marketId), nowMs);
+  const openViews = useMemo<MakerWindowView[]>(() => (open && isOk(open) ? open.value : []), [open]);
+  const historyViews = useMemo<MakerWindowView[]>(() => (history && isOk(history) ? history.value : []), [history]);
+  // One round for every Window the table names, so labels do not resolve one a second and the withdraw guard sees
+  // every open Window, not the first two (the vault refused a withdraw on the third — context/49).
+  const marketIds = useMemo<MarketId[]>(() => [...openViews, ...historyViews.filter((h) => h.settled).slice(0, 10)].map((v) => v.marketId), [openViews, historyViews]);
+  const lite = useMarketsLite(marketIds);
+  const markets = useMemo<ReadonlyMap<MarketId, EventMarket>>(() => (lite && isOk(lite) ? lite.value : new Map()), [lite]);
+  const unsettledExpired =
+    nowMs > 0 &&
+    openViews.some((view) => {
+      const market = markets.get(view.marketId);
+      return market !== undefined && market.expirySec * 1000 <= nowMs;
+    });
   const { sections } = EARN;
 
   return (
@@ -90,7 +93,7 @@ function Page({ vault }: { vault: MakerVaultState }) {
         </div>
       </section>
 
-      <main>
+      <div>
         <div className="container ea-main">
           <SectionHead number={sections.supply.number} title={sections.supply.title} meta={sections.supply.meta} />
           {vault.paused && (
@@ -105,11 +108,11 @@ function Page({ vault }: { vault: MakerVaultState }) {
           </div>
 
           <SectionHead number={sections.windows.number} title={sections.windows.title} meta={sections.windows.meta} />
-          <WindowsTable open={openViews} history={historyViews} decimals={vault.decimals} symbol={symbol} nowMs={nowMs} busy={writes.busy} canSign={writes.canSign} onMerge={writes.merge} onSettle={writes.settle} />
+          <WindowsTable open={openViews} history={historyViews} markets={markets} decimals={vault.decimals} symbol={symbol} nowMs={nowMs} busy={writes.busy} canSign={writes.canSign} onMerge={writes.merge} onSettle={writes.settle} />
 
           {message && <p className={message.includes("✓") ? "ea-msg" : "ea-msg ea-msg--err"}>{message}</p>}
         </div>
-      </main>
+      </div>
     </>
   );
 }

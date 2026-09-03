@@ -4,6 +4,7 @@ import type { RangeSide } from "@masayume/core/range";
 import { Minus, Plus, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RANGE } from "./copy";
+import { usdOnGrid } from "./format";
 import { RANGE_PRESETS, bandHalfUsd } from "./presets";
 import type { RangeDraft } from "./useRangeDraft";
 
@@ -16,19 +17,19 @@ interface BandControlProps {
   onSide?: (side: RangeSide) => void;
 }
 
-const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
-
 /**
  * The reference's range body (`Ticket624Drawer.tsx` L900–1030): explicit bounds, a draggable centre on a
- * track with the spot marked, three width presets scaled per cadence, and five-dollar centre steps.
+ * track with the spot marked, three width presets scaled per cadence, and centre steps on the asset's grid
+ * (the reference's five dollars on BTC).
  */
 export function BandControl({ asset, intervalSec, draft, side, onSide }: BandControlProps) {
   const { band } = RANGE;
-  const { spotUsd, lowUsd, highUsd, half, offset, centerMax, dragging } = draft;
+  const { spotUsd, lowUsd, highUsd, offset, centerMax, dragging, axisHalf, unit, decimals } = draft;
   const ready = spotUsd !== null && lowUsd !== null && highUsd !== null;
-  const axisHalf = Math.max(90, half + 35);
+  const usd = (n: number) => usdOnGrid(n, decimals);
   const pct = (v: number) => (spotUsd === null ? 0 : Math.max(0, Math.min(100, ((v - (spotUsd - axisHalf)) / (axisHalf * 2)) * 100)));
   const above = offset > 0;
+  const step = usd(unit);
 
   return (
     <div className="rg-band">
@@ -62,7 +63,7 @@ export function BandControl({ asset, intervalSec, draft, side, onSide }: BandCon
                 aria-valuemin={-centerMax}
                 aria-valuemax={centerMax}
                 aria-valuenow={offset}
-                aria-valuetext={offset === 0 ? band.sliderCentered : band.sliderOff(Math.abs(offset), above)}
+                aria-valuetext={offset === 0 ? band.sliderCentered : band.sliderOff(usd(Math.abs(offset)), above)}
                 title={band.drag}
                 className={cn("rg-thumb", dragging && "rg-thumb--dragging")}
                 style={{ left: `${pct(lowUsd)}%`, right: `${100 - pct(highUsd)}%` }}
@@ -99,7 +100,7 @@ export function BandControl({ asset, intervalSec, draft, side, onSide }: BandCon
           return (
             <button key={p.key} type="button" onClick={() => draft.setPreset(p.key)} className="rg-preset" aria-pressed={on} data-cursor="hover">
               <span className="rg-preset-name">{band.presetLabel(p.key, p.label)}</span>
-              <span className={cn("rg-preset-span", on && "rg-preset-span--on")}>{band.span(bandHalfUsd(p.key, intervalSec) * 2)}</span>
+              <span className={cn("rg-preset-span", on && "rg-preset-span--on")}>{band.span(usd(bandHalfUsd(p.key, intervalSec, spotUsd) * 2))}</span>
             </button>
           );
         })}
@@ -108,16 +109,16 @@ export function BandControl({ asset, intervalSec, draft, side, onSide }: BandCon
       <div className="rg-center">
         <div className="rg-center-text">
           <span className="rg-k">{band.center}</span>
-          <span className="rg-center-v">{offset === 0 ? band.atMarket : band.offMarket(Math.abs(offset), above)}</span>
+          <span className="rg-center-v">{offset === 0 ? band.atMarket : band.offMarket(usd(Math.abs(offset)), above)}</span>
         </div>
         <div className="rg-center-btns">
-          <button type="button" onClick={() => draft.nudge(-1)} className="rg-icon-btn" aria-label={band.lower} title={band.lower}>
+          <button type="button" onClick={() => draft.nudge(-1)} className="rg-icon-btn" aria-label={band.lower(step)} title={band.lower(step)}>
             <Minus />
           </button>
           <button type="button" onClick={draft.recenter} disabled={offset === 0} className="rg-icon-btn" aria-label={band.recenter} title={band.recenter}>
             <RotateCcw />
           </button>
-          <button type="button" onClick={() => draft.nudge(1)} className="rg-icon-btn" aria-label={band.higher} title={band.higher}>
+          <button type="button" onClick={() => draft.nudge(1)} className="rg-icon-btn" aria-label={band.higher(step)} title={band.higher(step)}>
             <Plus />
           </button>
         </div>

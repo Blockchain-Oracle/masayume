@@ -25,6 +25,22 @@ export async function listLiveLanes(venueId: Bytes32): Promise<Reading<LaneSet>>
   });
 }
 
+/**
+ * Several Windows by id in one round, without their opening prints — labels and expiries only, for a table
+ * that names ten settled Windows and for the withdraw guard that must see every open one. `getMarket` fetches a
+ * print per call, which made a ten-row table resolve one row a second (found in a browser 2026-09-03, context/49).
+ */
+export async function getMarketsLite(marketIds: readonly MarketId[]): Promise<Reading<Map<MarketId, EventMarket>>> {
+  return withReading(`marketsLite:${marketIds.join(",")}`, async () => {
+    const rows = await Promise.all(marketIds.map((id) => getClient().getBinaryMarket(id)));
+    const out = new Map<MarketId, EventMarket>();
+    rows.forEach((row, i) => {
+      if (row) out.set(marketIds[i] as MarketId, toEventMarket(row, null));
+    });
+    return out;
+  });
+}
+
 export async function getMarket(marketId: MarketId): Promise<Reading<EventMarket | null>> {
   return withReading(`market:${marketId}`, async () => {
     const row = await getClient().getBinaryMarket(marketId);

@@ -54,7 +54,7 @@ export const HISTORY = {
   badges: {
     unlocked: "Unlocked",
     locked: "Locked",
-    pendingEarn: "Needs Earn (Stage 5)",
+    pendingEarn: "Needs the Earn vault",
     names: {
       first_trade: { name: "First Trade", description: "Opened your first position." },
       winning_streak: { name: "Hot Streak", description: "3 consecutive winning Windows." },

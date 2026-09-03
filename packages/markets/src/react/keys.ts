@@ -8,6 +8,8 @@ export const keys = {
   boot: () => [QUERY_KEY_SCOPE, APP, "boot"] as const,
   lanes: (venueId: string | null) => [QUERY_KEY_SCOPE, APP, "lanes", venueId] as const,
   market: (marketId: string | null) => [QUERY_KEY_SCOPE, APP, "market", marketId] as const,
+  /** A set of Windows read together, keyed on their joined ids. */
+  marketsLite: (ids: string) => [QUERY_KEY_SCOPE, APP, "marketsLite", ids] as const,
   openingPrice: (marketId: string | null) => [QUERY_KEY_SCOPE, APP, "opening", marketId] as const,
   assetPrice: (asset: string | null) => [QUERY_KEY_SCOPE, APP, "assetPrice", asset] as const,
   priceHistory: (asset: string | null, fromSec: number, toSec: number) => [QUERY_KEY_SCOPE, APP, "priceHistory", asset, fromSec, toSec] as const,

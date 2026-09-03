@@ -59,7 +59,7 @@ export function ClaimScreen() {
       <div className="xc-rail" />
       <div aria-hidden="true" className="xc-wash xc-wash--v" />
       <div aria-hidden="true" className="xc-wash xc-wash--g" />
-      <main className="container xc-main">
+      <div className="container xc-main">
         <div className="xc-grid">
           <div className="xc-flow">
             <div className="xc-intro">
@@ -135,7 +135,7 @@ export function ClaimScreen() {
             <ClaimReceiptCard amount={amount} handle={handle} done={stage === "ready"} symbol={symbol} />
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

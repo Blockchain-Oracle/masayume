@@ -1,5 +1,6 @@
 import type { MakerVaultState, MakerWindowView } from "@masayume/core/maker";
-import { toMarketId, type Address, type MarketId } from "@masayume/core/types";
+import { toMarketId, type Address, type EventMarket, type MarketId } from "@masayume/core/types";
+import { WINDOW } from "@/app/dev/range/fixtures";
 
 // Canned readings; nothing here is a real vault, address or deployment.
 const DECIMALS = 6;
@@ -63,3 +64,17 @@ export const HISTORY: MakerWindowView[] = [
   view(0x1153e, { settled: true, settledAtSec: NOW_SEC - 1_800, escrowOutBase: 19_480_000n, escrowBackBase: 6_300_000n, payoutBase: 0n, deployedBase: 13_180_000n, realizedBase: -13_180_000n }),
   view(0x1153d, { settled: true, settledAtSec: NOW_SEC - 3_600, escrowOutBase: 19_480_000n, escrowBackBase: 6_300_000n, payoutBase: 20_000_000n, deployedBase: 0n, realizedBase: 6_820_000n }),
 ];
+
+/** The Windows the rows name, as the screen reads them in one round (labels and expiries; two already closed). */
+export const MARKETS: ReadonlyMap<MarketId, EventMarket> = new Map<MarketId, EventMarket>(
+  (
+    [
+      [0x11542, "BTC", 300, 240],
+      [0x11541, "ETH", 900, 600],
+      [0x11540, "BTC", 3_600, -30],
+      [0x1153f, "ETH", 300, -900],
+      [0x1153e, "BTC", 300, -1_800],
+      [0x1153d, "BTC", 900, -3_600],
+    ] as const
+  ).map(([n, asset, intervalSec, leftSec]) => [id(n), { ...WINDOW, marketId: id(n), asset, intervalSec, tradingStartSec: NOW_SEC + leftSec - intervalSec, expirySec: NOW_SEC + leftSec }]),
+);

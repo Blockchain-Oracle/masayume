@@ -92,7 +92,7 @@ export function LeaderboardBoard({ reading, address, nextExpirySec, nowMs, retry
   return (
     <div className="lb-page">
       <Hero data={data} nextExpirySec={nextExpirySec} nowMs={nowMs} />
-      <main>
+      <div>
         <div className="container">
           {reading === null && (
             <div className="lb-state" role="status" aria-busy="true">
@@ -136,7 +136,7 @@ export function LeaderboardBoard({ reading, address, nextExpirySec, nowMs, retry
           )}
           {address && data && <YouBar address={address} data={data} />}
         </div>
-      </main>
+      </div>
     </div>
   );
 }
