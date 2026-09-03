@@ -22,9 +22,13 @@ not yet reviewed any Stage 5 surface. Item 6, `/surface`, is **built and inspect
 session; context/48) — every Stage 5 item is done. **The browser review of every Stage 5 surface ran on 2026-09-03
 (eleventh session; context/49)**: a parlay, an earn supply, a 2× boost placed from the pages with the demo wallet, the
 Ticket's every state, the tour at two widths in both themes; ten defects, nine fixed (§Stage 5 item 7 below), the
-boot's ten-to-seventeen-second latency measured and left. Next: the user's own look at the Stage 5 surfaces (the
-ledger's Needs-user-review rows are all still open), the boot latency, the 21st.dev redesign pass on the other
-surfaces (the leverage ones are done), then Stage 6 (doc 04).**
+boot's ten-to-seventeen-second latency measured and left. **Twelfth session (2026-09-03, context/51): no code; the
+coin status read from Shannon, the boot latency handed to the owner's other agent (it works in a separate worktree —
+do not touch performance or navigation here until the owner says both have looked), the two game references read
+and every doc-04 mode mapped onto DreamDEX, five decisions put to the owner. Next: Stage 6 (doc 04) once the owner
+answers context/51 §3's five decisions — the games are the only stage left to build; context/51 §4 is the complete
+list of everything else open.** The 21st.dev redesign pass on the other surfaces (the leverage ones are done) and the
+user's own look at Stage 5 (the ledger's Needs-user-review rows are all still open) follow.
 
 | Commit | What |
 |---|---|
@@ -552,6 +556,18 @@ and the ledger's §`/surface` first. What is where:
 
 Remember Somnia's gas schedule when deploying (context/41 §Live on Shannon) and the faucet's one wallet a
 day. Deploy nothing without the owner's go.
+
+## Stage 6 — not started
+
+Doc 04 is the authority; `reference/pips` and `reference/flicky` supply the mechanics; Yosuku stays the visual
+authority. **Read context/51 §3 first**: the per-mode mapping onto DreamDEX (GameArena places each pick as an IOC
+taker in the same transaction and settles on the venue's finalised outcome, so no keeper-fed prices; Lucky is a
+seeded scan over the live Windows; Moonshot is a decision; the arcade pair ports as is into a dark island), the two
+dependencies (no `SPONSOR_PRIVATE_KEY` yet; the matchmaker needs a long-lived WebSocket process beside the ops actors),
+and the **five decisions the owner has not yet answered** (order, Moonshot A/B, stake tiers, deck rule, the deploy go).
+Today `web/src/app/games/*` holds 14-line `CapabilityPending` placeholders; only `/games/range` is real (Stage 5).
+The coin status as of 2026-09-03 is context/51 §1; the boot-latency findings and the handoff to the owner's other
+agent are context/51 §2.
 
 **Also open:** Fear/Greed on the ticker still waits on a provider. `/social` keeps its shell. Lifecycle alerts
 have no reference source.
