@@ -1,8 +1,9 @@
 # Read-path performance and resilience architecture
 
-Status: research and proposed architecture; not implemented in the navigation branch
+Status: **phases A-C largely implemented on `feat/yosuku-source-led-shell` (2026-09-03)**; phase D
+(provider/route boundary splitting and lazy loading) not started. See §Implementation record.
 
-Date: 2026-09-03
+Date: 2026-09-03; implementation record appended 2026-09-03
 
 ## Executive diagnosis
 
@@ -247,3 +248,56 @@ Initial budgets to validate rather than assume: static shell under 1 s, cached m
 - Do not copy `stacks-20` wholesale.
 - Do not add a general state-management library to solve a server-state problem.
 - Do not let automatic RPC fallback replay writes or user-signature requests.
+
+## Implementation record — 2026-09-03
+
+What landed, what it measured, and what remains. Commits `e964c0d`, `809fc10`, `e7d40a0`, `a724b94`.
+
+### Landed
+
+| Target | What was built | Evidence |
+|---|---|---|
+| §1 failure contract | A first-ever *infrastructure* failure now rejects the query promise, so TanStack Query has a real error state, retry policy and backoff. Domain failures still resolve as the error arm of a `Reading`: a revert is an answer, not an outage. A failed *refresh* is deliberately not a rejection — `withReading` has already substituted the last-good value and flipped `stale`. | `packages/markets/src/react/useReadingQuery.ts` |
+| §1 retry classification | Read retries are limited to transport kinds (`rpc-down`, `indexer-down`, `send-unknown`, `unknown`). Reverts, undeployed contracts, wrong chain, already-claimed and validation failures never retry. | same file |
+| §2 boot decomposition | Clock, collateral and venue are three independent queries with their own keys, caches, failures and retries. Each read declares the facts it needs (`needs`), defaulting to all three so money formatting keeps its guarantee. Readiness is published through one context — see the correction below. | `provider/boot.ts`, `react/useMarketsBoot.ts`, `react/BootFactsProvider.tsx` |
+| §2 un-gating | `/news`, `/stats`, `/leaderboard`, `/status` and the strategies list read our own HTTP routes and involve no chain at all, yet every one waited for all three chain facts. They now declare `needs: []`. | the five feature hooks |
+| §3 endpoint health | One module, and it asks a question worth asking: health is a completed `eth_chainId` round trip, not a WebSocket that opened. Chain id, latency and consecutive failures are recorded per endpoint; selection takes the healthy endpoint with the lowest latency. It stays one explicit call by the caller that owns runtime construction, and `AUTO_ROTATE_RPC` stays off, so a read failover can never move a signer or land inside a write. | `runtime/health.ts` |
+| §4 persistence | A deliberately tiny allowlist: collateral decimals/symbol, the live venue id, and a pool's tick/lot/minimum. All public, chain-scoped, slowly changing. **Nothing account-scoped is written at all**, so there is no account to purge on disconnect — a stronger guarantee than a purge, which can fail to run. Restored values are marked `aged`. A test pins the allowlist. | `web/src/providers/persist.ts`, `persist.test.ts` |
+| §5 Portfolio tiers | Critical (balance, open positions, claimables) loads first; the deferred tier waits for it to answer. When *every* critical read fails with the same connection diagnosis that is one fact said once, with one retry; a partial failure stays a section-level error. Settled history stops polling every fifteen seconds — it revalidates on write, account change, focus, and a five-minute floor. | `portfolio/useTiers.ts`, `PortfolioScreen.tsx` |
+| §8 instrumentation | `shell.ready`, `runtime.configured`, `wallet.ready`, `clock/collateral/venue.ready`, `boot.ready`, `lanes.first`, `critical.ready`, `route.useful`. Stage names and timings only — never an address, key or payload — published on the page for a measurement run rather than transmitted. | `packages/markets/src/perf/`, `web/src/features/perf/` |
+| Markets hero | "Pick a Window above to read it here" appeared whenever the lane set was not yet a value, so a cold load and a dead RPC both looked like the app waiting for a click. Three facts, three faces: chart skeleton, diagnosis with retry, "no live Windows". | `MarketsHero.tsx` |
+
+### A correction found by driving the running app
+
+Readiness was first read by mounting a second `useQuery` on the fact's key with `skipToken`. Two
+observers with different options on one query means a refetch resolves against whichever synced
+last, and the page reported `Missing queryFn: [...,"boot","clock"]` instead of the actual RPC
+failure. One provider now owns the three fact queries and publishes readiness through context.
+
+### Measured
+
+Production build, `/markets`, warm assets. Time to the real hero chart: **2961 / 2869 ms before,
+1257-2106 ms after**. The mechanism rather than the sample: `route.useful` beat `boot.ready` on four
+of five instrumented loads (1970<2016, 1379<1475, 1090<1831, 1186<2102). Under the old gate the lane
+read could not *start* until `boot.ready`, so the best measured load's old-path equivalent is
+2102 ms + the observed 744 ms lane read ≈ 2846 ms against 1186 ms measured. The hero skeleton is on
+screen at 143-186 ms.
+
+Degraded-endpoint test, chain WebSocket dead and indexer healthy, injected before any app script.
+Before: clock and collateral can never resolve, `boot.ready` never becomes true, and the gate
+disables *every* query in the application — the whole product is blank indefinitely. After:
+`/markets` is fully usable at `route.useful` 1337 ms because lanes need only the venue fact and the
+venue resolves over the indexer; `/status` renders completely; the two facts that genuinely failed
+are reported once, with one retry, naming the real cause. Retry buttons on screen during the
+outage: one.
+
+### Not done
+
+- Phase D entirely: the provider stack still mounts globally, no route group split, no lazy loading
+  of wallet modals/Sensei/charts, no route `loading.tsx` boundaries.
+- The settled-history archive/live-delta split (§5). History is slowed and gated, not split.
+- Mutation-specific invalidation (§5). `invalidateAfterWrite` still invalidates broadly.
+- Field metrics collection. The probe publishes to the page; nothing is transmitted or aggregated.
+- Bundle measurement against a recorded baseline.
+- Portfolio timings are unmeasured: reproducing the owner's signed-in retry storm needs a wallet
+  session, which this pass did not drive.

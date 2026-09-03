@@ -23,12 +23,16 @@ session; context/48) — every Stage 5 item is done. **The browser review of eve
 (eleventh session; context/49)**: a parlay, an earn supply, a 2× boost placed from the pages with the demo wallet, the
 Ticket's every state, the tour at two widths in both themes; ten defects, nine fixed (§Stage 5 item 7 below), the
 boot's ten-to-seventeen-second latency measured and left. **Twelfth session (2026-09-03, context/51): no code; the
-coin status read from Shannon, the boot latency handed to the owner's other agent (it works in a separate worktree —
-do not touch performance or navigation here until the owner says both have looked), the two game references read
-and every doc-04 mode mapped onto DreamDEX, five decisions put to the owner. Next: Stage 6 (doc 04) once the owner
-answers context/51 §3's five decisions — the games are the only stage left to build; context/51 §4 is the complete
-list of everything else open.** The 21st.dev redesign pass on the other surfaces (the leverage ones are done) and the
-user's own look at Stage 5 (the ledger's Needs-user-review rows are all still open) follow.
+coin status read from Shannon, the boot latency handed to the owner's other agent (that worktree is now merged, so
+the hands-off rule it carried no longer applies), the two game references read
+and every doc-04 mode mapped onto DreamDEX, five decisions put to the owner.** **Thirteenth session (2026-09-03):
+the `codex/navigation-ia` worktree was merged — `main` fast-forwarded to `287dac6` and carries the grouped
+navigation, the Stage 6 game architecture and the read-path research — and the read-path remediation was then built
+and measured on this branch (`e964c0d`…`a724b94`; §Stage 6 below and the architecture doc's §Implementation record).
+Nothing is pushed or deployed. Next: Stage 6 (doc 04) once the owner answers context/51 §3's five decisions and
+doc 06's eight — the games are the only stage left to build; context/51 §4 is the rest of what is open.** The 21st.dev
+redesign pass on the other surfaces (the leverage ones are done) and the user's own look at Stage 5 (the ledger's
+Needs-user-review rows are all still open) follow.
 
 | Commit | What |
 |---|---|
@@ -69,8 +73,13 @@ user's own look at Stage 5 (the ledger's Needs-user-review rows are all still op
 | `724209a` | Stage 5 — the private open's guard is read after the signature (the desk refused a 12 s-old quote twice; the 15m book moves a sixth in three seconds) |
 | `b8e620d` | Stage 5 — the browser review: every Stage 5 surface driven with the demo wallet (a parlay, an earn supply, a 2× boost); nine defects fixed, the ETH bands priceable, the vault exit settling every closed Window (context/49) |
 | `9298d9c` | Stage 5 — the ports diffed against the reference source by six agents (context/50); the cheap exact-replication misses fixed across all six surfaces; six ledger rows corrected |
+| `287dac6` | Navigation — the grouped map (Markets · Reels · Games ▾ · Build ▾ · Explore ▾ · Portfolio; 34 destinations, one home each, route-coverage test); Stage 6 game architecture; the read-path research (merged from `codex/navigation-ia`) |
+| `e964c0d` | Read path 1 — boot split into three facts, `needs` per read, infrastructure failures reject, the Markets hero's three faces, ten milestones |
+| `809fc10` | Read path 2 — Portfolio critical/deferred tiers, one error per outage, settled history de-polled |
+| `e7d40a0` | Read path 3 — five HTTP-only pages un-gated, endpoint health as a real `eth_chainId` round trip, public-only read persistence |
+| `a724b94` | Read path 4 — boot readiness through context (the `skipToken` double-observer produced a "Missing queryFn" error instead of the real RPC failure); the sixteen-item Explore menu bounded to `--available-height` so its last five destinations are reachable |
 
-Everything is green: `pnpm typecheck`, `pnpm invariants` (14/14, 0 warnings), `pnpm test` (151),
+Everything is green: `pnpm typecheck`, `pnpm invariants` (14/14, 0 warnings), `pnpm test` (176),
 `forge test --no-match-contract Fork` (173), `pnpm build`.
 
 **The live actors** (`pnpm --filter @masayume/ops start` with `DRY_RUN=0 MAKER_PRIVATE_KEY=… LEVERAGE_KEEPER_PRIVATE_KEY=…`,
@@ -569,12 +578,19 @@ still required); one unified leaderboard with game/friends/season sections; and 
 Moonshot A, directional follows, season prizes, Free-Duel economics and whether the standing Shannon deploy go
 covers the new custody contract. No Stage 6 product or contract code was written in the research pass.
 
-The parallel production measurement found fast Next HTML (about 307 ms shell; 2–26 ms route TTFB) but 1.1–5.5 s
-combined boot reads and roughly 20.8 s to useful Markets content in the sampled browser reload. The first fix is not
-“more cache”: instrument, split the global boot by dependency, restore rejected query errors, correct loading/empty
-states, then add allowlisted IndexedDB persistence and Portfolio critical/deferred tiers. See
-`docs/architecture/performance-read-architecture-2026-09-03.md`. The owner-reported signed-in Portfolio retry storm
-was not reproduced in the disconnected measurement and still needs a wallet-scoped trace.
+**The read-path remediation is built** (2026-09-03, thirteenth session; `e964c0d`, `809fc10`, `e7d40a0`,
+`a724b94`). The boot is three independent facts, each read declares what it needs, a first-load infrastructure
+failure rejects so TanStack has a real error state, five HTTP-only pages stopped waiting for the chain, the Markets
+hero has honest loading/error/empty faces, Portfolio has critical and deferred tiers with one error for one outage,
+endpoint health is a real `eth_chainId` round trip, and a tiny public-only allowlist survives a reload. Measured on
+`/markets`: time to the real hero chart 2961/2869 ms before, 1257–2106 ms after, with `route.useful` beating
+`boot.ready` on four of five instrumented loads. With the chain socket dead and the indexer healthy the old build
+was blank indefinitely; the new one serves `/markets` in 1.3 s and `/status` in full, with one retry button naming
+the real cause. Phase D (provider/route boundary split, lazy loading, route skeletons) is **not started**, the
+settled-history archive/delta split and mutation-specific invalidation are **not done**, and nothing is transmitted
+or aggregated from the probe. The §Implementation record in
+`docs/architecture/performance-read-architecture-2026-09-03.md` is the full account. **The signed-in Portfolio
+retry storm is still unmeasured** — reproducing it needs a wallet session, which this pass did not drive.
 
 Doc 04 is the authority; `reference/pips` and `reference/flicky` supply the mechanics; Yosuku stays the visual
 authority. **Read context/51 §3 first**: the per-mode mapping onto DreamDEX (GameArena places each pick as an IOC

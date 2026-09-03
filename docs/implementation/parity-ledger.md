@@ -1266,6 +1266,28 @@ These rows add capability-level acceptance without rewriting the route rows abov
 | Share result | Flicky artifact pattern; Masayume proof links | Verified terminal match + stored artifact hash | Portrait card contains mode/opponent/result/proof URL, never unverifiable balance or fabricated statistic |
 | Stage 6 provenance | PIPS/Flicky behavior references | Pinned sources; no repo-level reusable licence | Independent implementation only; no copied unlicensed UI, engine or server source |
 
+## Read-path and navigation acceptance — implemented 2026-09-03
+
+Architecture: `docs/architecture/performance-read-architecture-2026-09-03.md` (§Implementation
+record) and `docs/plans/2026-09-03-navigation-design.md`. Commits `287dac6`, `e964c0d`, `809fc10`,
+`e7d40a0`, `a724b94`.
+
+| Capability | Status | Acceptance met |
+|---|---|---|
+| Grouped navigation | **Done** | Desktop shows Markets, Reels, Games, Build, Explore, Portfolio with the three groups as `haspopup="menu"` carrying 8/7/16 destinations; mobile keeps Markets, Reels, Games, Portfolio, More; the drawer holds all 34 with one home each; a route-coverage test fails when a listed public route loses its home |
+| Navigation accessibility | **Done** | Escape closes and returns focus to the trigger; the drawer is labelled "Everything in Masayume", traps focus and restores it to More; `aria-current="page"` on the active destination; `/games/range` lights Games and not More |
+| Navigation responsive | **Done** | No horizontal overflow at 1440, 768, 390 or 320; bottom-bar targets 56×48; the drawer scrolls 2561px inside a 446px viewport at 320; the sixteen-item Explore menu bounds itself to `--available-height` and scrolls rather than hiding its last five destinations |
+| Read dependency declaration | **Done** | Clock, collateral and venue are independent queries; each read declares the facts it needs; five HTTP-only pages declare none and no longer wait for the chain |
+| Read failure contract | **Done** | A first-load infrastructure failure rejects so Query has a real error state and retry; domain failures resolve without retry; a failed refresh keeps the last-good value marked stale |
+| Markets first-load states | **Done** | Chart skeleton at 143–186 ms, diagnosis with retry on failure, "no live Windows" when genuinely empty; no instruction to click to begin loading |
+| Portfolio tiering | **Partial** | Critical/deferred split, one page-level error only when every critical read fails on the connection, settled history de-polled. **Unmeasured signed-in** — reproducing the retry storm needs a wallet session |
+| Endpoint health | **Done** | Health is a completed `eth_chainId` round trip with chain id, latency and consecutive failures per endpoint; one selection point; auto-rotation stays off so a read failover cannot move a signer |
+| Safe read persistence | **Done** | Allowlist is collateral, venue and book parameters only; nothing account-scoped is ever written; restored values marked `aged`; the allowlist is pinned by a test |
+| Read-path instrumentation | **Partial** | Ten milestones published on the page, identity-free. **No field collection or aggregation** |
+| Degraded-endpoint behaviour | **Done** | With the chain socket dead and the indexer healthy, `/markets` is usable at 1337 ms and `/status` renders fully; one retry button on screen, naming the real cause. Before this work the same condition left the entire application blank indefinitely |
+| Provider/route boundary split, lazy loading, route skeletons | Pending | Phase D of the read architecture; not started |
+| Settled-history archive/delta split; mutation-specific invalidation | Pending | Phase C remainder |
+
 ## Feature families
 
 Tracked separately so the route table cannot hide a missing capability.
