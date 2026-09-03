@@ -54,14 +54,17 @@ surfaces (the leverage ones are done).**
 | `9a2637f` | Stage 5 — the maker vault books the venue's exact escrow (its lazy refund panicked the first vault) and is redeployed at `0xc904…9e79`; the maker lane measured |
 | `5f54e5e` | Stage 5 — `PrivateDesk` contract (the budget, the slot, the pool between), fork-verified on Shannon; the desk's resumable open and cash-out in the port (context/46) |
 | `cc4490e` | Stage 5 — the private route's surfaces from source; the desk in `/api/private/*`; `PrivateDesk` deployed on Shannon at `0x4356…7c67` |
+| `5f54e5e`…`9f07642` | Stage 5 — `PrivateDesk` after two reviews, redeployed at `0x4D27…28bB`; the resumable authorisation; the live drive (context/46) |
+| `ce17add` | Stage 5 — every reading query waits for the boot (the portfolio alerts and the hidden faucet card, found in a browser) |
+| `724209a` | Stage 5 — the private open's guard is read after the signature (the desk refused a 12 s-old quote twice; the 15m book moves a sixth in three seconds) |
 
-Everything is green: `pnpm typecheck`, `pnpm invariants` (14/14, 0 warnings), `pnpm test` (149),
+Everything is green: `pnpm typecheck`, `pnpm invariants` (14/14, 0 warnings), `pnpm test` (151),
 `forge test --no-match-contract Fork` (173), `pnpm build`.
 
 **The live actors** (`pnpm --filter @masayume/ops start` with `DRY_RUN=0 MAKER_PRIVATE_KEY=… LEVERAGE_KEEPER_PRIVATE_KEY=…`,
 keys in `~/.config/masayume/market-maker.env` / `leverage-keeper.env`) ran on Shannon on 2026-09-02: the maker quoted
 and merged live, the keeper watches the leverage reserve. `spike:live-windows` lists Trading ids; `spike:stage5-live`
-drives a boost and a band through the adapters and measures the lanes. Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`).
+drives a boost and a band through the adapters and measures the lanes. Dev server: `pnpm dev` → `http://localhost:3000` (`/` → `/markets`). **To drive a surface in a real browser with the demo wallet**, use the scripted-wallet driver in context/47 (Playwright over the installed Chrome, the key in Node, `personal_sign` and `eth_sendTransaction` handled) and run it under `caffeinate -i` — this Mac sleeps mid-run otherwise. The Claude Chrome extension was not connected on 2026-09-03.
 
 **Never touch or commit** the untracked `context/screens/` and `prompt.md`. They are the user's.
 
@@ -460,7 +463,7 @@ What is where:
   action), `PrivateQuoteRows` / `PrivateNote` / `PrivateCta`, `PrivateClaims` (the reference's component with its CSS:
   verify on sight, back up, restore, cash out), `PrivateBalancePanel` (the plate's Private pool row panel), the desk's
   server half `desk.server.ts` (`PRIVATE_DESK_PRIVATE_KEY`, in `web/.env.local`), `/api/private/{status,open,cashout}`;
-  fixtures on `/dev/private`. **Not seen in a browser.** Ledger rows flagged for review: the trust model (a key, not a
+  fixtures on `/dev/private`. **Driven end to end in a browser on 2026-09-03** — context/47: the faucet, top-up-and-bet, a mint refunded on the spot, an open (8.163 contracts for 1.999935), The Call, the claims list, back-up, cash-out 68 s after the close (+6.16), withdraw; two fixes came out of it (`ce17add`, `724209a`). Ledger rows flagged for review: the trust model (a key, not a
   TEE), the third option on the control, the claims list mounted on the pool row, the panel's trust sentences.
 - **Live on Shannon (2026-09-03):** `PrivateDesk` `0x4D27115c4eff6536bf0D009ACeBf339AA02128bB`, block 478433921,
   creation **36,654,926** gas (the first deploy `0x4356…7c67` accumulated credits per key — the security reviewer's
