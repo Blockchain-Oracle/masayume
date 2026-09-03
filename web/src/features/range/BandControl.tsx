@@ -112,13 +112,13 @@ export function BandControl({ asset, intervalSec, draft, side, onSide }: BandCon
           <span className="rg-center-v">{offset === 0 ? band.atMarket : band.offMarket(usd(Math.abs(offset)), above)}</span>
         </div>
         <div className="rg-center-btns">
-          <button type="button" onClick={() => draft.nudge(-1)} className="rg-icon-btn" aria-label={band.lower(step)} title={band.lower(step)}>
+          <button type="button" onClick={() => draft.nudge(-1)} className="rg-icon-btn" aria-label={band.lower(step)} title={band.lowerTitle(step)}>
             <Minus />
           </button>
-          <button type="button" onClick={draft.recenter} disabled={offset === 0} className="rg-icon-btn" aria-label={band.recenter} title={band.recenter}>
+          <button type="button" onClick={draft.recenter} disabled={offset === 0} className="rg-icon-btn" aria-label={band.recenter} title={band.recenterTitle}>
             <RotateCcw />
           </button>
-          <button type="button" onClick={() => draft.nudge(1)} className="rg-icon-btn" aria-label={band.higher(step)} title={band.higher(step)}>
+          <button type="button" onClick={() => draft.nudge(1)} className="rg-icon-btn" aria-label={band.higher(step)} title={band.higherTitle(step)}>
             <Plus />
           </button>
         </div>
@@ -127,7 +127,7 @@ export function BandControl({ asset, intervalSec, draft, side, onSide }: BandCon
       {onSide && (
         <div className="rg-sides" role="radiogroup" aria-label={band.sideLabel}>
           {(["inside", "outside"] as const).map((option) => (
-            <button key={option} type="button" role="radio" aria-checked={side === option} aria-pressed={side === option} onClick={() => onSide(option)} className="rg-side" data-cursor="hover">
+            <button key={option} type="button" role="radio" aria-checked={side === option} onClick={() => onSide(option)} className="rg-side" data-cursor="hover">
               {option === "inside" ? band.inside : band.outside}
             </button>
           ))}

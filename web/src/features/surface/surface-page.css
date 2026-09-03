@@ -4,8 +4,8 @@
  * `--white` and the `--gray-*` vars are the reference's own and flip with the theme
  * (RESUME.md §Never write var(--white) on a surface that does not flip — this one does). */
 
-/* main.container pt-[120px] pb-12 — the chrome offset comes from `.page-shell` */
-.sf-page { padding-bottom: 48px; }
+/* main.container pt-[120px] pb-12 — `.page-shell` reserves the 92px of chrome; the reference's 120 leaves 28 of air */
+.sf-page { padding-top: 28px; padding-bottom: 48px; }
 
 /* font-mono text-[11px] tracking-[0.18em] uppercase text-gray-500 mb-7 flex items-center gap-3 */
 .sf-crumbs { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gray-500); }
@@ -55,22 +55,25 @@
 /* style={{ height: 180 }} — the x labels need a row of their own here */
 .sf-box--short { height: 200px; }
 /* overflow-hidden; ours: a wide table scrolls inside its own box, the page never does */
-.sf-box--table { overflow: hidden auto; overflow-x: auto; }
+.sf-box--table { overflow-x: auto; overflow-y: hidden; }
 /* flex items-center justify-center h-full font-mono text-xs text-gray-600 */
 .sf-box-empty { display: flex; align-items: center; justify-content: center; height: 100%; font-family: var(--font-mono); font-size: 12px; color: var(--gray-600); text-align: center; padding: 0 20px; }
 .sf-box-empty--rows { height: auto; padding: 32px 20px; }
 
-/* ── §01 tiles: grid grid-cols-2 md:grid-cols-4 gap-3 — four across from 1024 rather than the reference's 768:
- * a $77,842.39 print at the 24px face needs ~130px, and four tiles at 768 leave it 127 ── */
+/* ── §01 tiles: grid grid-cols-2 md:grid-cols-4 gap-3 — four across from 768, as the reference; between 768 and 900
+ * a $77,842.39 print at the 24px face would not fit its tile, so the face steps down there ── */
 .sf-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-@media (min-width: 1024px) { .sf-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (min-width: 768px) { .sf-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 /* border border-white/[0.08] rounded bg-bg p-5 */
 .sf-tile { min-width: 0; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 4px; background: var(--bg); padding: 20px; }
 [data-theme="light"] .sf-tile { border-color: rgba(20, 18, 16, 0.11); background: #FBF7EE; }
 /* font-mono text-[10px] uppercase tracking-[0.2em] text-gray-500 mb-2 */
 .sf-tile-k { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; color: var(--gray-500); margin-bottom: 8px; }
-/* font-display text-2xl font-extrabold tracking-tight tabular-nums text-white */
+/* font-display text-2xl font-extrabold tracking-tight tabular-nums text-white — one face for all four tiles, the countdown included */
 .sf-tile-v { font-family: var(--font-display); font-size: 24px; line-height: 32px; font-weight: 800; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; color: var(--white); white-space: nowrap; }
+.sf-tile-v > * { font-family: inherit; font-size: inherit; font-weight: inherit; letter-spacing: inherit; }
+/* four across from 768 leaves ~131px for a $77,842.39 print at the 24px face; step down until the tile widens */
+@media (min-width: 768px) and (max-width: 899px) { .sf-tile-v { font-size: 20px; line-height: 28px; } }
 /* a two-column row of tiles at 390 leaves ~125px for the figure: the print needs a smaller face, never a wrapped number */
 @media (max-width: 640px) {
   .sf-tile { padding: 14px; }
@@ -81,14 +84,7 @@
 /* Ours — the breakdown under each figure, in the reference's params-line grammar: font-mono text-[10px] text-gray-500 */
 .sf-tile-sub { margin-top: 8px; min-height: 1.4em; font-family: var(--font-mono); font-size: 10px; color: var(--gray-500); }
 
-/* ── motion: the reference's framer enters, as CSS; the depth stacks grow from the floor ── */
-@keyframes sf-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-.sf-rise { animation: sf-rise 320ms var(--easeOut) both; }
-@keyframes sf-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
-.sf-depth-area { transform-box: fill-box; transform-origin: 50% 100%; animation: sf-grow 500ms var(--easeOut) both; }
-@media (prefers-reduced-motion: reduce) {
-  .sf-rise, .sf-depth-area { animation: none; }
-}
+/* the reference's surface page animates nothing; neither does this one */
 
 /* ── §02 depth ── */
 .sf-depth { display: flex; flex-direction: column; gap: 8px; }
@@ -122,21 +118,21 @@
 [data-theme="light"] .sf-row--head { border-bottom-color: rgba(20, 18, 16, 0.07); }
 .sf-row-num { text-align: right; }
 /* the strike column: text-gray-300, ATM in text-vermilion */
-.sf-row-stake { color: var(--white); }
+.sf-row-stake { color: var(--gray-300); }
 .sf-row-unit { font-size: 10px; color: var(--gray-500); }
 .sf-row-slip { color: var(--gray-400); }
 /* the UP price column: text-emerald-400/90 — the reference's own, and the profit token */
 .sf-row-pays, .sf-trow-up { color: color-mix(in srgb, var(--profit) 90%, transparent); }
 .sf-row-fill { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gray-500); text-align: right; }
-/* a stake past the visible book steps back; its edge is named in vermilion, as the ATM rung is */
-.sf-row--beyond { color: var(--gray-500); }
+/* a stake past the visible book steps back on the ATM rung's wash (bg-vermilion/[0.06]); its edge is named in vermilion */
+.sf-row--beyond { color: var(--gray-500); background: color-mix(in srgb, var(--vermilion) 6%, transparent); }
 .sf-row--beyond .sf-row-stake { color: var(--gray-400); }
 .sf-row--beyond .sf-row-fill { color: var(--vermilion); }
-/* font-mono text-[10px] text-gray-600 mt-2 flex flex-wrap gap-x-4 gap-y-1 */
+/* font-mono text-[10px] text-gray-600 mt-2 flex flex-wrap gap-x-4 gap-y-1 — the ladder's 12px gap stands in for mt-2 */
 .sf-params { display: flex; flex-wrap: wrap; gap: 4px 16px; font-family: var(--font-mono); font-size: 10px; color: var(--gray-600); }
 
 /* ── §04 the curve: drawIvLine's padL 44 / padB 24 as a grid ── */
-.sf-term { display: grid; grid-template-columns: 40px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; gap: 6px 8px; }
+.sf-term { display: grid; grid-template-columns: 44px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; gap: 6px 8px; }
 .sf-term-y { display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; font-family: var(--font-mono); font-size: 9px; color: var(--gray-500); }
 .sf-term-plot { position: relative; min-height: 0; }
 /* grid: rgba(255,255,255,0.06) */
@@ -158,14 +154,13 @@
 
 /* the same Windows as rows */
 .sf-termwrap { display: flex; flex-direction: column; gap: 12px; }
-.sf-trow { display: grid; grid-template-columns: 1.2fr 0.8fr 1.1fr 0.6fr 0.6fr 0.7fr 1.2fr 1fr; gap: 8px; align-items: baseline; min-width: 760px; width: 100%; padding: 8px 20px; border: 0; border-top: 1px solid rgba(255, 255, 255, 0.05); background: transparent; text-align: left; font-family: var(--font-mono); font-size: 12px; font-variant-numeric: tabular-nums; color: var(--gray-300); cursor: pointer; transition: background 200ms var(--ease); }
+.sf-trow { display: grid; grid-template-columns: 1.2fr 0.8fr 1.1fr 0.6fr 0.6fr 0.7fr 1.2fr 1fr; gap: 8px; align-items: baseline; min-width: 760px; width: 100%; padding: 8px 20px; border: 0; background: transparent; text-align: left; font-family: var(--font-mono); font-size: 12px; font-variant-numeric: tabular-nums; color: var(--gray-300); cursor: pointer; transition: background 200ms var(--ease); }
 .sf-trow:hover { background: rgba(255, 255, 255, 0.02); }
 .sf-trow--head { padding: 10px 20px; border-top: 0; border-bottom: 1px solid rgba(255, 255, 255, 0.06); font-size: 9px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--gray-500); cursor: default; }
 .sf-trow--head:hover { background: transparent; }
 /* the ATM rung: bg-vermilion/[0.06], its label text-vermilion */
 .sf-trow--focal { background: color-mix(in srgb, var(--vermilion) 6%, transparent); }
 .sf-trow--focal .sf-trow-window b { color: var(--vermilion); }
-[data-theme="light"] .sf-trow { border-top-color: rgba(20, 18, 16, 0.07); }
 [data-theme="light"] .sf-trow:hover { background: rgba(20, 18, 16, 0.03); }
 [data-theme="light"] .sf-trow--head { border-bottom-color: rgba(20, 18, 16, 0.07); }
 .sf-trow-window b { font-weight: 600; color: var(--white); }

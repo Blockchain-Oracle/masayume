@@ -378,4 +378,6 @@ export const TICKET_PENDING = {
   leverageOne: "1×",
   leveragePending: (multiple: string) =>
     `${multiple} needs the prefunded reserve that backs leveraged payouts. It is not deployed yet, so every bet here is 1×.`,
+  /** A live reserve whose ceiling sits below this chip — a different cause from "not deployed", so a different sentence. */
+  leverageCapped: (multiple: string, ceiling: string) => `${multiple} is above this reserve's ceiling of ${ceiling}.`,
 } as const;

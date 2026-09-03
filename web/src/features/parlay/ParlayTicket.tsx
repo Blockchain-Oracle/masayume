@@ -2,7 +2,7 @@
 
 import type { ParlayQuote, ParlayReserveState } from "@masayume/core/parlay";
 import type { Diagnosis, EventMarket, Hex } from "@masayume/core/types";
-import { formatBaseUnits, oneUnit } from "@masayume/core/units";
+import { formatBaseUnits, oneUnit, parseDecimalToBaseUnits } from "@masayume/core/units";
 import { txUrl } from "@masayume/core/urls";
 import { AlertCircle, Loader2, Trophy } from "lucide-react";
 import { Countdown } from "@/components/data";
@@ -52,7 +52,10 @@ export function ParlayTicket(props: ParlayTicketProps) {
   const money = (base: bigint) => formatBaseUnits(base, decimals);
   const stakeText = quote ? money(quote.stakeBase) : "···";
   const payoutText = quote ? money(quote.maxPayoutBase) : "···";
-  const hasEnough = walletSpendableBase !== null && quote !== null && walletSpendableBase >= quote.stakeBase;
+  // The reference (L220–221) needs the typed stake when no quote exists, so an empty field or a paused reserve reads
+  // "Build your parlay", never "Insufficient".
+  const needBase = quote ? quote.stakeBase : (parseDecimalToBaseUnits(stakeInput || "0", decimals) ?? 0n);
+  const hasEnough = walletSpendableBase !== null && walletSpendableBase >= needBase;
 
   return (
     <div className="pl-ticket-col">
@@ -91,7 +94,7 @@ export function ParlayTicket(props: ParlayTicketProps) {
                 </div>
 
                 {solveMode === "fixStake" ? (
-                  <AmountField label={ticket.youPay} value={stakeInput} onChange={onStakeInput} symbol={symbol} hint={walletSpendableBase !== null ? ticket.wallet(money(walletSpendableBase), symbol) : undefined} />
+                  <AmountField label={ticket.youPay} value={stakeInput} onChange={onStakeInput} symbol={symbol} hint={ticket.wallet(walletSpendableBase !== null ? money(walletSpendableBase) : "…", symbol)} />
                 ) : (
                   <AmountField label={ticket.youWin} value={payoutInput} onChange={onPayoutInput} symbol={symbol} hint={ticket.ifLands} />
                 )}

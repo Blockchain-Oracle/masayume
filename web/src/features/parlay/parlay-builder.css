@@ -206,10 +206,10 @@
 }
 .pl-side svg { width: 12px; height: 12px; }
 .pl-side:hover { color: var(--gray-300); }
-/* bg-emerald-500/15 text-emerald-400 */
-.pl-side--up[aria-pressed="true"] { background: color-mix(in srgb, var(--profit) 15%, transparent); color: var(--profit); }
-/* bg-rose-500/15 text-rose-400 */
-.pl-side--down[aria-pressed="true"] { background: color-mix(in srgb, var(--loss) 15%, transparent); color: var(--loss); }
+/* bg-emerald-500/15 text-emerald-400 — the fill is the 500 step (#10B981), the ink the 400 (--profit) */
+.pl-side--up[aria-pressed="true"] { background: rgba(16, 185, 129, 0.15); color: var(--profit); }
+/* bg-rose-500/15 text-rose-400 — the fill is the 500 step (#F43F5E), the ink the 400 (--loss) */
+.pl-side--down[aria-pressed="true"] { background: rgba(244, 63, 94, 0.15); color: var(--loss); }
 
 /* The strike slot, read-only here: the same button skin, no chevron, the Window's own line */
 .pl-line { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; border-radius: 8px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); font-size: 12px; }

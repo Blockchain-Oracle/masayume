@@ -55,9 +55,9 @@ export function RouteControl({ source, onChange, vaultAvailableBase, decimals, s
         {privateOption && (
           <button
             type="button"
-            className="tk-mode"
+            className="tk-mode tk-mode--private"
             aria-pressed={effective === "private"}
-            disabled={!privateOption.enabled}
+            disabled={!privateOption.enabled && effective !== "private"}
             title={privateOption.title}
             onClick={() => onChange("private")}
             data-cursor="hover"

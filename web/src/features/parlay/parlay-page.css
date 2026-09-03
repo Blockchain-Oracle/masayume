@@ -6,8 +6,8 @@
  * which is what its Tailwind config maps `text-gray-*` to (they follow the theme; the compiled
  * utilities do not — RESUME.md §The same rule for backgrounds). */
 
-/* main.container pb-16 — the chrome offset comes from `.page-shell` */
-.pl-page { padding-bottom: 64px; }
+/* main.container pt-[120px] pb-16 — `.page-shell` reserves the 92px of chrome; the reference's 120 leaves 28 of air */
+.pl-page { padding-top: 28px; padding-bottom: 64px; }
 
 /* Hero: mb-12 */
 .pl-hero { margin-bottom: 48px; }

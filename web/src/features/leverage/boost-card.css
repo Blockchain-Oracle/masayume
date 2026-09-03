@@ -21,7 +21,7 @@
 .boost-x {
   font-family: var(--font-display);
   font-size: 22px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
   letter-spacing: -0.02em;
   color: var(--vermilion);
@@ -39,7 +39,7 @@
   text-align: right;
 }
 
-/* font-mono text-[9px] uppercase tracking-[0.16em] text-white/45 */
+/* font-mono text-[9px] uppercase tracking-[0.16em] text-white/45 — the ink is the muted token (gray-500), which composites close on the card's ground */
 .boost-k {
   font-family: var(--font-mono);
   font-size: 9px;
@@ -93,7 +93,7 @@
 .boost-figure-num {
   font-family: var(--font-display);
   font-size: 28px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
   letter-spacing: -0.02em;
   color: var(--vermilion);

@@ -1,7 +1,7 @@
 /* The Ticket's private line — reference/yosuku/components/Ticket624Drawer.tsx L1221–1247. Each rule names the
    utility string it replaces; light-theme steps follow part-14.css's `text-white/NN` mapping. */
 
-/* -mt-2 mb-4 flex items-center justify-between gap-3 rounded border border-vermilion/25 bg-vermilion/[0.05] px-2.5 py-2 */
+/* -mt-2 mb-4 (the ticket's gap-4 column stands in for both) flex items-center justify-between gap-3 rounded border border-vermilion/25 bg-vermilion/[0.05] px-2.5 py-2 */
 .tk-priv-box {
   display: flex;
   align-items: center;
@@ -32,7 +32,7 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
-/* -mt-2 mb-4 font-mono text-[9px] text-white/35 */
+/* -mt-2 mb-4 (the gap stands in) font-mono text-[9px] text-white/35 */
 .tk-priv-line {
   font-family: var(--font-mono);
   font-size: 9px;

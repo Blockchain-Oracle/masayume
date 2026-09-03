@@ -58,5 +58,7 @@ export function usePrivateStatus(enabled = true): PrivateStatusState {
     probe();
   }, [probe]);
 
-  return { probing, status, reason, retry };
+  // Until the first answer or failure lands, the route is still being asked — never a false "not available" for one frame
+  // between the deployment resolving and the probe firing (the reference's `privProbing`, L141–143).
+  return { probing: enabled && (probing || (status === null && reason === null)), status, reason, retry };
 }

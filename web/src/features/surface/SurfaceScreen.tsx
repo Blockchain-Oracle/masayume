@@ -42,7 +42,7 @@ export function SurfaceScreen() {
   return (
     <div className="container sf-page">
       <nav className="sf-crumbs" aria-label="Breadcrumb">
-        <a href="/markets" data-cursor="hover">
+        <a href="/">
           {SURFACE.crumbRoot}
         </a>
         <span className="sf-crumbs-sep">/</span>
@@ -62,7 +62,7 @@ export function SurfaceScreen() {
             {focal && (
               <div className="sf-sections">
                 <section>
-                  <SectionHead number={sections.book.number} title={sections.book.title} desc={sections.book.desc} live meta={sections.meta.book(focal.asset, formatCadence(focal.intervalSec))} />
+                  <SectionHead number={sections.book.number} title={sections.book.title} live meta={sections.meta.book(focal.asset, formatCadence(focal.intervalSec))} />
                   <BookReadout market={focal} structure={structure} hydrating={book === null} openingRaw={openingRaw} spotRaw={spotRaw} nowMs={nowMs} />
                   {book?.ok && book.stale && <StaleTick asOfMs={book.asOfMs} reason={book.staleReason} />}
                   {book && !book.ok && <ErrorState diagnosis={book.error} className="mt-3" />}

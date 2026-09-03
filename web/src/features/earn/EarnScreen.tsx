@@ -21,12 +21,41 @@ import "./earn-page.css";
 /** `/earn` — `reference/yosuku/app/earn/page.tsx`: the hero with the live panel, §01 supply and your position; ours adds §02, where the capital is. */
 export function EarnScreen() {
   const reading = useMakerVault();
+  const { boot } = useVenue();
+  const symbol = boot && isOk(boot) ? boot.value.collateral.symbol : "tUSDC";
+  const vault = reading && isOk(reading) ? reading.value : null;
+  const deployed = reading === null || vault !== null;
   return (
     <div className="earn-page ea-page">
+      {deployed && <Hero vault={vault} symbol={symbol} />}
       <ReadingBoundary reading={reading} shape="plate">
-        {(state) => (state ? <Page vault={state} /> : <NotDeployed />)}
+        {(state) => (state ? <Page vault={state} symbol={symbol} /> : <NotDeployed />)}
       </ReadingBoundary>
     </div>
+  );
+}
+
+/** The reference renders the hero at once and lets the panel say "loading the vault…" (page.tsx L222–224). */
+function Hero({ vault, symbol }: { vault: MakerVaultState | null; symbol: string }) {
+  return (
+    <section className="page-hero">
+      <span className="crop tl" />
+      <span className="crop tr" />
+      <span className="crop bl" />
+      <span className="crop br" />
+      <div className="container">
+        <div className="hero-grid">
+          <div className="hero-left">
+            <h1 className="page-title">
+              {EARN.title}
+              <br />
+              <span className="accent">{EARN.titleAccent}</span>.
+            </h1>
+          </div>
+          <VaultPanel vault={vault} symbol={symbol} />
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -42,9 +71,7 @@ function NotDeployed() {
   );
 }
 
-function Page({ vault }: { vault: MakerVaultState }) {
-  const { boot } = useVenue();
-  const symbol = boot && isOk(boot) ? boot.value.collateral.symbol : "tUSDC";
+function Page({ vault, symbol }: { vault: MakerVaultState; symbol: string }) {
   const { address } = useWalletSession();
   const sheet = useBalanceSheet(address);
   const shares = useMakerShares(address);
@@ -74,25 +101,6 @@ function Page({ vault }: { vault: MakerVaultState }) {
 
   return (
     <>
-      <section className="page-hero">
-        <span className="crop tl" />
-        <span className="crop tr" />
-        <span className="crop bl" />
-        <span className="crop br" />
-        <div className="container">
-          <div className="hero-grid">
-            <div className="hero-left">
-              <h1 className="page-title">
-                {EARN.title}
-                <br />
-                <span className="accent">{EARN.titleAccent}</span>.
-              </h1>
-            </div>
-            <VaultPanel vault={vault} symbol={symbol} />
-          </div>
-        </div>
-      </section>
-
       <div>
         <div className="container ea-main">
           <SectionHead number={sections.supply.number} title={sections.supply.title} meta={sections.supply.meta} />
@@ -107,10 +115,10 @@ function Page({ vault }: { vault: MakerVaultState }) {
             <PositionCard connected={address !== null} vault={vault} symbol={symbol} shares={held.shares} worthBase={held.worthBase} unsettledExpired={unsettledExpired} busy={writes.busy} onWithdraw={writes.withdraw} />
           </div>
 
+          {message && <p className={message.includes("✓") ? "ea-msg" : "ea-msg ea-msg--err"}>{message}</p>}
+
           <SectionHead number={sections.windows.number} title={sections.windows.title} meta={sections.windows.meta} />
           <WindowsTable open={openViews} history={historyViews} markets={markets} decimals={vault.decimals} symbol={symbol} nowMs={nowMs} busy={writes.busy} canSign={writes.canSign} onMerge={writes.merge} onSettle={writes.settle} />
-
-          {message && <p className={message.includes("✓") ? "ea-msg" : "ea-msg ea-msg--err"}>{message}</p>}
         </div>
       </div>
     </>

@@ -33,8 +33,9 @@ export interface LeverageBetRowProps {
   onSettle: (position: LeveragePosition) => void;
 }
 
+/** One decimal, as the reference's `fmtLeverage` (a position opened off-chip at an odd bps still reads as a multiple). */
 function multipleOf(position: LeveragePosition): number {
-  return position.leverageBps / 10_000;
+  return Math.round(position.leverageBps / 1_000) / 10;
 }
 
 function settledLabel(position: LeveragePosition): string {

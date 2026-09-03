@@ -104,11 +104,12 @@ export function RangeTicketBody(p: RangeTicketBodyProps) {
 
   const place = useCallback(async () => {
     if (!band || !quote) return;
-    const bandText = `${usdBand(band.lowPrint)} – ${usdBand(band.highPrint)}`;
+    const bandText = `${usdBand(band.lowPrint)} to ${usdBand(band.highPrint)}`;
     const outcome = await writes.open({ ...band, maxPayoutBase: quote.maxPayoutBase, maxStakeBase: mulBpsCeil(quote.stakeBase, 10_000 + RANGE_STAKE_HEADROOM_BPS) });
     if (!outcome) return;
     if (outcome.status === "confirmed") {
       setPlaced({ txHash: outcome.txHash, band: bandText });
+      notify.neutral(RANGE.ticket.toast(bandText, formatBaseUnits(outcome.stakeBase, decimals), formatBaseUnits(quote.maxPayoutBase, decimals, { maxDp: 0, minDp: 0 }), symbol));
       return;
     }
     if (outcome.status === "requote") {
@@ -157,7 +158,7 @@ export function RangeTicketBody(p: RangeTicketBodyProps) {
           <Row label={RANGE.ticket.pays}>{`${formatProbE6(quote.insideProbE6)}% inside`}</Row>
         </dl>
       ) : (
-        <p className="type-caption text-ink-muted">{RANGE.ticket.needBand}</p>
+        <p className="type-caption text-ink-muted">{draft.dragging ? RANGE.ticket.releaseToPrice : RANGE.ticket.enterAmount}</p>
       )}
       {quote && !quoteState.error && (
         <p className="type-caption text-ink-muted text-right">{RANGE.ticket.upTo(formatBaseUnits(mulBpsCeil(quote.stakeBase, 10_000 + RANGE_STAKE_HEADROOM_BPS), decimals), symbol)}</p>

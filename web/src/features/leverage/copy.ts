@@ -1,5 +1,3 @@
-import { LEVERAGE_NOT_DEPLOYED } from "@masayume/core/leverage";
-
 /**
  * The Ticket's leverage — the reference's own words where it has them (`Ticket624Drawer.tsx` L1074–1090:
  * the 1×/2×/3× chips, "L× can knock out before expiry."; `BetPlacedCard.tsx` L123: the caveat on The Call)
@@ -12,18 +10,13 @@ export const LEVERAGE = {
   lockedForRoute: "Boosts are placed from the wallet. Choose Wallet to bet at 2× or 3×.",
   /** The reference's exact title on the chips under a private bet (`Ticket624Drawer.tsx` L1080). */
   lockedForPrivate: "Private bets are placed at 1x.",
-  notDeployed: LEVERAGE_NOT_DEPLOYED,
   paused: "The leverage reserve is paused: no new boosts. Live ones still settle, cash out and knock out.",
   strip: {
     exposure: "Exposure",
     /** The reference's exact sentence under the quote strip. */
     knockout: (x: number) => `${x}× can knock out before expiry.`,
-    terms: (fronted: string, fee: string, symbol: string) => `The reserve fronts ${fronted} ${symbol} for a ${fee} ${symbol} fee, repaid first out of what the contracts fetch.`,
-    line: (line: string, symbol: string) => `Knocks out if the book's bid for the position falls to ${line} ${symbol}: sold at the bids, the reserve repaid, the rest yours.`,
     sized: (charged: string, symbol: string) => `Sized to the venue's lot: ${charged} ${symbol} is charged, the rest stays in your wallet.`,
     requote: (contracts: string) => `The book moved — your stake now buys ${contracts} contracts. Confirm again at the new size.`,
-    /** The guard under the CTA: the open refuses a fill more than this far under the quoted size. */
-    guard: (contracts: string) => `Fills at least ${contracts} contracts or not at all — the stake never changes.`,
   },
   /** The boost card: the reference's numbers laid out as a breakdown — the user's 2026-09-02 redesign call. */
   card: {

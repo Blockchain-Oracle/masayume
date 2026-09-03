@@ -527,9 +527,23 @@ and the ledger's §`/surface` first. What is where:
 - **For the user's eye**, unchanged: the Sensei ring over the Ticket's bottom-right corner at 1280×900; the plate's
   "0.00 · Get test tUSDC" for the first sixteen seconds (the reference's own); the 1× quote's "Cost 3.18 · Max loss
   4.99 · Buy UP for 4.99"; Set-stake parlays charging less than typed when odds lengthen.
-- **Process**: six Explore agents were spawned to diff the ports against the reference source; one ran
-  `git checkout main` under the live dev server and none reported. The memory rule now forbids git state changes in
-  every agent prompt; check `git reflog -1` after any agent batch.
+- **Process**: six Explore agents diffed the ports against the reference source (their reports: context/50; the
+  cheap exact-replication misses fixed in the same session, the structural ones listed for the user). A `git checkout
+  main` hit the working tree under the live dev server at 10:48:20 — not the agents, which had finished and each deny
+  running git; source unknown. Every agent prompt now forbids git state changes; check `git reflog -1` after a batch.
+- **The source diffs (context/50)**, applied the same day in a second commit: the exact-replication misses that were
+  cheap and unambiguous — the parlay's "Insufficient tUSDC" on an empty field (the reference reads "Build your
+  parlay"), the 28px of headroom on `/parlay` and `/surface`, the three colour-family slips, the earn hero mounted
+  92px too low (the shell's `:has(> .page-hero)` missed a grandchild; the hero now renders at once with the panel
+  saying "loading the vault…"), ten earn rules that had lost their utilities' line-heights, the input's focus ring,
+  the amount cleared before the tx landed, the surface tiles' breakpoint, its entrance animation and §01 desc, the
+  countdown tile's face, the Private tile's vermilion, the chosen Private tab greying at 35% over the cap, the
+  probing flash, the empty private quote block, the claims row naming its Window's close time and ticking, the
+  leverage chips' false "not deployed" title on a capped reserve, the painted "Leverage" label, the share text's
+  multiple, the chip's double ring, the 800 weights, the unrounded multiple. **Open, for the owner**: the shell's
+  first-paint skeleton on `/parlay` and `/surface`, the dead space above the footer (a shell decision), the range
+  mode's placed state (no Call), leverage and the funding gates vanishing in range mode, the private control's
+  position, the depth chart's missing axes, the countdown's format and colours. All listed with status in context/50.
 - **Left on chain by the review** (demo wallet): a 3-leg parlay in play (4h leg closes 14:00 UTC — settle and claim
   from `/parlay` when it lands), 50.13 shares in the maker vault, a 2× boost on a 5m Window that has since settled
   (settle from `/portfolio`).

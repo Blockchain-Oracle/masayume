@@ -3,8 +3,8 @@
  * hex and px out of TSX, so the values live here with the source utility named above each rule. Light
  * steps follow yosuku/part-14.css's `text-white/NN` mapping (RESUME.md §Never write var(--white)). */
 
-/* mb-4 */
-.rg-band { display: flex; flex-direction: column; margin-bottom: 16px; }
+/* mb-4 — the Ticket's gap-4 column stands in, or the band would sit 32px above the stake */
+.rg-band { display: flex; flex-direction: column; }
 
 /* flex items-baseline justify-between mb-2 */
 .rg-band-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
@@ -85,7 +85,7 @@
 .rg-sides { margin-top: 8px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.015); padding: 4px; }
 .rg-side { padding-block: 8px; border-radius: 4px; font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: rgba(255, 255, 255, 0.4); background: transparent; cursor: pointer; transition: color 200ms var(--ease); }
 .rg-side:hover { color: rgba(255, 255, 255, 0.75); }
-.rg-side[aria-pressed="true"] { background: color-mix(in srgb, var(--vermilion) 12%, transparent); color: var(--vermilion); }
+.rg-side[aria-checked="true"] { background: color-mix(in srgb, var(--vermilion) 12%, transparent); color: var(--vermilion); }
 
 /* ── light theme: part-14's ladder for text-white/NN, ink borders ── */
 [data-theme="light"] .rg-band-label { color: rgba(20, 18, 16, 0.62); }

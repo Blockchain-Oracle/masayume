@@ -28,11 +28,13 @@ persistent profiles so the Tutorial's dismissal survives, all under `caffeinate 
 | Leverage | `approve` `0x2b89…513e`, `open` `0x7f6b…6268` | 2× UP on BTC 5m for 4.99 (the lot took a cent), The Call "BTC OVER $77,628 · YOU STAKE 4.99 → WIN IF IT LANDS 16.42 ✦", the portfolio row "LIVE · 2× BOOSTED · Staked 4.99 · Yours now 3.07 · Cash out". |
 | Range | none | Refused before a signature — finding 1. |
 
-Six Explore agents were spawned in parallel to diff each surface's port against the reference source. **One of them
-ran `git checkout main`** at 10:48:20 (nine seconds before the parlay's approve was signed), which emptied the Stage 5
-directories on disk and put the dev server on the wrong tree for four minutes; the branch was checked back out, nothing
-was lost, and the flow completed on JavaScript already in the tab. None of the six ever reported. The rule that came out
-of it is in memory: every agent prompt on this repo forbids git commands that change state.
+Six Explore agents were spawned in parallel to diff each surface's port against the reference source; their reports
+are in context/50. **A `git checkout main` hit the shared working tree at 10:48:20** (nine seconds before the parlay's
+approve was signed), which emptied the Stage 5 directories on disk and put the dev server on the wrong tree for four
+minutes; the branch was checked back out, nothing was lost, and the flow completed on JavaScript already in the tab.
+The agents were suspected first, but all six had finished by 10:41 and each states it ran no git command at all; the
+source is not established (another session on this machine, or a terminal). The precaution stands anyway: every agent
+prompt on this repo forbids git commands that change state, and `git reflog -1` is checked after any agent batch.
 
 ## Findings
 

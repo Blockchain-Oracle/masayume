@@ -1,7 +1,7 @@
 "use client";
 
 import type { MakerVaultState } from "@masayume/core/maker";
-import { formatBaseUnits, oneUnit, parseDecimalToBaseUnits } from "@masayume/core/units";
+import { formatBaseUnits, parseDecimalToBaseUnits } from "@masayume/core/units";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ConnectButton } from "../markets/wallet";
@@ -15,7 +15,7 @@ interface SupplyCardProps {
   symbol: string;
   walletBase: bigint | null;
   busy: EarnBusy | null;
-  onSupply: (amountBase: bigint) => void;
+  onSupply: (amountBase: bigint) => Promise<boolean> | void;
   onMessage: (text: string) => void;
 }
 
@@ -35,8 +35,10 @@ export function SupplyCard({ connected, vault, symbol, walletBase, busy, onSuppl
     if (walletBase === null) return onMessage(supply.walletReading);
     if (wallet <= 0n) return onMessage(supply.noFunds(symbol));
     if (base > wallet) base = wallet;
-    onSupply(base);
-    setAmount("");
+    // Cleared only once the supply lands (the reference clears inside its success branch); a rejected signature keeps the figure.
+    void Promise.resolve(onSupply(base)).then((ok) => {
+      if (ok) setAmount("");
+    });
   };
 
   return (
@@ -96,7 +98,6 @@ interface PositionCardProps {
 export function PositionCard({ connected, vault, symbol, shares, worthBase, unsettledExpired, busy, onWithdraw }: PositionCardProps) {
   const { position } = EARN;
   const { decimals } = vault;
-  const one = oneUnit(decimals);
   // What liquid can pay of this position right now, in shares — the contract refuses more.
   const idleBase = worthBase < vault.liquidBase ? worthBase : vault.liquidBase;
   const idleShares = worthBase === 0n ? 0n : (shares * idleBase) / worthBase;
@@ -120,7 +121,6 @@ export function PositionCard({ connected, vault, symbol, shares, worthBase, unse
           </button>
           {deployedBase > 0n && <p className="ea-note">{position.deployedNote(money2(deployedBase, decimals), symbol)}</p>}
           {unsettledExpired && <p className="ea-note">{position.unsettledNote}</p>}
-          <span className="sr-only">{one.toString()}</span>
         </>
       )}
     </div>

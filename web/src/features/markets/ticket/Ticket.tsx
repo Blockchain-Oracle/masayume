@@ -222,7 +222,7 @@ export function Ticket({ selection }: { selection: TicketSelection }) {
           stakeBase={stakeBase}
           onStakeText={t.setStakeText}
           onStakeBase={t.setStakeBase}
-          availableBase={walletAvailableBase}
+          availableBase={balances?.spendableBase ?? null}
           session={session}
           hasSigner={hasSigner}
         />

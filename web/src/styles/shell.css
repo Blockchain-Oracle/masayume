@@ -87,7 +87,8 @@
  * itself — that top padding is part of the hero's ported geometry (168px, and
  * 116px below 900px). Reserving the same space here as well left the hero
  * floating under a band of dead page. */
-.page-shell:has(> .page-hero) {
+.page-shell:has(> .page-hero),
+.page-shell:has(> * > .page-hero:first-child) {
   padding-top: 0;
 }
 

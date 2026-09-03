@@ -60,7 +60,7 @@ export function callWinBase(card: CallCard): bigint {
 }
 
 export function callMultiple(card: CallCard): number {
-  return card.leverage ? card.leverage.leverageBps / 10_000 : 1;
+  return card.leverage ? Math.round(card.leverage.leverageBps / 1_000) / 10 : 1;
 }
 
 /** "BTC OVER $64,316" / "BTC UNDER $64,316" / "BTC VS THE OPENING PRINT". */
@@ -82,7 +82,7 @@ const shortHash = (hash: string): string => (hash.length > 14 ? `${hash.slice(0,
 
 /** Honest pre-filled post text — real staked numbers only, framed as a live call. */
 export function buildCallTweetText(card: CallCard): string {
-  return SHARE.call.tweet(callBandLabel(card).toLowerCase(), formatCadence(card.intervalSec), fmt(card.stakeBase, card.decimals), fmt(callWinBase(card), card.decimals), card.symbol, formatUtc(secToMs(card.expirySec)));
+  return SHARE.call.tweet(callBandLabel(card).toLowerCase(), formatCadence(card.intervalSec), fmt(card.stakeBase, card.decimals), fmt(callWinBase(card), card.decimals), card.symbol, formatUtc(secToMs(card.expirySec)), callMultiple(card));
 }
 
 export async function renderCallShareCard(card: CallCard): Promise<Blob> {

@@ -23,9 +23,9 @@ export const SURFACE = {
   reading: "reading the book…",
   noLive: "No live Windows right now — the surface fills in when the next Window opens.",
   sections: {
-    book: { number: "01", title: "The book", desc: "The top of the selected Window's book, the line it settles against, and how long it has to run." },
-    depth: { number: "02", title: "Depth", desc: "Resting size at each price on the UP book. Bids on the left are what selling UP fetches — and what buying DOWN costs; asks on the right are what buying UP costs." },
-    slippage: { number: "03", title: "Slippage", desc: "What a stake really buys, walking the asks the way the venue fills a taker. The average drifts away from the top as a stake goes deeper." },
+    book: { number: "01", title: "The book" },
+    depth: { number: "02", title: "Depth", desc: "Resting size at each price on the UP book: bids on the left, asks on the right." },
+    slippage: { number: "03", title: "Slippage", desc: "What a stake really buys, walking the asks the way the venue fills a taker." },
     term: { number: "04", title: "Term structure", desc: (asset: string) => `How every live ${asset} Window is priced right now, nearest close first.` },
     meta: {
       book: (asset: string, cadence: string) => `${asset} · ${cadence}`,

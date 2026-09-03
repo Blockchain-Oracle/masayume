@@ -33,6 +33,7 @@ export const PRIVATE = {
   },
   cta: {
     buy: (side: string) => `Buy ${side} privately for`,
+    buyPlain: "Buy privately for",
     fundAndBuy: (amount: string, side: string) => `Add ${amount} and buy ${side} privately`,
     reallowAndBuy: (side: string) => `Re-allow and buy ${side} privately`,
     resume: (window: string) => `Resume the private bet on ${window}`,

@@ -35,7 +35,7 @@ export function VaultPanel({ vault, symbol }: VaultPanelProps) {
       <div className="ea-panel-inner">
         <div className="ea-panel-head">
           <span className="ea-tag">{status}</span>
-          <span className="ea-tag">{panel.brand}</span>
+          <span className="ea-tag ea-tag--brand">{panel.brand}</span>
         </div>
 
         <div className="ea-price-row">

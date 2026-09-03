@@ -5,7 +5,8 @@ import type { PrivateTicket } from "@masayume/core/private";
 import type { Address } from "@masayume/core/types";
 import { formatBaseUnits } from "@masayume/core/units";
 import { Download, Loader2, ShieldAlert, ShieldCheck, Upload } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useTick } from "@masayume/markets/react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { exportPrivateClaims, importPrivateClaims } from "./claims-store";
 import { PRIVATE } from "./copy";
@@ -25,6 +26,11 @@ export interface PrivateClaimsProps {
   busySlot?: string | null;
   /** Something a person did that the list should know about (a restore, a cash-out) — re-reads storage. */
   onChanged?: () => void;
+}
+
+/** Two open bets on different BTC 4h Windows must not read as one row: the close time tells them apart (the reference's strike did). */
+function closeLabel(expirySec: number): string {
+  return `${new Date(expirySec * 1000).toISOString().slice(11, 16)} UTC`;
 }
 
 function sinceLabel(ts: number, nowMs: number): string {
@@ -48,7 +54,9 @@ export function PrivateClaims({ claims, pinnedDesk, contract, chainId, owner, de
   const [verified, setVerified] = useState<Record<string, boolean>>({});
   const [restored, setRestored] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const nowMs = Date.now();
+  // A ticking clock, so "3m ago" advances while the page is open (the reference re-read its rows every 4 s)
+  const beat = useTick(15_000);
+  const nowMs = useMemo(() => Date.now(), [beat]);
 
   // Verify every claim on sight. Making the user press a button to find out their bet is real would be putting the burden in the wrong place.
   useEffect(() => {
@@ -149,7 +157,7 @@ export function PrivateClaims({ claims, pinnedDesk, contract, chainId, owner, de
               <div className="pc-row-main">
                 <span className={cn("pc-side", c.claim.outcomeIdx === 0 ? "is-up" : "is-down")}>{side}</span>
                 <span className="pc-strike">
-                  {c.asset} {formatCadence(c.intervalSec)}
+                  {c.asset} {formatCadence(c.intervalSec)} · {closeLabel(c.expirySec)}
                 </span>
                 <span className="pc-stake">
                   {formatBaseUnits(stake, decimals)} {symbol}

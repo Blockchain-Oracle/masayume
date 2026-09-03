@@ -360,7 +360,7 @@ with the Window picker on the plate and both sides offered. Fixtures on `/dev/ra
 | "BTC must finish inside" · "BTC now" | `{asset} must finish inside` · `{asset} now` — the venue lists ETH too | Truth correction | No approval needed |
 | The band drawn as a shaded region on the price chart (`drawPriceLine` `band`) | **not drawn** — the chart card and the Ticket are siblings; lifting the band into the hero is a follow-up | Pending | **Needs user review** |
 | Gas-free footnote ("Gas-free · settles on its own, right on the price.") | "Settles on its own, right on the oracle's print." | Truth correction — no sponsor on this lane | No approval needed |
-| Private bets refuse range ("Private bets cannot be range bets") | the Private option disabled in range mode with that sentence (§PrivateDesk) | Exact | No approval needed |
+| Private bets refuse range ("Private bets cannot be range bets") | Private drops back to the wallet when a band is picked and the route control hides in range mode, as the reference hides its Public/Private block (`Ticket624Drawer.tsx` L1180); the sentence is the option's title (§PrivateDesk) | Adapted | No approval needed |
 | — | `/games/range` with OUTSIDE as a side, the Window picker, the slip's Settle / Void (no oracle answer) / Claim pills | Additive — the game the doc-04 mode row names | **Needs user review** |
 
 **Fork verification** — `contracts/test/RangeReserve.fork.t.sol` on a fork of Shannon (Window 70625, BTC 5m, question
@@ -443,7 +443,7 @@ gas lane (8M, **unmeasured**), `submitLeverageOpen` with the requote guard; hook
 
 **The Ticket (`ticket/LeverageChips.tsx`, `features/leverage/`)** — the reference's 1×/2×/3× chips
 (`Ticket624Drawer.tsx` L1074–1090), live: 1× is the plain order; a higher multiple swaps the book quote for the
-reserve's (`LeverageStrip`: cost, exposure, payout if right, max loss, odds), prints the reference's one sentence
+reserve's (`BoostCard`: the payout if right, max loss, exposure, odds, with the front, the fee and the line in its header and bar legend), prints the reference's one sentence
 ("2× can knock out before expiry.") and, under it, what the reference never showed — the front, the fee and the
 line — then the CTA "Buy UP 2× for <stake>". The Call carries the reference's caveat ("✦ 2× leverage. It can knock
 out before close.", `BetPlacedCard.tsx` L123–127) on screen and its PNG line (`openBetShareCard.ts` L360) in the
@@ -454,9 +454,9 @@ the mark, the line, Cash out / Settle) and the last five that settled, knocked o
 | Reference | Ours | Class | Approval |
 |---|---|---|---|
 | Chips disabled for a private bet, title "Private bets are placed at 1x." | Chips disabled off the wallet route, under a pause, or above the reserve's ceiling; the title says which | Adapted | No approval needed |
-| One sentence under the strip: "L× can knock out before expiry." | The sentence, then the front, the fee and the line in numbers | Additive (truth) | **Needs user review** |
+| One sentence under the strip: "L× can knock out before expiry." | The sentence, then one line on how a knock-out settles; the front, the fee and the line sit in the card's header and bar legend | Additive (truth) | **Needs user review** |
 | Leverage column `1.0×` on every open bet (`Portfolio624Section` L452) | The multiple only on boosted rows; plain rows say nothing | Adapted — the recorded Stage 2 deviation, resolved | **Needs user review** |
-| `LeveragePortfolioPanel`: value, cashout, live P&L, health % | "Yours now" (mark − front), the line or "at the knock-out line"; no percentage health | Adapted | **Needs user review** |
+| `LeveragePortfolioPanel`: value, cashout, live P&L, health % — defined at `app/portfolio/page.tsx` L368 and never mounted (`PORTFOLIO_UX_SPEC.md` L398 lists it among the deletions); the live reference UI is the `1.0×` column | "Yours now" (mark − front), the line or "at the knock-out line"; no percentage health | Adapted | **Needs user review** |
 | Earn page reserve handlers (`doSupplyReserve`, `doSettle`) with no JSX in the pinned source | No supplier UI; the reserve is supplied by the house like the parlay and range reserves | Adapted | No approval needed |
 
 **The keeper (`services/ops/src/actors/leverage-keeper`)** — one key, dry-run by default: settles what the venue
@@ -517,7 +517,7 @@ back with the reason), `cashOutPrivateBet` (settle → sweep → credit, each sk
 | Range refuses Private ("Private bets cannot be range bets…") | The option disabled in range mode with that sentence; switching to Range drops the source to the wallet | Exact | No approval needed |
 | Tickets in `localStorage` (`yosuku_private_bet_tickets`, 40), refreshed every 4 s and on `storage` | `masayume.private.claims` (60), the same cadence | Exact | No approval needed |
 | `PrivateClaims.tsx`: verify on sight, Back up / Restore (existing claims win), the warn line, the row (side, strike, stake, payout delta, when, Verified / Unverified, Cash out), the foot — mounted nowhere in the pinned source (only `/dev/private`) | Ported verbatim with its CSS (`private-claims.css`, the reference's own light overrides, plus the plate's cream inks); the Window in place of the strike; mounted as the plate's Private pool row panel with the budget controls above it | Restored from the reference's own component, mounted where its pool row is | **Needs user review** |
-| The portfolio sums `privateBalanceDusdc(tickets) + vaultPrivateDusdc` into the Private pool row | The desk's balance plus the vault's private bucket; the row shows whenever a desk is deployed | Exact (pattern) | No approval needed |
+| The portfolio computes `privateBalanceDusdc(tickets) + vaultPrivateDusdc` (page.tsx L195) and never renders it — its `PoolId` has no private pool | The desk's balance plus the vault's private bucket; the row shows whenever a desk is deployed | Additive — the row and its panel are ours | No approval needed |
 | `TradePanel`'s honest line: "Your main wallet stays off this trade…"; the incognito toggle's info: "your bet stays separate from your main wallet, so it isn't tied to your public trading history" | "Kept separate from your wallet, so it is harder to link back to you — not anonymous." (from `MOBILE_INTEGRATION.md` §5 / `MOBILE_COPY_DEJARGON.md`) | Exact (spirit) | No approval needed |
 | — | The panel's trust and correlation sentences: a stolen desk key could redirect what an owner allowed it, so the allowance is the blast radius (keep it to a few bets); the charge and the slot's funding stay visible seconds apart | Additive (truth) | **Needs user review** |
 
@@ -988,7 +988,7 @@ just-placed call) and `lib/shareCard.ts` + `ShareTradeButton.tsx` (the settled t
 | Element | Reference | Destination | Class | Status |
 |---|---|---|---|---|
 | The Call — 1600×900 PNG (revised, see below): masthead, record line, direction eyebrow, hero band, stake → return, settle line, vertical perforation, the stub, proof in the footer, grain | `openBetShareCard.ts` L226–436 | `call-card.ts`, `stub.ts` | **Redesigned on the user's call** | **Done** — `MASAYUME`, `THE CALL · SOMNIA TESTNET`, return net of the settlement fee and labelled so; footer `TX 0x… · VERIFY ON SHANNON EXPLORER` / `MASAYUME · LIVE CALL` |
-| Leverage caveat | L354–362 | — | Truth correction | Omitted, not printed as "1×" |
+| Leverage caveat | L354–362 | `call-card.ts` L155 | Exact | Printed for a boost ("2× LEVERAGE · CAN KNOCK OUT BEFORE THE CLOSE"), omitted at 1× |
 | Earned Heat — P&L hero (win = vermilion heat, loss = ash), sub-line, kind line, proof pair in the footer, the stub | `shareCard.ts` L285–482 | `trade-card.ts`, `stub.ts` | **Redesigned on the user's call** | **Done** — win/loss `SETTLEMENT RECORD` with `ORACLE-SETTLED $print AT <expiry UTC>` only when the closing print is on record; void `VOID RECORD · BOTH SIDES PAID 0.5`; a close-out `CLOSE-OUT RECORD` never claims a settlement; no cost on record → hero is the payout, labelled `PAID OUT` |
 | Native share sheet with the file, else download + X intent, path decided inside the click | `ShareBetButton.tsx` L38–99 | `useShareCard.ts` | Exact | **Done** — once, for both buttons |
 | The Call on screen: grain, ticks, masthead, eyebrow, band, wager strip, live countdown + draining bar, verify, share CTA, Portfolio / Place another | `BetPlacedCard.tsx`, `Ticket624Drawer.tsx` L807–836 | `CallPlacedCard.tsx`, `ticket/PlacedCall.tsx` | Adapted | **Done** — the ticket body becomes The Call on a confirmed fill; "Place another" resets the composer |

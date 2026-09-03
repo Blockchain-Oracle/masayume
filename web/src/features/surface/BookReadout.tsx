@@ -23,9 +23,9 @@ interface BookReadoutProps {
   nowMs: number;
 }
 
-function Tile({ label, value, sub, index }: { label: string; value: ReactNode; sub: ReactNode; index: number }) {
+function Tile({ label, value, sub }: { label: string; value: ReactNode; sub: ReactNode; index: number }) {
   return (
-    <div className="sf-tile sf-rise" style={{ animationDelay: `${index * 60}ms` }}>
+    <div className="sf-tile">
       <div className="sf-tile-k">{label}</div>
       <div className="sf-tile-v">{value}</div>
       <div className="sf-tile-sub">{sub}</div>

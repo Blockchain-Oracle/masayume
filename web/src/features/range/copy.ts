@@ -49,6 +49,10 @@ export const RANGE = {
     lower: (step: string) => (step === "$5" ? "Move range five dollars lower" : `Move range ${step} lower`),
     higher: (step: string) => (step === "$5" ? "Move range five dollars higher" : `Move range ${step} higher`),
     recenter: "Recenter range on the market price",
+    /** The reference's short tooltips (`Ticket624Drawer.tsx` L1006, L1016, L1025); the long strings above are the aria-labels. */
+    lowerTitle: (step: string) => `Move range ${step} lower`,
+    higherTitle: (step: string) => `Move range ${step} higher`,
+    recenterTitle: "Recenter range",
     presetLabel: (key: string, label: string) => (key === "medium" ? "Balanced" : label),
     sideLabel: "Side",
     inside: "Inside",
@@ -68,6 +72,9 @@ export const RANGE = {
     tag: "range",
     pays: "Pays",
     needBand: "Pick a Window to price a band.",
+    /** The reference's status line under an empty ticket (L1105–1110). */
+    enterAmount: "Enter an amount to quote.",
+    releaseToPrice: "Release to price this range.",
     odds: (pct: string, side: "inside" | "outside") => `${pct}% chance it lands ${side}`,
     setStake: "Set stake",
     setPayout: "Set payout",

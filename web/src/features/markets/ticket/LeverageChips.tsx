@@ -30,11 +30,11 @@ export function LeverageChips({ value, onChange, available, maxMultiple, lockedR
   const layoutId = `${useId()}-lev`;
   return (
     <div className="tk-lev-row">
-      <span className="tk-control-label">{LEVERAGE.label}</span>
+      {/* the reference names the group only for assistive tech (aria-label="Leverage"); no painted label */}
       <div className="tk-levs" role="group" aria-label={LEVERAGE.label}>
         {LEVERAGE_MULTIPLES.map((multiple) => {
           const label = LEVERAGE.multiple(multiple);
-          const reason = multiple === 1 ? null : !available ? TICKET_PENDING.leveragePending(label) : (lockedReason ?? (multiple > maxMultiple ? TICKET_PENDING.leveragePending(label) : null));
+          const reason = multiple === 1 ? null : !available ? TICKET_PENDING.leveragePending(label) : (lockedReason ?? (multiple > maxMultiple ? TICKET_PENDING.leverageCapped(label, LEVERAGE.multiple(maxMultiple)) : null));
           const on = value === multiple;
           return (
             <button

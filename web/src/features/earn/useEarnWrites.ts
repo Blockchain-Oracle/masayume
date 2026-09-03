@@ -28,11 +28,13 @@ export function useEarnWrites() {
   }, [address, queryClient]);
 
   const run = useCallback(
-    async (key: EarnBusy, body: () => Promise<string | null>) => {
+    async (key: EarnBusy, body: () => Promise<string | null>): Promise<boolean> => {
       setBusy(key);
       setMsg("");
+      let ok = false;
       try {
         const failure = await body();
+        ok = failure === null;
         setMsg(failure ?? EARN.supply.done);
       } catch (error) {
         setMsg(error instanceof Error ? error.message.slice(0, 120) : String(error));
@@ -40,6 +42,7 @@ export function useEarnWrites() {
         setBusy(null);
         await refresh();
       }
+      return ok;
     },
     [refresh],
   );
@@ -51,9 +54,9 @@ export function useEarnWrites() {
   };
 
   const supply = useCallback(
-    (amountBase: bigint) => {
-      if (!submitter) return;
-      void run("supply", async () => outcomeMessage(await submitter.submitTx({ kind: "maker-supply", amountBase })));
+    (amountBase: bigint): Promise<boolean> => {
+      if (!submitter) return Promise.resolve(false);
+      return run("supply", async () => outcomeMessage(await submitter.submitTx({ kind: "maker-supply", amountBase })));
     },
     [submitter, run],
   );

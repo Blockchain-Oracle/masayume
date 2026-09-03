@@ -45,8 +45,9 @@ export const SHARE = {
     footerKind: "MASAYUME · LIVE CALL",
     tx: (short: string) => `TX ${short}`,
     /** The pre-filled post: real staked numbers only, framed as a live call. */
-    tweet: (band: string, cadence: string, stake: string, win: string, symbol: string, utc: string) =>
-      `My call: ${band} (${cadence} Window). Staked ${stake} to win ${win} ${symbol}, oracle-settles ${utc} on Somnia testnet. Will it land? ${signOff}`,
+    /** The reference's text carries the multiple — `My call: ${band} (2×)` (`openBetShareCard.ts` L97–99). */
+    tweet: (band: string, cadence: string, stake: string, win: string, symbol: string, utc: string, multiple = 1) =>
+      `My call: ${band} (${cadence} Window${multiple > 1 ? `, ${multiple}×` : ""}). Staked ${stake} to win ${win} ${symbol}, oracle-settles ${utc} on Somnia testnet. Will it land? ${signOff}`,
   },
   trade: {
     settlement: "SETTLEMENT RECORD",
