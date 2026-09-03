@@ -38,8 +38,9 @@ Flicky's Free + 1/5/10 tUSDC with a 1 tUSDC per-card cap; the standing Shannon g
 fork- and gas-proven. Deck policy, friends, seasons and Free Duel economics stand at doc 06's recommendations.
 **Moonshot is the one decision still open** — and doc 06 §Moonshot now records that its option A needs no new
 contract: the deployed `RangeReserve` parameters price every rung of the 2×–25× ladder as a saturated band.
-Next: Stage 6, starting at doc 06's slice 1 (`packages/core/src/games/**` and `packages/db/src/schema-games.ts`);
-context/51 §4 is the rest of what is open.** The 21st.dev
+**Fifteenth session (2026-09-03): Stage 6 slices 1 and 2 are in, and slice 6 — `GameArena` — is built,
+fork-verified, deployed on Shannon at `0xec71…f0dF` and smoke-tested live (§Stage 6 below). Next is slice
+7 (ops/realtime) then slice 8 (the Duel stage).** context/51 §4 is the rest of what is open. The 21st.dev
 redesign pass on the other surfaces (the leverage ones are done) and the user's own look at Stage 5 (the ledger's
 Needs-user-review rows are all still open) follow.
 
@@ -86,10 +87,11 @@ Needs-user-review rows are all still open) follow.
 | `e964c0d` | Read path 1 — boot split into three facts, `needs` per read, infrastructure failures reject, the Markets hero's three faces, ten milestones |
 | `809fc10` | Read path 2 — Portfolio critical/deferred tiers, one error per outage, settled history de-polled |
 | `e7d40a0` | Read path 3 — five HTTP-only pages un-gated, endpoint health as a real `eth_chainId` round trip, public-only read persistence |
+| `a1ba6ed`, `f20a513` | Stage 6 slice 6 — `GameArena`, its gateway and commitment library, 39 tests, fork-verified on Shannon; deployed at `0xec71…f0dF` and smoke-tested live; the ABI, deployment resolver, read/write port and `arena` gas lane |
 | `a724b94` | Read path 4 — boot readiness through context (the `skipToken` double-observer produced a "Missing queryFn" error instead of the real RPC failure); the sixteen-item Explore menu bounded to `--available-height` so its last five destinations are reachable |
 
-Everything is green: `pnpm typecheck`, `pnpm invariants` (14/14, 0 warnings), `pnpm test` (176),
-`forge test --no-match-contract Fork` (174), `pnpm build`.
+Everything is green: `pnpm typecheck`, `pnpm invariants` (14/14, 0 warnings), `pnpm test` (222),
+`forge test --no-match-contract Fork` (213), `pnpm build`.
 
 **The live actors** (`pnpm --filter @masayume/ops start` with `DRY_RUN=0 MAKER_PRIVATE_KEY=… LEVERAGE_KEEPER_PRIVATE_KEY=…`,
 keys in `~/.config/masayume/market-maker.env` / `leverage-keeper.env`) ran on Shannon on 2026-09-02: the maker quoted
@@ -628,8 +630,49 @@ belong to the open global gray-ramp pass). **Not reproduced:** the owner reporte
 unresponsive on mobile; RainbowKit's modal renders correctly at 390px and 320px in an emulated phone, so this
 needs their device and a screenshot before it can be chased.
 
-**Next is slice 6/7/8** — `GameArena`, the ops/realtime work, and the Duel stage with Practice merged into it,
-in the owner's answered build order. Slice 3 (Practice) merges into slice 8's stage.
+**Slice 6 (`a1ba6ed`, deployed in `f20a513`)** is `GameArena` — the duel's escrow and its six real picks.
+`contracts/src/games/` holds the interface, the venue gateway (stake-first sizing over `LeverageMath`'s walk,
+the same shape as `PrivateDesk.mintInSlot`), the lifecycle contract and `ArenaCommitment`. A card is one
+confirmed IOC placed by the arena as the venue's own taker; cost and size are deltas measured around that
+call, payout is a delta measured around the redemption, and the pot goes to the greater sum of
+`payout - cost`. The contract prices nothing.
+
+Four rules the design implied and the code now enforces, all in doc 06's decision log:
+
+- **Card settlement is independent of the pot.** `settleCard` works in every status past the reveal, so a
+  forfeited or refunded match still settles the positions two players paid for. One absent player forfeits
+  the pot alone; both absent refunds both.
+- **The challenger is named at `createMatch`.** The commitment is taken over BOTH client seeds, which only
+  exist once the matchmaker has paired the two — an open match a stranger could join would publish a
+  commitment binding a seed that stranger never chose.
+- **`revealDeck` is permissionless.** The commitment, not a key, proves the deck was fixed first: no
+  `DECKMASTER_PRIVATE_KEY`, and no liveness dependency on one signer. Lock, settle, finalize and claim are
+  permissionless too; claim pays the player, never the caller.
+- **No duplicate Windows in a deck**, and `minCardLifeSec` must outlast `pickWindowSec`.
+
+`ArenaCommitment` exists as its own library because the preimage has two implementations — the matchmaker's
+in TypeScript and the arena's in Solidity. `ArenaVectors.t.sol` asserts the same golden bytes
+`commitment.test.ts` asserts, written as a literal in both and derived from neither; if they diverge, every
+reveal reverts and no duel can start.
+
+39 tests (14 lifecycle, 22 picks/guards, 3 vectors) and a fork test that drives a whole ranked duel against
+Shannon's real contracts: three live Windows, six confirmed picks, redemption through the module, the pot
+awarded on measured PnL, conservation exact to the unit.
+
+**Live at `0xec71498B3557c921813fFCF08a018316BCCDf0dF`** (creation 54,289,829 gas; four `setTier` calls;
+every receipt status 1), read back and smoke-tested with a real wallet — a free-tier create confirmed and
+read back whole, then cancelled to REFUNDED with `escrowed` and `credited` both zero.
+
+**Fork gas is not live gas.** The same `createMatch` cost 185,484 on the fork and 1,104,046 on Shannon:
+Foundry replays Shannon's state under the standard EVM schedule, and Somnia charges far more for storage —
+the trap the contracts README records for creations applies to ordinary writes too. The fork run proves
+correctness and conservation, not the envelope. The `arena` gas lane is therefore anchored on the nearest
+lane already measured live (PrivateDesk's mint, 1,917,880) and set to **8M**, because an under-provisioned
+pick would forfeit a card and its side-pot while over-provisioning costs a player 0.024 STT.
+
+**Next is slice 7/8** — the ops/realtime work (direct `ws` in `services/ops`, room token, queue, deck
+durability, indexer projection, settler) and the Duel stage with Practice merged into it. Slice 3 (Practice)
+merges into slice 8's stage. `GameArena` is deployed, so slice 7 has a real arena to project from.
 
 ## Stage 6 research — the standing proposal
 
