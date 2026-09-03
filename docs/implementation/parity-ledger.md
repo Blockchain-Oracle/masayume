@@ -28,6 +28,8 @@ order", never "optional" or "cut".
 
 | Date | Decision | Reference | User-visible consequence | Approval |
 |---|---|---|---|---|
+| 2026-09-03 | **`/surface` reads the venue's book back, not a volatility model.** The reference's SVI smile, strike ladder and ATM term structure become the top of the book, cumulative depth, a stake ladder walked as an IOC taker fills, and every live Window of the asset priced off its own book (doc 03 §Surface). No new port method: the page reads the coordinator's books, the pool params and the fee | doc 03 §Surface; `web/src/features/surface/`, `@masayume/core/surface`; context/48 | The route is live on real structure; nothing on it is estimated | Adapted — the class doc 03 assigns |
+| 2026-09-03 | **A crossed book is shown as crossed** (bid ≥ ask): no mid, no spread, the UP tile takes the ask. Caught live on the 5m lane at two minutes to the close — a maker re-laying its whole ladder (200/330/460 a level) every few seconds; the contract's book and the store's agreed level for level across three probe passes (context/48) | `bookStructure.crossed`; `spike:book-cross` | "crossed" in vermilion where a negative spread would have been printed | Truth (doc 00 allowed change 4) |
 | 2026-09-03 | **The private open's guard is read after the signature, not off the polled quote.** Driven from a browser on the 15m lane the desk refused twice before a cent moved (`sizeForStake 4424000 < guard 4973250`); the desk's sizing for a fixed 2 tUSDC stake moved from 3.868 to 3.220 contracts in three seconds (context/47 §Finding 2) while the ticket's quote was up to `REQUOTE_MS` (12 s) old before the wallet popup opened. The signature covers the stake, never the size, so `usePrivateOpen` now sizes again right before the desk is asked and puts the 5% floor under that; the floor is unchanged, and the leverage open still takes its guard off the polled quote | `Ticket624Drawer.tsx` L541–583 (the reference re-signs on a failure and sends `min_quantity 0`) | A moved book is still "quote again", but the guard is measured seconds, not tens of seconds, before the desk's own pre-flight; a failed mint is refunded on the spot (seen live: `BelowMinQuantity(12121000, 14503650)`, four desk transactions, the stake back) |  |
 | 2026-09-03 | **Every reading query waits for the boot.** A wallet is known within a tick of hydration, so the balance sheet and the history fired before `loadCollateral()` had resolved, failed with "collateral not loaded", and stayed failed until their 15 s poll: `/portfolio` opened on two "Something went sideways" alerts and the faucet card never showed for an empty wallet (context/47 §Finding 1). `useReadingQuery` now observes the boot's cache entry (`skipToken`, never fetching it) and enables everything else once the boot is ok | doc 05 §No fake-data (loading is a valid state); `bootMarkets` ("the three reads every screen needs before its first number") | No alert on a fresh load; the faucet card is on the ticket within 3 s; every read starts a boot later than before |  |
 | 2026-09-02 | **The maker vault books the venue's exact escrow, not a cash delta.** Live, the venue refunded the vault's own expired quote inside the next placement (lazily, on the pool), which made a delta-measured escrow underflow (`Panic(17)`); the gateway now books `quantity × price` (`× (one − price)` for a NO buy) and any surplus as that Window's return. Redeployed at `0xc904F38f38eF96E8741C7D9218a7899504B99e79`; the first vault drained to its inventory | context/44 §The venue's lazy refund | The actor requotes a Window whose earlier quote expired instead of being refused | No approval needed — a correctness fix |
@@ -527,6 +529,36 @@ then the live panel). **Driven end to end in a browser on 2026-09-03** (context/
 live book; the three-transaction open left no owner in any log and no venue address in storage; voided through the
 venue, a stranger's settle paid half a contract, the sweep and credit brought 9.6154 home, the owner withdrew to
 the cent and the desk's wallet read zero.
+
+### `/surface` — the market surface (Stage 5, built 2026-09-03)
+
+The reference (`reference/yosuku/app/surface/page.tsx`) reads Predict's on-chain SVI volatility surface back: the
+smile across strikes, every strike priced as a ladder, ATM implied vol across expiries. Doc 03 §Surface: "Yosuku's
+SVI surface cannot be relabeled as if DreamDEX exposes the same model … keeps the route and analytical density but
+shows real DreamDEX structures." `web/src/features/surface/` and `@masayume/core/surface` (context/48):
+
+| Reference | Ours | Class | Approval |
+|---|---|---|---|
+| Crumb · "Volatility Surface" · the intro naming the SVI model | Crumb · "Market Surface" · the intro naming the live order book — the ticket uses its top, this page reads the whole structure | Adapted (identity + truth) | No approval needed |
+| Asset pills, one chip per active oracle labelled by days/hours to expiry, default the soonest, focal resets on asset change (L96–120, L200–236) | The same; chips carry the cadence and the clock; the focal Window is kept by id so a Window that closes drops to the next, never onto another by position | Exact (pattern) | No approval needed |
+| §01 Surface — Forward · ATM implied vol · Time to expiry · Live markets (L253–270) | §01 The book — Opening print (spot against it, who is winning) · UP mid (bid and ask under it; the ask alone on a crossed book) · Spread (cents and share of the mid) · Closes in (the phase word under it) | Adapted — the venue's figures in the reference's four tiles | No approval needed |
+| §02 Volatility smile — canvas line, forward marker, x labels (L272–294) | §02 Depth — cumulative size at each price on the UP book, both sides on one axis, the mid marked; SVG, labels in HTML | Adapted | No approval needed |
+| §03 Strike ladder — 11 rungs, UP/DOWN price and IV, the ATM rung highlighted (L297–322) | §03 Slippage — a stake ladder 1…250, each walked over the asks as an IOC taker fills: average, slippage against the top, contracts, payout after the fee, fill; rows past the visible book step back and are named; the side toggle is the reference's chip | Adapted — the same shape over the book's own arithmetic | No approval needed |
+| §04 Term structure — ATM IV across the asset's expiries, "need ≥2 live expiries" (L325–340) | §04 Term structure — every live Window of the asset on its own book, nearest close first: the curve of UP prices (categorical x: five cadences from 5m to 1d share no readable linear axis), each point pressable to become the focal Window; then the same Windows as rows | Adapted | No approval needed |
+| `a b rho m sigma` under the smile | the lot, the fee and "the ticket caps its own order's cost; this ladder shows the book itself, unguarded" under the ladder | Adapted (the parameters that actually govern) | No approval needed |
+| Dark-only page (`bg-bg`, `border-white/[0.08]`, `text-gray-*`) | Flips with the theme: inks are the reference's `--gray-*` vars and `--white`; the boxes take part-14's light steps by hand | Pre-approved class | No approval needed |
+| — | A crossed book (bid ≥ ask) is named as such on every section; no mid or spread is printed for it | Truth | No approval needed |
+| Not in the reference's header nav | Not in ours either; reachable by URL | Exact | No approval needed |
+
+**Honesty.** Every figure is a reading of the chain's own book or a named state: hydrating is "…", an empty side
+"—" with its own sentence, a failed read the diagnosis, a stale one the tick. The payout column waits for the
+settlement fee rather than assuming zero (AD-15); the ladder waits for the pool's lot rather than guessing one.
+
+**Port.** `@masayume/core/surface`: `bookStructure` / `impliedUp` (13 vitest across the module), `cumulativeDepth` /
+`depthBounds`, `slippageLadder` over `walkBudget` / `walkQuantity`, `termPoints` / `termBand`. `@masayume/markets/react`
+grew `useBooks` (several markets' books on one subscription, sharing the coordinator's entries), `useBookParams` and
+`useSettlementFee` (the same cache entries `useStakeQuote` uses). Fixtures on `/dev/surface`. Inspected in Chrome at
+1280 and 390 in both themes (context/48 §Gates).
 
 ### Toast (Stage 2, done 2026-09-01)
 
@@ -1168,7 +1200,7 @@ Portfolio and More all remain.
 | `/strategies` | `app/strategies/page.tsx` | Adapted | `StrategyRegistry` + DB | **Shell** — honest dependency state (Stage 4) |
 | `/agents` | `app/agents/page.tsx` | Adapted | Registry + fill projection | **Shell** — waits on the `StrategyRegistry` alone now (Stage 4) |
 | `/parlay` | `app/parlay/page.tsx` | Adapted via `ParlayReserve` | Masayume contract + the venue's books | **Done** — contract, port and page built, fork-verified, live on Shannon (`0x50Ce…C151`, 5,000 tUSDC supplied) and driven through the adapter on a fork and live (see §ParlayReserve); awaits the user's browser review |
-| `/surface` | `app/surface/page.tsx` | Adapted — real DreamDEX structures, not SVI | DreamDEX book/term structure | **Shell** — honest dependency state (Stage 5) |
+| `/surface` | `app/surface/page.tsx` | Adapted — real DreamDEX structures, not SVI | The coordinator's books, pool params, the fee | **Done** — see §`/surface`; awaits the user's browser review |
 | `/trade-from-x` | `app/trade-from-x/page.tsx` | Adapted | X provider + `EventVault` grant | **Shell** — honest dependency state (Stage 4) |
 | `/claim` | `app/claim/page.tsx` | Adapted to DreamDEX redemption | Chain receipts | **Partial** — `/claims` implemented |
 | `/fund` | `app/fund/page.tsx` | Adapted | Faucet + approval/deposit | Partial (faucet exists) |

@@ -10,11 +10,13 @@ export {
 } from "./session";
 export { useAssetPrice } from "./useAssetPrice";
 export { useBook } from "./useBook";
+export { useBooks } from "./useBooks";
 export { useHoldings } from "./useHoldings";
 export { bootMarkets, useMarketsBoot, type MarketsBoot } from "./useMarketsBoot";
 export { useReadingQuery, type PollInterval, type ReadingQueryOptions } from "./useReadingQuery";
 export {
   useBalanceSheet,
+  useBookParams,
   useClaimables,
   useClock,
   useLanes,
@@ -39,6 +41,7 @@ export {
   usePrivateDesk,
   usePrivateSlot,
   useResolution,
+  useSettlementFee,
   useVaultHoldings,
   useVaultSnapshot,
   useWalletHistory,

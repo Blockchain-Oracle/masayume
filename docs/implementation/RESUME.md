@@ -18,8 +18,9 @@ items 2, 3 and 4 — `RangeReserve`, `MarketMakerVault` and `LeverageReserve` �
 (deployed 2026-09-02, eighth session, on the owner's standing go; §Stage 5 has the addresses); item 5, `PrivateDesk`
 and the Ticket's Private option, is **live on Shannon too** (2026-09-03, ninth session, `0x4D27…28bB` after a security
 redeploy). The user has
-not yet reviewed any Stage 5 surface. Next is item 6, `/surface`, and the 21st.dev redesign pass on the other
-surfaces (the leverage ones are done).**
+not yet reviewed any Stage 5 surface. Item 6, `/surface`, is **built and inspected in a browser** (2026-09-03, tenth
+session; context/48) — every Stage 5 item is done. Next: the user's browser review of the Stage 5 surfaces, the
+21st.dev redesign pass on the other surfaces (the leverage ones are done), then Stage 6 (doc 04).**
 
 | Commit | What |
 |---|---|
@@ -480,7 +481,25 @@ What is where:
   re-sign after `unknown`; the allowance shortfall as a re-allow; no silent flip off Private over the cap; "done" never
   fabricates a loss; the backup validated row by row).
 
-6. `/surface` — replace the Yosuku SVI content with the real DreamDEX book/term structure.
+**6. `/surface` — built and inspected in a browser 2026-09-03 (tenth session); nothing to deploy.** Read context/48
+and the ledger's §`/surface` first. What is where:
+- `@masayume/core/surface` — `bookStructure` / `impliedUp` (a crossed book — bid ≥ ask — has no mid and no spread;
+  the ask stands in), `cumulativeDepth` / `depthBounds`, `slippageLadder` (a stake ladder 1…250 walked over the asks
+  with `walkBudget` / `walkQuantity`, the payout after the fee), `termPoints` / `termBand` — 13 vitest.
+- `@masayume/markets/react` — `useBooks` (several markets' books on one `useSyncExternalStore` subscription over the
+  coordinator), `useBookParams`, `useSettlementFee`.
+- `web/src/features/surface/` — the reference's page structure with the venue's content: `SurfaceChips`, §01
+  `BookReadout` (four tiles), §02 `DepthChart` (SVG step areas), §03 `SlippageLadder`, §04 `TermStructure` (`TermChart`
+  + rows); `surface-page.css` carries the reference's values with the source utility above each rule; fixtures on
+  `/dev/surface`. **Inspected in Chrome headless at 1280 and 390, both themes, live and on the fixtures** — three
+  things the live page said that the fixtures could not (the crossed book, the lot printing as 0, the print wrapping
+  in its tile at 390) are fixed and recorded in context/48.
+- `scripts/spike/book-cross-probe.ts` (`spike:book-cross`) — the contract's book and the store's side by side; they
+  agreed level for level; the 5m book crosses for a block or two while the maker re-lays its 200/330/460 ladder near
+  the close.
+- Not done: the hero's top-of-book and the rail's cards do not name a crossed book (they show two takeable prices,
+  which is true); the ladder reads the canonical ten levels only; `/surface` is not in the nav (nor in the reference's).
+
 Remember Somnia's gas schedule when deploying (context/41 §Live on Shannon) and the faucet's one wallet a
 day. Deploy nothing without the owner's go.
 

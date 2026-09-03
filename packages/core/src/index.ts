@@ -13,5 +13,6 @@ export * from "./types";
 export * from "./units";
 export * from "./urls";
 export * from "./strategies";
+export * from "./surface";
 export * from "./vault";
 export * from "./x";

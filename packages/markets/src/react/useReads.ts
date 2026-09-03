@@ -1,7 +1,7 @@
 import { CLOCK_RESYNC_MS, MARKETS_POLL_MS, ONCHAIN_POLL_MS, OPENING_PRINT_POLL_MS } from "@masayume/core/constants";
 import type { WalletHistory } from "@masayume/core/projection";
 import { isOk, type Reading } from "@masayume/core/schemas";
-import type { Address, BalanceSheet, Bytes32, ClaimableRow, ClockSync, EventMarket, LaneSet, MarketId, OnchainSnapshot, OpenPosition, PricePoint, Resolution } from "@masayume/core/types";
+import type { Address, BalanceSheet, BookParams, Bytes32, ClaimableRow, ClockSync, EventMarket, LaneSet, MarketId, OnchainSnapshot, OpenPosition, PricePoint, Resolution } from "@masayume/core/types";
 import type { ParlayReserveState, ParlayTicket } from "@masayume/core/parlay";
 import type { RangeReserveState, RangeRound } from "@masayume/core/range";
 import type { MakerVaultState, MakerWindowView } from "@masayume/core/maker";
@@ -9,6 +9,8 @@ import type { LeverageMark, LeveragePosition, LeverageReserveState } from "@masa
 import type { PrivateBudget, PrivateDeskState, PrivateSlot } from "@masayume/core/private";
 import type { VaultHoldings, VaultSnapshot } from "@masayume/core/vault";
 import { getBalanceSheet } from "../provider/balances";
+import { getBookParams } from "../provider/books";
+import { settlementFeeBps } from "../provider/fees";
 import { listWalletHistory } from "../provider/history";
 import { listClaimables } from "../provider/claimables";
 import { syncClock } from "../provider/clock-sync";
@@ -52,6 +54,19 @@ export function usePriceHistory(asset: string | null, fromSec: number, toSec: nu
 
 export function useOnchain(marketId: MarketId | null, pollMs: number | false = ONCHAIN_POLL_MS): Reading<OnchainSnapshot> | null {
   return useReadingQuery(keys.onchain(marketId), () => getOnchain(marketId as MarketId), { enabled: marketId !== null, pollMs: pollMs || undefined });
+}
+
+/** A pool's tick, lot and minimum — constant for the pool's life, so read once and kept (the same entry `useStakeQuote` shares). */
+export function useBookParams(poolAddress: Address | null): Reading<BookParams> | null {
+  return useReadingQuery(keys.bookParams(poolAddress), () => getBookParams(poolAddress as Address), {
+    enabled: poolAddress !== null,
+    staleTimeMs: Number.POSITIVE_INFINITY,
+  });
+}
+
+/** The venue's settlement fee for one market, read at use time — never assumed zero (AD-15). */
+export function useSettlementFee(marketId: MarketId | null): Reading<number> | null {
+  return useReadingQuery(keys.fee(marketId), () => settlementFeeBps(marketId as MarketId), { enabled: marketId !== null });
 }
 
 export function useResolution(marketId: MarketId | null): Reading<Resolution> | null {
