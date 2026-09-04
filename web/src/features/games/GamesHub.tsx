@@ -113,7 +113,7 @@ export function GamesHub() {
           </Link>
           <Link href="/games/rank" className="gm-plate gm-link-plate" onClick={() => feedback("tap")}>
             <p className="gm-plate-title">{GAMES.rankPage.title}</p>
-            <p className="gm-plate-body">{GAMES.rankPage.intro}</p>
+            <p className="gm-plate-body">{season ? GAMES.rankPage.introSeason : GAMES.rankPage.intro}</p>
             <span className="gm-resume-cta">{GAMES.rank.cta}</span>
           </Link>
         </div>
