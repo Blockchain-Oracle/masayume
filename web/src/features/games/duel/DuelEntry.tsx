@@ -79,46 +79,46 @@ export function DuelEntry({ onFind, roomOpen, tierId, onTier, occupancy }: DuelE
   const blocked = paused || notDeployed || !enabled || short || !roomOpen || gasShort;
 
   return (
-    <section className="dl-entry" aria-label={DUEL.entry.tier}>
-      <div className="dl-choices">
-        <span className="dl-k">{DUEL.entry.tier}</span>
-        <div className="dl-tiers" role="radiogroup" aria-label={DUEL.entry.tier}>
+    <section className="du-entry" aria-label={DUEL.entry.tier}>
+      <div className="du-choices">
+        <span className="du-k">{DUEL.entry.tier}</span>
+        <div className="du-tiers" role="radiogroup" aria-label={DUEL.entry.tier}>
           {STAKE_TIERS.map((t) => (
             <button
               key={t.id}
               type="button"
               role="radio"
               aria-checked={t.id === tierId}
-              className={`dl-tier${t.id === tierId ? " dl-tier--on" : ""}`}
+              className={`du-tier${t.id === tierId ? " du-tier--on" : ""}`}
               onClick={() => onTier(t.id)}
             >
-              <span className="dl-tier-name">{t.mode === "free" ? DUEL.entry.free : DUEL.entry.ranked}</span>
-              <span className="dl-tier-amount">{t.potUnits === 0 ? DUEL.entry.tierFree : DUEL.entry.tierUnits(t.potUnits, symbol)}</span>
+              <span className="du-tier-name">{t.mode === "free" ? DUEL.entry.free : DUEL.entry.ranked}</span>
+              <span className="du-tier-amount">{t.potUnits === 0 ? DUEL.entry.tierFree : DUEL.entry.tierUnits(t.potUnits, symbol)}</span>
             </button>
           ))}
         </div>
-        <p className="dl-blurb">{tier.mode === "free" ? DUEL.entry.freeBlurb : DUEL.entry.rankedBlurb}</p>
+        <p className="du-blurb">{tier.mode === "free" ? DUEL.entry.freeBlurb : DUEL.entry.rankedBlurb}</p>
         {/* Per stake, not in total: a player choosing Ranked 10 must not be told about the Free queue. */}
-        {occupancy?.reachable && <p className="dl-foot">{DUEL.entry.queueHere(waitingIn(occupancy, tier.mode, tierId))}</p>}
+        {occupancy?.reachable && <p className="du-foot">{DUEL.entry.queueHere(waitingIn(occupancy, tier.mode, tierId))}</p>}
       </div>
 
-      <div className="dl-cost">
-        <span className="dl-k">{DUEL.entry.cost}</span>
-        <ul className="dl-cost-list">
+      <div className="du-cost">
+        <span className="du-k">{DUEL.entry.cost}</span>
+        <ul className="du-cost-list">
           <li>{tier.potUnits === 0 ? DUEL.entry.costNoPot : DUEL.entry.costPot(money(potBase), symbol)}</li>
           <li>{DUEL.entry.costCards(money(capBase), symbol)}</li>
           <li>{DUEL.entry.costGas}</li>
         </ul>
       </div>
 
-      {notDeployed && <p className="dl-refusal">{DUEL.entry.notDeployed}</p>}
-      {paused && <p className="dl-refusal">{DUEL.entry.paused}</p>}
-      {!paused && !notDeployed && !enabled && <p className="dl-refusal">{DUEL.entry.tierDisabled}</p>}
-      {short && <p className="dl-refusal">{DUEL.entry.balanceShort(money(potBase), money(spendable), symbol)}</p>}
+      {notDeployed && <p className="du-refusal">{DUEL.entry.notDeployed}</p>}
+      {paused && <p className="du-refusal">{DUEL.entry.paused}</p>}
+      {!paused && !notDeployed && !enabled && <p className="du-refusal">{DUEL.entry.tierDisabled}</p>}
+      {short && <p className="du-refusal">{DUEL.entry.balanceShort(money(potBase), money(spendable), symbol)}</p>}
       {gasShort && (
-        <div className="dl-refusal" role="status">
-          <p className="dl-body">{DUEL.entry.gasShort}</p>
-          <ul className="dl-faucets">
+        <div className="du-refusal" role="status">
+          <p className="du-body">{DUEL.entry.gasShort}</p>
+          <ul className="du-faucets">
             {STT_FAUCETS.map((faucet) => (
               <li key={faucet.url}>
                 <a href={faucet.url} target="_blank" rel="noreferrer">
@@ -127,13 +127,13 @@ export function DuelEntry({ onFind, roomOpen, tierId, onTier, occupancy }: DuelE
               </li>
             ))}
           </ul>
-          <button type="button" className="dl-quiet" onClick={() => void recheck()}>
+          <button type="button" className="du-quiet" onClick={() => void recheck()}>
             {DUEL.entry.gasRecheck}
           </button>
         </div>
       )}
 
-      <button type="button" className="dl-cta" disabled={blocked} onClick={() => onFind(tier.mode, tierId)}>
+      <button type="button" className="du-cta" disabled={blocked} onClick={() => onFind(tier.mode, tierId)}>
         {roomOpen ? DUEL.entry.find : DUEL.entry.waitingRoom}
       </button>
     </section>

@@ -104,7 +104,7 @@ export function DuelPicking({ state, wallet, room }: { state: Extract<MatchState
     room.opponentPending !== null && active !== null && room.opponentPending.cardIndex === active.index && nowMs - room.opponentPending.atMs < OPPONENT_CUE_MS;
 
   return (
-    <section className="dl-picking" aria-label={DUEL.picking.title}>
+    <section className="du-picking" aria-label={DUEL.picking.title}>
       <SwipeDeck
         cards={state.cards}
         active={active}
@@ -121,27 +121,27 @@ export function DuelPicking({ state, wallet, room }: { state: Extract<MatchState
       />
 
       {opponentHere && (
-        <p className="dl-pending" role="status">
-          <span className="dl-pending-dot" aria-hidden />
+        <p className="du-pending" role="status">
+          <span className="du-pending-dot" aria-hidden />
           {DUEL.picking.opponentDeciding}
         </p>
       )}
 
       {mine.length > 0 && (
-        <div className="dl-picked">
-          <span className="dl-k">{DUEL.picking.yourPicks}</span>
-          <ul className="dl-picked-list">
+        <div className="du-picked">
+          <span className="du-k">{DUEL.picking.yourPicks}</span>
+          <ul className="du-picked-list">
             {mine
               .slice()
               .sort((a, b) => a.cardIndex - b.cardIndex)
               .map((receipt) => {
                 const card = state.cards.find((c) => c.index === receipt.cardIndex);
                 return (
-                  <li key={receipt.pickKey} className="dl-picked-row">
-                    <span className={`dl-dot dl-dot--${receipt.pick}`} aria-hidden />
-                    <span className="dl-v">{card?.asset ?? "—"}</span>
-                    <span className="dl-k">{receipt.pick}</span>
-                    <span className="dl-foot">{DUEL.picking.filled(receipt.quantity.toString(), money(receipt.costBase), symbol)}</span>
+                  <li key={receipt.pickKey} className="du-picked-row">
+                    <span className={`du-dot du-dot--${receipt.pick}`} aria-hidden />
+                    <span className="du-v">{card?.asset ?? "—"}</span>
+                    <span className="du-k">{receipt.pick}</span>
+                    <span className="du-foot">{DUEL.picking.filled(receipt.quantity.toString(), money(receipt.costBase), symbol)}</span>
                   </li>
                 );
               })}

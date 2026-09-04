@@ -38,11 +38,11 @@ export function DealingPlate({ dealing }: { dealing: DealingView }) {
 
   return (
     <>
-      <p className="dl-deck" aria-live="polite">
+      <p className="du-deck" aria-live="polite">
         {bothSeedsIn ? deckLine : DUEL.lobby.seedWait(dealing.seedsIn)}
       </p>
-      <p className="dl-body">{bothSeedsIn ? DUEL.lobby.venueWait : DUEL.lobby.seedBody}</p>
-      {nowMs > 0 && <p className="dl-foot">{DUEL.lobby.givesUp(leftSec(dealing, nowMs))}</p>}
+      <p className="du-body">{bothSeedsIn ? DUEL.lobby.venueWait : DUEL.lobby.seedBody}</p>
+      {nowMs > 0 && <p className="du-foot">{DUEL.lobby.givesUp(leftSec(dealing, nowMs))}</p>}
     </>
   );
 }
@@ -56,14 +56,14 @@ export function DealingPlate({ dealing }: { dealing: DealingView }) {
  */
 export function RefusalPlate({ diagnosis, gasShort, wallet }: { diagnosis: Diagnosis; gasShort: boolean; wallet: Address | null }) {
   return (
-    <div className="dl-refusal" role="status">
-      <p className="dl-body">{DUEL.lobby.refusedTitle}</p>
-      <p className="dl-foot">{diagnosis.technical}</p>
+    <div className="du-refusal" role="status">
+      <p className="du-body">{DUEL.lobby.refusedTitle}</p>
+      <p className="du-foot">{diagnosis.technical}</p>
       {gasShort && (
         <>
-          <p className="dl-body">{DUEL.entry.gasShort}</p>
-          {wallet && <p className="dl-foot dl-mono">{shortHex(wallet, 10, 6)}</p>}
-          <ul className="dl-faucets">
+          <p className="du-body">{DUEL.entry.gasShort}</p>
+          {wallet && <p className="du-foot du-mono">{shortHex(wallet, 10, 6)}</p>}
+          <ul className="du-faucets">
             {STT_FAUCETS.map((faucet) => (
               <li key={faucet.url}>
                 <a href={faucet.url} target="_blank" rel="noreferrer">

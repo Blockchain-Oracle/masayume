@@ -4,48 +4,62 @@
  * colour a Yosuku token or an alpha step over one.
  */
 
-.dl-head { margin-bottom: 20px; }
-.dl-title {
+.du-head { margin-bottom: 20px; }
+.du-title {
   margin-top: 8px;
   font-family: var(--font-display); font-weight: 800;
   font-size: clamp(2rem, 5.6vw, 3rem); line-height: 0.96; letter-spacing: -0.04em;
   color: var(--white);
 }
-.dl-title .accent { color: var(--vermilion); }
+.du-title .accent { color: var(--vermilion); }
 
-.dl-layout { display: grid; gap: 16px; grid-template-columns: 1fr; align-items: start; }
+.du-layout { display: grid; gap: 16px; grid-template-columns: 1fr; align-items: start; }
 @media (min-width: 900px) {
-  .dl-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 300px); gap: 24px; }
+  .du-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 300px); gap: 24px; }
 }
-.dl-side { display: flex; flex-direction: column; gap: 12px; }
-.dl-intro { font-size: 13px; line-height: 1.65; color: var(--gray-400); }
+.du-side { display: flex; flex-direction: column; gap: 12px; }
+.du-intro { font-size: 13px; line-height: 1.65; color: var(--gray-400); }
 
-.dl-plate,
-.dl-entry,
-.dl-queue,
-.dl-lobby,
-.dl-error {
+.du-plate,
+.du-entry,
+.du-queue,
+.du-lobby,
+.du-error {
   display: flex; flex-direction: column; gap: 12px;
   border-radius: 16px; padding: 20px;
   border: 1px solid var(--color-hairline); background: var(--color-surface-1);
 }
-.dl-error { border-color: color-mix(in srgb, var(--vermilion) 34%, transparent); }
+.du-error { border-color: color-mix(in srgb, var(--vermilion) 34%, transparent); }
 
-.dl-k { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gray-500); }
-.dl-v { font-family: var(--font-mono); font-size: 14px; color: var(--white); }
-.dl-mono { font-family: var(--font-mono); }
-.dl-body { font-size: 13px; line-height: 1.65; color: var(--gray-400); }
-.dl-foot { font-family: var(--font-mono); font-size: 10px; line-height: 1.6; color: var(--gray-400); }
-.dl-blurb { font-size: 12px; line-height: 1.6; color: var(--gray-400); }
+.du-k { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gray-500); }
+.du-v { font-family: var(--font-mono); font-size: 14px; color: var(--white); }
+.du-mono { font-family: var(--font-mono); }
+.du-body { font-size: 13px; line-height: 1.65; color: var(--gray-400); }
+.du-foot { font-family: var(--font-mono); font-size: 10px; line-height: 1.6; color: var(--gray-400); }
+.du-blurb { font-size: 12px; line-height: 1.6; color: var(--gray-400); }
+
+/*
+ * The prefix is `du-`, not `dl-`, and that is not a preference.
+ *
+ * Yosuku's download section (`styles/yosuku/part-18.css`) owns `dl-` for *download*, and it declares
+ * `.dl-title`, `.dl-cta` and `.dl-foot`. This file loads after it, so it won every property it named —
+ * and silently inherited every property it did not. The duel's primary button was carrying the download
+ * page's 34px top margin, its pill padding and its hover lift; every footnote carried a
+ * `clamp(46px, 6vw, 76px)` top margin and a 62ch cap. Visible once measured at 320px: a 46px hole above
+ * "nobody is searching right now".
+ *
+ * Resetting the three properties would have fixed the symptom and left the trap: the next declaration
+ * added to `.dl-cta` over there would land here. Two features cannot share a prefix.
+ */
 
 /* A closed match's last word, above the entry that follows it. */
-.dl-notice {
+.du-notice {
   border-radius: 12px; padding: 12px 14px; margin-bottom: 12px;
   border: 1px solid var(--color-hairline); background: var(--color-surface-2);
   font-size: 13px; line-height: 1.6; color: var(--gray-400);
 }
 
-.dl-refusal {
+.du-refusal {
   border-radius: 12px; padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--vermilion) 34%, transparent);
   background: color-mix(in srgb, var(--vermilion) 7%, transparent);
@@ -53,130 +67,130 @@
 }
 
 /* A refusal with somewhere to go. Only an empty gas tank gets links; nothing else has a route out. */
-.dl-faucets { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
-.dl-faucets a {
+.du-faucets { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+.du-faucets a {
   font-family: var(--font-mono); font-size: 11px; color: var(--white);
   text-decoration: underline; text-decoration-color: var(--color-hairline); text-underline-offset: 4px;
 }
-.dl-faucets a:hover { text-decoration-color: var(--accent); }
+.du-faucets a:hover { text-decoration-color: var(--accent); }
 
 /* Stacked children, because a refusal now carries a reason, an address and a way to fix it. */
-.dl-refusal > * + * { margin-top: 6px; }
-.dl-notice > * + * { margin-top: 6px; }
+.du-refusal > * + * { margin-top: 6px; }
+.du-notice > * + * { margin-top: 6px; }
 
-.dl-cta {
+.du-cta {
   align-self: stretch; min-height: var(--button-primary-height);
   border-radius: var(--button-primary-radius);
   background: var(--button-primary-fill); color: var(--button-primary-ink);
   font-family: var(--font-display); font-weight: 700; font-size: 14px; letter-spacing: 0.02em;
   transition: filter 160ms var(--ease);
 }
-.dl-cta:not(:disabled):hover { background: var(--button-primary-hover); }
-.dl-cta:disabled { opacity: 0.45; cursor: not-allowed; }
-.dl-quiet {
+.du-cta:not(:disabled):hover { background: var(--button-primary-hover); }
+.du-cta:disabled { opacity: 0.45; cursor: not-allowed; }
+.du-quiet {
   align-self: flex-start;
   font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
   color: var(--gray-400);
   transition: color 200ms var(--ease);
 }
-.dl-quiet:hover { color: var(--vermilion); }
+.du-quiet:hover { color: var(--vermilion); }
 
 /* ── Choosing a stake ─────────────────────────────────────────────────────── */
 
-.dl-choices { display: flex; flex-direction: column; gap: 8px; }
-.dl-tiers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-@media (min-width: 560px) { .dl-tiers { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-.dl-tier {
+.du-choices { display: flex; flex-direction: column; gap: 8px; }
+.du-tiers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+@media (min-width: 560px) { .du-tiers { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.du-tier {
   display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
   border-radius: 12px; padding: 10px 12px;
   border: 1px solid var(--color-hairline); background: transparent;
   transition: border-color 180ms var(--ease), background 180ms var(--ease);
 }
-.dl-tier--on { border-color: var(--vermilion); background: color-mix(in srgb, var(--vermilion) 8%, transparent); }
-.dl-tier-name { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray-500); }
-.dl-tier-amount { font-family: var(--font-display); font-weight: 700; font-size: 14px; color: var(--white); }
+.du-tier--on { border-color: var(--vermilion); background: color-mix(in srgb, var(--vermilion) 8%, transparent); }
+.du-tier-name { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray-500); }
+.du-tier-amount { font-family: var(--font-display); font-weight: 700; font-size: 14px; color: var(--white); }
 
-.dl-cost { display: flex; flex-direction: column; gap: 6px; }
-.dl-cost-list { display: flex; flex-direction: column; gap: 6px; padding-left: 16px; }
-.dl-cost-list li { font-size: 12px; line-height: 1.6; color: var(--gray-400); }
+.du-cost { display: flex; flex-direction: column; gap: 6px; }
+.du-cost-list { display: flex; flex-direction: column; gap: 6px; padding-left: 16px; }
+.du-cost-list li { font-size: 12px; line-height: 1.6; color: var(--gray-400); }
 
 /* ── The queue and the lobby ──────────────────────────────────────────────── */
 
-.dl-queue-head { display: flex; align-items: center; gap: 10px; }
-.dl-queue-title { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--white); }
-.dl-spinner {
+.du-queue-head { display: flex; align-items: center; gap: 10px; }
+.du-queue-title { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--white); }
+.du-spinner {
   width: 12px; height: 12px; flex-shrink: 0;
   border-radius: 9999px;
   border: 2px solid color-mix(in srgb, var(--vermilion) 30%, transparent);
   border-top-color: var(--vermilion);
-  animation: dl-spin 900ms linear infinite;
+  animation: du-spin 900ms linear infinite;
 }
-@keyframes dl-spin { to { transform: rotate(360deg); } }
+@keyframes du-spin { to { transform: rotate(360deg); } }
 
-.dl-facts { display: flex; flex-wrap: wrap; gap: 10px 24px; }
-.dl-fact { display: flex; flex-direction: column; gap: 2px; }
-.dl-deck { font-size: 13px; line-height: 1.6; color: var(--white); }
+.du-facts { display: flex; flex-wrap: wrap; gap: 10px 24px; }
+.du-fact { display: flex; flex-direction: column; gap: 2px; }
+.du-deck { font-size: 13px; line-height: 1.6; color: var(--white); }
 
-.dl-seats { display: flex; align-items: center; gap: 14px; }
-.dl-seat { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.dl-seat-name { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.dl-seat-name .dl-mono { font-size: 12px; color: var(--white); }
-.dl-avatar {
+.du-seats { display: flex; align-items: center; gap: 14px; }
+.du-seat { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.du-seat-name { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.du-seat-name .du-mono { font-size: 12px; color: var(--white); }
+.du-avatar {
   width: 28px; height: 28px; flex-shrink: 0; border-radius: 9999px;
-  background: hsl(calc(var(--dl-hue, 0) * 1deg) 58% 52%);
+  background: hsl(calc(var(--du-hue, 0) * 1deg) 58% 52%);
 }
-.dl-versus { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; color: var(--gray-500); }
-.dl-seat-note { font-family: var(--font-mono); font-size: 10px; color: var(--gray-500); }
+.du-versus { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; color: var(--gray-500); }
+.du-seat-note { font-family: var(--font-mono); font-size: 10px; color: var(--gray-500); }
 
 /* ── Picking ──────────────────────────────────────────────────────────────── */
 
-.dl-picking { display: flex; flex-direction: column; gap: 16px; }
-.dl-picked { display: flex; flex-direction: column; gap: 8px; }
-.dl-picked-list { display: flex; flex-direction: column; gap: 6px; }
-.dl-picked-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-.dl-picked-row .dl-v { font-size: 13px; }
-.dl-picked-row .dl-foot { margin-left: auto; }
+.du-picking { display: flex; flex-direction: column; gap: 16px; }
+.du-picked { display: flex; flex-direction: column; gap: 8px; }
+.du-picked-list { display: flex; flex-direction: column; gap: 6px; }
+.du-picked-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.du-picked-row .du-v { font-size: 13px; }
+.du-picked-row .du-foot { margin-left: auto; }
 /* On a phone the money wraps onto its own line, and pushing it right there leaves every row ragged.
  * It reads as part of the row it belongs to when it starts where the row starts. */
 @media (max-width: 560px) {
-  .dl-picked-row .dl-foot { margin-left: 0; flex-basis: 100%; }
+  .du-picked-row .du-foot { margin-left: 0; flex-basis: 100%; }
 }
 /* The side's own dot, defined here rather than borrowed from practice.css — a feature that reaches
  * into another feature's stylesheet breaks the moment that one is loaded on a different route. */
-.dl-dot { width: 7px; height: 7px; border-radius: 9999px; flex-shrink: 0; }
-.dl-dot--up { background: var(--profit); }
-.dl-dot--down { background: var(--loss); }
+.du-dot { width: 7px; height: 7px; border-radius: 9999px; flex-shrink: 0; }
+.du-dot--up { background: var(--profit); }
+.du-dot--down { background: var(--loss); }
 
-.dl-pending {
+.du-pending {
   display: inline-flex; align-items: center; gap: 6px;
   font-family: var(--font-mono); font-size: 10px; color: var(--vermilion);
 }
-.dl-pending-dot { width: 6px; height: 6px; border-radius: 9999px; background: var(--vermilion); animation: dl-pulse 1.2s var(--ease) infinite; }
+.du-pending-dot { width: 6px; height: 6px; border-radius: 9999px; background: var(--vermilion); animation: du-pulse 1.2s var(--ease) infinite; }
 
 /* ── The result ───────────────────────────────────────────────────────────── */
 
-.dl-result { display: flex; flex-direction: column; gap: 12px; }
-.dl-verdict {
+.du-result { display: flex; flex-direction: column; gap: 12px; }
+.du-verdict {
   display: flex; flex-direction: column; gap: 10px;
   border-radius: 16px; padding: 20px;
   border: 1px solid var(--color-hairline); background: var(--color-surface-1);
 }
-.dl-verdict--won { border-color: color-mix(in srgb, var(--profit) 45%, transparent); }
-.dl-verdict--lost { border-color: color-mix(in srgb, var(--loss) 40%, transparent); }
-.dl-verdict-line { font-family: var(--font-display); font-weight: 750; font-size: 20px; color: var(--white); }
-.dl-cranks { display: flex; flex-wrap: wrap; gap: 8px 16px; }
-.dl-up { color: var(--profit); }
-.dl-down { color: var(--loss); }
+.du-verdict--won { border-color: color-mix(in srgb, var(--profit) 45%, transparent); }
+.du-verdict--lost { border-color: color-mix(in srgb, var(--loss) 40%, transparent); }
+.du-verdict-line { font-family: var(--font-display); font-weight: 750; font-size: 20px; color: var(--white); }
+.du-cranks { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.du-up { color: var(--profit); }
+.du-down { color: var(--loss); }
 
 /* ── The socket's own state, said quietly ─────────────────────────────────── */
 
-.dl-conn { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10px; color: var(--gray-400); }
-.dl-conn-dot { width: 6px; height: 6px; border-radius: 9999px; background: var(--gray-600); }
-.dl-conn--open .dl-conn-dot { background: var(--profit); }
-.dl-conn--reconnecting .dl-conn-dot { background: var(--vermilion); animation: dl-pulse 1.2s var(--ease) infinite; }
-.dl-conn--closed .dl-conn-dot { background: var(--loss); }
-@keyframes dl-pulse { 50% { opacity: 0.3; } }
+.du-conn { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10px; color: var(--gray-400); }
+.du-conn-dot { width: 6px; height: 6px; border-radius: 9999px; background: var(--gray-600); }
+.du-conn--open .du-conn-dot { background: var(--profit); }
+.du-conn--reconnecting .du-conn-dot { background: var(--vermilion); animation: du-pulse 1.2s var(--ease) infinite; }
+.du-conn--closed .du-conn-dot { background: var(--loss); }
+@keyframes du-pulse { 50% { opacity: 0.3; } }
 
 @media (max-width: 400px) {
-  .dl-plate, .dl-entry, .dl-queue, .dl-lobby, .dl-error { padding: 16px; }
+  .du-plate, .du-entry, .du-queue, .du-lobby, .du-error { padding: 16px; }
 }

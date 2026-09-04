@@ -69,58 +69,58 @@ export function DuelResult({ state, wallet }: { state: Extract<MatchState, { pha
           : DUEL.result.lost;
 
   return (
-    <section className="dl-result" aria-label={DUEL.result.title}>
+    <section className="du-result" aria-label={DUEL.result.title}>
       {state.phase === "locked" && (
-        <div className="dl-plate">
-          <h2 className="dl-queue-title">{DUEL.settling.lockedTitle}</h2>
-          <p className="dl-body">{DUEL.settling.lockedBody}</p>
+        <div className="du-plate">
+          <h2 className="du-queue-title">{DUEL.settling.lockedTitle}</h2>
+          <p className="du-body">{DUEL.settling.lockedBody}</p>
         </div>
       )}
 
       {state.phase === "settling" && (
-        <div className="dl-plate">
-          <div className="dl-queue-head">
-            <span className="dl-spinner" aria-hidden />
-            <h2 className="dl-queue-title">{DUEL.settling.title}</h2>
+        <div className="du-plate">
+          <div className="du-queue-head">
+            <span className="du-spinner" aria-hidden />
+            <h2 className="du-queue-title">{DUEL.settling.title}</h2>
           </div>
-          <p className="dl-v">{DUEL.settling.progress(settled, total)}</p>
-          <p className="dl-body">{DUEL.settling.body}</p>
+          <p className="du-v">{DUEL.settling.progress(settled, total)}</p>
+          <p className="du-body">{DUEL.settling.body}</p>
         </div>
       )}
 
       {state.phase === "forfeited" && (
-        <div className="dl-plate">
-          <h2 className="dl-queue-title">{DUEL.result.forfeitTitle}</h2>
-          <p className="dl-body">{DUEL.result.forfeitBody}</p>
+        <div className="du-plate">
+          <h2 className="du-queue-title">{DUEL.result.forfeitTitle}</h2>
+          <p className="du-body">{DUEL.result.forfeitBody}</p>
         </div>
       )}
 
       {verdict && (
-        <div className={`dl-verdict${outcome?.winner === null ? "" : outcome?.winner?.toLowerCase() === you ? " dl-verdict--won" : " dl-verdict--lost"}`}>
-          <p className="dl-verdict-line">{verdict}</p>
-          <div className="dl-facts">
-            <div className="dl-fact">
-              <span className="dl-k">
+        <div className={`du-verdict${outcome?.winner === null ? "" : outcome?.winner?.toLowerCase() === you ? " du-verdict--won" : " du-verdict--lost"}`}>
+          <p className="du-verdict-line">{verdict}</p>
+          <div className="du-facts">
+            <div className="du-fact">
+              <span className="du-k">
                 {DUEL.result.you} · {DUEL.result.pnl}
               </span>
-              <span className={`dl-v ${sign(yourPnl)}`}>{signed(yourPnl, money)} {symbol}</span>
+              <span className={`du-v ${sign(yourPnl)}`}>{signed(yourPnl, money)} {symbol}</span>
             </div>
-            <div className="dl-fact">
-              <span className="dl-k">
+            <div className="du-fact">
+              <span className="du-k">
                 {DUEL.result.opponent} · {DUEL.result.pnl}
               </span>
-              <span className={`dl-v ${sign(theirPnl)}`}>{signed(theirPnl, money)} {symbol}</span>
+              <span className={`du-v ${sign(theirPnl)}`}>{signed(theirPnl, money)} {symbol}</span>
             </div>
           </div>
-          <p className="dl-foot">{DUEL.result.pnlNote}</p>
-          <p className="dl-foot">{state.tier === "free" ? DUEL.result.freePotNote : DUEL.result.potNote}</p>
+          <p className="du-foot">{DUEL.result.pnlNote}</p>
+          <p className="du-foot">{state.tier === "free" ? DUEL.result.freePotNote : DUEL.result.potNote}</p>
         </div>
       )}
 
       {receipts.length > 0 && (
-        <div className="dl-plate">
-          <span className="dl-k">{DUEL.result.cards}</span>
-          <ul className="dl-picked-list">
+        <div className="du-plate">
+          <span className="du-k">{DUEL.result.cards}</span>
+          <ul className="du-picked-list">
             {[...mine, ...theirs]
               .sort((a, b) => a.cardIndex - b.cardIndex || (a.player.toLowerCase() === you ? -1 : 1))
               .map((receipt) => (
@@ -131,15 +131,15 @@ export function DuelResult({ state, wallet }: { state: Extract<MatchState, { pha
       )}
 
       {canSign && (outstanding.length > 0 || canFinalize) && "matchId" in state && (
-        <div className="dl-plate">
-          <span className="dl-k">{DUEL.settling.crankTitle}</span>
-          <p className="dl-body">{DUEL.settling.crankBody}</p>
-          <div className="dl-cranks">
+        <div className="du-plate">
+          <span className="du-k">{DUEL.settling.crankTitle}</span>
+          <p className="du-body">{DUEL.settling.crankBody}</p>
+          <div className="du-cranks">
             {outstanding.map((card) => (
               <button
                 key={card.index}
                 type="button"
-                className="dl-quiet"
+                className="du-quiet"
                 disabled={busy !== null}
                 onClick={() => void settleCard(state.matchId as Bytes32, card.index)}
               >
@@ -147,7 +147,7 @@ export function DuelResult({ state, wallet }: { state: Extract<MatchState, { pha
               </button>
             ))}
             {canFinalize && (
-              <button type="button" className="dl-quiet" disabled={busy !== null} onClick={() => void finalize(state.matchId as Bytes32)}>
+              <button type="button" className="du-quiet" disabled={busy !== null} onClick={() => void finalize(state.matchId as Bytes32)}>
                 {busy === "finalize" ? DUEL.settling.finalizing : DUEL.settling.finalize}
               </button>
             )}
@@ -155,21 +155,21 @@ export function DuelResult({ state, wallet }: { state: Extract<MatchState, { pha
         </div>
       )}
 
-      <div className="dl-plate">
-        <span className="dl-k">{DUEL.result.credit}</span>
-        <p className="dl-v">{owed === null ? DUEL.result.unsettled : `${money(owed)} ${symbol}`}</p>
+      <div className="du-plate">
+        <span className="du-k">{DUEL.result.credit}</span>
+        <p className="du-v">{owed === null ? DUEL.result.unsettled : `${money(owed)} ${symbol}`}</p>
         {owed !== null && owed > 0n && canSign && wallet && (
-          <button type="button" className="dl-cta" disabled={busy !== null} onClick={() => void claim(wallet as Address)}>
+          <button type="button" className="du-cta" disabled={busy !== null} onClick={() => void claim(wallet as Address)}>
             {busy === "claim" ? DUEL.result.claiming : DUEL.result.claim}
           </button>
         )}
-        {owed === 0n && <p className="dl-body">{DUEL.result.nothingToClaim}</p>}
-        <p className="dl-foot">{DUEL.result.claimNote}</p>
+        {owed === 0n && <p className="du-body">{DUEL.result.nothingToClaim}</p>}
+        <p className="du-foot">{DUEL.result.claimNote}</p>
       </div>
 
       {/* A deck that is complete but unsettled is the normal case: the Windows have not closed yet. */}
       {picksComplete(cards, receipts) && !everyCardSettled(cards, receipts) && state.phase !== "finalized" && (
-        <p className="dl-foot">{DUEL.settling.waitingCard}</p>
+        <p className="du-foot">{DUEL.settling.waitingCard}</p>
       )}
     </section>
   );
@@ -177,7 +177,7 @@ export function DuelResult({ state, wallet }: { state: Extract<MatchState, { pha
 
 function sign(base: bigint | null): string {
   if (base === null || base === 0n) return "";
-  return base > 0n ? "dl-up" : "dl-down";
+  return base > 0n ? "du-up" : "du-down";
 }
 
 function signed(base: bigint | null, money: (b: bigint | null) => string): string {
@@ -201,15 +201,15 @@ function Row({
   const card = cards.find((c) => c.index === receipt.cardIndex);
   const pnl = cardPnl(receipt);
   return (
-    <li className="dl-picked-row">
-      <span className={`dl-dot dl-dot--${receipt.pick}`} aria-hidden />
-      <span className="dl-v">{card?.asset ?? "—"}</span>
-      <span className="dl-k">{card ? cadenceLabel(card.intervalSec) : ""}</span>
-      <span className="dl-k">{receipt.player.toLowerCase() === you ? DUEL.result.you : DUEL.result.opponent}</span>
-      <span className="dl-foot">
+    <li className="du-picked-row">
+      <span className={`du-dot du-dot--${receipt.pick}`} aria-hidden />
+      <span className="du-v">{card?.asset ?? "—"}</span>
+      <span className="du-k">{card ? cadenceLabel(card.intervalSec) : ""}</span>
+      <span className="du-k">{receipt.player.toLowerCase() === you ? DUEL.result.you : DUEL.result.opponent}</span>
+      <span className="du-foot">
         {DUEL.result.cost} {money(receipt.costBase)} · {DUEL.result.payout} {receipt.payoutBase === null ? DUEL.result.unsettled : money(receipt.payoutBase)} {symbol}
       </span>
-      <span className={`dl-foot ${sign(pnl)}`}>{pnl === null ? "" : signed(pnl, money)}</span>
+      <span className={`du-foot ${sign(pnl)}`}>{pnl === null ? "" : signed(pnl, money)}</span>
     </li>
   );
 }

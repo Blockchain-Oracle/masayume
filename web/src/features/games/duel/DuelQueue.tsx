@@ -24,29 +24,29 @@ export function DuelQueue({ queue, waitedSec, onLeave }: { queue: QueueView | nu
         : DUEL.queue.deckIn(queue.nextDeckInSec);
 
   return (
-    <section className="dl-queue" aria-label={DUEL.queue.title}>
-      <div className="dl-queue-head">
-        <span className="dl-spinner" aria-hidden />
-        <h2 className="dl-queue-title">{DUEL.queue.title}</h2>
+    <section className="du-queue" aria-label={DUEL.queue.title}>
+      <div className="du-queue-head">
+        <span className="du-spinner" aria-hidden />
+        <h2 className="du-queue-title">{DUEL.queue.title}</h2>
       </div>
 
-      <dl className="dl-facts">
-        <div className="dl-fact">
-          <dt className="dl-k">{DUEL.queue.waited(waitedSec)}</dt>
-          <dd className="dl-v">{queue ? DUEL.queue.waiting(queue.waitingCount) : "—"}</dd>
+      <dl className="du-facts">
+        <div className="du-fact">
+          <dt className="du-k">{DUEL.queue.waited(waitedSec)}</dt>
+          <dd className="du-v">{queue ? DUEL.queue.waiting(queue.waitingCount) : "—"}</dd>
         </div>
-        <div className="dl-fact">
-          <dt className="dl-k">{DUEL.entry.mode}</dt>
-          <dd className="dl-v">{queue ? DUEL.queue.band(queue.bandNow) : "—"}</dd>
+        <div className="du-fact">
+          <dt className="du-k">{DUEL.entry.mode}</dt>
+          <dd className="du-v">{queue ? DUEL.queue.band(queue.bandNow) : "—"}</dd>
         </div>
       </dl>
 
-      <p className="dl-deck" aria-live="polite">
+      <p className="du-deck" aria-live="polite">
         {deckLine}
       </p>
-      <p className="dl-foot">{DUEL.queue.deckWhy}</p>
+      <p className="du-foot">{DUEL.queue.deckWhy}</p>
 
-      <button type="button" className="dl-quiet" onClick={onLeave}>
+      <button type="button" className="du-quiet" onClick={onLeave}>
         {DUEL.queue.leave}
       </button>
     </section>

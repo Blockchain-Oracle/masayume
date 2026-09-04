@@ -42,15 +42,15 @@ export function DuelStage() {
 
   return (
     <div className="container gm-page">
-      <header className="dl-head">
+      <header className="du-head">
         <span className="gm-eyebrow">{DUEL.eyebrow}</span>
-        <h1 className="dl-title">
+        <h1 className="du-title">
           {DUEL.title}
           <span className="accent">.</span>
         </h1>
       </header>
 
-      <div className="dl-layout">
+      <div className="du-layout">
         <div>
           {auth.kind !== "ready" ? (
             <Gate room={room} occupancy={occupancy} />
@@ -58,18 +58,18 @@ export function DuelStage() {
             <Match room={room} wallet={address} tierId={tierId} onTier={setTierId} occupancy={occupancy} />
           )}
           {room.error && (
-            <div className="dl-error" role="status">
-              <p className="dl-body">{room.error.message}</p>
-              <p className="dl-foot">{room.error.retryable ? DUEL.error.retryable : DUEL.error.terminal}</p>
-              <button type="button" className="dl-quiet" onClick={room.dismissError}>
+            <div className="du-error" role="status">
+              <p className="du-body">{room.error.message}</p>
+              <p className="du-foot">{room.error.retryable ? DUEL.error.retryable : DUEL.error.terminal}</p>
+              <button type="button" className="du-quiet" onClick={room.dismissError}>
                 {DUEL.error.dismiss}
               </button>
             </div>
           )}
         </div>
 
-        <aside className="dl-side">
-          <p className="dl-intro">{DUEL.intro}</p>
+        <aside className="du-side">
+          <p className="du-intro">{DUEL.intro}</p>
           <Connection status={room.status} authed={auth.kind === "ready"} />
         </aside>
       </div>
@@ -88,32 +88,32 @@ function Gate({ room, occupancy }: { room: ReturnType<typeof useDuelRoom>; occup
   const { auth, authorize } = room;
   const here = <Occupancy occupancy={occupancy} />;
 
-  if (auth.kind === "asking") return <p className="dl-body">{DUEL.status.connecting}</p>;
+  if (auth.kind === "asking") return <p className="du-body">{DUEL.status.connecting}</p>;
   if (auth.kind === "unavailable") {
     return (
-      <div className="dl-plate">
-        <h2 className="dl-queue-title">{DUEL.entry.unavailable}</h2>
-        <p className="dl-body">{auth.why}</p>
+      <div className="du-plate">
+        <h2 className="du-queue-title">{DUEL.entry.unavailable}</h2>
+        <p className="du-body">{auth.why}</p>
       </div>
     );
   }
   if (auth.kind === "connect") {
     return (
-      <div className="dl-plate">
-        <h2 className="dl-queue-title">{DUEL.auth.connectTitle}</h2>
-        <p className="dl-body">{DUEL.auth.connectBody}</p>
+      <div className="du-plate">
+        <h2 className="du-queue-title">{DUEL.auth.connectTitle}</h2>
+        <p className="du-body">{DUEL.auth.connectBody}</p>
         {here}
       </div>
     );
   }
 
   return (
-    <div className="dl-plate">
-      <h2 className="dl-queue-title">{DUEL.auth.signTitle}</h2>
-      <p className="dl-body">{DUEL.auth.signBody}</p>
+    <div className="du-plate">
+      <h2 className="du-queue-title">{DUEL.auth.signTitle}</h2>
+      <p className="du-body">{DUEL.auth.signBody}</p>
       {here}
-      {auth.kind === "refused" && <p className="dl-refusal">{auth.why}</p>}
-      <button type="button" className="dl-cta" disabled={auth.kind === "signing"} onClick={() => void authorize()}>
+      {auth.kind === "refused" && <p className="du-refusal">{auth.why}</p>}
+      <button type="button" className="du-cta" disabled={auth.kind === "signing"} onClick={() => void authorize()}>
         {auth.kind === "signing" ? DUEL.auth.signing : auth.kind === "refused" ? DUEL.auth.retry : DUEL.auth.sign}
       </button>
     </div>
@@ -186,22 +186,22 @@ function Match({
 /** The room's own count, or the honest absence of one. Never a zero standing in for a service that is down. */
 function Occupancy({ occupancy }: { occupancy: RoomOccupancy | null }) {
   if (!occupancy) return null;
-  if (!occupancy.reachable) return <p className="dl-foot">{DUEL.auth.roomDown}</p>;
+  if (!occupancy.reachable) return <p className="du-foot">{DUEL.auth.roomDown}</p>;
   const searching = searchingNow(occupancy);
-  if (searching > 0) return <p className="dl-deck">{DUEL.auth.searching(searching)}</p>;
-  if (occupancy.pairing > 0) return <p className="dl-deck">{DUEL.auth.inMatch(occupancy.pairing)}</p>;
-  return <p className="dl-foot">{DUEL.auth.nobody}</p>;
+  if (searching > 0) return <p className="du-deck">{DUEL.auth.searching(searching)}</p>;
+  if (occupancy.pairing > 0) return <p className="du-deck">{DUEL.auth.inMatch(occupancy.pairing)}</p>;
+  return <p className="du-foot">{DUEL.auth.nobody}</p>;
 }
 
 /** A pairing the room ended before the chain was involved: what happened, and what is being done about it. */
 function Dissolved({ dissolved, entry }: { dissolved: NonNullable<ReturnType<typeof useDuelRoom>["dissolved"]>; entry: ReactNode }) {
   return (
     <>
-      <div className="dl-notice" role="status">
-        <p className="dl-body">
+      <div className="du-notice" role="status">
+        <p className="du-body">
           {DUEL.lobby.dissolvedTitle}: {dissolved.why}.
         </p>
-        <p className="dl-foot">{dissolved.searchAgain ? DUEL.lobby.dissolvedAgain : DUEL.lobby.dissolvedStop}</p>
+        <p className="du-foot">{dissolved.searchAgain ? DUEL.lobby.dissolvedAgain : DUEL.lobby.dissolvedStop}</p>
       </div>
       {entry}
     </>
@@ -212,7 +212,7 @@ function Dissolved({ dissolved, entry }: { dissolved: NonNullable<ReturnType<typ
 function Ended({ body, entry }: { body: string; entry: ReactNode }) {
   return (
     <>
-      <p className="dl-notice">{body}</p>
+      <p className="du-notice">{body}</p>
       {entry}
     </>
   );
@@ -225,18 +225,18 @@ function Ended({ body, entry }: { body: string; entry: ReactNode }) {
  */
 function Beyond({ state }: { state: MatchState }) {
   return (
-    <div className="dl-plate">
-      <h2 className="dl-queue-title">{DUEL.beyond.title}</h2>
-      <p className="dl-body">{isTerminal(state.phase) || state.phase === "forfeited" ? DUEL.beyond.done : DUEL.beyond.live}</p>
+    <div className="du-plate">
+      <h2 className="du-queue-title">{DUEL.beyond.title}</h2>
+      <p className="du-body">{isTerminal(state.phase) || state.phase === "forfeited" ? DUEL.beyond.done : DUEL.beyond.live}</p>
       {"matchId" in state && (
-        <dl className="dl-facts">
-          <div className="dl-fact">
-            <dt className="dl-k">{DUEL.beyond.match}</dt>
-            <dd className="dl-v dl-mono">{shortHex(state.matchId, 10, 8)}</dd>
+        <dl className="du-facts">
+          <div className="du-fact">
+            <dt className="du-k">{DUEL.beyond.match}</dt>
+            <dd className="du-v du-mono">{shortHex(state.matchId, 10, 8)}</dd>
           </div>
-          <div className="dl-fact">
-            <dt className="dl-k">{DUEL.beyond.phase}</dt>
-            <dd className="dl-v">{state.phase}</dd>
+          <div className="du-fact">
+            <dt className="du-k">{DUEL.beyond.phase}</dt>
+            <dd className="du-v">{state.phase}</dd>
           </div>
         </dl>
       )}
@@ -255,8 +255,8 @@ function Connection({ status, authed }: { status: string; authed: boolean }) {
           ? DUEL.status.closed
           : DUEL.status.connecting;
   return (
-    <p className={`dl-conn dl-conn--${status}`} role="status">
-      <span className="dl-conn-dot" aria-hidden />
+    <p className={`du-conn du-conn--${status}`} role="status">
+      <span className="du-conn-dot" aria-hidden />
       {label}
     </p>
   );

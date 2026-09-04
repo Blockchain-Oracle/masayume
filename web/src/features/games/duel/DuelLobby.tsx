@@ -34,22 +34,22 @@ export function DuelLobby({ state, wallet, dealing }: { state: Extract<MatchStat
         : { title: DUEL.lobby.revealing, body: DUEL.lobby.waitingPot };
 
   return (
-    <section className="dl-lobby" aria-label={DUEL.lobby.matched}>
-      <div className="dl-seats">
+    <section className="du-lobby" aria-label={DUEL.lobby.matched}>
+      <div className="du-seats">
         <Seat label={DUEL.lobby.you} address={you} />
-        <span className="dl-versus" aria-hidden>
+        <span className="du-versus" aria-hidden>
           vs
         </span>
         <Seat label={DUEL.lobby.opponent} address={opponent} />
       </div>
-      <p className="dl-seat-note">{isCreator ? DUEL.lobby.seatCreator : DUEL.lobby.seatChallenger}</p>
+      <p className="du-seat-note">{isCreator ? DUEL.lobby.seatCreator : DUEL.lobby.seatChallenger}</p>
 
-      <div className="dl-plate">
-        <div className="dl-queue-head">
-          <span className="dl-spinner" aria-hidden />
-          <h2 className="dl-queue-title">{stage.title}</h2>
+      <div className="du-plate">
+        <div className="du-queue-head">
+          <span className="du-spinner" aria-hidden />
+          <h2 className="du-queue-title">{stage.title}</h2>
         </div>
-        <p className="dl-body">{stage.body}</p>
+        <p className="du-body">{stage.body}</p>
 
         {/* The room's own clock for this pairing, only while it is the thing being waited on. */}
         {state.phase === "matched" && dealing?.matchId === state.matchId && <DealingPlate dealing={dealing} />}
@@ -57,14 +57,14 @@ export function DuelLobby({ state, wallet, dealing }: { state: Extract<MatchStat
         {state.phase === "committed" && <OnChain state={state} isCreator={isCreator} wallet={you as Address | null} />}
 
         {"commitment" in state && (
-          <dl className="dl-facts">
-            <div className="dl-fact">
-              <dt className="dl-k">{DUEL.lobby.commitment}</dt>
-              <dd className="dl-v dl-mono">{shortHex(state.commitment.hash, 10, 8)}</dd>
+          <dl className="du-facts">
+            <div className="du-fact">
+              <dt className="du-k">{DUEL.lobby.commitment}</dt>
+              <dd className="du-v du-mono">{shortHex(state.commitment.hash, 10, 8)}</dd>
             </div>
-            <div className="dl-fact">
-              <dt className="dl-k">{DUEL.entry.tier}</dt>
-              <dd className="dl-v">{DUEL.lobby.cards(state.commitment.size)}</dd>
+            <div className="du-fact">
+              <dt className="du-k">{DUEL.entry.tier}</dt>
+              <dd className="du-v">{DUEL.lobby.cards(state.commitment.size)}</dd>
             </div>
           </dl>
         )}
@@ -75,11 +75,11 @@ export function DuelLobby({ state, wallet, dealing }: { state: Extract<MatchStat
 
 function Seat({ label, address }: { label: string; address: string | null }) {
   return (
-    <div className="dl-seat">
-      <span className="dl-avatar" style={{ "--dl-hue": address ? addressHue(address) : 0 } as CSSProperties} aria-hidden />
-      <span className="dl-seat-name">
-        <span className="dl-k">{label}</span>
-        <span className="dl-mono">{address ? shortHex(address, 6, 4) : "—"}</span>
+    <div className="du-seat">
+      <span className="du-avatar" style={{ "--du-hue": address ? addressHue(address) : 0 } as CSSProperties} aria-hidden />
+      <span className="du-seat-name">
+        <span className="du-k">{label}</span>
+        <span className="du-mono">{address ? shortHex(address, 6, 4) : "—"}</span>
       </span>
     </div>
   );
@@ -110,18 +110,18 @@ function OnChain({ state, isCreator, wallet }: { state: Extract<MatchState, { ph
   const created = onChain && isOk(onChain) && onChain.value !== null;
   const { challenger } = state.players;
 
-  if (!canSign) return <p className="dl-refusal">{DUEL.lobby.noSigner}</p>;
+  if (!canSign) return <p className="du-refusal">{DUEL.lobby.noSigner}</p>;
 
   const refused = refusal ? <RefusalPlate diagnosis={refusal.diagnosis} gasShort={refusal.gasShort} wallet={wallet} /> : null;
 
   if (isCreator) {
-    if (created) return <p className="dl-body">{DUEL.lobby.waitingCreate}</p>;
+    if (created) return <p className="du-body">{DUEL.lobby.waitingCreate}</p>;
     return (
       <>
-        <p className="dl-body">{DUEL.lobby.openBody(pot, symbol)}</p>
+        <p className="du-body">{DUEL.lobby.openBody(pot, symbol)}</p>
         <button
           type="button"
-          className="dl-cta"
+          className="du-cta"
           disabled={busy !== null || potBase === null || !challenger}
           onClick={() =>
             challenger &&
@@ -144,13 +144,13 @@ function OnChain({ state, isCreator, wallet }: { state: Extract<MatchState, { ph
     );
   }
 
-  if (!created) return <p className="dl-body">{DUEL.lobby.waitingCreate}</p>;
+  if (!created) return <p className="du-body">{DUEL.lobby.waitingCreate}</p>;
   return (
     <>
-      <p className="dl-body">{DUEL.lobby.joinBody(pot, symbol)}</p>
+      <p className="du-body">{DUEL.lobby.joinBody(pot, symbol)}</p>
       <button
         type="button"
-        className="dl-cta"
+        className="du-cta"
         disabled={busy !== null || potBase === null}
         onClick={() => potBase !== null && void join(state.matchId as Bytes32, potBase)}
       >
