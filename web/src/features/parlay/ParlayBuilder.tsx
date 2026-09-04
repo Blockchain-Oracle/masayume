@@ -1,18 +1,20 @@
 "use client";
 
 import { PARLAY_MAX_LEGS, type ParlayLegInput, type ParlayMode, type ParlayReserveState } from "@masayume/core/parlay";
+import { RANGE_STAKE_HEADROOM_BPS } from "@masayume/core/range";
 import { isOk } from "@masayume/core/schemas";
 import type { EventMarket, Hex } from "@masayume/core/types";
-import { formatBaseUnits, parseDecimalToBaseUnits } from "@masayume/core/units";
+import { formatBaseUnits, mulBpsCeil, parseDecimalToBaseUnits } from "@masayume/core/units";
 import { useBalanceSheet } from "@masayume/markets/react";
 import { Layers, Plus, Wallet, Zap } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { diagnosisCopy } from "@/lib/copy";
 import { notify } from "@/lib/toast";
 import { useWalletSession } from "@/lib/wallet-session";
 import { useChainNowMs } from "../markets/useChainNow";
 import { ConnectButton } from "../markets/wallet";
 import { PARLAY } from "./copy";
+import { parseThinBook } from "./format";
 import { LegRow, type DraftLeg } from "./LegRow";
 import { ParlayTicket, type SolveMode } from "./ParlayTicket";
 import type { PlaceStep } from "./TicketParts";
@@ -61,13 +63,35 @@ export function ParlayBuilder({ reserve, symbol }: ParlayBuilderProps) {
         const used = new Set(prev.map((l) => l.marketId));
         const pick = (marketId ? byId.get(marketId) : undefined) ?? windows.find((w) => !used.has(w.marketId)) ?? windows[0];
         if (!pick) return prev;
-        return [...prev, { key: newKey(), marketId: pick.marketId, side: "up" }];
+        return [...prev, { key: newKey(), marketId: pick.marketId, asset: pick.asset, intervalSec: pick.intervalSec, side: "up" }];
       });
     },
     [byId, windows, maxLegs],
   );
   const removeLeg = useCallback((key: string) => setLegs((prev) => prev.filter((l) => l.key !== key)), []);
   const patchLeg = useCallback((key: string, patch: Partial<DraftLeg>) => setLegs((prev) => prev.map((l) => (l.key === key ? { ...l, ...patch } : l))), []);
+
+  // Keep each leg on a live Window of its lane. The reference re-syncs a leg's expiry from the refreshed
+  // oracle list (`ParlayBuilder.tsx` L145–159) because its oracle id survives the round; a Window here is a
+  // new id every round, so a leg whose Window has left the live set moves to the soonest live Window of
+  // the same asset and lane — the one `useNextWindow` would name — skipping any Window another leg holds.
+  // The SAME `prev` comes back when nothing changed, for the reference's own reason: a fresh array on
+  // every pass would re-render forever.
+  useEffect(() => {
+    setLegs((prev) => {
+      let changed = false;
+      const used = new Set(prev.map((l) => l.marketId));
+      const next = prev.map((leg) => {
+        if (byId.has(leg.marketId)) return leg;
+        const successor = windows.find((w) => w.asset === leg.asset && w.intervalSec === leg.intervalSec && !used.has(w.marketId));
+        if (!successor) return leg;
+        used.add(successor.marketId);
+        changed = true;
+        return { ...leg, marketId: successor.marketId };
+      });
+      return changed ? next : prev;
+    });
+  }, [byId, windows]);
 
   /** One-tap "BTC close streak": UP at the soonest distinct BTC Windows. */
   const btcWindows = useMemo(() => windows.filter((w) => w.asset.toUpperCase() === "BTC"), [windows]);
@@ -77,7 +101,7 @@ export function ParlayBuilder({ reserve, symbol }: ParlayBuilderProps) {
       notify.warning(PARLAY.builder.presetNeedTwo);
       return;
     }
-    setLegs(picks.map((w) => ({ key: newKey(), marketId: w.marketId, side: "up" })));
+    setLegs(picks.map((w) => ({ key: newKey(), marketId: w.marketId, asset: w.asset, intervalSec: w.intervalSec, side: "up" })));
     setSolveMode("fixStake");
     setStakeInput("5");
   }, [btcWindows, maxLegs]);
@@ -89,6 +113,7 @@ export function ParlayBuilder({ reserve, symbol }: ParlayBuilderProps) {
   const mode: ParlayMode = solveMode === "fixStake" ? { kind: "fixStake", stakeBase } : { kind: "fixPayout", maxPayoutBase: payoutBase };
   const quoteState = useParlayQuote({ legs: legInputs, mode, params, enabled: legs.length >= 2 && !reserve.paused });
   const { quote } = quoteState;
+  const thin = useMemo(() => parseThinBook(quoteState.error), [quoteState.error]);
   const walletSpendableBase = sheet && isOk(sheet) ? sheet.value.spendableBase : null;
   const marketOf = useCallback((leg: DraftLeg) => byId.get(leg.marketId) ?? null, [byId]);
 
@@ -105,7 +130,9 @@ export function ParlayBuilder({ reserve, symbol }: ParlayBuilderProps) {
     setErrorDetail("");
     setTxHash(null);
     setStep("placing");
-    const outcome = await writes.open(legInputs, quote.maxPayoutBase, quote.stakeBase);
+    // The Range lane's headroom: a quote that drifts a fraction before it lands is still the deal shown,
+    // not a bounce, a re-quote at the same figure and a loop that reads "changed from 5 to 5".
+    const outcome = await writes.open(legInputs, quote.maxPayoutBase, mulBpsCeil(quote.stakeBase, 10_000 + RANGE_STAKE_HEADROOM_BPS));
     if (!outcome) {
       setStep("idle");
       return;
@@ -122,8 +149,9 @@ export function ParlayBuilder({ reserve, symbol }: ParlayBuilderProps) {
     }
     setStep("error");
     if (outcome.status === "requote") {
-      setErrorTitle(diagnosisCopy("requote").headline);
-      setErrorDetail(PARLAY.ticket.requote(formatBaseUnits(outcome.stakeBase, decimals), symbol));
+      // The actionable sentence is the headline, not a line behind "technical details".
+      setErrorTitle(PARLAY.ticket.requote(formatBaseUnits(outcome.stakeBase, decimals), symbol));
+      setErrorDetail("");
       quoteState.retry();
       return;
     }
@@ -177,7 +205,19 @@ export function ParlayBuilder({ reserve, symbol }: ParlayBuilderProps) {
             </div>
           ) : (
             legs.map((leg, i) => (
-              <LegRow key={leg.key} index={i} leg={leg} market={marketOf(leg)} windows={windows} legProbBps={quote?.legProbBps[i] ?? null} nowMs={nowMs} onPatch={patchLeg} onRemove={removeLeg} />
+              <LegRow
+                key={leg.key}
+                index={i}
+                leg={leg}
+                market={marketOf(leg)}
+                windows={windows}
+                legProbBps={quote?.legProbBps[i] ?? null}
+                thin={thin && thin.marketId.toLowerCase() === leg.marketId.toLowerCase() ? thin : null}
+                decimals={decimals}
+                nowMs={nowMs}
+                onPatch={patchLeg}
+                onRemove={removeLeg}
+              />
             ))
           )}
 

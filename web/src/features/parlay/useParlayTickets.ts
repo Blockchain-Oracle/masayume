@@ -1,6 +1,5 @@
 "use client";
 
-import { MARKETS_POLL_MS } from "@masayume/core/constants";
 import type { ParlayLeg, ParlayTicket } from "@masayume/core/parlay";
 import type { Reading } from "@masayume/core/schemas";
 import type { Address, IndexedStatus, MarketId } from "@masayume/core/types";
@@ -49,6 +48,9 @@ export async function listParlayTickets(wallet: Address): Promise<Reading<Parlay
   });
 }
 
+/** A leg settles the moment its Window does; fifteen seconds (the lanes\' poll) left a won ticket reading "open" for most of a minute. */
+const PARLAY_SLIP_POLL_MS = 8_000;
+
 export function useParlayTickets(wallet: Address | null): Reading<ParlayTicketView[]> | null {
-  return useReadingQuery(parlayTicketsKey(wallet), () => listParlayTickets(wallet as Address), { pollMs: MARKETS_POLL_MS, enabled: wallet !== null });
+  return useReadingQuery(parlayTicketsKey(wallet), () => listParlayTickets(wallet as Address), { pollMs: PARLAY_SLIP_POLL_MS, enabled: wallet !== null });
 }

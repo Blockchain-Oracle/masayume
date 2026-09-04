@@ -2,16 +2,20 @@
 
 import { formatCadence } from "@masayume/core/market";
 import type { EventMarket, MarketId, Side } from "@masayume/core/types";
+import { formatBaseUnits } from "@masayume/core/units";
 import { ChevronDown, TrendingDown, TrendingUp, X } from "lucide-react";
 import { useState } from "react";
 import { Countdown } from "@/components/data";
 import { cn } from "@/lib/utils";
 import { PARLAY } from "./copy";
-import { formatBpsPct, formatLine } from "./format";
+import { formatBpsPct, formatLine, type ThinBook } from "./format";
 
 export interface DraftLeg {
   key: string;
   marketId: MarketId;
+  /** The lane the leg lives on, so it can follow the lane when its Window rolls. */
+  asset: string;
+  intervalSec: number;
   side: Side;
 }
 
@@ -22,6 +26,9 @@ interface LegRowProps {
   market: EventMarket | null;
   windows: readonly EventMarket[];
   legProbBps: number | null;
+  /** The reserve's `ThinBook` for this leg's Window, when that is why the ticket has no price. */
+  thin: ThinBook | null;
+  decimals: number;
   nowMs: number;
   onPatch: (key: string, patch: Partial<DraftLeg>) => void;
   onRemove: (key: string) => void;
@@ -32,12 +39,12 @@ interface LegRowProps {
  * Up/Down pair, the line, the live per-leg probability. The reference's strike picker becomes a
  * read-only line here — on DreamDEX a Window's line is its opening print, not something to choose.
  */
-export function LegRow({ index, leg, market, windows, legProbBps, nowMs, onPatch, onRemove }: LegRowProps) {
+export function LegRow({ index, leg, market, windows, legProbBps, thin, decimals, nowMs, onPatch, onRemove }: LegRowProps) {
   const [showWindows, setShowWindows] = useState(false);
   const { builder } = PARLAY;
 
   const choose = (next: EventMarket) => {
-    onPatch(leg.key, { marketId: next.marketId });
+    onPatch(leg.key, { marketId: next.marketId, asset: next.asset, intervalSec: next.intervalSec });
     setShowWindows(false);
   };
 
@@ -110,7 +117,11 @@ export function LegRow({ index, leg, market, windows, legProbBps, nowMs, onPatch
               )}
             </div>
 
-            <span className="pl-prob">{legProbBps !== null ? formatBpsPct(legProbBps) : "·"}</span>
+            {thin ? (
+              <span className="pl-prob pl-prob--thin">{builder.thin(formatBaseUnits(thin.filledRaw, decimals, { minDp: 0, maxDp: 2 }), formatBaseUnits(thin.depthRaw, decimals, { minDp: 0, maxDp: 2 }))}</span>
+            ) : (
+              <span className="pl-prob">{legProbBps !== null ? formatBpsPct(legProbBps) : "·"}</span>
+            )}
           </div>
         </div>
       </div>

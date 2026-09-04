@@ -219,3 +219,5 @@
 .pl-line-pending { color: var(--gray-500); font-family: var(--font-mono); font-size: 11px; }
 /* font-mono text-[11px] text-vermilion/80 w-9 text-right flex-shrink-0 */
 .pl-prob { font-family: var(--font-mono); font-size: 11px; color: color-mix(in srgb, var(--vermilion) 80%, transparent); width: 36px; text-align: right; flex-shrink: 0; }
+/* the reserve's ThinBook on the row it names — two figures, in the refusal's own colour */
+.pl-prob--thin { width: auto; white-space: nowrap; color: var(--vermilion); }

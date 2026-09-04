@@ -1,3 +1,4 @@
+import type { Diagnosis, MarketId } from "@masayume/core/types";
 import { formatOracleRaw } from "@masayume/core/units";
 import { ORACLE_SCALE } from "../markets/hero/units";
 
@@ -43,4 +44,22 @@ export function formatLineShort(openingPriceRaw: bigint): string {
 
 export function utilizationPct(bps: number): string {
   return String(Math.round(bps / 100));
+}
+
+export interface ThinBook {
+  marketId: MarketId;
+  filledRaw: bigint;
+  depthRaw: bigint;
+}
+
+/**
+ * `ThinBook(marketId, filled, depth)` as the reserve reverts it (`ParlayPricing.sol` L122) —
+ * `diagnoseNamedRevert` prints the arguments into `technical`, so the leg and its two figures
+ * can be named on the row instead of hidden in a tooltip.
+ */
+export function parseThinBook(diagnosis: Diagnosis | null): ThinBook | null {
+  if (!diagnosis || diagnosis.errorName !== "ThinBook") return null;
+  const match = /^ThinBook\((0x[0-9a-fA-F]+), (\d+), (\d+)\)$/.exec(diagnosis.technical);
+  if (!match) return null;
+  return { marketId: match[1] as MarketId, filledRaw: BigInt(match[2]!), depthRaw: BigInt(match[3]!) };
 }

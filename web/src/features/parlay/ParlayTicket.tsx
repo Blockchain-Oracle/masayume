@@ -10,7 +10,7 @@ import { diagnosisCopy } from "@/lib/copy";
 import { formatCadence } from "@masayume/core/market";
 import { cn } from "@/lib/utils";
 import { PARLAY } from "./copy";
-import { formatBpsPct, formatLine, formatMultiplier, formatProbPct, utilizationPct } from "./format";
+import { formatBpsPct, formatLine, formatMultiplier, formatProbPct, parseThinBook, utilizationPct } from "./format";
 import type { DraftLeg } from "./LegRow";
 import { AmountField, ErrorBlock, PlaceButton, Row, type PlaceStep } from "./TicketParts";
 
@@ -46,6 +46,10 @@ export interface ParlayTicketProps {
 export function ParlayTicket(props: ParlayTicketProps) {
   const { legs, marketOf, reserve, symbol, nowMs, quote, quoteLoading, quoteError, onRetryQuote, solveMode, onSolveMode } = props;
   const { stakeInput, onStakeInput, payoutInput, onPayoutInput, walletSpendableBase, step, errorTitle, errorDetail, txHash, onPlace, onReset } = props;
+  // The reserve's ThinBook names a Window; the row it belongs to and its two figures go on the line, not in a tooltip.
+  const thin = parseThinBook(quoteError);
+  const thinLeg = thin ? legs.findIndex((leg) => leg.marketId.toLowerCase() === thin.marketId.toLowerCase()) : -1;
+  const contracts = (raw: bigint) => formatBaseUnits(raw, reserve.decimals, { minDp: 0, maxDp: 2 });
   const { ticket } = PARLAY;
   const { decimals } = reserve;
   const one = oneUnit(decimals);
@@ -135,8 +139,8 @@ export function ParlayTicket(props: ParlayTicketProps) {
               )}
 
               {quoteError && (
-                <button type="button" onClick={onRetryQuote} className="pl-quote-err" title={quoteError.technical}>
-                  {diagnosisCopy(quoteError.kind).headline} · {ticket.retry}
+                <button type="button" onClick={onRetryQuote} className="pl-quote-err" title={thin ? undefined : quoteError.technical}>
+                  {thin ? ticket.thinBook(thinLeg + 1, contracts(thin.filledRaw), contracts(thin.depthRaw)) : diagnosisCopy(quoteError.kind).headline} · {ticket.retry}
                 </button>
               )}
 

@@ -61,6 +61,8 @@ export const PARLAY = {
     linePending: "opening print pending",
     remove: "Remove leg",
     pickWindow: "Pick a Window",
+    /** The reserve's floor per leg is fixed (`ParlayPricing.sol`), so no stake changes this — only the book can. */
+    thin: (filled: string, depth: string) => `${filled} of ${depth} contracts resting`,
   },
   ticket: {
     title: "Ticket",
@@ -95,6 +97,7 @@ export const PARLAY = {
     viewTx: "View on the Shannon explorer",
     trophy: "Every leg must settle in the money. The instant one leg settles against you, the ticket is dead, and your stake is the most you can lose.",
     toast: (n: number, stake: string, payout: string, symbol: string) => `Parlay placed. ${n} legs, ${stake} to ${payout} ${symbol} if every leg lands.`,
+    thinBook: (leg: number, filled: string, depth: string) => `Leg ${leg}'s book is thin — ${filled} of ${depth} contracts resting. Wait for the maker to lay more, or pick another Window.`,
     requote: (stake: string, symbol: string) => `The book moved — this ticket now costs ${stake} ${symbol}. Confirm again to place it at the new price.`,
   },
   slip: {
