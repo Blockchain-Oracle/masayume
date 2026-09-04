@@ -144,6 +144,16 @@ function source(name: SfxName): AudioBufferSourceNode | null {
   return node;
 }
 
+/**
+ * The effects bus for a cue synthesized in code rather than played from a file (the arcade's): the
+ * context and the gain the effects slider governs — or null when silenced, locked, or absent, so a
+ * caller can build nothing rather than a graph nobody hears.
+ */
+export function sfxBus(): { ctx: AudioContext; out: GainNode } | null {
+  if (sfxVolume === 0 || !unlocked || !ctx || !sfxGain) return null;
+  return { ctx, out: sfxGain };
+}
+
 /** Fire and forget. A no-op when silenced, locked, or not yet loaded. */
 export function playSfx(name: SfxName): void {
   try {

@@ -1,12 +1,13 @@
 "use client";
 
 import type { ArcadeGame } from "@masayume/core/games/arcade";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useWalletSession } from "@/lib/wallet-session";
 import { gameEntry } from "../catalog";
 import { useGameKey } from "../duel/useGameKey";
 import { useRoomToken } from "../duel/useRoomToken";
 import { useGames } from "../GamesProvider";
+import { hopCrashSfx, hopScoreSfx, milestoneSfx, regainSfx, rideCrashSfx, rideStartSfx } from "./arcade-sfx";
 import { ArcadeBoard } from "./ArcadeBoard";
 import { OverOverlay, TitleOverlay, type PostState } from "./ArcadeOverlays";
 import { ARCADE } from "./copy";
@@ -56,6 +57,8 @@ export function ArcadeStage({ game }: { game: ArcadeGame }) {
   const [end, setEnd] = useState<RunEnd | null>(null);
   const [postState, setPostState] = useState<PostState>({ kind: "local", why: null });
   const [sessionBest, setSessionBest] = useState<number | null>(null);
+  /** Gaps cleared in a row this run: the hop's "tuiing" climbs with it and it resets every run. */
+  const streakRef = useRef(0);
 
   // Reduced motion offers the calmer ramp; it stays a choice the player can flip either way.
   useEffect(() => {
@@ -64,36 +67,61 @@ export function ArcadeStage({ game }: { game: ArcadeGame }) {
 
   const start = useCallback(() => {
     feedback("tap");
+    if (game === "line-rider") rideStartSfx();
+    streakRef.current = 0;
     setEnd(null);
     setHud(HUD_ZERO);
     setPostState({ kind: "local", why: null });
     setRun((held) => ({ id: (held?.id ?? 0) + 1, seed: board?.seed ?? localSeed(), calm }));
     setPhase("playing");
-  }, [board?.seed, calm, feedback]);
+  }, [board?.seed, calm, feedback, game]);
 
   const onEnd = useCallback(
     (result: RunEnd) => {
-      feedback("deny");
+      // The hop already sounded its crash at the impact; the ride's wipeout is the moment grip runs out.
+      if (game === "line-rider") {
+        rideCrashSfx();
+        feedback("crash");
+      }
       setEnd(result);
       setPhase("over");
       setSessionBest((best) => (best === null ? result.score : Math.max(best, result.score)));
       if (ability === "yes") {
         setPostState({ kind: "checking" });
-        void post(result).then(setPostState);
+        void post(result).then((outcome) => {
+          setPostState(outcome);
+          if (outcome.kind === "posted" && outcome.isBest) feedback("card-win");
+        });
       } else {
         setPostState(localWhy(ability));
         void refresh();
       }
     },
-    [ability, feedback, post, refresh],
+    [ability, feedback, game, post, refresh],
   );
 
   const onRideHud = useCallback((h: RideHud) => setHud({ score: h.score, combo: h.multiplier }), []);
   const onFlapHud = useCallback((h: FlapHud) => setHud({ score: h.score, combo: 1 }), []);
-  const onRideCue = useCallback((cue: RideCue) => feedback(cue === "milestone" ? "confirm" : "tap"), [feedback]);
+  const onRideCue = useCallback(
+    (cue: RideCue) => {
+      if (cue.kind === "milestone") {
+        milestoneSfx(cue.mult);
+        feedback("confirm");
+      } else {
+        regainSfx();
+        feedback("tap");
+      }
+    },
+    [feedback],
+  );
   const onFlapCue = useCallback(
     (cue: FlapCue) => {
-      if (cue === "score") feedback("tap");
+      if (cue === "flap") feedback("tap");
+      else if (cue === "score") hopScoreSfx(streakRef.current++);
+      else {
+        hopCrashSfx();
+        feedback("crash");
+      }
     },
     [feedback],
   );

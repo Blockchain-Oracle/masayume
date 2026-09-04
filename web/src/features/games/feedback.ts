@@ -8,14 +8,16 @@ import { playSfx, type SfxName } from "./audio";
  * The three original cues stay as names so nothing that calls them has to change: `tap` is a buzz
  * only, because every control under `/games` already sounds its own press and release; `confirm` is
  * a buzz only, because the swipe that confirms has its own two sounds; `deny` is the refusal sample.
+ * `crash` is the arcade's wipeout — a buzz only, because the arcade synthesizes its own sound for it.
  * The rest are Flicky's cue moments by name.
  */
-export type FeedbackCue = "tap" | "confirm" | "deny" | SfxName;
+export type FeedbackCue = "tap" | "confirm" | "deny" | "crash" | SfxName;
 
 const SAMPLE: Readonly<Record<FeedbackCue, SfxName | null>> = {
   tap: null,
   confirm: null,
   deny: "card-loss",
+  crash: null,
   "swipe-up": "swipe-up",
   "swipe-down": "swipe-down",
   "card-win": "card-win",
@@ -33,6 +35,7 @@ const VIBRATE_MS: Readonly<Record<FeedbackCue, number>> = {
   tap: 8,
   confirm: 18,
   deny: 36,
+  crash: 60,
   "swipe-up": 18,
   "swipe-down": 18,
   "card-win": 24,

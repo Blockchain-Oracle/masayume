@@ -38,7 +38,8 @@ export interface RideHud {
   intensity: number;
 }
 
-export type RideCue = "regain" | "milestone";
+/** The pip found the line again; the combo crossed a whole number (which one rides along). */
+export type RideCue = { kind: "regain" } | { kind: "milestone"; mult: number };
 
 /** How fast a held arrow key moves the wheel, in wheel units a second. */
 const KEY_RATE = 1.4;
@@ -74,8 +75,8 @@ export function RideCanvas({ run, reduced, onHud, onEnd, onCue }: { run: ArcadeR
       const q = qFromTarget(input.target);
       recordRideInput(traceRef.current, state.tick, q);
       stepRide(state, q, rngRef.current, configRef.current);
-      if (state.regained) callbacks.current.onCue("regain");
-      if (state.milestoneHit) callbacks.current.onCue("milestone");
+      if (state.regained) callbacks.current.onCue({ kind: "regain" });
+      if (state.milestoneHit) callbacks.current.onCue({ kind: "milestone", mult: state.milestoneHit });
       if (state.tick % HUD_EVERY_TICKS === 0) hud(state);
       if (state.over) {
         hud(state);
