@@ -1,10 +1,12 @@
 import { isOk } from "@masayume/core/schemas";
 import { parseStrategyMetadata, type StrategyRecord } from "@masayume/core/strategies";
 import type { Bytes32 } from "@masayume/core/types";
-import { recordHeartbeat, recordStrategyFill, isDbConfigured } from "@masayume/db";
+import { msToSec } from "@masayume/core/units";
+import { isDbConfigured, markDecisionExecution, recordHeartbeat, recordStrategyFill } from "@masayume/db";
 import { createMemoryJournal, createSubmitterSession, ensureMarkets, marketsProvider, parseMarketsEnv, resolveVenueId, type SubmitterSession } from "@masayume/markets";
 import { getStrategy, listLiveSubscribers, resolveRegistryDeployment } from "@masayume/markets/strategies";
-import { scanVenue } from "./decide";
+import { agentBootLine, createAgentState, scanVenueWithAgent, warmAgentState, type AgentState } from "./agent";
+import { scanVenue, type Scan } from "./decide";
 import { readRunnerEnv, type RunnerEnv } from "./env";
 import { executeForSubscriber } from "./execute";
 
@@ -14,6 +16,7 @@ interface Runner {
   env: RunnerEnv;
   session: SubmitterSession | null;
   venueId: Bytes32;
+  agent: AgentState;
   log: Log;
 }
 
@@ -35,6 +38,12 @@ async function heartbeat(runner: Runner, strategyId: bigint, why: string, scanne
   if (!stored && isDbConfigured()) runner.log("heartbeat not stored: the database refused the row");
 }
 
+/** The house model or the agent, by the spec's preset; the execution loop below never knows which. */
+function scan(runner: Runner, strategy: StrategyRecord, spec: NonNullable<ReturnType<typeof parseStrategyMetadata>>["spec"], nowMs: number): Promise<Scan> {
+  if (spec.preset !== "agent") return scanVenue(runner.venueId, spec, nowMs);
+  return scanVenueWithAgent({ env: runner.env, venueId: runner.venueId, runnerKey: runner.session?.address ?? "unconfigured", agent: runner.agent, log: runner.log }, strategy, spec, nowMs);
+}
+
 async function cycle(runner: Runner, strategyId: bigint, nowMs: number): Promise<void> {
   const reading = await getStrategy(strategyId);
   if (!isOk(reading) || !reading.value) return heartbeat(runner, strategyId, `strategy unreadable: ${isOk(reading) ? "not on this registry" : reading.error.technical}`, 0, null);
@@ -45,23 +54,25 @@ async function cycle(runner: Runner, strategyId: bigint, nowMs: number): Promise
   }
   const meta = parseStrategyMetadata(strategy.metadata);
   if (!meta) return heartbeat(runner, strategyId, "metadata carries no readable spec; idle", 0, null);
-  if (meta.spec.preset === "agent") return heartbeat(runner, strategyId, "agent preset: this runner has no agent brain wired yet; holding", 0, null);
+  const isAgent = meta.spec.preset === "agent";
 
-  const scan = await scanVenue(runner.venueId, meta.spec, nowMs);
+  const scanned = await scan(runner, strategy, meta.spec, nowMs);
   const subscribers = await listLiveSubscribers(strategyId);
   const live = isOk(subscribers) ? subscribers.value : [];
-  if (scan.candidates.length === 0 || live.length === 0) {
-    return heartbeat(runner, strategyId, `${scan.why}; ${live.length} live subscriber${live.length === 1 ? "" : "s"}`, scan.scanned, scan.closestBps);
+  if (scanned.candidates.length === 0 || live.length === 0) {
+    return heartbeat(runner, strategyId, `${scanned.why}; ${live.length} live subscriber${live.length === 1 ? "" : "s"}`, scanned.scanned, scanned.closestBps);
   }
-  if (!runner.session) return heartbeat(runner, strategyId, `${scan.why}; no runner key configured, so nothing sent`, scan.scanned, scan.closestBps);
+  if (!runner.session) return heartbeat(runner, strategyId, `${scanned.why}; no runner key configured, so nothing sent`, scanned.scanned, scanned.closestBps);
 
   let filled = 0;
   let skipped = 0;
-  for (const { market, decision } of scan.candidates) {
+  for (const { market, decision } of scanned.candidates) {
+    let filledHere = 0;
+    let skippedHere = 0;
     for (const sub of live) {
       const result = await executeForSubscriber({ session: runner.session, sub, market, decision, nowMs, dryRun: runner.env.dryRun });
       if (result.status === "filled") {
-        filled += 1;
+        filledHere += 1;
         const { fill } = result;
         await recordStrategyFill({
           txHash: fill.txHash,
@@ -77,17 +88,21 @@ async function cycle(runner: Runner, strategyId: bigint, nowMs: number): Promise
         }).catch(() => false);
         runner.log(`#${strategyId}: filled ${fill.side} on ${market.asset}/${market.intervalSec}s for ${fill.owner} — ${fill.txHash}`);
       } else {
-        skipped += 1;
+        skippedHere += 1;
         runner.log(`#${strategyId}: ${sub.subscriber} ${result.status}${"reason" in result ? ` — ${result.reason}` : ` — would stake ${result.stakeBase}`}`);
       }
     }
+    filled += filledHere;
+    skipped += skippedHere;
+    if (isAgent) await markDecisionExecution(strategyId.toString(), market.marketId, filledHere, skippedHere).catch(() => false);
   }
-  await heartbeat(runner, strategyId, `${scan.why}; ${filled} filled, ${skipped} skipped${runner.env.dryRun ? " (dry run)" : ""}`, scan.scanned, scan.closestBps);
+  await heartbeat(runner, strategyId, `${scanned.why}; ${filled} filled, ${skipped} skipped${runner.env.dryRun ? " (dry run)" : ""}`, scanned.scanned, scanned.closestBps);
 }
 
 /**
- * The oracle-follow house runner (Story 6.5): a single writer over one key, trading each live
- * subscriber's own grant. Idle cycles emit heartbeats — never liveness theater.
+ * The house runner (Story 6.5): a single writer over one key, trading each live subscriber's own
+ * grant, whether the spec is the oracle-follow model or an agent whose calls a language model
+ * makes and a fixed gate rules on. Idle cycles emit heartbeats — never liveness theater.
  */
 export async function startStrategyRunner(log: Log): Promise<void> {
   const env = readRunnerEnv();
@@ -105,9 +120,16 @@ export async function startStrategyRunner(log: Log): Promise<void> {
   } else {
     log("RUNNER_PRIVATE_KEY is not set: scanning and reporting only, nothing can be sent");
   }
-  if (!isDbConfigured()) log("DATABASE_URL is not set: heartbeats and fills are logged here only");
+  if (!isDbConfigured()) log("DATABASE_URL is not set: heartbeats, fills and decisions are logged here only");
 
-  const runner: Runner = { env, session, venueId: venue.value.venueId, log };
+  const agent = createAgentState();
+  log(agentBootLine(agent));
+  if (agent.brain) {
+    const warmed = await warmAgentState(agent, msToSec(Date.now()));
+    log(`agent memory: ${warmed} Windows already read; budget ${env.agentMaxCallsPerHour} calls/h, ${env.agentTimeoutMs} ms per read`);
+  }
+
+  const runner: Runner = { env, session, venueId: venue.value.venueId, agent, log };
   const tick = async () => {
     await marketsProvider.syncClock();
     for (const id of env.strategyIds) {
