@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
+import { createChipBed, type ChipBed } from "./bed";
 
 /**
  * Game audio: effects through Web Audio (decoded buffers, so rapid swipes overlap instead of cutting
- * each other off) and a music bed through a looping <audio> element. No dependency.
+ * each other off) and a music bed sequenced on the same clock (`bed.ts`). No dependency, no track.
  *
  * Flicky's grammar (`apps/web/src/lib/sound.ts`), re-implemented rather than copied: ten Kenney CC0
  * effects (`public/sounds/SOURCES.md`), unlocked on the first gesture, every load and play error
@@ -29,8 +30,8 @@ export const SFX_FILES: Readonly<Record<SfxName, string>> = {
   "modal-close": "/sounds/modal-close.mp3",
 };
 
-/** No CC0 bed ships yet: Flicky's is Uppbeat-licensed (a visible per-download credit), which is not ours to carry. */
-export const BGM_FILE: string | null = null;
+/** The bed is ours, sequenced in `bed.ts`: Flicky's track is Uppbeat-licensed (a visible per-download credit), which is not ours to carry. */
+export const BGM_BED = "chip" as const;
 
 const SFX_VOLUME_KEY = "masayume.games.sfxVolume";
 const BGM_VOLUME_KEY = "masayume.games.bgmVolume";
@@ -58,7 +59,8 @@ let unlocked = false;
 let ctx: AudioContext | null = null;
 let sfxGain: GainNode | null = null;
 const buffers = new Map<SfxName, AudioBuffer>();
-let bgm: HTMLAudioElement | null = null;
+let bed: ChipBed | null = null;
+let bedGain: GainNode | null = null;
 let bgmWanted = false;
 let lastPress: Variation | null = null;
 let pressedAtMs = 0;
@@ -207,11 +209,6 @@ export function releaseSfx(): void {
 /** Request the music loop. Idempotent; respects the slider, the unlock and the tab's visibility. */
 export function startBgm(): void {
   bgmWanted = true;
-  if (!bgm && BGM_FILE && typeof Audio !== "undefined") {
-    bgm = new Audio(BGM_FILE);
-    bgm.loop = true;
-    bgm.volume = BGM_VOLUME_BASE * bgmVolume;
-  }
   syncBgm();
 }
 
@@ -220,12 +217,25 @@ export function stopBgm(): void {
   syncBgm();
 }
 
+/** The bed's own gain sits under the slider and beside the effects', on the context the unlock made. */
+function ensureBed(): ChipBed | null {
+  if (bed || !ctx) return bed;
+  try {
+    bedGain = ctx.createGain();
+    bedGain.gain.value = BGM_VOLUME_BASE * bgmVolume;
+    bedGain.connect(ctx.destination);
+    bed = createChipBed(ctx, bedGain);
+  } catch {
+    bed = null;
+  }
+  return bed;
+}
+
 /** One reconciler: play exactly when wanted, unlocked, audible and visible. */
 function syncBgm(): void {
-  if (!bgm) return;
   const hidden = typeof document !== "undefined" && document.hidden;
-  if (bgmWanted && unlocked && bgmVolume > 0 && !hidden) void bgm.play().catch(() => undefined);
-  else bgm.pause();
+  if (bgmWanted && unlocked && bgmVolume > 0 && !hidden) ensureBed()?.start();
+  else bed?.stop();
 }
 
 if (typeof document !== "undefined") document.addEventListener("visibilitychange", syncBgm);
@@ -263,7 +273,7 @@ export function setBgmVolume(value: number): void {
   } catch {
     // storage unavailable — the level still applies for this session
   }
-  if (bgm) bgm.volume = BGM_VOLUME_BASE * bgmVolume;
+  if (bedGain) bedGain.gain.value = BGM_VOLUME_BASE * bgmVolume;
   syncBgm();
   emit();
 }

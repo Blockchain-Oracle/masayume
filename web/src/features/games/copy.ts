@@ -132,8 +132,8 @@ export const GAMES = {
     title: "Game settings",
     intro: "These apply the moment you change them, and they stay on this device.",
     sfx: { label: "Sound effects", hint: "Swipes, the match, each card as it settles, and the result. Zero is silent." },
-    music: { label: "Music", hint: "A bed under the games. Zero is silent.", none: "No music bed ships on this deployment yet — the one the reference plays is not CC0." },
-    credits: "Sound effects by Kenney (kenney.nl), CC0. Pixel type m6x11plus by Daniel Linssen.",
+    music: { label: "Music", hint: "A chiptune bed under the games, sequenced by the app itself rather than played from a track. Zero is silent." },
+    credits: "Sound effects by Kenney (kenney.nl), CC0. The music bed is this app's own. Pixel type m6x11plus by Daniel Linssen.",
     haptics: { label: "Haptics", hint: "A short buzz on the same moments." },
     hapticsUnsupported: "This device does not report vibration support.",
     motion: {

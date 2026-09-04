@@ -1,9 +1,10 @@
 # Sound sources
 
 Every effect here is CC0 (public domain) from Kenney — no attribution required; recorded for provenance.
-Re-encoded with `ffmpeg -vn -codec:a libmp3lame -qscale:a 4`. No music bed ships: the one the reference
-duel uses is Uppbeat-licensed (a visible per-download credit), which is not ours to carry; a CC0 track
-slots into `audio.ts`'s `BGM_FILE` when one is chosen.
+Re-encoded with `ffmpeg -vn -codec:a libmp3lame -qscale:a 4`. No music file ships: the bed the reference
+duel plays is Uppbeat-licensed (a visible per-download credit), which is not ours to carry, so the bed is
+sequenced in code instead — `src/features/games/bed.ts`, an eight-bar chiptune loop written for this app in
+Pips's method (oscillators and noise on the Web Audio clock). Its provenance is that file.
 
 | File | Original | Pack |
 |---|---|---|

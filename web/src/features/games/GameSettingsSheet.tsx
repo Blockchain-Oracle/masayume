@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
-import { BGM_FILE, playSfx, setBgmVolume, setSfxVolume, useBgmVolume, useModalSfx, useSfxVolume } from "./audio";
+import { BGM_BED, playSfx, setBgmVolume, setSfxVolume, useBgmVolume, useModalSfx, useSfxVolume } from "./audio";
 import { GAMES } from "./copy";
 import { fireFeedback, hapticsSupported } from "./feedback";
 import { useGames } from "./GamesProvider";
@@ -76,20 +76,19 @@ export function GameSettingsSheet() {
           <label className="gm-set-row gm-set-row--stack">
             <span className="gm-set-text">
               <span className="gm-set-label">{GAMES.settings.music.label}</span>
-              <span className="gm-set-hint">{BGM_FILE ? GAMES.settings.music.hint : GAMES.settings.music.none}</span>
+              <span className="gm-set-hint">{GAMES.settings.music.hint}</span>
             </span>
-            {BGM_FILE && (
-              <input
-                type="range"
-                className="gm-range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={bgmVolume}
-                aria-label={GAMES.settings.music.label}
-                onChange={(event) => setBgmVolume(Number(event.target.value))}
-              />
-            )}
+            <input
+              type="range"
+              className="gm-range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={bgmVolume}
+              aria-label={GAMES.settings.music.label}
+              data-bed={BGM_BED}
+              onChange={(event) => setBgmVolume(Number(event.target.value))}
+            />
           </label>
 
           <label className="gm-set-row">
