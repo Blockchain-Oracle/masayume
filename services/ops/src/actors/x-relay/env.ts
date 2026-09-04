@@ -1,11 +1,15 @@
+import type { OAuth1Credentials } from "./oauth1";
+
 /** What the relay needs, and what is missing — read once, reported in the heartbeat, never a crash. */
 export interface RelayEnv {
   bearerToken: string;
   accountId: string;
   executorPrivateKey: `0x${string}`;
   postingEnabled: boolean;
-  /** A user-context token with tweet.write; app-only bearers can read mentions but cannot reply. */
+  /** A user-context OAuth 2.0 token with tweet.write; app-only bearers can read mentions but cannot reply. */
   userAccessToken: string | null;
+  /** The portal's OAuth 1.0a access token for the account's own app — the other way to reply. */
+  oauth1: OAuth1Credentials | null;
   pollMs: number;
   databaseUrl: string;
 }
@@ -16,9 +20,28 @@ export const RELAY_ENV = {
   executor: "X_EXECUTOR_PRIVATE_KEY",
   posting: "X_POSTING_ENABLED",
   userToken: "X_USER_ACCESS_TOKEN",
+  apiKey: "X_API_KEY",
+  apiKeySecret: "X_API_KEY_SECRET",
+  accessToken: "X_ACCESS_TOKEN",
+  accessTokenSecret: "X_ACCESS_TOKEN_SECRET",
   poll: "X_POLL_MS",
   db: "DATABASE_URL",
 } as const;
+
+/** All four or none: a half-pasted OAuth 1.0a set signs nothing, and the heartbeat should say which half. */
+export function readOAuth1(env: NodeJS.ProcessEnv = process.env): { credentials: OAuth1Credentials | null; partial: string[] } {
+  const values = {
+    consumerKey: env.X_API_KEY ?? "",
+    consumerSecret: env.X_API_KEY_SECRET ?? "",
+    accessToken: env.X_ACCESS_TOKEN ?? "",
+    accessTokenSecret: env.X_ACCESS_TOKEN_SECRET ?? "",
+  };
+  const names = [RELAY_ENV.apiKey, RELAY_ENV.apiKeySecret, RELAY_ENV.accessToken, RELAY_ENV.accessTokenSecret];
+  const present = Object.values(values).map((v) => v.length > 0);
+  if (present.every(Boolean)) return { credentials: values, partial: [] };
+  if (present.some(Boolean)) return { credentials: null, partial: names.filter((_, i) => !present[i]) };
+  return { credentials: null, partial: [] };
+}
 
 const DEFAULT_POLL_MS = 20_000;
 
@@ -44,6 +67,7 @@ export function readRelayEnv(): RelayEnvReading {
       executorPrivateKey: executorPrivateKey as `0x${string}`,
       postingEnabled: process.env.X_POSTING_ENABLED === "1" || process.env.X_POSTING_ENABLED === "true",
       userAccessToken: process.env.X_USER_ACCESS_TOKEN || null,
+      oauth1: readOAuth1().credentials,
       pollMs: Number.isFinite(pollMs) && pollMs >= 5_000 ? pollMs : DEFAULT_POLL_MS,
       databaseUrl,
     },

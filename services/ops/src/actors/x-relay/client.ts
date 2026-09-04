@@ -1,3 +1,5 @@
+import { type OAuth1Credentials, oauth1Header } from "./oauth1";
+
 /** The X API v2 slice the relay uses: the account's mentions timeline, and a reply. */
 const API = "https://api.x.com/2";
 const PAGE = 100;
@@ -34,11 +36,23 @@ export async function fetchMentions(bearerToken: string, accountId: string, sinc
     .sort((a, b) => (BigInt(a.id) < BigInt(b.id) ? -1 : 1));
 }
 
-/** A reply under the mention. Needs a user-context token; the relay says so when it has none. */
-export async function replyTo(userAccessToken: string, mentionId: string, text: string): Promise<string | null> {
-  const response = await fetch(`${API}/tweets`, {
+/**
+ * What lets the relay post as the account: an OAuth 2.0 user-context token (from an authorization-code
+ * flow with `tweet.write`), or the OAuth 1.0a access token the developer portal issues for the account's
+ * own app. Either signs `POST /2/tweets`; the portal's is the one an owner can paste without a flow.
+ */
+export type PostingAuth = { kind: "oauth2"; userAccessToken: string } | { kind: "oauth1"; credentials: OAuth1Credentials };
+
+function authorization(auth: PostingAuth, method: "GET" | "POST", url: string): string {
+  return auth.kind === "oauth2" ? `Bearer ${auth.userAccessToken}` : oauth1Header(auth.credentials, method, url);
+}
+
+/** A reply under the mention. Needs a user-context credential; the relay says so when it has none. */
+export async function replyTo(auth: PostingAuth, mentionId: string, text: string): Promise<string | null> {
+  const url = `${API}/tweets`;
+  const response = await fetch(url, {
     method: "POST",
-    headers: { authorization: `Bearer ${userAccessToken}`, "content-type": "application/json" },
+    headers: { authorization: authorization(auth, "POST", url), "content-type": "application/json" },
     body: JSON.stringify({ text, reply: { in_reply_to_tweet_id: mentionId } }),
   });
   if (!response.ok) throw new Error(`reply ${response.status}: ${(await response.text()).slice(0, 200)}`);
