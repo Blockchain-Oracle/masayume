@@ -7,6 +7,7 @@
  */
 export const DB_PACKAGE = "@masayume/db" as const;
 
+export * from "./arcade";
 export * from "./bettors";
 export * from "./client";
 export * from "./comments";

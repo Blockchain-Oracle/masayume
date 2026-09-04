@@ -49,8 +49,12 @@ export const ARCADE = {
     checking: "Checking the run…",
     /** The server said no: its own words, and the score stays on screen as a number nobody recorded. */
     refused: (why: string) => `Not recorded — ${why}`,
-    connectToPost: "Connect a wallet to post to the board",
-    noStore: "This deployment keeps no scores, so nothing is posted",
+    /** Why a run stayed local, by the reason the stage already knew before it started. */
+    local: {
+      signedOut: "Connect a wallet to post to the board",
+      noStore: "This deployment keeps no scores, so nothing is posted",
+      unavailable: "No room to vouch for a wallet here, so nothing is posted",
+    },
     again: "Play again",
     seed: (seed: string) => `seed ${seed}`,
     length: (sec: string) => `${sec}s`,
@@ -62,7 +66,9 @@ export const ARCADE = {
     you: "you",
     calm: "calm",
     loading: "Reading the board…",
-    pending: "The board lands with the score API, in the next step of this slice.",
+    unreachable: "The board did not answer. Play goes on; the score stays on this screen.",
+    noStore: "This deployment keeps no scores, so there is no board to read here.",
+    unavailable: "No duel room is configured here, so there is nothing to vouch for a wallet and scores stay local.",
     yours: (score: string, rank: number | null) => (rank === null ? `Your best ${score}` : `Your best ${score} · #${rank}`),
     connect: "Connect a wallet to post — play is open without one.",
   },

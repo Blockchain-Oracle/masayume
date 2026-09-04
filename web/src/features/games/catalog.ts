@@ -40,8 +40,8 @@ const READINESS: Readonly<Record<GameId, GameReadiness>> = {
   lucky: { kind: "pending", dependency: "the seeded draw and eligibility service (slice 5)" },
   range: { kind: "built" },
   moonshot: { kind: "pending", dependency: "the Moonshot solver over the live RangeReserve (slice 9)" },
-  "line-rider": { kind: "pending", dependency: "the ride engine and its score API (slice 4)" },
-  "candle-hop": { kind: "pending", dependency: "the flight engine and its score API (slice 4)" },
+  "line-rider": { kind: "built" },
+  "candle-hop": { kind: "built" },
 };
 
 /** What a mode still waits on, for the page that stands in for it; "built" never reaches a pending page. */

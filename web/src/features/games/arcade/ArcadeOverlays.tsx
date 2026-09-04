@@ -11,8 +11,8 @@ import type { RunEnd } from "./run";
  * rows does not fit over it, and a board a player has to scroll inside a game screen is not a board.
  */
 export type PostState =
-  /** Play that posts nothing: no wallet, or a deployment with no store. Says which. */
-  | { kind: "local"; why: "signedOut" | "noStore" | null }
+  /** Play that posts nothing: no wallet, a deployment with no store, or no room to vouch for one. Says which. */
+  | { kind: "local"; why: "signedOut" | "noStore" | "unavailable" | null }
   | { kind: "checking" }
   | { kind: "posted"; rank: number; isBest: boolean }
   | { kind: "refused"; why: string };
@@ -43,7 +43,7 @@ function bannerOf(post: PostState): { banner: string; best: boolean; sub: string
     case "refused":
       return { banner: ARCADE.over.over, best: false, sub: ARCADE.over.refused(post.why), tone: "refused" };
     case "local":
-      return { banner: ARCADE.over.over, best: false, sub: post.why === "signedOut" ? ARCADE.over.connectToPost : post.why === "noStore" ? ARCADE.over.noStore : null, tone: null };
+      return { banner: ARCADE.over.over, best: false, sub: post.why === null ? null : ARCADE.over.local[post.why], tone: null };
   }
 }
 

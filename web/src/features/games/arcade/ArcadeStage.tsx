@@ -2,13 +2,18 @@
 
 import type { ArcadeGame } from "@masayume/core/games/arcade";
 import { useCallback, useEffect, useState } from "react";
+import { useWalletSession } from "@/lib/wallet-session";
 import { gameEntry } from "../catalog";
+import { useGameKey } from "../duel/useGameKey";
+import { useRoomToken } from "../duel/useRoomToken";
 import { useGames } from "../GamesProvider";
+import { ArcadeBoard } from "./ArcadeBoard";
 import { OverOverlay, TitleOverlay, type PostState } from "./ArcadeOverlays";
 import { ARCADE } from "./copy";
 import { FlapCanvas, type FlapCue, type FlapHud } from "./FlapCanvas";
 import { RideCanvas, type RideCue, type RideHud } from "./RideCanvas";
 import { localSeed, type ArcadePhase, type ArcadeRun, type RunEnd } from "./run";
+import { useArcadeScore, type PostAbility } from "./useArcadeScore";
 import "./arcade.css";
 
 /**
@@ -19,8 +24,11 @@ import "./arcade.css";
  * the field's own ink. Around it the page follows the theme like every other stage: the honesty note,
  * the calm switch, the board.
  *
- * Phase is Pips's three: title, playing, over. A run is a seed and the calm flag; what ends a run is
- * the engine, never the player — there is no quit, so every run that ends is a run that can be posted.
+ * Phase is Pips's three: title, playing, over. A run is a seed and the calm flag — the seed from the
+ * board's GET when it answered, the browser's own when it did not — and what ends a run is the engine,
+ * never the player: there is no quit, so every run that ends is a run that can be posted. Posting
+ * carries the duel room's token (the browser key's word for the wallet, no prompt); a signed-out player
+ * plays the same game and the board says "connect to post".
  */
 interface Hud {
   score: number;
@@ -29,8 +37,15 @@ interface Hud {
 
 const HUD_ZERO: Hud = { score: 0, combo: 1 };
 
+function localWhy(ability: PostAbility): PostState {
+  return { kind: "local", why: ability === "signedOut" ? "signedOut" : ability === "noStore" ? "noStore" : ability === "yes" ? null : "unavailable" };
+}
+
 export function ArcadeStage({ game }: { game: ArcadeGame }) {
   const { reducedMotion, feedback } = useGames();
+  const { address } = useWalletSession();
+  const { auth } = useRoomToken(useGameKey());
+  const { board, refresh, post, ability } = useArcadeScore(game, auth);
   const words = ARCADE.games[game];
   const Icon = gameEntry(game).nav.icon;
 
@@ -39,7 +54,7 @@ export function ArcadeStage({ game }: { game: ArcadeGame }) {
   const [calm, setCalm] = useState(false);
   const [hud, setHud] = useState<Hud>(HUD_ZERO);
   const [end, setEnd] = useState<RunEnd | null>(null);
-  const [post, setPost] = useState<PostState>({ kind: "local", why: null });
+  const [postState, setPostState] = useState<PostState>({ kind: "local", why: null });
   const [sessionBest, setSessionBest] = useState<number | null>(null);
 
   // Reduced motion offers the calmer ramp; it stays a choice the player can flip either way.
@@ -51,10 +66,10 @@ export function ArcadeStage({ game }: { game: ArcadeGame }) {
     feedback("tap");
     setEnd(null);
     setHud(HUD_ZERO);
-    setPost({ kind: "local", why: null });
-    setRun((held) => ({ id: (held?.id ?? 0) + 1, seed: localSeed(), calm }));
+    setPostState({ kind: "local", why: null });
+    setRun((held) => ({ id: (held?.id ?? 0) + 1, seed: board?.seed ?? localSeed(), calm }));
     setPhase("playing");
-  }, [calm, feedback]);
+  }, [board?.seed, calm, feedback]);
 
   const onEnd = useCallback(
     (result: RunEnd) => {
@@ -62,8 +77,15 @@ export function ArcadeStage({ game }: { game: ArcadeGame }) {
       setEnd(result);
       setPhase("over");
       setSessionBest((best) => (best === null ? result.score : Math.max(best, result.score)));
+      if (ability === "yes") {
+        setPostState({ kind: "checking" });
+        void post(result).then(setPostState);
+      } else {
+        setPostState(localWhy(ability));
+        void refresh();
+      }
     },
-    [feedback],
+    [ability, feedback, post, refresh],
   );
 
   const onRideHud = useCallback((h: RideHud) => setHud({ score: h.score, combo: h.multiplier }), []);
@@ -77,7 +99,9 @@ export function ArcadeStage({ game }: { game: ArcadeGame }) {
   );
 
   const playing = phase === "playing";
-  const liveBest = sessionBest === null ? (playing ? hud.score : null) : Math.max(sessionBest, hud.score);
+  const boardBest = board?.me?.best ?? null;
+  const best = sessionBest === null ? boardBest : boardBest === null ? sessionBest : Math.max(sessionBest, boardBest);
+  const liveBest = playing ? Math.max(best ?? 0, hud.score) : best;
 
   return (
     <div className="container gm-page">
@@ -114,8 +138,8 @@ export function ArcadeStage({ game }: { game: ArcadeGame }) {
               </div>
             )}
 
-            {phase === "title" && <TitleOverlay game={game} best={sessionBest} onPlay={start} />}
-            {phase === "over" && end && <OverOverlay end={end} post={post} onAgain={start} />}
+            {phase === "title" && <TitleOverlay game={game} best={best} onPlay={start} />}
+            {phase === "over" && end && <OverOverlay end={end} post={postState} onAgain={start} />}
           </div>
 
           <div className="ar-readout">
@@ -130,11 +154,7 @@ export function ArcadeStage({ game }: { game: ArcadeGame }) {
         </div>
 
         <aside className="ar-side">
-          <div className="ar-note">
-            <span className="ar-note-k">{ARCADE.note.label}</span>
-            <p className="ar-note-body">{ARCADE.note.body}</p>
-            <p className="ar-honesty">{ARCADE.honesty}</p>
-          </div>
+          <ArcadeBoard board={board} you={address} post={postState} ability={ability} />
 
           <label className="ar-note ar-calm">
             <input type="checkbox" checked={calm} disabled={playing} onChange={(event) => setCalm(event.target.checked)} />
@@ -144,12 +164,10 @@ export function ArcadeStage({ game }: { game: ArcadeGame }) {
             </span>
           </label>
 
-          <div className="ar-note ar-board">
-            <div className="ar-board-head">
-              <span className="ar-board-title">{ARCADE.board.title}</span>
-            </div>
-            <p className="ar-board-empty">{ARCADE.board.pending}</p>
-            <p className="ar-board-foot">{ARCADE.honesty}</p>
+          <div className="ar-note">
+            <span className="ar-note-k">{ARCADE.note.label}</span>
+            <p className="ar-note-body">{ARCADE.note.body}</p>
+            <p className="ar-honesty">{ARCADE.honesty}</p>
           </div>
         </aside>
       </div>
