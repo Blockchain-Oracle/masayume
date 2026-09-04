@@ -10,7 +10,7 @@ import { gameEntriesInGroup, type GameEntry } from "./catalog";
 import { GAMES } from "./copy";
 import { GameCard, type CardStatus } from "./GameCard";
 import { GameProfileCard } from "./GameProfileCard";
-import { lastGamePlayed } from "./last-game";
+import { useLastGame } from "./last-game";
 import { MatchTile } from "./MatchTile";
 import { useRoomOccupancy, searchingNow } from "./duel/useRoomOccupancy";
 import { useSeason } from "./duel/useSeason";
@@ -29,7 +29,7 @@ import { SeasonBanner } from "./SeasonBanner";
 export function GamesHub() {
   const reserve = useRangeReserve();
   const { activeMatchId, match, feedback } = useGames();
-  const last = lastGamePlayed();
+  const last = useLastGame();
   /**
    * The duel's own occupancy, read here rather than on the duel page.
    *
