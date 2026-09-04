@@ -35,7 +35,7 @@ const NAV_BY_ID: Readonly<Record<GameId, NavItem>> = {
 
 /** Each pending mode names the concrete thing it waits on — a contract, a service, an engine. */
 const READINESS: Readonly<Record<GameId, GameReadiness>> = {
-  practice: { kind: "pending", dependency: "the practice deck and swipe stage (slice 3)" },
+  practice: { kind: "built" },
   duel: { kind: "pending", dependency: "GameArena, the deckmaster and matchmaking (slices 6–8)" },
   lucky: { kind: "pending", dependency: "the seeded draw and eligibility service (slice 5)" },
   range: { kind: "built" },

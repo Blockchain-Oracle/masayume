@@ -4,6 +4,8 @@ export * from "./deck";
 export * from "./lifecycle";
 export * from "./limits";
 export * from "./matchmaking";
+export * from "./picking";
+export * from "./practice";
 export * from "./projection";
 export * from "./protocol";
 export * from "./rating";

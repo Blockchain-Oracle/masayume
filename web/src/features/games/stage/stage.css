@@ -1,0 +1,117 @@
+/* The swipe stage — the deck, one card, the two calls, and the strip that says where you are.
+ *
+ * Shared by Practice and the Duel, so nothing here knows about money: the face is a slot the mode
+ * fills. Same two rules as games.css — dark values first with a `[data-theme="light"]` override, and
+ * every colour a Yosuku token or an alpha step over one.
+ */
+
+.st-stage { display: flex; flex-direction: column; gap: 16px; }
+
+/* ── Where you are in the deck ────────────────────────────────────────────── */
+
+.st-progress { display: flex; align-items: center; gap: 10px; }
+.st-pips { display: flex; align-items: center; gap: 6px; }
+.st-pip {
+  width: 22px; height: 4px; border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.14);
+  transition: background 200ms var(--ease);
+}
+[data-theme="light"] .st-pip { background: rgba(20, 18, 16, 0.14); }
+.st-pip--active { background: var(--gm-accent, var(--vermilion)); }
+.st-pip--up { background: var(--profit); }
+.st-pip--down { background: var(--loss); }
+.st-progress-label {
+  margin-left: auto;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--gray-500);
+}
+
+/* ── The stack ────────────────────────────────────────────────────────────── */
+
+/* The stack keeps its own height so the two calls do not jump when a card leaves and the next
+ * arrives one frame later. `min-height` rather than a fixed height: a face with more to say grows. */
+.st-deck { position: relative; min-height: 268px; }
+
+.st-card {
+  position: relative;
+  display: flex; flex-direction: column; gap: 14px;
+  border-radius: 20px; padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(23, 23, 23, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+[data-theme="light"] .st-card { border-color: rgba(20, 18, 16, 0.12); background: rgba(251, 247, 238, 0.96); }
+
+/* The cards still to come, stacked behind and inert. Purely decorative: they carry aria-hidden. */
+.st-card--behind {
+  position: absolute; inset: 0;
+  transform: translateY(calc(var(--st-depth, 1) * 10px)) scale(calc(1 - var(--st-depth, 1) * 0.035));
+  opacity: calc(0.5 - var(--st-depth, 1) * 0.14);
+  pointer-events: none;
+}
+
+.st-card--active { z-index: 2; cursor: grab; touch-action: pan-x; }
+.st-card--active:active { cursor: grabbing; }
+.st-card--active:focus-visible { outline: 2px solid var(--gm-accent, var(--vermilion)); outline-offset: 3px; }
+/* A card that cannot be played is still readable — it just stops offering the gesture. */
+.st-card--held { cursor: default; opacity: 0.86; }
+
+.st-empty {
+  display: grid; place-items: center; min-height: 268px; gap: 6px;
+  border-radius: 20px; border: 1px dashed rgba(255, 255, 255, 0.12);
+  text-align: center; padding: 24px;
+}
+[data-theme="light"] .st-empty { border-color: rgba(20, 18, 16, 0.14); }
+.st-empty-title { font-family: var(--font-display); font-weight: 700; font-size: 14px; color: var(--white); }
+.st-empty-body { font-size: 13px; line-height: 1.6; color: var(--gray-400); max-width: 44ch; }
+
+/* ── The face a mode fills ────────────────────────────────────────────────── */
+
+.st-face-head { display: flex; align-items: center; gap: 8px; }
+.st-asset { font-family: var(--font-display); font-weight: 750; font-size: 20px; color: var(--white); }
+.st-cadence {
+  padding: 2px 8px; border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em;
+  color: var(--gray-400);
+}
+[data-theme="light"] .st-cadence { border-color: rgba(20, 18, 16, 0.14); }
+.st-clock { margin-left: auto; display: flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 12px; color: var(--gray-400); }
+.st-clock svg { width: 12px; height: 12px; }
+.st-question { font-size: 15px; line-height: 1.5; color: var(--white); }
+.st-face-facts { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: auto; }
+.st-fact { display: flex; flex-direction: column; gap: 2px; }
+.st-fact-k { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray-500); }
+.st-fact-v { font-family: var(--font-mono); font-size: 14px; color: var(--white); }
+.st-fact-v--up { color: var(--profit); }
+.st-fact-v--down { color: var(--loss); }
+
+/* ── The two calls ────────────────────────────────────────────────────────── */
+
+.st-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.st-call {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 52px; border-radius: 14px; border: 1px solid;
+  font-family: var(--font-display); font-weight: 700; font-size: 14px;
+  letter-spacing: 0.04em; text-transform: uppercase;
+  transition: transform 140ms var(--ease), filter 140ms var(--ease);
+}
+.st-call svg { width: 16px; height: 16px; }
+.st-call:disabled { opacity: 0.42; cursor: not-allowed; }
+.st-call:not(:disabled):hover { filter: brightness(1.12); }
+.st-call:not(:disabled):active { transform: translateY(1px); }
+.st-call--up { border-color: var(--button-up-border); background: var(--button-up-fill); color: var(--button-up-ink); }
+.st-call--down { border-color: var(--button-down-border); background: var(--button-down-fill); color: var(--button-down-ink); }
+
+.st-hint { font-family: var(--font-mono); font-size: 10px; line-height: 1.6; color: var(--gray-500); text-align: center; }
+.st-refusal {
+  border-radius: 12px; padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--vermilion) 34%, transparent);
+  background: color-mix(in srgb, var(--vermilion) 7%, transparent);
+  font-size: 12px; line-height: 1.55; color: var(--gray-400);
+}
+
+@media (max-width: 400px) {
+  .st-card { padding: 16px; }
+  .st-asset { font-size: 18px; }
+}

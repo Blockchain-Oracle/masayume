@@ -4,4 +4,7 @@ export { hapticsSupported, type FeedbackCue } from "./feedback";
 export { GamesHub } from "./GamesHub";
 export { useGames } from "./GamesProvider";
 export { GamesShell } from "./GamesShell";
+export { PracticeStage } from "./practice/PracticeStage";
+export { SwipeDeck, cadenceLabel } from "./stage/SwipeDeck";
+export { StageFace, StageFact } from "./stage/StageFace";
 export { ACCENT_CHOICES, ACCENT_LABELS, reducedMotionFrom, type AccentChoice, type GameSettings, type MotionChoice } from "./settings";
