@@ -61,7 +61,7 @@ export const STEPS: readonly Step[] = [
     number: 4,
     title: "Collect Payout",
     description:
-      "When the Window closes the oracle prints the close. Winning contracts redeem for 1 tUSDC each less the settlement fee; losing contracts pay 0; a void pays 0.5 to both sides. Claim on /claims.",
+      "When the Window closes the oracle prints the close. Winning contracts redeem for 1 tUSDC each less the settlement fee; losing contracts pay 0; a void pays 0.5 to both sides. Collect it on the Window's result, or everything at once from Portfolio.",
     icon: TrophyIcon,
     tone: "blue",
   },
@@ -140,7 +140,7 @@ export const SETTLEMENT_STEPS: readonly SettlementStep[] = [
   { step: "1", label: "Window Closes", desc: "The round reaches its scheduled expiry." },
   { step: "2", label: "Oracle Prints", desc: "The Somnia oracle hub answers the settlement question; its resolution graph is linked from every receipt." },
   { step: "3", label: "Settlement", desc: "The DreamDEX binary settlement contract compares the close with the opening print and resolves the Window. If no reliable print arrives inside the settlement window, anyone can void it." },
-  { step: "4", label: "Payout", desc: "Winning contracts redeem for 1 tUSDC less the settlement fee. Redemption is a contract call you make — claim on /claims." },
+  { step: "4", label: "Payout", desc: "Winning contracts redeem for 1 tUSDC less the settlement fee. Redemption is a contract call you make — on the Window's result, or everything at once from Portfolio." },
 ];
 
 export interface ArchitectureCard {

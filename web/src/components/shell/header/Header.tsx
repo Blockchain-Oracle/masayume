@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { AddFunds, CreditWelcome, OPEN_FUNDS_EVENT } from "@/features/funding";
 import MasayumeMark from "../MasayumeMark";
 import ThemeToggle from "../ThemeToggle";
 import { DesktopNavMenu } from "./DesktopNavMenu";
 import { HeaderAccount } from "./HeaderAccount";
+import { HeaderMoneyPill } from "./HeaderMoneyPill";
 import { MobileBottomNav } from "./MobileBottomNav";
 import { DESKTOP_NAV, isActiveNavItem, type NavGroup } from "./nav-items";
 
@@ -15,8 +17,17 @@ const MOBILE_MAX_WIDTH = 720;
 export default function Header() {
   const pathname = usePathname();
   const [openGroup, setOpenGroup] = useState<NavGroup["id"] | null>(null);
+  const [showFunds, setShowFunds] = useState(false);
 
   useEffect(() => setOpenGroup(null), [pathname]);
+
+  // Add money is reachable from anywhere (a ticket's top-up gate, a deep link, the fund page) by dispatching
+  // this event — one entry point, no prop drilling. The reference's `yosuku:open-funds` (`Header.tsx` L145–151).
+  useEffect(() => {
+    const open = () => setShowFunds(true);
+    window.addEventListener(OPEN_FUNDS_EVENT, open);
+    return () => window.removeEventListener(OPEN_FUNDS_EVENT, open);
+  }, []);
 
   useEffect(() => {
     const closeAtMobileWidth = () => {
@@ -67,12 +78,15 @@ export default function Header() {
 
           <div className="header-right">
             <ThemeToggle />
+            <HeaderMoneyPill onOpen={() => setShowFunds(true)} />
             <HeaderAccount onOpenMenu={() => setOpenGroup(null)} />
           </div>
         </nav>
       </header>
 
       <MobileBottomNav />
+      <CreditWelcome />
+      <AddFunds open={showFunds} onClose={() => setShowFunds(false)} />
     </>
   );
 }

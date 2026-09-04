@@ -42,6 +42,14 @@ export const CONNECT = {
   disconnect: "Disconnect",
 } as const;
 
+/** The account menu — the reference's rows (`Header.tsx` L337–363), nothing more. */
+export const ACCOUNT_MENU = {
+  open: "Open account menu",
+  tradingAccount: "Trading account",
+  wallet: "Wallet",
+  portfolio: "Portfolio",
+} as const;
+
 export const BANNER = {
   wrongNetwork: (chainName: string) => `This app runs on ${chainName}.`,
   switchTo: (chainName: string) => `Switch to ${chainName}`,
@@ -264,6 +272,21 @@ export const VERDICT_UI = {
   noPosition: { why: "You held nothing in this window — nothing to stamp." },
   connect: { why: "Connect a wallet to see your verdict." },
   notFound: { why: "This window is gone.", nextAction: { label: "Pick a live window", href: "/markets" } },
+  /** The claim card's words — reference `ClaimWinnings.tsx`; the footnote states our fact, not its keeper's. */
+  claim: {
+    notThisTime: "Not this time",
+    lossBody: "The Window closed on the other side of your line.",
+    youWon: "You won",
+    claimed: "Claimed",
+    profit: "Profit",
+    ret: "return",
+    stake: "Stake",
+    payout: "Payout",
+    collect: "Collect it now",
+    collecting: "Collecting…",
+    paid: "Paid to your wallet",
+    foot: "Redemption is a call you sign. The payout waits in the venue until you do.",
+  },
   devTitle: "Verdict moment",
   devEyebrow: "?m=<marketId> stamps a live window for the connected wallet",
   fixtures: {

@@ -4,7 +4,6 @@ export { ClaimPlate } from "./ClaimPlate";
 export { ClaimProgress } from "./ClaimProgress";
 export { ClaimRow } from "./ClaimRow";
 export { ClaimSuccessReceipt } from "./ClaimSuccessReceipt";
-export { LiveClaimPill } from "./LiveClaimPill";
 export { LiveClaimPlate } from "./LiveClaimPlate";
 export { MarketProofRows } from "./MarketProofRows";
 export type { ClaimItem, ClaimItemStatus, ClaimRun, ClaimRunStatus } from "./types";

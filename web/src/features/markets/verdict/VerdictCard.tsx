@@ -8,6 +8,7 @@ import { Receipt, ReceiptRow } from "@/components/receipt";
 import { oraclePriceText } from "@/features/markets/hero";
 import { ShareTradeButton, type TradeCard } from "@/features/share";
 import { MARKETS, VERDICT_UI, formatCadence, verdictAnnouncement, verdictStrings } from "@/lib/copy";
+import { ClaimWinnings } from "./ClaimWinnings";
 import { PnlFigure } from "./PnlFigure";
 import { useAnnounceOnce } from "./useAnnounceOnce";
 import { VerdictLegs } from "./VerdictLegs";
@@ -75,6 +76,8 @@ export function VerdictCard({ verdict, market, resolution, symbol, provenance }:
       </header>
       {verdict.outcome === "void" && <p className="type-body text-ink-secondary">{strings.line}</p>}
       <VerdictLegs legs={verdict.legs} decimals={verdict.decimals} symbol={symbol} />
+      {/* The reference's one settled-result card with the claim on it (ClaimWinnings.tsx, mounted from Verdict.tsx L106). */}
+      <ClaimWinnings verdict={verdict} marketId={market.marketId} symbol={symbol} />
       <Receipt
         title={VERDICT_UI.receiptTitle}
         figure={<Money value={verdict.payoutBase} decimals={verdict.decimals} symbol={symbol} className="text-cream-ink" />}

@@ -8,6 +8,7 @@ import { collateralOrNull } from "@masayume/markets";
 import { invalidateAfterWrite, useSigner, useSubmitter } from "@masayume/markets/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
+import { announceCredit } from "@/features/funding/credited";
 import { FAUCET } from "@/lib/copy";
 import { notify } from "@/lib/toast";
 
@@ -54,6 +55,8 @@ export function useFaucet() {
     if (outcome.status === "confirmed") {
       await invalidateAfterWrite(queryClient, { wallet: address });
       setState({ ...IDLE, phase: "confirmed", txHash: outcome.txHash });
+      // The first credit for an address is the "you're funded" moment (CreditWelcome); the rest are this toast.
+      announceCredit(address, String(FAUCET_UNITS), collateral.symbol);
       notify.neutral(FAUCET.minted);
       return;
     }

@@ -1,5 +1,4 @@
 export * from "./AppShell";
-export * from "./ClaimPill";
 export * from "./LiveTicker";
 export * from "./nav-items";
 export * from "./NavLink";

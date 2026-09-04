@@ -8,7 +8,6 @@ import { txUrl } from "@masayume/core/urls";
 import Link from "next/link";
 import { Money } from "@/components/data";
 import { VAULT } from "@/features/vault";
-import { CLAIMS_PATH } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 import { SIDE_WORD } from "../side-styles";
 import { HISTORY } from "./copy";
@@ -63,7 +62,7 @@ export function HistoryRow({ round, symbol, nowMs, onReceipt, onCrank, cranking 
           {cranking ? VAULT.rounds.cranking : VAULT.rounds.crank}
         </button>
       ) : round.claim === "to-collect" ? (
-        <Link href={CLAIMS_PATH} data-cursor="hover" className="type-label-micro text-accent">
+        <Link href={marketDeepLink({ marketId: round.marketId })} data-cursor="hover" className="type-label-micro text-accent">
           {claimLine} · {HISTORY.collectLink}
         </Link>
       ) : (

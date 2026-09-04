@@ -1,14 +1,9 @@
 import type { Metadata } from "next";
-import { CapabilityPending } from "@/components/shell";
+import { FundPage } from "@/features/funding";
 
-export const metadata: Metadata = { title: "Add funds" };
+export const metadata: Metadata = { title: "Add money" };
 
+/** Reached only from the Add-money modal, as in the reference (`Header.tsx` L65–67 removed its nav slot). */
 export default function Page() {
-  return (
-    <div className="container">
-      <CapabilityPending eyebrow="Money in" title="Add funds" dependency="the EventVault deposit path (Stage 4); the faucet already works from Markets">
-        <p>Get testnet collateral and understand exactly which pool it lands in, with the approval and deposit steps handled in the product rather than sent to raw tooling.</p>
-      </CapabilityPending>
-    </div>
-  );
+  return <FundPage />;
 }

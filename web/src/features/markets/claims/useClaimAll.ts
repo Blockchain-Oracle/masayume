@@ -33,7 +33,7 @@ function fromOutcome(outcome: TxOutcome): StepResult {
 }
 
 /** One leg: gate on the head-fresh chain view (canon #1), then redeem with its explicit outcomeIdx (canon #11). */
-async function redeemOne(submitter: MarketsSubmitter, item: ClaimItem): Promise<StepResult> {
+export async function redeemOne(submitter: MarketsSubmitter, item: ClaimItem): Promise<StepResult> {
   let outcomeToken;
   try {
     const onchain = unwrap(await marketsProvider.getOnchain(item.marketId));

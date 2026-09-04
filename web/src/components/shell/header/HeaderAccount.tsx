@@ -5,29 +5,30 @@ import { formatBaseUnits } from "@masayume/core/units";
 import { ConnectButton as RainbowConnectButton } from "@rainbow-me/rainbowkit";
 import Link from "next/link";
 import { useRef, useState, type RefObject } from "react";
+import { useDisconnect } from "wagmi";
 import { useBalancePlate } from "@/features/markets/balance";
-import { BANNER, CONNECT } from "@/lib/copy";
+import { ACCOUNT_MENU, BANNER, CONNECT } from "@/lib/copy";
 import { useWalletSession } from "@/lib/wallet-session";
 import { useFloatingMenus } from "./useFloatingMenus";
 
 const AMOUNT_DP = 2;
 
 /**
- * The header's money + identity control.
- *
- * The pill shows SPENDABLE only. Order escrow and claimable credit are economically
- * different money, so they are listed and labelled in the menu rather than summed into one
- * flattering number. A balance that has not been read yet shows an em dash, never a zero.
+ * The address pill and its menu — the reference's (`Header.tsx` L322–364), whole: the `addr-dot` avatar
+ * and the short address; a menu of exactly two balance rows (Trading account, Wallet), Portfolio, and
+ * Disconnect. The links to Claims, Add funds and X recovery that had grown in here are gone: the money
+ * pill beside this opens Add money, claiming is on the Window's own result, and X recovery is reached
+ * from `/trade-from-x` as in the reference. A balance that has not been read yet shows an em dash.
  */
 export function HeaderAccount({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const { isRightChain, switching, switchToShannon } = useWalletSession();
+  const { disconnect } = useDisconnect();
   const balance = useBalancePlate();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const refs = useRef<ReadonlyArray<RefObject<HTMLElement | null>>>([menuRef]);
   useFloatingMenus(refs.current, () => setOpen(false));
 
-  const symbol = balance.symbol;
   const reading = balance.kind === "connected" ? balance.reading : null;
   const sheet = reading && isOk(reading) ? reading.value : null;
   const amount = (value: bigint | null) =>
@@ -66,7 +67,7 @@ export function HeaderAccount({ onOpenMenu }: { onOpenMenu?: () => void }) {
             <button
               type="button"
               className="wallet-pill"
-              aria-label="Open account menu"
+              aria-label={ACCOUNT_MENU.open}
               aria-haspopup="menu"
               aria-expanded={open}
               onClick={() => {
@@ -82,30 +83,28 @@ export function HeaderAccount({ onOpenMenu }: { onOpenMenu?: () => void }) {
               <div className="header-account-menu" role="menu">
                 <div className="header-account-pools">
                   <div className="header-account-row">
-                    <span>Spendable{symbol ? ` · ${symbol}` : ""}</span>
-                    <span className="val">{amount(sheet?.spendableBase ?? null)}</span>
+                    <span>{ACCOUNT_MENU.tradingAccount}</span>
+                    <span className="val">{amount(sheet?.vaultBase ?? null)}</span>
                   </div>
                   <div className="header-account-row">
-                    <span>In open orders</span>
-                    <span className="val">{amount(sheet?.orderEscrowBase ?? null)}</span>
-                  </div>
-                  <div className="header-account-row">
-                    <span>Claimable</span>
-                    <span className="val">{amount(sheet?.venueCreditBase ?? null)}</span>
+                    <span>{ACCOUNT_MENU.wallet}</span>
+                    <span className="val val--soft">{amount(sheet?.spendableBase ?? null)}</span>
                   </div>
                 </div>
                 <Link href="/portfolio" className="header-account-link" role="menuitem" onClick={() => setOpen(false)}>
-                  Portfolio
+                  {ACCOUNT_MENU.portfolio}
                 </Link>
-                <Link href="/claims" className="header-account-link" role="menuitem" onClick={() => setOpen(false)}>
-                  Claims
-                </Link>
-                <Link href="/fund" className="header-account-link" role="menuitem" onClick={() => setOpen(false)}>
-                  Add funds
-                </Link>
-                <Link href="/claim" className="header-account-link" role="menuitem" onClick={() => setOpen(false)}>
-                  X recovery
-                </Link>
+                <button
+                  type="button"
+                  className="header-account-link header-account-link--danger"
+                  role="menuitem"
+                  onClick={() => {
+                    disconnect();
+                    setOpen(false);
+                  }}
+                >
+                  {CONNECT.disconnect}
+                </button>
               </div>
             )}
           </div>
