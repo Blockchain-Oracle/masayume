@@ -36,7 +36,7 @@ import { useOwnerWalletClient } from "@/providers/UserSessionProvider";
  * before it sends, so a floor is always a fraction of a live quote rather than of a stale one.
  */
 
-export type ArenaBusy = "create" | "join" | `pick:${number}` | null;
+export type ArenaBusy = "create" | "join" | "claim" | "finalize" | `pick:${number}` | `settle:${number}` | null;
 
 export interface PickProgress {
   cardIndex: number;
@@ -100,6 +100,23 @@ export function useArenaWrites() {
     [send],
   );
 
+  /** A pull, and the arena pays the player named on it rather than the caller. */
+  const claim = useCallback((player: Address) => send({ kind: "arena-claim", player }, "claim"), [send]);
+
+  /**
+   * The two permissionless cranks a player may need to run themselves.
+   *
+   * Doc 04's recovery list requires it: with the operator's settler unavailable, a player or anyone
+   * else must be able to advance a settled card and award the pot. Neither can redirect a payout —
+   * the arena credits whoever it already recorded — so the only thing the caller spends is gas.
+   */
+  const settleCard = useCallback(
+    (matchId: Bytes32, cardIndex: number) => send({ kind: "arena-settle-card", matchId, cardIndex }, `settle:${cardIndex}`),
+    [send],
+  );
+
+  const finalize = useCallback((matchId: Bytes32) => send({ kind: "arena-finalize", matchId }, "finalize"), [send]);
+
   /**
    * One card, one side, retried while the deadline allows.
    *
@@ -145,5 +162,5 @@ export function useArenaWrites() {
     [submitter, address, contracts, refresh],
   );
 
-  return { create, join, pick, busy, progress, canSign: Boolean(submitter && walletClient) };
+  return { create, join, claim, settleCard, finalize, pick, busy, progress, canSign: Boolean(submitter && walletClient) };
 }

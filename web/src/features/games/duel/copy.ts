@@ -125,6 +125,52 @@ export const DUEL = {
     filled: (size: string, cost: string, symbol: string) => `${size} for ${cost} ${symbol}`,
   },
 
+  settling: {
+    lockedTitle: "Every pick is in",
+    lockedBody: "Nothing more can be played. Each card settles when its own Window closes, which is the venue's clock and not this screen's.",
+    title: "Settling",
+    progress: (settled: number, total: number) => `${settled} of ${total} cards settled`,
+    body: "A card is settled by anyone — the operator's settler, you, or the other player. Nothing here depends on this page staying open.",
+    waitingCard: "waiting on its Window",
+    /** Doc 04's recovery requirement: the operator's settler is not the only way this finishes. */
+    crankTitle: "Nothing has to wait for the operator",
+    crankBody:
+      "Settling a card and awarding the pot are permissionless. If the operator's settler is not running, you can send either yourself — neither can send the money anywhere the arena has not already recorded.",
+    settleCard: (asset: string) => `Settle ${asset}`,
+    settling: "Settling…",
+    finalize: "Award the pot",
+    finalizing: "Awarding…",
+  },
+
+  result: {
+    title: "Result",
+    won: "You took the match",
+    lost: "Your opponent took it",
+    tied: "Level — the pot was split",
+    noWinner: "No winner",
+    you: "You",
+    opponent: "Opponent",
+    pnl: "Real PnL",
+    pnlNote: "Payout minus what the arena actually paid for each fill, measured by the contract around the order. Not a score.",
+    /** No amount here on purpose: this screen does not hold the pot's size, and a wrong 0 is worse than none. */
+    potNote: "Both side-pots follow that comparison — the arena credits them to the winner.",
+    freePotNote: "Free duels escrow no side-pot, so the only money here is your own positions.",
+    forfeitTitle: "A player did not finish",
+    forfeitBody: "The cards that were played still settle and still pay whoever played them. Only the pot follows the forfeit.",
+    /** What the arena is holding for this wallet — card payouts and pot alike, waiting on a pull. */
+    credit: "The arena owes you",
+    claim: "Claim",
+    claiming: "Claiming…",
+    claimed: "Claimed",
+    nothingToClaim: "The arena is holding nothing for this wallet.",
+    claimNote: "One transaction, and it pays the player named on it — never the caller. The credit does not expire.",
+    cards: "Cards",
+    cost: "Cost",
+    payout: "Payout",
+    unsettled: "—",
+    again: "Play another",
+  },
+
   /** Phases this build does not draw yet. It says where the match really is; it invents nothing. */
   beyond: {
     title: "This match is past what this build can show",

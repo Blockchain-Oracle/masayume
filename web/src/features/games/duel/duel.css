@@ -136,6 +136,21 @@
 }
 .dl-pending-dot { width: 6px; height: 6px; border-radius: 9999px; background: var(--vermilion); animation: dl-pulse 1.2s var(--ease) infinite; }
 
+/* ── The result ───────────────────────────────────────────────────────────── */
+
+.dl-result { display: flex; flex-direction: column; gap: 12px; }
+.dl-verdict {
+  display: flex; flex-direction: column; gap: 10px;
+  border-radius: 16px; padding: 20px;
+  border: 1px solid var(--color-hairline); background: var(--color-surface-1);
+}
+.dl-verdict--won { border-color: color-mix(in srgb, var(--profit) 45%, transparent); }
+.dl-verdict--lost { border-color: color-mix(in srgb, var(--loss) 40%, transparent); }
+.dl-verdict-line { font-family: var(--font-display); font-weight: 750; font-size: 20px; color: var(--white); }
+.dl-cranks { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.dl-up { color: var(--profit); }
+.dl-down { color: var(--loss); }
+
 /* ── The socket's own state, said quietly ─────────────────────────────────── */
 
 .dl-conn { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10px; color: var(--gray-400); }

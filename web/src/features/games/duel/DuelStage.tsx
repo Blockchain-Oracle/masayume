@@ -11,6 +11,7 @@ import { DuelEntry } from "./DuelEntry";
 import { DuelLobby } from "./DuelLobby";
 import { DuelPicking } from "./DuelPicking";
 import { DuelQueue } from "./DuelQueue";
+import { DuelResult } from "./DuelResult";
 import { useDuelRoom } from "./useDuelRoom";
 import "./duel.css";
 
@@ -125,6 +126,12 @@ function Match({ room, wallet, tierId, onTier }: { room: ReturnType<typeof useDu
 
     case "picking":
       return <DuelPicking state={state} wallet={wallet} room={room} />;
+
+    case "locked":
+    case "settling":
+    case "finalized":
+    case "forfeited":
+      return <DuelResult state={state} wallet={wallet} />;
 
     case "cancelled":
     case "expired":
