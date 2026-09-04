@@ -1,7 +1,7 @@
 ---
 title: Resume point — read this first
 status: working handoff
-updated: 2026-09-04
+updated: 2026-09-04 (nineteenth session)
 ---
 
 # Resume point
@@ -80,6 +80,8 @@ as part-13 already intended takes those to 4.69–6.30.
 context/51 §4 is the rest of what is open. The 21st.dev
 redesign pass on the other surfaces (the leverage ones are done) and the user's own look at Stage 5 (the ledger's
 Needs-user-review rows are all still open) follow.
+
+**Nineteenth session (2026-09-04, context/56): the fidelity restoration.** The user rejected nine surfaces' fidelity and installed the `reference-product-fidelity` skill; the approved plan (`~/.claude/plans/witty-exploring-canyon.md`) ran end to end — the markets loop, the header and money, the tap-trade modal, the Room's bettors registry, the asset marks, the reels, the parlay, `/surface`'s depth section, and the duel's one-signature entry through a match-scoped key (**`GameArena` redeployed at `0x0d8FC9659d02070aD8fF7E9a27E5394B9F5a2EF2`**), then the games' sound, motion, flow and arts from Flicky and Pips in Yosuku's tokens. Doc 04 line 20 is amended. **The 45 unreviewed deviations are in one table for the owner: `needs-user-review-2026-09-04.md`.** The verification rule from that day: source against source, the gate, no screenshot loops.
 
 | Commit | What |
 |---|---|
