@@ -2,7 +2,7 @@
 
 Twentieth session. The nineteenth ended with a list headed "left honestly open"; the user's answer was
 "I don't know why all of these are left open but yeah we need to adjust them for sure too." Every item on
-that list is now in, each its own gate-green commit. Nothing is pushed. What was deployed is in §6.
+that list is now in, each its own gate-green commit. What was deployed on chain is in §6; the push and the hosting, done later the same day, are §10.
 
 The method was the nineteenth's rule — read our source against the reference's source, run the gate, the
 browser only for what code cannot show — plus one addition worth keeping: **a scratch driver per chain
