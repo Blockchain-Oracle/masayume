@@ -9,6 +9,7 @@ import { useVenue } from "@/features/markets";
 import { useWalletSession } from "@/lib/wallet-session";
 import { DUEL } from "./copy";
 import { useArenaGas } from "./useArenaGas";
+import { waitingIn, type RoomOccupancy } from "./useRoomOccupancy";
 
 export interface DuelEntryProps {
   onFind: (mode: DuelMode, tier: StakeTierId) => void;
@@ -24,6 +25,8 @@ export interface DuelEntryProps {
    */
   tierId: StakeTierId;
   onTier: (tier: StakeTierId) => void;
+  /** Who is already waiting, per stake. Read with no wallet, so it is here before the search is. */
+  occupancy: RoomOccupancy | null;
 }
 
 /**
@@ -36,7 +39,7 @@ export interface DuelEntryProps {
  * than by a revert. And the gas line is not a warning but a fact of this deployment: there is no
  * sponsor, so every pick is a transaction the player signs and funds.
  */
-export function DuelEntry({ onFind, roomOpen, tierId, onTier }: DuelEntryProps) {
+export function DuelEntry({ onFind, roomOpen, tierId, onTier, occupancy }: DuelEntryProps) {
   const { address } = useWalletSession();
   const { boot } = useVenue();
   const arena = useArenaState();
@@ -95,6 +98,8 @@ export function DuelEntry({ onFind, roomOpen, tierId, onTier }: DuelEntryProps) 
           ))}
         </div>
         <p className="dl-blurb">{tier.mode === "free" ? DUEL.entry.freeBlurb : DUEL.entry.rankedBlurb}</p>
+        {/* Per stake, not in total: a player choosing Ranked 10 must not be told about the Free queue. */}
+        {occupancy?.reachable && <p className="dl-foot">{DUEL.entry.queueHere(waitingIn(occupancy, tier.mode, tierId))}</p>}
       </div>
 
       <div className="dl-cost">

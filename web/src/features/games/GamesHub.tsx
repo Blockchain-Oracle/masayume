@@ -10,6 +10,7 @@ import { gameEntriesInGroup, type GameEntry } from "./catalog";
 import { GAMES } from "./copy";
 import { GameCard, type CardStatus } from "./GameCard";
 import { GameProfileCard } from "./GameProfileCard";
+import { useRoomOccupancy, searchingNow } from "./duel/useRoomOccupancy";
 import { useGames } from "./GamesProvider";
 import { PendingPlate } from "./PendingPlate";
 
@@ -24,6 +25,22 @@ import { PendingPlate } from "./PendingPlate";
 export function GamesHub() {
   const reserve = useRangeReserve();
   const { activeMatchId } = useGames();
+  /**
+   * The duel's own occupancy, read here rather than on the duel page.
+   *
+   * A player standing in the hub is deciding which mode to open, and "is anyone there?" is the fact that
+   * decides it. Answering it only after a wallet has signed put the question on the wrong side of the
+   * one step a player might not want to take.
+   */
+  const occupancy = useRoomOccupancy();
+  const presence = (entry: GameEntry): string | null => {
+    if (entry.id !== "duel") return null;
+    if (!occupancy) return null;
+    if (!occupancy.reachable) return GAMES.card.roomDown;
+    const searching = searchingNow(occupancy);
+    if (searching > 0) return GAMES.card.searching(searching);
+    return occupancy.pairing > 0 ? GAMES.card.inMatch(occupancy.pairing) : GAMES.card.nobody;
+  };
   const status = (entry: GameEntry): CardStatus =>
     entry.id === "range" ? rangeStatus(reserve) : entry.readiness.kind === "built" ? { kind: "live" } : { kind: "pending", dependency: entry.readiness.dependency };
 
@@ -55,7 +72,7 @@ export function GamesHub() {
             <SectionHead number={head.number} title={head.title} desc={head.desc} />
             <div className="gm-grid">
               {gameEntriesInGroup(group).map((entry) => (
-                <GameCard key={entry.id} entry={entry} status={status(entry)} />
+                <GameCard key={entry.id} entry={entry} status={status(entry)} presence={presence(entry)} />
               ))}
             </div>
           </section>

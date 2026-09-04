@@ -13,6 +13,7 @@ import { DuelPicking } from "./DuelPicking";
 import { DuelQueue } from "./DuelQueue";
 import { DuelResult } from "./DuelResult";
 import { useDuelRoom } from "./useDuelRoom";
+import { searchingNow, useRoomOccupancy, type RoomOccupancy } from "./useRoomOccupancy";
 import "./duel.css";
 
 /**
@@ -33,6 +34,8 @@ export function DuelStage() {
   const { state, auth } = room;
   // Held here so it survives the entry being unmounted and remounted by a phase change.
   const [tierId, setTierId] = useState<StakeTierId>("free");
+  // Read whether or not a wallet is connected: the gate needs it most.
+  const occupancy = useRoomOccupancy();
 
   // The shell's copy of the match, so the rail and the hub can offer to bring a player back to it.
   useEffect(() => setMatch(state), [state, setMatch]);
@@ -49,7 +52,11 @@ export function DuelStage() {
 
       <div className="dl-layout">
         <div>
-          {auth.kind !== "ready" ? <Gate room={room} /> : <Match room={room} wallet={address} tierId={tierId} onTier={setTierId} />}
+          {auth.kind !== "ready" ? (
+            <Gate room={room} occupancy={occupancy} />
+          ) : (
+            <Match room={room} wallet={address} tierId={tierId} onTier={setTierId} occupancy={occupancy} />
+          )}
           {room.error && (
             <div className="dl-error" role="status">
               <p className="dl-body">{room.error.message}</p>
@@ -70,9 +77,16 @@ export function DuelStage() {
   );
 }
 
-/** Everything before the socket: no room here, no wallet, or one signature still to give. */
-function Gate({ room }: { room: ReturnType<typeof useDuelRoom> }) {
+/**
+ * Everything before the socket: no room here, no wallet, or one signature still to give.
+ *
+ * Every arm of it now carries the room's occupancy, read with no credential at all. A gate that shows
+ * only a button asks a player to spend a wallet prompt to discover whether anybody is on the other side
+ * of it — which was the first thing this screen got wrong.
+ */
+function Gate({ room, occupancy }: { room: ReturnType<typeof useDuelRoom>; occupancy: RoomOccupancy | null }) {
   const { auth, authorize } = room;
+  const here = <Occupancy occupancy={occupancy} />;
 
   if (auth.kind === "asking") return <p className="dl-body">{DUEL.status.connecting}</p>;
   if (auth.kind === "unavailable") {
@@ -88,6 +102,7 @@ function Gate({ room }: { room: ReturnType<typeof useDuelRoom> }) {
       <div className="dl-plate">
         <h2 className="dl-queue-title">{DUEL.auth.connectTitle}</h2>
         <p className="dl-body">{DUEL.auth.connectBody}</p>
+        {here}
       </div>
     );
   }
@@ -96,6 +111,7 @@ function Gate({ room }: { room: ReturnType<typeof useDuelRoom> }) {
     <div className="dl-plate">
       <h2 className="dl-queue-title">{DUEL.auth.signTitle}</h2>
       <p className="dl-body">{DUEL.auth.signBody}</p>
+      {here}
       {auth.kind === "refused" && <p className="dl-refusal">{auth.why}</p>}
       <button type="button" className="dl-cta" disabled={auth.kind === "signing"} onClick={() => void authorize()}>
         {auth.kind === "signing" ? DUEL.auth.signing : auth.kind === "refused" ? DUEL.auth.retry : DUEL.auth.sign}
@@ -105,10 +121,22 @@ function Gate({ room }: { room: ReturnType<typeof useDuelRoom> }) {
 }
 
 /** One branch per phase. Nothing here is invented: every arm draws a state the reducer is actually in. */
-function Match({ room, wallet, tierId, onTier }: { room: ReturnType<typeof useDuelRoom>; wallet: string | null; tierId: StakeTierId; onTier: (tier: StakeTierId) => void }) {
+function Match({
+  room,
+  wallet,
+  tierId,
+  onTier,
+  occupancy,
+}: {
+  room: ReturnType<typeof useDuelRoom>;
+  wallet: string | null;
+  tierId: StakeTierId;
+  onTier: (tier: StakeTierId) => void;
+  occupancy: RoomOccupancy | null;
+}) {
   const { state } = room;
   const nowMs = useNowMs();
-  const entry = <DuelEntry onFind={room.joinQueue} roomOpen={room.status === "open"} tierId={tierId} onTier={onTier} />;
+  const entry = <DuelEntry onFind={room.joinQueue} roomOpen={room.status === "open"} tierId={tierId} onTier={onTier} occupancy={occupancy} />;
 
   switch (state.phase) {
     case "idle":
@@ -153,6 +181,16 @@ function Match({ room, wallet, tierId, onTier }: { room: ReturnType<typeof useDu
       // Picking, locked, settling, finalized and forfeited: live on chain, not yet drawn here.
       return <Beyond state={state} />;
   }
+}
+
+/** The room's own count, or the honest absence of one. Never a zero standing in for a service that is down. */
+function Occupancy({ occupancy }: { occupancy: RoomOccupancy | null }) {
+  if (!occupancy) return null;
+  if (!occupancy.reachable) return <p className="dl-foot">{DUEL.auth.roomDown}</p>;
+  const searching = searchingNow(occupancy);
+  if (searching > 0) return <p className="dl-deck">{DUEL.auth.searching(searching)}</p>;
+  if (occupancy.pairing > 0) return <p className="dl-deck">{DUEL.auth.inMatch(occupancy.pairing)}</p>;
+  return <p className="dl-foot">{DUEL.auth.nobody}</p>;
 }
 
 /** A pairing the room ended before the chain was involved: what happened, and what is being done about it. */

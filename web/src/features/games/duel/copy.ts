@@ -22,6 +22,17 @@ export const DUEL = {
     signing: "Waiting for your wallet…",
     refused: "The room refused that signature.",
     retry: "Try again",
+    /**
+     * Said before the signature, because it is the reason to give one.
+     *
+     * The gate used to be the whole page: no wallet, nothing at all on screen. A player could not find
+     * out whether anyone was here without signing to find out, which is a prompt spent on a question the
+     * room answers for free.
+     */
+    searching: (n: number) => (n === 1 ? "1 player is searching for an opponent right now." : `${n} players are searching for an opponent right now.`),
+    inMatch: (n: number) => (n === 1 ? "1 duel is being set up right now." : `${n} duels are being set up right now.`),
+    nobody: "Nobody is searching right now. Signing puts you first in the queue.",
+    roomDown: "The duel room is not answering, so no match can be found at the moment.",
     connectTitle: "Connect a wallet to duel",
     connectBody: "A duel escrows against your address and places orders you own. There is nothing to show until there is a wallet.",
   },
@@ -48,6 +59,8 @@ export const DUEL = {
     costCards: (cap: string, symbol: string) =>
       `Up to ${cap} ${symbol} per card, spent as a real order on that Window. You keep what those positions pay, win or lose the pot.`,
     costGas: "One transaction per pick, signed and paid by you. There is no sponsor on this deployment.",
+    /** The chosen stake's own queue, so "nobody is here" is never said about the wrong one. */
+    queueHere: (n: number) => (n === 0 ? "Nobody is waiting at this stake" : n === 1 ? "1 player waiting at this stake" : `${n} players waiting at this stake`),
     find: "Find a match",
     finding: "Finding…",
     /** The room is not reachable, so the search cannot even be asked for. Not the same as searching. */

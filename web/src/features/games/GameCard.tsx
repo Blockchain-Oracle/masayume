@@ -20,7 +20,8 @@ export type CardStatus =
   | { kind: "live" }
   | { kind: "unavailable"; why: string };
 
-export function GameCard({ entry, status }: { entry: GameEntry; status: CardStatus }) {
+/** A live, wallet-free fact about a mode — who is in it — drawn beside the build and chain facts. */
+export function GameCard({ entry, status, presence }: { entry: GameEntry; status: CardStatus; presence?: string | null }) {
   const { feedback } = useGames();
   const Icon = entry.nav.icon;
   const openable = status.kind === "live" || status.kind === "loading";
@@ -41,6 +42,7 @@ export function GameCard({ entry, status }: { entry: GameEntry; status: CardStat
         {status.kind === "unavailable" && <span className="gm-card-waiting">{status.why}</span>}
         {status.kind === "loading" && <Skeleton className="h-3 w-24" />}
       </div>
+      {presence && <p className="gm-card-presence">{presence}</p>}
     </>
   );
 

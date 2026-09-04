@@ -148,6 +148,8 @@ a.gm-card:hover { border-color: color-mix(in srgb, var(--vermilion) 40%, transpa
 .gm-card-blurb { font-size: 13px; line-height: 1.6; color: var(--gray-400); }
 .gm-card-foot { margin-top: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .gm-card-waiting { font-family: var(--font-mono); font-size: 10px; line-height: 1.5; color: var(--gray-500); }
+/* A live count, read without a wallet. Brighter than the build facts above it because it changes. */
+.gm-card-presence { font-family: var(--font-mono); font-size: 10px; line-height: 1.5; color: var(--gray-400); margin-top: 6px; }
 .gm-card-open {
   font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
   color: var(--vermilion);

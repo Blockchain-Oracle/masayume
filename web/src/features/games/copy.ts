@@ -24,6 +24,17 @@ export const GAMES = {
     unavailableBadge: "Unavailable",
     waitingOn: (dependency: string) => `Waiting on ${dependency}`,
     paused: "Paused by the operator",
+    /**
+     * Who is here, said on the card and before any wallet is involved.
+     *
+     * The one question that decides whether a mode is worth opening used to cost a signature to answer:
+     * the duel showed nothing at all until a wallet had connected and signed. A count is not private —
+     * it is the same number the room already broadcasts to everyone in a queue.
+     */
+    searching: (n: number) => (n === 1 ? "1 player searching" : `${n} players searching`),
+    inMatch: (n: number) => (n === 1 ? "1 duel in progress" : `${n} duels in progress`),
+    nobody: "Nobody is searching right now",
+    roomDown: "The duel room is not answering",
   },
 
   rail: {

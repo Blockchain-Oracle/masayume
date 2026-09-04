@@ -10,10 +10,17 @@ import { DUEL } from "./copy";
 /**
  * The duel room's credential: one wallet signature, then a token this browser renews on its own.
  *
- * **The token is held in memory and nowhere else.** It is a bearer credential for a room — anything
- * that can present it can speak as this wallet — so it does not go near `localStorage`, and a reload
- * costs one signature. That is the same choice the Stage 3 comment Room made, and the reason the
- * signed message says plainly that it is not a transaction and moves no funds.
+ * **The token survives a reload, in `sessionStorage` and nowhere else.** It was held only in memory,
+ * which cost a signature every time a page refreshed — and a duel is a screen people refresh, because
+ * refreshing is what you do when something looks stuck. That was the wrong trade: a wallet prompt on
+ * every reload is a real, constant cost paid against a threat `sessionStorage` barely changes.
+ *
+ * What this credential can and cannot do is worth being precise about. It is a bearer token for one
+ * room, one wallet, one arena and one chain, for fifteen minutes: presenting it lets a holder queue,
+ * reveal a seed and relay a "deciding" cue as that wallet. It signs nothing, moves nothing and
+ * authorises no transaction — every economic act in a duel is its own wallet signature. And it does not
+ * go near `localStorage`: the storage is per tab and dies with the tab, so a shared machine hands the
+ * next page nothing, and any script that could read it could equally read the in-memory copy.
  *
  * **Renewal happens before the token dies, not after.** A duel outlives one fifteen-minute token, and
  * a wallet prompt arriving in the middle of a pick deadline is a lost card. The session behind the
@@ -27,6 +34,10 @@ import { DUEL } from "./copy";
 const ENDPOINT = "/api/games/room-token";
 /** Renew this long before expiry: enough for a slow round trip, short enough to stay one token. */
 const RENEW_LEAD_MS = 90_000;
+/** One key per wallet, so switching accounts in a tab cannot resume the previous one's seat. */
+const STORE_KEY = (wallet: string) => `masayume.room.${wallet.toLowerCase()}`;
+/** Below this a stored token is not worth resuming: it would expire mid-handshake. */
+const RESUME_FLOOR_MS = 20_000;
 
 interface RoomTarget {
   chainId: number;
@@ -62,6 +73,28 @@ function rejected(cause: unknown): boolean {
   return /reject|denied|user cancel/i.test(String((cause as Error)?.message ?? ""));
 }
 
+/** Storage that is simply absent in a private window or a server render, and must never throw here. */
+function readGrant(wallet: Address): Grant | null {
+  try {
+    const raw = globalThis.sessionStorage?.getItem(STORE_KEY(wallet));
+    if (!raw) return null;
+    const grant = JSON.parse(raw) as Grant;
+    if (typeof grant?.token !== "string" || typeof grant.expiresAtMs !== "number") return null;
+    return grant.expiresAtMs - Date.now() > RESUME_FLOOR_MS ? grant : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeGrant(wallet: Address, grant: Grant | null): void {
+  try {
+    if (grant) globalThis.sessionStorage?.setItem(STORE_KEY(wallet), JSON.stringify(grant));
+    else globalThis.sessionStorage?.removeItem(STORE_KEY(wallet));
+  } catch {
+    // A browser refusing storage costs a signature per reload; it does not cost the duel.
+  }
+}
+
 export function useRoomToken(): RoomTokenSession {
   const { address, isConnected } = useWalletSession();
   const { signMessageAsync } = useSignMessage();
@@ -93,6 +126,7 @@ export function useRoomToken(): RoomTokenSession {
     if (renewRef.current) clearTimeout(renewRef.current);
   }, [address]);
 
+
   const scheduleRenew = useCallback((grant: Grant, wallet: Address) => {
     if (renewRef.current) clearTimeout(renewRef.current);
     const inMs = Math.max(5_000, Math.min(grant.expiresAtMs - Date.now() - RENEW_LEAD_MS, ROOM_TOKEN_TTL_MS));
@@ -102,11 +136,13 @@ export function useRoomToken(): RoomTokenSession {
           if (!response.ok) {
             // The session behind the signature has ended; the only way on is another signature.
             grantRef.current = null;
+            writeGrant(wallet, null);
             setAuth({ kind: "sign" });
             return;
           }
           const next = (await response.json()) as Grant;
           grantRef.current = next;
+          writeGrant(wallet, next);
           if (next.url) setAuth({ kind: "ready", token: next.token, url: next.url, wallet });
           scheduleRenew(next, wallet);
         })
@@ -118,6 +154,25 @@ export function useRoomToken(): RoomTokenSession {
   }, []);
 
   useEffect(() => () => void (renewRef.current && clearTimeout(renewRef.current)), []);
+
+  /**
+   * The reload path: a token this tab already holds, resumed without a prompt.
+   *
+   * It waits for `target`, so a token is only ever resumed against the arena the server has just named —
+   * and a stored token with less life left than a handshake is discarded rather than presented, because
+   * an expired one reaches the room as a 401 and reads to the player as "the room is broken".
+   */
+  useEffect(() => {
+    if (!address || !target) return;
+    setAuth((held) => {
+      if (held.kind === "ready" || held.kind === "signing") return held;
+      const stored = readGrant(address);
+      if (!stored) return held;
+      grantRef.current = stored;
+      scheduleRenew(stored, address);
+      return { kind: "ready", token: stored.token, url: stored.url ?? target.url, wallet: address };
+    });
+  }, [address, target, scheduleRenew]);
 
   const authorize = useCallback(async () => {
     if (!address || !target) return;
@@ -138,6 +193,7 @@ export function useRoomToken(): RoomTokenSession {
         return;
       }
       grantRef.current = body;
+      writeGrant(address, body);
       setAuth({ kind: "ready", token: body.token, url: body.url ?? target.url, wallet: address });
       scheduleRenew(body, address);
     } catch (cause) {
