@@ -7,7 +7,7 @@ import type { VaultGrant } from "@masayume/core/vault";
 import { invalidateAfterWrite, useSigner, useSubmitter, useVaultSnapshot } from "@masayume/markets/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
-import { X_CARD } from "./copy";
+import { X_CARD, X_HANDLE } from "./copy";
 
 /** The EXECUTOR grant's shape when it is created from the X surfaces (reference: `maxMargin = what you fund this round`). */
 export const X_GRANT = { openWindows: 8, days: 30 } as const;
@@ -85,7 +85,7 @@ export function useXGrant(): XGrantState {
           const failed = outcomeError(outcome);
           if (failed) throw new Error(failed);
         }
-        setOk(X_CARD.funded(formatBaseUnits(amountBase, decimals), "@masayume_app"));
+        setOk(X_CARD.funded(formatBaseUnits(amountBase, decimals), X_HANDLE));
         await invalidateAfterWrite(queryClient, { wallet: address });
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : String(cause));

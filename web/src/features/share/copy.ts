@@ -1,11 +1,15 @@
 /** The share cards' words — ported from the reference's two card renderers and `BetPlacedCard.tsx`. */
 
-/** The brand as the owner gave it (2026-09-02): the public home and the X handle — the same on every deployment. */
+/**
+ * The brand as the owner gave it (2026-09-02): the public home and the X handle. The handle is the one
+ * account people tag to bet from X, so it follows the deployment (`NEXT_PUBLIC_X_HANDLE`, inlined at
+ * build) — the owner's account is not yet the name the placeholder assumed (2026-09-04).
+ */
 const BRAND = {
   brand: "MASAYUME",
   site: "masayume.app",
   siteUrl: "https://masayume.app",
-  handle: "@masayume_app",
+  handle: process.env.NEXT_PUBLIC_X_HANDLE?.trim() || "@masayume_app",
 } as const;
 
 const signOff = `${BRAND.site} via ${BRAND.handle}`;
