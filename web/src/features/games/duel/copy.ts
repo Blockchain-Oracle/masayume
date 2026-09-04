@@ -168,6 +168,15 @@ export const DUEL = {
     raceNote: "Both players draw on the same book, so a pick can lose a race. Asking again is normal and costs nothing extra.",
     failed: "That card did not fill before the deadline. The pot still settles on the cards that did.",
     opponentDeciding: "Your opponent is on this card",
+    /** The room's presence, said plainly: an absent opponent is a fact, not a verdict. */
+    opponentAway: "Your opponent's connection dropped. Their picks still count if they come back before the window closes.",
+    deadTitle: "The pick window has closed",
+    deadYou: "You did not finish your picks in time. Closing the window forfeits the pot to your opponent; the cards you did play still settle and still pay you.",
+    deadOpponent: "Your opponent did not finish their picks. Closing the window forfeits the pot to you; every card played still settles.",
+    deadBoth: "Neither of you finished. Closing the window refunds both pots; the cards played still settle.",
+    deadNote: "Anyone may close it — the settler will if nobody does — and nothing about who is paid depends on who presses.",
+    lockCta: "Close the window",
+    locking: "Closing…",
     /** The key's own state, while it is the thing placing picks. */
     keySwipes: "Your key places each pick — no wallet prompt.",
     keyGasShort: "Your key has run out of gas, so it cannot place this pick. The entry funds it; a duel this long has spent that.",
@@ -195,6 +204,21 @@ export const DUEL = {
     finalizing: "Awarding…",
   },
 
+  /** The read-only view of a match this wallet is not seated in. */
+  public: {
+    title: "A duel on Masayume",
+    reading: "Reading the match from the arena…",
+    unreadable: "The arena could not be read just now.",
+    unknown: "The arena has no match by that id.",
+    readOnly: "You are not seated in this duel — the view is read-only.",
+    tied: "A draw: equal PnL on the cards, the pot split.",
+    wonBy: (who: string) => `Won by ${who} on the cards' PnL.`,
+    status: { waiting: "Waiting for the challenger to join.", activeUnrevealed: "Joined; the deck is being opened.", picking: "The cards are being played.", settling: "The cards are settling.", finalized: "Finished.", refunded: "Refunded — nobody won this one.", forfeited: "One seat never finished; the pot went to the other." } as Record<string, string>,
+    cards: "The cards",
+    card: (n: number) => `Card ${n}`,
+    unplayed: "unplayed",
+    open: "open",
+  },
   result: {
     /** Flicky's result modal, in our words. */
     modal: {

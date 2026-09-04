@@ -22,7 +22,7 @@
 .st-pip--down { background: var(--loss); }
 .st-progress-label {
   margin-left: auto;
-  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+  font-family: var(--font-pixel); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
   color: var(--gray-500);
 }
 
@@ -57,6 +57,40 @@
 
 .st-card--active { z-index: 2; cursor: grab; touch-action: pan-x; overflow: hidden; }
 
+/* ── The art window and its CRT face (Flicky globals.css L360–425, swipe-screen.tsx L318–338) ──────── */
+
+.st-art {
+  position: relative; display: grid; place-items: center;
+  height: 132px; border-radius: 22px / 14px;
+  border: 1px solid var(--color-hairline);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--white) 6%, var(--bg)), var(--bg));
+}
+.st-art svg { width: 88px; height: 88px; grid-area: 1 / 1; transition: transform 200ms var(--ease), filter 200ms var(--ease); }
+.st-art-up, .st-art-down { display: none; }
+.st-card[data-swipe="up"] .st-art-idle, .st-card[data-swipe="down"] .st-art-idle { display: none; }
+.st-card[data-swipe="up"] .st-art-up { display: block; transform: scale(1.18) rotate(-4deg); filter: drop-shadow(0 0 12px var(--profit)); }
+.st-card[data-swipe="down"] .st-art-down { display: block; transform: scale(1.18) rotate(4deg); filter: drop-shadow(0 0 12px var(--loss)); }
+.st-art-idle { filter: drop-shadow(0 0 10px color-mix(in srgb, var(--vermilion) 60%, transparent)); }
+
+/* The CRT: pillow corners, a glass gleam, an edge vignette, scanlines, and a flicker that reduced motion stills. */
+.crt-screen {
+  position: relative; overflow: hidden; border-radius: 22px / 14px;
+  background-image: radial-gradient(ellipse 65% 45% at 28% 22%, rgba(255, 255, 255, 0.06), transparent 70%);
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.55), inset 0 0 60px rgba(0, 0, 0, 0.35);
+}
+.crt-screen::before {
+  content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; mix-blend-mode: overlay;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.28) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  background-size: 100% 2px, 3px 100%;
+}
+.crt-screen::after { content: ""; position: absolute; inset: 0; z-index: 3; pointer-events: none; background: rgba(18, 16, 16, 0.12); opacity: 0; animation: crt-flicker 0.18s infinite; }
+@keyframes crt-flicker { 0% { opacity: 0.03; } 10% { opacity: 0.08; } 20% { opacity: 0.02; } 30% { opacity: 0.1; } 40% { opacity: 0.04; } 50% { opacity: 0.07; } 60% { opacity: 0.03; } 70% { opacity: 0.09; } 80% { opacity: 0.04; } 90% { opacity: 0.06; } 100% { opacity: 0.03; } }
+[data-theme="light"] .crt-screen { box-shadow: inset 0 0 18px rgba(20, 18, 16, 0.25), inset 0 0 60px rgba(20, 18, 16, 0.12); }
+
+/* The behind cards show the back, as Flicky's peek does. */
+.st-card--back { display: grid; place-items: center; }
+.st-back-art { width: 96px; height: 96px; opacity: 0.9; }
+
 /* ── Flicky's drag signals (swipe-screen.tsx L268–297), in the venue's two colours ────────────── */
 
 /* The tint rises with the travel toward the commit line: emerald-500/25 and rose-500/25 there, the profit and loss tokens here. */
@@ -68,7 +102,7 @@
   position: absolute; z-index: 4; pointer-events: none;
   padding: 4px 12px; border: 2px solid; border-radius: 4px;
   background: color-mix(in srgb, var(--bg) 80%, transparent);
-  font-family: var(--font-display); font-weight: 900; font-size: 24px; line-height: 1.1;
+  font-family: var(--font-pixel); font-weight: 400; font-size: 33px; line-height: 1;
   letter-spacing: 0.08em; text-transform: uppercase;
   box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.6);
 }
@@ -108,7 +142,7 @@
 .st-cadence {
   padding: 2px 8px; border-radius: 9999px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em;
+  font-family: var(--font-pixel); font-size: 11px; letter-spacing: 0.06em;
   color: var(--gray-400);
 }
 [data-theme="light"] .st-cadence { border-color: rgba(20, 18, 16, 0.14); }
@@ -117,8 +151,8 @@
 .st-question { font-size: 15px; line-height: 1.5; color: var(--white); }
 .st-face-facts { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: auto; }
 .st-fact { display: flex; flex-direction: column; gap: 2px; }
-.st-fact-k { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray-500); }
-.st-fact-v { font-family: var(--font-mono); font-size: 14px; color: var(--white); }
+.st-fact-k { font-family: var(--font-pixel); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray-500); }
+.st-fact-v { font-family: var(--font-pixel); font-size: 22px; line-height: 1; color: var(--white); }
 .st-fact-v--up { color: var(--profit); }
 .st-fact-v--down { color: var(--loss); }
 

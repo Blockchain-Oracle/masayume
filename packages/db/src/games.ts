@@ -291,3 +291,20 @@ export async function listLiveMatches(chainId: number, arena: string, limit = 50
   `;
   return rows.map((r) => r.match_id);
 }
+
+/** Whether a games store exists at all — so a page can say "not connected here" instead of "no matches". */
+export function gamesStoreConfigured(): boolean {
+  return getDb() !== null;
+}
+
+/** The ladder, top first — Flicky's `/leaderboard`, over the ratings the settler already keeps. */
+export async function listTopRatings(limit = 50): Promise<RatingRow[]> {
+  const db = getDb();
+  if (!db) return [];
+  await ensureSchema();
+  const rows = await db<{ wallet: string; rating: number; verified_matches: number }[]>`
+    SELECT wallet, rating, verified_matches FROM game_ratings
+    ORDER BY rating DESC, verified_matches DESC, wallet ASC LIMIT ${limit}
+  `;
+  return rows.map((row) => ({ wallet: row.wallet, rating: row.rating, verifiedMatches: row.verified_matches }));
+}

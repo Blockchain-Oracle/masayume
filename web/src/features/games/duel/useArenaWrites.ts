@@ -38,7 +38,7 @@ import { useGameSession, type GameSession } from "./useGameSession";
  * before it sends, so a floor is always a fraction of a live quote rather than of a stale one.
  */
 
-export type ArenaBusy = "create" | "join" | "claim" | "finalize" | `pick:${number}` | `settle:${number}` | null;
+export type ArenaBusy = "create" | "join" | "claim" | "finalize" | "lock" | `pick:${number}` | `settle:${number}` | null;
 
 /**
  * The last transaction this screen asked for and did not get — and the reason a duel needed it.
@@ -158,6 +158,8 @@ export function useArenaWrites() {
   );
 
   const finalize = useCallback((matchId: Bytes32) => send({ kind: "arena-finalize", matchId }, "finalize"), [send]);
+  /** Closes a pick window whose deadline has passed — permissionless, and the one crank a dead duel needs to end. */
+  const lock = useCallback((matchId: Bytes32) => send({ kind: "arena-lock", matchId }, "lock"), [send]);
 
   /**
    * One card, one side, retried while the deadline allows.
@@ -216,6 +218,7 @@ export function useArenaWrites() {
     claim,
     settleCard,
     finalize,
+    lock,
     pick,
     busy,
     progress,

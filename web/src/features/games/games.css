@@ -8,6 +8,17 @@
  *      accent choices are vermilion and the venue's own two sides.
  */
 
+/* m6x11plus by Daniel Linssen (public/fonts/SOURCES.md), the game frame's display type; Sora, Inter and Mono stay on the shell.
+ * A pixel face reads clean at multiples of its 11px em, so the sizes below are 11, 22, 33, 44. */
+@font-face {
+  font-family: "Masayume Pixel";
+  src: url("/fonts/m6x11plus.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+.gm-frame, .du-modal, .gm-howto, .gm-sheet { --font-pixel: "Masayume Pixel", var(--font-mono); }
+
 .gm-frame { --gm-accent: var(--vermilion); }
 
 /* ── The checker canvas (Flicky globals.css L49–78), drifting one tile per cycle in Yosuku's surfaces ──
@@ -303,3 +314,25 @@ a.gm-card:hover { border-color: color-mix(in srgb, var(--vermilion) 40%, transpa
 .gm-sheet [data-slot="sheet-description"] { color: var(--gray-400); }
 
 .gm-sheet [data-slot="sheet-header"] { width: 100%; max-width: 640px; margin: 0 auto; }
+
+/* ── Your match (Flicky my-match-tile.tsx), the last game, the two link plates, how to play ──────── */
+.gm-match-tile { display: flex; flex-direction: column; gap: 10px; }
+.gm-match-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.gm-match-badge { font-family: var(--font-pixel); display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; padding: 2px 8px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gray-400); background: rgba(255, 255, 255, 0.06); }
+.gm-match-badge--live { color: var(--profit); background: color-mix(in srgb, var(--profit) 12%, transparent); }
+.gm-match-dot { width: 6px; height: 6px; border-radius: 9999px; background: var(--profit); animation: du-pulse 1.2s var(--ease) infinite; }
+.gm-match-foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.gm-match-fact { display: flex; flex-direction: column; gap: 2px; }
+.gm-match-k { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gray-500); }
+.gm-match-v { font-family: var(--font-mono); font-size: 13px; color: var(--white); font-variant-numeric: tabular-nums; }
+.gm-last, .gm-link-plate { display: flex; flex-direction: column; gap: 8px; text-decoration: none; }
+.gm-link-plate:hover { border-color: var(--gm-accent, var(--vermilion)); }
+.gm-rail-howto {
+  display: grid; place-items: center; width: 28px; height: 28px; border-radius: 9999px;
+  border: 1px solid var(--color-hairline); font-family: var(--font-mono); font-size: 12px; color: var(--gray-400);
+}
+.gm-rail-howto:hover { color: var(--white); border-color: var(--gm-accent, var(--vermilion)); }
+.gm-howto { gap: 12px; }
+.gm-howto-title { font-size: 22px; }
+.gm-howto-steps { display: flex; flex-direction: column; gap: 8px; padding-left: 20px; font-size: 13px; line-height: 1.6; color: var(--gray-400); }
+.gm-howto-steps li::marker { color: var(--gm-accent, var(--vermilion)); font-family: var(--font-mono); }

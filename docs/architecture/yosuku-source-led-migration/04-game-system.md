@@ -17,7 +17,7 @@ Games are an additive first-class Masayume destination inside the Yosuku product
 - A live game stage may use a dark immersive island, consistent with Yosuku Reels and trade-from-X surfaces.
 - Returning users resume an active game instead of being silently sent to a fresh selection screen.
 
-Yosuku is the visual authority. PIPS contributes game selection, first-run progression, customization, audio/haptics, achievements and individual game mechanics. Flicky contributes PvP lifecycle, commit-reveal, real-PnL scoring, matchmaking, settlement and recovery.
+Yosuku is the visual authority for the shell. **Inside `/games` — amended 2026-09-04 on the owner's decision — PIPS and Flicky are the authority for the games' sound, motion, flow and visual language too**: Flicky's swipe feel, cue moments, result modal, checker canvas, card composition, mascots and CRT finish for the duel; PIPS's press physics, control audio, hub habits (the remembered last game, the per-game HOW TO, first-run and achievements as each mode lands) for the hub and arcade — all of it recoloured into Yosuku's tokens, with the arts redrawn as our own in that palette (neither reference licenses its art), Kenney's CC0 effects, and m6x11plus (credited) as the game frame's type. PIPS still contributes game selection, first-run progression, customization, audio/haptics, achievements and individual game mechanics; Flicky still contributes PvP lifecycle, commit-reveal, real-PnL scoring, matchmaking, settlement and recovery.
 
 ## Route family
 
@@ -124,6 +124,8 @@ Preferred composition:
 5. The UI cannot show “pick locked” until the required receipt state is established.
 
 The builder must confirm the actual SDK/ABI composition before promising atomic picks. Architecture must not turn an assumption into product copy.
+
+**What shipped (2026-09-04).** Flicky reaches "no signature per card" with sponsored transactions and one atomic transaction per swipe. There is no sponsor here, so the composition is: the entry transaction (`createMatchWithAgent` / `joinMatchWithAgent`, both `payable`) names a browser-held key as the seat's agent, funds it with gas in the same call, and takes the allowance the deck will draw on; every pick is then `placePickFor(player, …)`, signed by the key under the `game-session` authority and paid for by the player, with the stake drawn from and refunded to the player and `PickFilled` naming the player. The key's grant is `perCardCapBase × deckSize` for at most a day, revocable, and a finished match refuses it before the grant is consulted. The receipt a pick returns feeds the reducer at once; the projector's copy of the same pick replaces it by `pickKey`. A card left to its last fifteen seconds is played by the key on the side the book prices above even money (Flicky's auto-swipe). Gas is the player's own STT until a `SPONSOR_PRIVATE_KEY` exists — recorded as Blocked, not dropped. The room's one message signature remains, because it precedes any match.
 
 ## Deck construction and commit-reveal
 

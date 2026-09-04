@@ -4,6 +4,7 @@ import type { DeckCard } from "@masayume/core/games";
 import { Clock } from "lucide-react";
 import type { ReactNode } from "react";
 import { Countdown } from "@/components/data";
+import { BearMark, BullMark, CoinMark } from "../art/PixelArt";
 import { cadenceLabel } from "./SwipeDeck";
 
 /** Flicky's ramp on every clock: calm, then vermilion inside ten minutes, then the loss colour inside two — and a pulse in the last thirty seconds. */
@@ -40,6 +41,14 @@ export function StageFace({
           <Clock aria-hidden />
           <Countdown expirySec={card.expirySec} intervalSec={card.intervalSec} nowMs={nowMs} />
         </span>
+      </div>
+      {/* Flicky's art window (`swipe-screen.tsx` L318–338): the mascot reacts to the lean — the coin at rest,
+          the bull on an upward drag, the bear on a downward one — behind a CRT face. The card's own
+          `data-swipe` drives the swap, so the face knows nothing about the gesture. */}
+      <div className="st-art crt-screen" aria-hidden>
+        <CoinMark className="st-art-idle" />
+        <BullMark className="st-art-up" />
+        <BearMark className="st-art-down" />
       </div>
       <p className="st-question">{question}</p>
       {facts && <div className="st-face-facts">{facts}</div>}

@@ -143,7 +143,12 @@ function freshSeed(): `0x${string}` {
   return `0x${[...bytes].map((b) => b.toString(16).padStart(2, "0")).join("")}`;
 }
 
-export function useDuelRoom(region = "default"): DuelRoom {
+/**
+ * `resumeMatchId` is the match a deep link names (`/games/duel/[matchId]`): the hello asks for that
+ * match's snapshot instead of the queue's. Without one the server asks its own projection which match
+ * this wallet is in, which is a better answer than anything this browser could remember.
+ */
+export function useDuelRoom(region = "default", resumeMatchId: string | null = null): DuelRoom {
   const { auth, authorize } = useRoomToken();
   const [state, dispatch] = useReducer(transition, IDLE);
   const [status, setStatus] = useState<RoomStatus>("idle");
@@ -262,9 +267,7 @@ export function useDuelRoom(region = "default"): DuelRoom {
         attemptRef.current = 0;
         setStatus("open");
         setError(null);
-        // No `resumeMatchId`: the server asks its own projection which match this wallet is in, which
-        // is a better answer than anything this browser could remember.
-        send({ type: "hello", protocolVersion: ROOM_PROTOCOL_VERSION });
+        send({ type: "hello", protocolVersion: ROOM_PROTOCOL_VERSION, ...(resumeMatchId ? { resumeMatchId } : {}) });
       };
 
       socket.onmessage = (event) => {
@@ -312,7 +315,7 @@ export function useDuelRoom(region = "default"): DuelRoom {
       socketRef.current?.close(CLOSED_DELIBERATELY, "leaving");
       socketRef.current = null;
     };
-  }, [auth, onMessage, send]);
+  }, [auth, onMessage, send, resumeMatchId]);
 
   /**
    * A search, and always a **fresh** seed.

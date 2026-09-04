@@ -1,5 +1,6 @@
 "use client";
 
+import { SearchingBanner } from "../art/PixelArt";
 import { DUEL } from "./copy";
 import type { QueueView } from "./useDuelRoom";
 
@@ -28,6 +29,7 @@ export function DuelQueue({ queue, waitedSec, onLeave }: { queue: QueueView | nu
       {/* Flicky's searching banner (`pvp.tsx` L357–430): a plate that breathes rather than pings, and
           three dots that bounce. The art that fills it is the redrawn banner of slice 8d. */}
       <div className="du-searching du-breathe" aria-hidden>
+        <SearchingBanner className="du-searching-art" />
         <span className="du-searching-word">{DUEL.queue.searching}</span>
         <span className="du-dots">
           <span />

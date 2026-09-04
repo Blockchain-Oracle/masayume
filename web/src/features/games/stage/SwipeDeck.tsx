@@ -5,6 +5,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { AnimatePresence, motion, useMotionValue, useMotionValueEvent, useTransform, type PanInfo } from "motion/react";
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { useGames } from "../GamesProvider";
+import { CardBack } from "../art/PixelArt";
 import { DRAG_MAX_ROTATE_DEG, FLY_ROTATE_DEG, SETTLE, STAMP_AT_PX, THROW } from "../motion";
 import { STAGE } from "./copy";
 import "./stage.css";
@@ -189,12 +190,12 @@ export function SwipeDeck({ cards, active, playedSide, onPick, busy = false, ref
         {behind.map((card, depth) =>
           depth === 0 ? (
             // The next card rises and grows toward full size as the top one is dragged away, following the finger.
-            <motion.div key={card.index} className="st-card st-card--behind" style={{ "--st-depth": 1, y: nextY, scale: nextScale } as never} aria-hidden>
-              {renderFace(card)}
+            <motion.div key={card.index} className="st-card st-card--behind st-card--back" style={{ "--st-depth": 1, y: nextY, scale: nextScale } as never} aria-hidden>
+              <CardBack className="st-back-art" />
             </motion.div>
           ) : (
-            <div key={card.index} className="st-card st-card--behind" style={{ "--st-depth": depth + 1 } as CSSProperties} aria-hidden>
-              {renderFace(card)}
+            <div key={card.index} className="st-card st-card--behind st-card--back" style={{ "--st-depth": depth + 1 } as CSSProperties} aria-hidden>
+              <CardBack className="st-back-art" />
             </div>
           ),
         )}

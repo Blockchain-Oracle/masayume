@@ -1,6 +1,9 @@
 "use client";
 
 import { isTerminal, type MatchState, type StakeTierId } from "@masayume/core/games";
+import { isOk } from "@masayume/core/schemas";
+import type { Bytes32 } from "@masayume/core/types";
+import { useArenaMatch } from "@masayume/markets/react";
 import { shortHex } from "@masayume/core/units";
 import { useEffect, useState, type ReactNode } from "react";
 import { useNowMs } from "@/components/data";
@@ -10,6 +13,7 @@ import { DUEL } from "./copy";
 import { DuelEntry } from "./DuelEntry";
 import { DuelLobby } from "./DuelLobby";
 import { DuelPicking } from "./DuelPicking";
+import { DuelPublicResult } from "./DuelPublicResult";
 import { DuelQueue } from "./DuelQueue";
 import { DuelResult } from "./DuelResult";
 import { useDuelRoom } from "./useDuelRoom";
@@ -27,9 +31,15 @@ import "./duel.css";
  * The shell's `match` is published from here, because the hub has to be able to offer "resume" over
  * "start a new one" from any page under `/games` (`GamesProvider` §match).
  */
-export function DuelStage() {
-  const room = useDuelRoom();
+export function DuelStage({ resumeMatchId = null }: { resumeMatchId?: Bytes32 | null }) {
+  const room = useDuelRoom("default", resumeMatchId);
   const { address } = useWalletSession();
+  // A deep link is answered from the chain first: a seat gets the stage in resume mode, anyone else the
+  // read-only result — Flicky's `play.tsx` guard, which sends a non-participant to `/game/duel/:id`.
+  const named = useArenaMatch(resumeMatchId);
+  const namedView = named && isOk(named) ? named.value : null;
+  const you = address?.toLowerCase() ?? null;
+  const spectator = resumeMatchId !== null && namedView !== null && (you === null || (namedView.match.creator !== you && namedView.match.challenger !== you));
   const { setMatch } = useGames();
   const { state, auth } = room;
   // Held here so it survives the entry being unmounted and remounted by a phase change.
@@ -52,7 +62,9 @@ export function DuelStage() {
 
       <div className="du-layout">
         <div>
-          {auth.kind !== "ready" ? (
+          {spectator && resumeMatchId ? (
+            <DuelPublicResult matchId={resumeMatchId} />
+          ) : auth.kind !== "ready" ? (
             <Gate room={room} occupancy={occupancy} />
           ) : (
             <Match room={room} wallet={address} tierId={tierId} onTier={setTierId} occupancy={occupancy} />

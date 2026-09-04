@@ -44,6 +44,12 @@ const READINESS: Readonly<Record<GameId, GameReadiness>> = {
   "candle-hop": { kind: "pending", dependency: "the flight engine and its score API (slice 4)" },
 };
 
+/** What a mode still waits on, for the page that stands in for it; "built" never reaches a pending page. */
+export function pendingDependency(id: GameId): string {
+  const readiness = READINESS[id];
+  return readiness.kind === "pending" ? readiness.dependency : "built";
+}
+
 export function gameEntry(id: GameId): GameEntry {
   return { id, nav: NAV_BY_ID[id], descriptor: gameDescriptor(id), readiness: READINESS[id] };
 }

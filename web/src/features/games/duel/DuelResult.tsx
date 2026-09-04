@@ -7,6 +7,7 @@ import { formatBaseUnits } from "@masayume/core/units";
 import { useArenaCredit, useArenaState, useMarketsLite } from "@masayume/markets/react";
 import { useEffect, useRef, useState } from "react";
 import { useVenue } from "@/features/markets";
+import { LockedInMark } from "../art/PixelArt";
 import { useGames } from "../GamesProvider";
 import { cadenceLabel } from "../stage/SwipeDeck";
 import { DUEL } from "./copy";
@@ -124,7 +125,8 @@ export function DuelResult({ state, wallet }: { state: Extract<MatchState, { pha
   return (
     <section className="du-result" aria-label={DUEL.result.title}>
       {state.phase === "locked" && (
-        <div className="du-plate">
+        <div className="du-plate du-locked">
+          <LockedInMark className="du-locked-mark" />
           <h2 className="du-queue-title">{DUEL.settling.lockedTitle}</h2>
           <p className="du-body">{DUEL.settling.lockedBody}</p>
         </div>

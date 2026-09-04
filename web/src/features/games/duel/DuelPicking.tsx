@@ -56,7 +56,7 @@ export function DuelPicking({ state, wallet, room }: { state: Extract<MatchState
   const nowMs = useNowMs();
   const arena = useArenaState();
   const { boot } = useVenue();
-  const { pick, progress, busy, canSign, refusal, game } = useArenaWrites();
+  const { pick, lock, progress, busy, canSign, refusal, game } = useArenaWrites();
   const [failed, setFailed] = useState<number | null>(null);
   /** Cards the key played at their cutoff, so the list can say so — the chain records a pick, not who chose it. */
   const [autoPlayed, setAutoPlayed] = useState<readonly number[]>([]);
@@ -162,8 +162,39 @@ export function DuelPicking({ state, wallet, room }: { state: Extract<MatchState
   const depleted = windowSec > 0 ? Math.max(0, Math.min(100, (leftSec / windowSec) * 100)) : 0;
   const urgency = clockUrgency(leftSec);
 
+  // Flicky's dead-duel detection (`duel-view.tsx` L383–428): once the window has closed, stop pretending a
+  // settlement is coming and name the way out — here the arena's own permissionless lock, which forfeits
+  // the seat that never finished or refunds both.
+  const opponentAddress = you === null ? null : state.players.creator.toLowerCase() === you ? state.players.challenger : state.players.creator;
+  const opponentAway = opponentAddress !== null && room.presence.some((row) => row.wallet.toLowerCase() === opponentAddress.toLowerCase() && !row.online);
+  const opponentUnfinished = opponentAddress !== null && state.receipts.filter((r) => r.player.toLowerCase() === opponentAddress.toLowerCase()).length < state.cards.length;
+  const dead = nowSec > 0 && leftSec === 0 && (active !== null || opponentUnfinished);
+
+  if (dead) {
+    return (
+      <section className="du-picking" aria-label={DUEL.picking.title}>
+        <div className="du-plate">
+          <h2 className="du-queue-title">{DUEL.picking.deadTitle}</h2>
+          <p className="du-body">{active !== null && opponentUnfinished ? DUEL.picking.deadBoth : active !== null ? DUEL.picking.deadYou : DUEL.picking.deadOpponent}</p>
+          <p className="du-foot">{DUEL.picking.deadNote}</p>
+          {canSign && (
+            <button type="button" className="du-cta" disabled={busy !== null} onClick={() => void lock(state.matchId as Bytes32)}>
+              {busy === "lock" ? DUEL.picking.locking : DUEL.picking.lockCta}
+            </button>
+          )}
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="du-picking" aria-label={DUEL.picking.title}>
+      {opponentAway && (
+        <p className="du-pending" role="status">
+          <span className="du-pending-dot" aria-hidden />
+          {DUEL.picking.opponentAway}
+        </p>
+      )}
       <div className="st-deplete" aria-hidden>
         <span className="st-deplete-fill" data-urgency={urgency.level} data-pulse={urgency.pulse || undefined} style={{ width: `${depleted}%` }} />
       </div>

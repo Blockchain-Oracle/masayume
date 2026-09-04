@@ -10,6 +10,8 @@ import { gameEntriesInGroup, type GameEntry } from "./catalog";
 import { GAMES } from "./copy";
 import { GameCard, type CardStatus } from "./GameCard";
 import { GameProfileCard } from "./GameProfileCard";
+import { lastGamePlayed } from "./last-game";
+import { MatchTile } from "./MatchTile";
 import { useRoomOccupancy, searchingNow } from "./duel/useRoomOccupancy";
 import { useGames } from "./GamesProvider";
 import { PendingPlate } from "./PendingPlate";
@@ -24,7 +26,8 @@ import { PendingPlate } from "./PendingPlate";
  */
 export function GamesHub() {
   const reserve = useRangeReserve();
-  const { activeMatchId } = useGames();
+  const { activeMatchId, match, feedback } = useGames();
+  const last = lastGamePlayed();
   /**
    * The duel's own occupancy, read here rather than on the duel page.
    *
@@ -55,14 +58,17 @@ export function GamesHub() {
         <p className="gm-intro">{GAMES.intro}</p>
       </div>
 
-      {activeMatchId && (
-        <div className="gm-plate gm-resume">
-          <p className="gm-plate-title">{GAMES.resume.title}</p>
-          <p className="gm-plate-body">{GAMES.resume.body}</p>
-          <Link href="/games/duel" className="gm-resume-cta">
-            {GAMES.resume.cta}
+      {activeMatchId ? (
+        <MatchTile match={match} />
+      ) : (
+        last && (
+          // Pips remembers the last game a player opened and offers it first.
+          <Link href={last.href} className="gm-plate gm-resume gm-last" onClick={() => feedback("tap")}>
+            <p className="gm-plate-title">{GAMES.lastGame.title}</p>
+            <p className="gm-plate-body">{GAMES.lastGame.body(last.name)}</p>
+            <span className="gm-resume-cta">{GAMES.lastGame.cta}</span>
           </Link>
-        </div>
+        )
       )}
 
       {(["prediction", "duel", "arcade"] as const).map((group) => {
@@ -89,7 +95,18 @@ export function GamesHub() {
 
       <section className="gm-section" aria-label={GAMES.sections.history.title}>
         <SectionHead {...GAMES.sections.history} />
-        <PendingPlate title={GAMES.history.title} body={GAMES.history.pending} dependency={GAMES.history.dependency} />
+        <div className="gm-two">
+          <Link href="/games/history" className="gm-plate gm-link-plate" onClick={() => feedback("tap")}>
+            <p className="gm-plate-title">{GAMES.historyPage.title}</p>
+            <p className="gm-plate-body">{GAMES.history.body}</p>
+            <span className="gm-resume-cta">{GAMES.history.cta}</span>
+          </Link>
+          <Link href="/games/rank" className="gm-plate gm-link-plate" onClick={() => feedback("tap")}>
+            <p className="gm-plate-title">{GAMES.rankPage.title}</p>
+            <p className="gm-plate-body">{GAMES.rankPage.intro}</p>
+            <span className="gm-resume-cta">{GAMES.rank.cta}</span>
+          </Link>
+        </div>
       </section>
     </div>
   );

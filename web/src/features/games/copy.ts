@@ -45,10 +45,32 @@ export const GAMES = {
   },
 
   resume: {
-    title: "Match in progress",
+    title: "Your match",
     body: "The arena still has this match open. It always wins over starting a new one.",
-    cta: "Go back to it",
+    cta: "Open",
+    result: "See the result",
+    live: "Live",
+    done: "Done",
+    versus: "vs",
+    settled: "Cards settled",
   },
+  lastGame: {
+    title: "Pick up where you left off",
+    body: (name: string) => `You were last in ${name}.`,
+    cta: "Continue",
+  },
+  rank: { cta: "See the ladder" },
+  howToWords: { open: "How to play", eyebrow: "How to play", close: "Close", got: "Got it" },
+  /** Pips's per-game HOW TO, three sentences each — what a first-time player needs and nothing they do not. */
+  howTo: {
+    practice: ["Five live Windows come as cards. Swipe up if you think the price settles above its line, down if below.", "Nothing is staked; the round scores you against a bot on the real closing prints.", "Every Window's clock is real — the round ends when the last card settles."],
+    duel: ["Pick a stake, find an opponent, and sign once: the entry names a key that places your picks.", "Both of you play the same sealed deck. Each swipe is a real order on that Window, at most the card's cap.", "When every card settles, the higher measured PnL takes the side-pot. Your positions are yours either way."],
+    lucky: ["A live Window and a side are drawn for you from a seed you can check.", "You see the real quote before anything is placed; one tap places one order.", "It settles like any other order on the book."],
+    range: ["Choose a band around the price and a Window.", "The house prices the band; you win the full payout if the print closes inside it.", "Outside the band, the stake is lost — and the odds say so up front."],
+    moonshot: ["Pick a multiple. A level is solved so that hitting it pays that multiple.", "It is one band with a far edge, priced by the same house model as Range.", "Hit it and the payout is the multiple; miss and the stake is lost."],
+    "line-rider": ["Ride the live price line; stay on it as long as you can.", "The score is verified against the tape after the run.", "No stake — the arcade is for the leaderboard."],
+    "candle-hop": ["Hop the candles as they form on the live feed.", "The score is verified against the tape after the run.", "No stake — the arcade is for the leaderboard."],
+  } as Record<string, readonly string[]>,
 
   profile: {
     signedOut: {
@@ -73,7 +95,33 @@ export const GAMES = {
     dependency: "GameArena's settlement events and the arcade score API",
   },
 
+  historyPage: {
+    title: "Your duels",
+    connect: "Connect a wallet to see the duels it has played.",
+    loading: "Reading your duels…",
+    notConfigured: "This deployment has no games store, so there is no history to read here. Every match is still on chain.",
+    empty: "No duels yet. The first one is one queue away.",
+    live: "Live",
+    won: "Won",
+    lost: "Lost",
+    tied: "Draw",
+    free: "Free",
+    ranked: (pot: string, symbol: string) => `Ranked · ${pot} ${symbol}`,
+    cards: "cards",
+    noOpponent: "no opponent yet",
+  },
+  rankPage: {
+    title: "The ladder",
+    intro: "Ratings move only on ranked duels the settler has verified. There is no season and no prize here — the ladder is the record.",
+    loading: "Reading the ladder…",
+    notConfigured: "This deployment has no games store, so there is no ladder to read here.",
+    empty: "Nobody has a verified ranked duel yet.",
+    you: "you",
+    matches: (n: number) => (n === 1 ? "1 verified duel" : `${n} verified duels`),
+  },
   history: {
+    body: "Every duel you have played, newest first, with how it ended and what the arena measured.",
+    cta: "See your duels",
     title: "Finished matches",
     pending:
       "Finished matches are read back from the arena's own events, indexed so a history page is one query rather than a log replay. The arena is not built yet.",
@@ -85,7 +133,7 @@ export const GAMES = {
     intro: "These apply the moment you change them, and they stay on this device.",
     sfx: { label: "Sound effects", hint: "Swipes, the match, each card as it settles, and the result. Zero is silent." },
     music: { label: "Music", hint: "A bed under the games. Zero is silent.", none: "No music bed ships on this deployment yet — the one the reference plays is not CC0." },
-    credits: "Sound effects by Kenney (kenney.nl), CC0.",
+    credits: "Sound effects by Kenney (kenney.nl), CC0. Pixel type m6x11plus by Daniel Linssen.",
     haptics: { label: "Haptics", hint: "A short buzz on the same moments." },
     hapticsUnsupported: "This device does not report vibration support.",
     motion: {

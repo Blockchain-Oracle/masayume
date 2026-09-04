@@ -125,7 +125,8 @@
 }
 .du-breathe { animation: du-breathe 2.4s ease-in-out infinite; }
 @keyframes du-breathe { 50% { border-color: color-mix(in srgb, var(--vermilion) 70%, transparent); box-shadow: 0 0 24px color-mix(in srgb, var(--vermilion) 22%, transparent); } }
-.du-searching-word { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gray-400); }
+.du-searching-art { width: min(100%, 320px); height: auto; }
+.du-searching-word { font-family: var(--font-pixel); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gray-400); }
 .du-dots { display: inline-flex; gap: 8px; }
 .du-dots span { width: 8px; height: 8px; border-radius: 9999px; background: var(--white); animation: du-bounce 1s ease-in-out infinite; }
 .du-dots span:nth-child(2) { animation-delay: 0.15s; }
@@ -225,13 +226,13 @@
 .du-modal-close:hover { color: var(--white); }
 /* text-4xl tracking-[0.16em] uppercase, in the verdict's own colour */
 .du-modal-verdict {
-  text-align: center; font-family: var(--font-display); font-weight: 900; font-size: 36px; line-height: 1.1;
+  text-align: center; font-family: var(--font-pixel); font-weight: 400; font-size: 44px; line-height: 1;
   letter-spacing: 0.16em; text-transform: uppercase; color: var(--white);
 }
 .du-modal--won .du-modal-verdict, .du-modal--won .du-modal-return { color: var(--profit); }
 .du-modal--lost .du-modal-verdict, .du-modal--lost .du-modal-return { color: var(--loss); }
 /* text-5xl font-bold tabular-nums */
-.du-modal-return { margin-top: -12px; text-align: center; font-family: var(--font-display); font-weight: 800; font-size: 48px; line-height: 1; font-variant-numeric: tabular-nums; color: var(--white); }
+.du-modal-return { margin-top: -8px; text-align: center; font-family: var(--font-pixel); font-weight: 400; font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; color: var(--white); }
 .du-modal-seats { display: flex; align-items: center; justify-content: center; gap: 16px; }
 .du-avatar--lg { width: 64px; height: 64px; }
 .du-modal-vs { font-family: var(--font-mono); font-size: 18px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gray-500); }
@@ -239,11 +240,38 @@
 .du-modal-stat { display: flex; flex-direction: column; gap: 4px; border-radius: 8px; padding: 8px; background: rgba(0, 0, 0, 0.3); }
 [data-theme="light"] .du-modal-stat { background: rgba(20, 18, 16, 0.06); }
 .du-modal-stat--wide { grid-column: span 2; justify-content: center; }
-.du-modal-stat-v { font-family: var(--font-mono); font-size: 16px; font-weight: 600; color: var(--white); font-variant-numeric: tabular-nums; }
+.du-modal-stat-v { font-family: var(--font-pixel); font-size: 22px; line-height: 1; font-weight: 400; color: var(--white); font-variant-numeric: tabular-nums; }
 .du-modal-stat-v--soft { font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gray-400); }
-.du-modal-stat-k { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gray-500); }
+.du-modal-stat-k { font-family: var(--font-pixel); font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gray-500); }
 .du-modal-actions { display: flex; flex-direction: column; gap: 8px; }
 .du-cta--quiet { background: transparent; color: var(--white); border-color: var(--color-hairline); }
+
+/* ── History rows and the ladder (Flicky history.tsx, rank.tsx) ───────────────────────────────── */
+
+.du-history, .du-ladder { display: flex; flex-direction: column; gap: 8px; list-style: none; padding: 0; }
+.du-history-row, .du-rung {
+  display: flex; align-items: center; gap: 12px;
+  border-radius: 14px; padding: 12px 14px;
+  border: 1px solid var(--color-hairline); background: var(--color-surface-1);
+  transition: border-color 180ms var(--ease), transform 140ms var(--ease);
+}
+.du-history-row:hover { border-color: var(--gm-accent, var(--vermilion)); }
+.du-history-verdict {
+  min-width: 52px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gray-500);
+}
+.du-history-row[data-verdict="won"] .du-history-verdict { color: var(--profit); }
+.du-history-row[data-verdict="lost"] .du-history-verdict { color: var(--loss); }
+.du-history-row[data-verdict="live"] .du-history-verdict { color: var(--vermilion); }
+.du-history-main, .du-rung-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.du-history-side { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; text-align: right; }
+.du-rung[data-you] { border-color: var(--gm-accent, var(--vermilion)); }
+.du-rung-place { min-width: 28px; font-family: var(--font-mono); font-size: 12px; color: var(--gray-500); font-variant-numeric: tabular-nums; }
+.du-rung-rating { font-family: var(--font-display); font-weight: 800; font-size: 18px; color: var(--white); font-variant-numeric: tabular-nums; }
+.du-public .du-seat-name .du-k { font-size: 11px; }
+
+/* The locked plate carries the mark. */
+.du-locked { align-items: flex-start; }
+.du-locked-mark { width: 48px; height: 56px; filter: drop-shadow(0 0 12px color-mix(in srgb, var(--vermilion) 55%, transparent)); }
 
 /* ── The socket's own state, said quietly ─────────────────────────────────── */
 
