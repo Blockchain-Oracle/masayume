@@ -4,7 +4,7 @@ import type { Bytes32 } from "@masayume/core/types";
 import { msToSec } from "@masayume/core/units";
 import { isDbConfigured, markDecisionExecution, recordHeartbeat, recordStrategyFill } from "@masayume/db";
 import { createMemoryJournal, createSubmitterSession, ensureMarkets, marketsProvider, parseMarketsEnv, resolveVenueId, type SubmitterSession } from "@masayume/markets";
-import { getStrategy, listLiveSubscribers, resolveRegistryDeployment } from "@masayume/markets/strategies";
+import { getStrategy, listLiveSubscribers, listStrategies, resolveRegistryDeployment } from "@masayume/markets/strategies";
 import { agentBootLine, createAgentState, scanVenueWithAgent, warmAgentState, type AgentState } from "./agent";
 import { scanVenue, type Scan } from "./decide";
 import { readRunnerEnv, type RunnerEnv } from "./env";
@@ -106,7 +106,10 @@ async function cycle(runner: Runner, strategyId: bigint, nowMs: number): Promise
  */
 export async function startStrategyRunner(log: Log): Promise<void> {
   const env = readRunnerEnv();
-  if (env.strategyIds.length === 0) return log("not configured: STRATEGY_IDS is empty; idle");
+  // With no STRATEGY_IDS the runner takes the registry's word: every active strategy that names its key.
+  // A creator who launches on the house runner from the studio is then run without anyone editing a
+  // secret (the owner, 2026-09-04) — the registry already says whose key each strategy is bound to.
+  if (env.strategyIds.length === 0 && !env.privateKey) return log("not configured: no STRATEGY_IDS and no RUNNER_PRIVATE_KEY to discover them by; idle");
   if (!resolveRegistryDeployment()) return log("StrategyRegistry is not deployed on this network; idle");
   const marketsEnv = parseMarketsEnv({ venueId: env.venueId });
   ensureMarkets(marketsEnv);
@@ -130,9 +133,27 @@ export async function startStrategyRunner(log: Log): Promise<void> {
   }
 
   const runner: Runner = { env, session, venueId: venue.value.venueId, agent, log };
+  const discover = env.strategyIds.length === 0;
+  if (discover) log(`no STRATEGY_IDS: running every active strategy on the registry that names ${session!.address}`);
+  let lastDiscovered = "";
+  const strategiesToRun = async (): Promise<bigint[]> => {
+    if (!discover) return env.strategyIds;
+    const listed = await listStrategies();
+    if (!isOk(listed) || !listed.value) {
+      log(`registry unreadable: ${isOk(listed) ? "no strategies" : listed.error.technical}; nothing to run this cycle`);
+      return [];
+    }
+    const mine = listed.value.filter((s) => s.active && s.runner === session!.address.toLowerCase()).map((s) => s.strategyId);
+    const summary = mine.map((id) => `#${id}`).join(", ") || "none";
+    if (summary !== lastDiscovered) {
+      lastDiscovered = summary;
+      log(`strategies naming this key: ${summary}`);
+    }
+    return mine;
+  };
   const tick = async () => {
     await marketsProvider.syncClock();
-    for (const id of env.strategyIds) {
+    for (const id of await strategiesToRun()) {
       await cycle(runner, id, marketsProvider.nowMs()).catch((error: unknown) => log(`#${id}: cycle failed — ${error instanceof Error ? error.message : String(error)}`));
     }
   };
