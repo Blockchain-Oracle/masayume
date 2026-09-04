@@ -2,9 +2,9 @@
 
 import { isOk } from "@masayume/core/schemas";
 import { useClaimables, usePositions } from "@masayume/markets/react";
-import { useRouter } from "next/navigation";
 import { SectionHeader } from "@/components/chrome";
 import { ErrorState } from "@/components/states";
+import { openFunds } from "@/features/funding";
 import { PrivateBalancePanel } from "@/features/private";
 import { TradingBalancePanel, useVaultOpenBets } from "@/features/vault";
 import { XWalletCard } from "@/features/x";
@@ -42,7 +42,6 @@ import { usePortfolioTiers } from "./useTiers";
  * earnings, the X wallet — keeps a named dependency state instead of a plausible-looking panel.
  */
 export function PortfolioScreen() {
-  const router = useRouter();
   const { address } = useWalletSession();
   const { boot, venueId } = useVenue();
   const symbol = boot && isOk(boot) ? boot.value.collateral.symbol : "tUSDC";
@@ -85,8 +84,10 @@ export function PortfolioScreen() {
   return (
     <div className="mx-auto flex w-full max-w-(--content-reading) flex-col gap-8 px-gutter py-8">
       {/* ONE number first (reference L295–329): the plate answers "how much can I bet right now" once; every
-          pool that is not spendable here is a row inside the same plate, never merged into the figure. */}
-      <LedgerPlate money={money} symbol={symbol} openBets={openBets} settled={settled} onPrimary={() => router.push("/markets")}>
+          pool that is not spendable here is a row inside the same plate, never merged into the figure. The
+          reference's primary button routes to /markets; ours opens the Add-money modal in place — the owner's
+          ruling (2026-09-04, asked twice): a button that says "Add money" must add money, not change page. */}
+      <LedgerPlate money={money} symbol={symbol} openBets={openBets} settled={settled} onPrimary={openFunds}>
         <PoolRows pools={money.pools} decimals={money.decimals} symbol={symbol} panels={{ x: <XWalletCard compact />, private: <PrivateBalancePanel inline /> }} />
         {/* The reference's disclosure row carries creator earnings; ours carries the Trading Balance's own controls. */}
         <PlateDisclosure title={PLATE.vaultDisclosure}>
