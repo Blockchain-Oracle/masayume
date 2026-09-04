@@ -3,6 +3,7 @@
 import { Menu } from "@base-ui/react/menu";
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import type { NavGroup } from "./nav-items";
 import { isActiveNavGroup, isActiveNavItem } from "./nav-items";
 
@@ -24,7 +25,9 @@ export function DesktopNavMenu({ group, pathname, open, onOpenChange }: DesktopN
       </Menu.Trigger>
       <Menu.Portal>
         <Menu.Positioner className="nav-menu-positioner" sideOffset={18} align="end">
-          <Menu.Popup className={`nav-menu-popup nav-menu-popup--${group.id}`}>
+          {/* The panel is as wide as its sections — one column each — so a group that lost destinations
+              (the owner, 2026-09-04: "why is the rectangle that big now?") does not keep their empty room. */}
+          <Menu.Popup className={`nav-menu-popup nav-menu-popup--${group.id}`} style={{ "--nav-sections": group.sections.length } as CSSProperties}>
             <div className="nav-menu-intro">
               <span>{group.name}</span>
               <p>{group.description}</p>
