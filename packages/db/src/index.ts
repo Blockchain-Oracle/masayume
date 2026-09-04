@@ -17,3 +17,4 @@ export * from "./schema";
 export * from "./takes";
 export * from "./x";
 export * from "./strategies";
+export * from "./strategy-decisions";
