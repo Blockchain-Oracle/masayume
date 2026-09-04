@@ -73,6 +73,11 @@ export const MOONSHOT = {
     upTo: (amount: string, symbol: string) => `Up to ${amount} ${symbol} if the basis moves before it lands — the multiple on the slip is the real one.`,
     capRung: (multiple: number, cap: string, symbol: string) => `Payout on ×${multiple} is capped at ${cap} ${symbol}.`,
     capContract: (cap: string, symbol: string) => `Payout up to ${cap} ${symbol}, the reserve's cap.`,
+    /** A payout typed over the rung's cap is not sent to the chain; one tap sets it to the cap. */
+    overCap: (multiple: number, cap: string, symbol: string) => `×${multiple} pays at most ${cap} ${symbol}`,
+    useCap: "Set to the cap",
+    /** "Set stake" hit the cap: the contract charges the cap's stake, not the stake typed. */
+    cappedStake: (stake: string, cap: string, symbol: string) => `The cap is reached: ${stake} ${symbol} buys the full ${cap}, and the rest of your stake stays in your wallet.`,
     locks: (amount: string, symbol: string) => `This round locks ${amount} ${symbol} of the house's money.`,
     expiryRoom: (room: string, cap: string, symbol: string) => `This expiry can still lock ${room} of ${cap} ${symbol}.`,
     expiryReading: "Reading the expiry's budget…",

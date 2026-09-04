@@ -1,9 +1,9 @@
 "use client";
 
-import { RANGE_STAKE_HEADROOM_BPS, type RangeMode, type RangeReserveState } from "@masayume/core/range";
+import { RANGE_STAKE_HEADROOM_BPS, moonshotPayoutCapBase, type RangeMode, type RangeReserveState } from "@masayume/core/range";
 import { isOk } from "@masayume/core/schemas";
 import type { Hex, MarketId } from "@masayume/core/types";
-import { formatBaseUnits, mulBpsCeil, parseDecimalToBaseUnits } from "@masayume/core/units";
+import { formatBaseUnits, mulBpsCeil, oneUnit, parseDecimalToBaseUnits } from "@masayume/core/units";
 import { useBalanceSheet } from "@masayume/markets/react";
 import { Rocket, Wallet } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -62,7 +62,11 @@ export function MoonshotBuilder({ reserve, symbol }: MoonshotBuilderProps) {
   const stakeBase = parseDecimalToBaseUnits(stakeInput || "0", decimals) ?? 0n;
   const payoutBase = parseDecimalToBaseUnits(payoutInput || "0", decimals) ?? 0n;
   const mode: RangeMode = solveMode === "fixStake" ? { kind: "fixStake", stakeBase } : { kind: "fixPayout", maxPayoutBase: payoutBase };
-  const quoteState = useMoonshotQuote({ market, expirySec: picked?.expirySec ?? null, call, mode, params, enabled: market !== null && !reserve.paused });
+  // The rung's cap under the contract's: a payout typed over it is refused here, not by the chain.
+  const capBase = moonshotPayoutCapBase(call.multiple, params.maxPayoutCapBase, oneUnit(decimals));
+  const overCap = solveMode === "fixPayout" && payoutBase > capBase;
+  const useCap = useCallback(() => setPayoutInput(formatBaseUnits(capBase, decimals, { maxDp: 0, minDp: 0, group: false })), [capBase, decimals]);
+  const quoteState = useMoonshotQuote({ market, expirySec: picked?.expirySec ?? null, call, mode, params, enabled: market !== null && !reserve.paused && !overCap });
   const { quote } = quoteState;
   const capacityReading = useExpiryCapacity(picked?.expirySec ?? null, quote?.houseLockedBase ?? null, picked !== null);
   const capacity = capacityReading && isOk(capacityReading) ? capacityReading.value : null;
@@ -148,6 +152,10 @@ export function MoonshotBuilder({ reserve, symbol }: MoonshotBuilderProps) {
         quoteError={quoteState.error}
         onRetryQuote={quoteState.retry}
         capacity={capacity}
+        capBase={capBase}
+        overCap={overCap}
+        onUseCap={useCap}
+        stakeBase={stakeBase}
         solveMode={solveMode}
         onSolveMode={setSolveMode}
         stakeInput={stakeInput}

@@ -26,6 +26,13 @@ export interface MoonshotTicketProps {
   onRetryQuote: () => void;
   /** The reserve's answer for this round's lock on this expiry; null while it is being read. */
   capacity: RangeCapacity | null;
+  /** This rung's payout ceiling — the product's cap under the contract's — known before any quote. */
+  capBase: bigint;
+  /** "Set payout" typed over the cap: the chain is not asked, and one tap sets the field to the cap. */
+  overCap: boolean;
+  onUseCap: () => void;
+  /** What "Set stake" asked for, so the ticket can say when the cap took less than that. */
+  stakeBase: bigint;
   solveMode: SolveMode;
   onSolveMode: (mode: SolveMode) => void;
   stakeInput: string;
@@ -55,7 +62,7 @@ function distancePct(strikePrint: bigint, openingPrint: bigint): { text: string;
  * sits, the solver, the breakdown, the caps, the liability line, the place control, the footnotes.
  */
 export function MoonshotTicket(props: MoonshotTicketProps) {
-  const { window: w, call, reserve, symbol, nowMs, quote, quoteLoading, quoteError, onRetryQuote, capacity, solveMode, onSolveMode } = props;
+  const { window: w, call, reserve, symbol, nowMs, quote, quoteLoading, quoteError, onRetryQuote, capacity, capBase, overCap, onUseCap, stakeBase, solveMode, onSolveMode } = props;
   const { stakeInput, onStakeInput, payoutInput, onPayoutInput, walletSpendableBase, step, errorTitle, errorDetail, txHash, onPlace, onReset } = props;
   const { ticket } = MOONSHOT;
   const { decimals, params } = reserve;
@@ -66,8 +73,9 @@ export function MoonshotTicket(props: MoonshotTicketProps) {
   const fits = capacity === null || capacity.fits;
   const hasEnough = walletSpendableBase !== null && quote !== null && walletSpendableBase >= quote.quote.stakeBase;
   const distance = quote ? distancePct(quote.band.strikePrint, quote.openingPrint) : null;
-  const capBase = quote?.payoutCapBase ?? params.maxPayoutCapBase;
   const room = capacity ? (params.maxExpiryLockedBase > capacity.lockedByExpiryBase ? params.maxExpiryLockedBase - capacity.lockedByExpiryBase : 0n) : null;
+  // "Set stake" ran into the cap: the contract's stake for the capped payout is below what was typed.
+  const cappedStake = solveMode === "fixStake" && quote !== null && quote.quote.maxPayoutBase === capBase && quote.quote.stakeBase < stakeBase;
   const labels = { ...ticket, insufficient: (s: string) => (fits ? ticket.insufficient(s) : ticket.wontFit) };
 
   return (
@@ -136,11 +144,23 @@ export function MoonshotTicket(props: MoonshotTicketProps) {
 
               <p className="ms-liability">
                 {capBase < params.maxPayoutCapBase ? ticket.capRung(call.multiple, whole(capBase), symbol) : ticket.capContract(whole(capBase), symbol)}
+                {cappedStake && quote && (
+                  <>
+                    <br />
+                    {ticket.cappedStake(money(quote.quote.stakeBase), whole(capBase), symbol)}
+                  </>
+                )}
                 <br />
                 {quote && ticket.locks(money(quote.houseLockedBase), symbol)}
                 {quote && " "}
                 {room === null ? ticket.expiryReading : ticket.expiryRoom(money(room), whole(params.maxExpiryLockedBase), symbol)}
               </p>
+
+              {overCap && (
+                <button type="button" onClick={onUseCap} className="pl-quote-err" data-cursor="hover">
+                  {ticket.overCap(call.multiple, whole(capBase), symbol)} · {ticket.useCap}
+                </button>
+              )}
 
               {capacity && !capacity.fits && capacity.refusal && (
                 <p className="pl-quote-err" title={capacity.refusal.technical}>
