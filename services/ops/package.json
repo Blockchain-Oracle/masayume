@@ -17,7 +17,9 @@
     "spike:arena-params": "tsx src/spike/arena-params.ts",
     "spike:abandon": "tsx src/spike/abandon-drive.ts",
     "spike:room-key": "tsx src/spike/room-key-check.ts",
-    "spike:sponsor": "tsx src/spike/sponsor-check.ts"
+    "spike:sponsor": "tsx src/spike/sponsor-check.ts",
+    "season:results": "tsx src/tools/season-results.ts",
+    "season:distribute": "tsx src/tools/season-distribute.ts"
   },
   "dependencies": {
     "@masayume/core": "workspace:*",

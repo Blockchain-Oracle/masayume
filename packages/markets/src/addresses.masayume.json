@@ -19,7 +19,9 @@
       "privateDesk": "0x4D27115c4eff6536bf0D009ACeBf339AA02128bB",
       "privateDeskFromBlock": 478433921,
       "gameArena": "0x0d8FC9659d02070aD8fF7E9a27E5394B9F5a2EF2",
-      "gameArenaFromBlock": 479464205
+      "gameArenaFromBlock": 479464205,
+      "seasonPrizePool": "0x6B340DBE7AC3283B5f5c3aA5f6AaEd57378596fA",
+      "seasonPrizePoolFromBlock": 479519557
     }
   }
 }

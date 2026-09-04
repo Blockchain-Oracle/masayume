@@ -1,6 +1,7 @@
 export { resolveArenaDeployment } from "./deployment";
 export { diagnoseArena } from "./errors";
 export { arenaHeadBlock, listArenaEvents } from "./logs";
+export { distributeSeasonPrizes, getSeasonPool, resolveSeasonPoolDeployment, type DistributeSeasonInput, type SeasonPoolDeployment, type SeasonPoolState } from "./season";
 export { sponsorKeyTopUp, type SponsorKeyTopUpInput } from "./sponsor";
 export {
   cardsOutstanding,

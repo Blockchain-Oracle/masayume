@@ -11,5 +11,6 @@ export * from "./protocol";
 export * from "./rating";
 export * from "./room-token";
 export * from "./scoring";
+export * from "./season";
 export * from "./types";
 export * from "./wire";

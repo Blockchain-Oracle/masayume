@@ -13,8 +13,10 @@ import { GameProfileCard } from "./GameProfileCard";
 import { lastGamePlayed } from "./last-game";
 import { MatchTile } from "./MatchTile";
 import { useRoomOccupancy, searchingNow } from "./duel/useRoomOccupancy";
+import { useSeason } from "./duel/useSeason";
 import { useGames } from "./GamesProvider";
 import { PendingPlate } from "./PendingPlate";
+import { SeasonBanner } from "./SeasonBanner";
 
 /**
  * `/games` — the selection, and everything the shell knows about the player.
@@ -36,6 +38,7 @@ export function GamesHub() {
    * one step a player might not want to take.
    */
   const occupancy = useRoomOccupancy();
+  const season = useSeason();
   const presence = (entry: GameEntry): string | null => {
     if (entry.id !== "duel") return null;
     if (!occupancy) return null;
@@ -57,6 +60,13 @@ export function GamesHub() {
         </h1>
         <p className="gm-intro">{GAMES.intro}</p>
       </div>
+
+      {/* Flicky's home: the season banner first, tapping through to the ladder and its prizes. */}
+      {season && (
+        <Link href="/games/rank" className="gm-season-link" onClick={() => feedback("tap")}>
+          <SeasonBanner season={season} />
+        </Link>
+      )}
 
       {activeMatchId ? (
         <MatchTile match={match} />

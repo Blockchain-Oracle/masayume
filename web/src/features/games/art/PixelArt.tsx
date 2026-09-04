@@ -185,3 +185,29 @@ export function LockedInMark({ className }: { className?: string }) {
     />
   );
 }
+
+/** The season's trophy: a cup in vermilion with a white gleam, on the same grid as the coin. */
+export function TrophyMark({ className }: { className?: string }) {
+  return (
+    <Pixels
+      className={className}
+      palette={{ v: VERM, w: WHITE, i: INK, s: SOFT }}
+      rows={[
+        "..iiiiiiiiii..",
+        ".ivvvvvvvvvvi.",
+        "iivvwvvvvvvvii",
+        "isvvwvvvvvvvsi",
+        "isvvvvvvvvvvsi",
+        ".iivvvvvvvvii.",
+        "..iivvvvvvii..",
+        "...iivvvvii...",
+        "....iivvii....",
+        ".....ivvi.....",
+        ".....ivvi.....",
+        "....iivvii....",
+        "...ivvvvvvi...",
+        "..iiiiiiiiii..",
+      ]}
+    />
+  );
+}

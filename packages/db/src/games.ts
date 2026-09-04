@@ -297,6 +297,44 @@ export function gamesStoreConfigured(): boolean {
   return getDb() !== null;
 }
 
+/**
+ * Finished ranked duels per wallet — the season's eligibility count, Flicky's `stakedDuelCounts`. A duel
+ * counts once for each seat, only when the pot was decided (`finalized`): a refund is not a duel played.
+ * With no wallets asked for, every wallet with at least one is returned — the payout tool's whole list.
+ */
+export async function countRankedFinalized(wallets: readonly string[] | null = null): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  const db = getDb();
+  if (!db) return out;
+  await ensureSchema();
+  const keys = wallets?.map((w) => w.toLowerCase()) ?? null;
+  const rows = await db<{ wallet: string; n: string }[]>`
+    SELECT wallet, count(*)::text AS n FROM (
+      SELECT creator AS wallet FROM duel_matches WHERE mode = 'ranked' AND status = 'finalized'
+      UNION ALL
+      SELECT challenger AS wallet FROM duel_matches WHERE mode = 'ranked' AND status = 'finalized' AND challenger IS NOT NULL
+    ) seats
+    WHERE ${keys === null ? db`TRUE` : db`wallet = ANY(${keys as string[]})`}
+    GROUP BY wallet
+  `;
+  for (const row of rows) out.set(row.wallet, Number(row.n));
+  return out;
+}
+
+/** A wallet's 1-based place on the ladder in the ladder's own order, or null when it has no rating yet. */
+export async function ladderRankOf(wallet: string): Promise<number | null> {
+  const db = getDb();
+  if (!db) return null;
+  await ensureSchema();
+  const rows = await db<{ place: string }[]>`
+    SELECT place::text FROM (
+      SELECT wallet, row_number() OVER (ORDER BY rating DESC, verified_matches DESC, wallet ASC) AS place FROM game_ratings
+    ) ladder WHERE wallet = ${wallet.toLowerCase()}
+  `;
+  const row = rows[0];
+  return row ? Number(row.place) : null;
+}
+
 /** The ladder, top first — Flicky's `/leaderboard`, over the ratings the settler already keeps. */
 export async function listTopRatings(limit = 50): Promise<RatingRow[]> {
   const db = getDb();

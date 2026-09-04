@@ -336,3 +336,29 @@ a.gm-card:hover { border-color: color-mix(in srgb, var(--vermilion) 40%, transpa
 .gm-howto-title { font-size: 22px; }
 .gm-howto-steps { display: flex; flex-direction: column; gap: 8px; padding-left: 20px; font-size: 13px; line-height: 1.6; color: var(--gray-400); }
 .gm-howto-steps li::marker { color: var(--gm-accent, var(--vermilion)); font-family: var(--font-mono); }
+
+/* ── The season banner (Flicky season-banner.tsx: a 3:1 strip on the home and the ladder), drawn not shipped ── */
+.gm-season-link { display: block; text-decoration: none; color: inherit; margin-bottom: 20px; }
+.gm-season {
+  position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px;
+  min-height: 96px; padding: 14px 18px; border-radius: 16px; overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--vermilion) 40%, var(--color-hairline));
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--vermilion) 16%, var(--color-surface-1)), var(--color-surface-1) 70%),
+    var(--color-surface-1);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.06), inset 0 -2px 0 rgba(0, 0, 0, 0.35);
+}
+[data-theme="light"] .gm-season { box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.5), inset 0 -2px 0 rgba(20, 18, 16, 0.08); }
+.gm-season-trophy { width: 56px; height: 56px; flex: none; filter: drop-shadow(0 0 10px color-mix(in srgb, var(--vermilion) 55%, transparent)); }
+.gm-season-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.gm-season-eyebrow { font-family: var(--font-pixel); font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gray-500); }
+.gm-season-name { font-family: var(--font-pixel); font-size: 33px; line-height: 1; letter-spacing: 0.06em; text-transform: uppercase; color: var(--white); }
+.gm-season-line { font-family: var(--font-pixel); font-size: 14px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--vermilion); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gm-season-cta { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gray-400); white-space: nowrap; }
+.gm-season-link:hover .gm-season-cta { color: var(--white); }
+@media (max-width: 480px) {
+  .gm-season { grid-template-columns: auto minmax(0, 1fr); padding: 12px 14px; }
+  .gm-season-cta { display: none; }
+  .gm-season-name { font-size: 22px; }
+  .gm-season-trophy { width: 44px; height: 44px; }
+}

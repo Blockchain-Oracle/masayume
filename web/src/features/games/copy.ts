@@ -113,11 +113,39 @@ export const GAMES = {
   rankPage: {
     title: "The ladder",
     intro: "Ratings move only on ranked duels the settler has verified. There is no season and no prize here — the ladder is the record.",
+    /** Flicky's Season overlay (`rank.tsx`): said only when the operator has named a season and a pool escrows it. */
+    introSeason: "Ratings move only on ranked duels the settler has verified. This season pays the top of the ladder from a pool that already sits in a contract.",
     loading: "Reading the ladder…",
     notConfigured: "This deployment has no games store, so there is no ladder to read here.",
     empty: "Nobody has a verified ranked duel yet.",
     you: "you",
     matches: (n: number) => (n === 1 ? "1 verified duel" : `${n} verified duels`),
+    pool: (total: string, currency: string) => `${total} ${currency} pool`,
+    endsIn: (clock: string) => `ends in ${clock}`,
+    ended: "season over",
+    yourRank: "your rank",
+    unranked: "not ranked yet",
+    prizes: (name: string) => `${name} prizes`,
+    each: "each",
+    eligible: (n: number) => `eligible: ${n}+ ranked duels`,
+    escrowed: (amount: string, symbol: string) => `escrowed on chain: ${amount} ${symbol}`,
+    escrowShort: (have: string, want: string, symbol: string) => `escrowed on chain: ${have} of ${want} ${symbol}`,
+    notEscrowed: "no prize pool is deployed on this network — nothing here is escrowed",
+    distributed: "the pool has paid out",
+    prize: (amount: number, currency: string) => `${amount} ${currency}`,
+    locked: (have: number, need: number) => `${have}/${need} ranked`,
+    finishToEnter: "finish a ranked duel to enter the ranks",
+    connectToSee: "connect a wallet to see your rank",
+    ordinal: (n: number) => {
+      const v = n % 100;
+      const suffix = v >= 11 && v <= 13 ? "th" : n % 10 === 1 ? "st" : n % 10 === 2 ? "nd" : n % 10 === 3 ? "rd" : "th";
+      return `${n}${suffix}`;
+    },
+  },
+  /** Flicky's season banner on the hub and the ladder, drawn here rather than shipped as a PNG. */
+  seasonBanner: {
+    eyebrow: "season",
+    cta: "see the prizes",
   },
   history: {
     body: "Every duel you have played, newest first, with how it ended and what the arena measured.",

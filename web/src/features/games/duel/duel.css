@@ -285,3 +285,35 @@
 @media (max-width: 400px) {
   .du-plate, .du-entry, .du-queue, .du-lobby, .du-error { padding: 16px; }
 }
+
+/* ── The ladder's season overlay (Flicky rank.tsx): the pool line, the prize panel, the chips, the medals ── */
+.du-season-line { margin-top: 6px; font-family: var(--font-pixel); font-size: 16px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--vermilion); font-variant-numeric: tabular-nums; }
+.du-prizes { gap: 8px; margin-bottom: 12px; }
+.du-prizes-head { display: flex; align-items: center; justify-content: space-between; }
+.du-prizes-total { font-family: var(--font-pixel); font-size: 22px; line-height: 1; color: var(--vermilion); font-variant-numeric: tabular-nums; }
+.du-prizes-list { display: flex; flex-direction: column; gap: 4px; }
+.du-prizes-row { display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
+.du-prizes-rank { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gray-400); }
+.du-prizes-rank[data-medal] { color: var(--white); }
+.du-prizes-amount { font-family: var(--font-mono); font-size: 13px; color: var(--white); font-variant-numeric: tabular-nums; }
+.du-prizes-escrow { border-top: 1px solid var(--color-hairline); padding-top: 8px; }
+.du-rung--mine { margin-bottom: 12px; }
+.du-rung-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.du-rung-side { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+/* Gold, silver and bronze for the top three — the reference's medallions, as tints of the venue's own inks. */
+.du-rung-place[data-medal] { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; font-weight: 700; }
+.du-rung-place[data-medal="1"] { background: color-mix(in srgb, var(--vermilion) 85%, var(--white)); color: var(--bg); }
+.du-rung-place[data-medal="2"] { background: color-mix(in srgb, var(--white) 70%, var(--gray-500)); color: var(--bg); }
+.du-rung-place[data-medal="3"] { background: color-mix(in srgb, var(--vermilion) 45%, var(--gray-500)); color: var(--white); }
+/* Flicky's PrizeChip: lit for the eligible, muted with the distance to the floor for the rest. */
+.du-prize-chip {
+  display: inline-flex; align-items: center; gap: 2px;
+  padding: 1px 8px; border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(255, 255, 255, 0.05);
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--gray-500); font-variant-numeric: tabular-nums;
+}
+[data-theme="light"] .du-prize-chip { border-color: rgba(20, 18, 16, 0.12); background: rgba(20, 18, 16, 0.04); }
+.du-prize-chip[data-eligible] { border-color: color-mix(in srgb, var(--vermilion) 45%, transparent); background: color-mix(in srgb, var(--vermilion) 14%, transparent); color: var(--vermilion); }
+.du-prize-locked { color: var(--gray-500); }
+.du-center { text-align: center; margin-top: 12px; }

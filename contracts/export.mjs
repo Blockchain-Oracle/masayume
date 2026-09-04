@@ -20,6 +20,7 @@ const contracts = [
   { name: "leverage-reserve", artifact: "LeverageReserve.sol/LeverageReserve.json", exportName: "leverageReserveAbi", optional: true },
   { name: "private-desk", artifact: "PrivateDesk.sol/PrivateDesk.json", exportName: "privateDeskAbi", optional: true },
   { name: "game-arena", artifact: "GameArena.sol/GameArena.json", exportName: "gameArenaAbi", optional: true },
+  { name: "season-prize-pool", artifact: "SeasonPrizePool.sol/SeasonPrizePool.json", exportName: "seasonPrizePoolAbi", optional: true },
 ];
 
 mkdirSync(join(target, "contracts"), { recursive: true });
