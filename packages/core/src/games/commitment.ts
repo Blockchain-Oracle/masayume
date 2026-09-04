@@ -132,3 +132,6 @@ export function mapLuckyDraw(bytes: Uint8Array, options: LuckyOptions): LuckyDra
     multiplier: options.multipliers[reach.index] as number,
   };
 }
+
+/** The word encoders, so the other commitments under this layout rule (`lucky.ts`) cannot drift from it. */
+export { word as uintWord, hexWord, concat as concatWords };
