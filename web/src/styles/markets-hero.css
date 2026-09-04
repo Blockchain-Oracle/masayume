@@ -45,11 +45,6 @@
   color: var(--white);
 }
 
-.mh-asset-badge.btc {
-  background: #f7931a;
-  color: #fff;
-}
-
 [data-theme="light"] .mh-asset-badge {
   background: rgba(20, 18, 16, 0.1);
 }

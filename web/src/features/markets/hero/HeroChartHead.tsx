@@ -1,8 +1,7 @@
 "use client";
 
 import type { EventMarket, Lane } from "@masayume/core/types";
-import { cn } from "@/lib/utils";
-import { assetMark } from "./asset-mark";
+import { AssetDisc } from "./asset-mark";
 import { HeroCadenceTabs } from "./HeroCadenceTabs";
 import { HeroQuestion } from "./HeroQuestion";
 import { HeroSettlesIn } from "./HeroSettlesIn";
@@ -29,14 +28,11 @@ export function HeroChartHead({
   pinnedMissingIntervalSec,
   onPin,
 }: HeroChartHeadProps) {
-  const mark = assetMark(market.asset);
   return (
     <div className="hero-chart-head">
       <div>
         <div className="mh-asset-row">
-          <span aria-hidden className={cn("mh-asset-badge", mark.variant)}>
-            {mark.glyph}
-          </span>
+          <AssetDisc asset={market.asset} className="mh-asset-badge" />
           <span className="mh-asset-label">{market.asset}</span>
           <HeroCadenceTabs
             lanes={lanes}

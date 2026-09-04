@@ -5,7 +5,7 @@ import type { EventMarket } from "@masayume/core/types";
 import { formatClock } from "@masayume/core/units";
 import { formatCadence, REELS } from "@/lib/copy";
 import { cn } from "@/lib/utils";
-import { assetMark } from "../hero/asset-mark";
+import { AssetDisc } from "../hero/asset-mark";
 
 interface ReelHeadProps {
   market: EventMarket;
@@ -20,14 +20,11 @@ function closesAt(expirySec: number): string {
 
 /** Asset, round length, closing time, and the bell — everything above the question. */
 export function ReelHead({ market, nowMs }: ReelHeadProps) {
-  const mark = assetMark(market.asset);
   const state = nowMs > 0 ? countdown(nowMs, market.expirySec, market.intervalSec) : null;
   return (
     <div className="reel-head">
       <div className="reel-ident">
-        <span aria-hidden className="reel-badge">
-          {mark.glyph}
-        </span>
+        <AssetDisc asset={market.asset} className="reel-badge" />
         <div>
           <div className="reel-meta">{REELS.settlesOn(market.asset)}</div>
           <div className="reel-submeta">{REELS.round(formatCadence(market.intervalSec), closesAt(market.expirySec))}</div>

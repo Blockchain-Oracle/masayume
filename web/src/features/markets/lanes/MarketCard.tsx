@@ -6,7 +6,7 @@ import { formatOracleRaw } from "@masayume/core/units";
 import { Countdown } from "@/components/data";
 import { formatCadence, HERO_HEAD, LANE_CARD, MARKETS } from "@/lib/copy";
 import { cn } from "@/lib/utils";
-import { assetMark } from "../hero/asset-mark";
+import { AssetDisc } from "../hero/asset-mark";
 import { ORACLE_SCALE } from "../hero/units";
 import { useChartSeries } from "../hero/useChartSeries";
 import { useTopOfBook } from "../hero/useTopOfBook";
@@ -47,7 +47,6 @@ export function MarketCard({ market, nowMs, selected, onSelect, onOpenRoom }: Ma
   const series = useChartSeries(market);
   const { upCents, downCents, hydrating } = useTopOfBook(market);
 
-  const mark = assetMark(market.asset);
   const openingRaw = market.openingPriceRaw;
   const points = series?.ok ? series.value.points : [];
   const latestRaw = series?.ok ? (series.value.latest?.valueRaw ?? null) : null;
@@ -76,9 +75,7 @@ export function MarketCard({ market, nowMs, selected, onSelect, onOpenRoom }: Ma
     >
       <div className="mc-head">
         <span className="mc-asset">
-          <span className={cn("glyph", mark.variant === undefined && "generic")} aria-hidden>
-            {mark.glyph}
-          </span>
+          <AssetDisc asset={market.asset} className="glyph" />
           <span className="mc-ticker">{market.asset}</span>
           <span className="mc-cadence">{formatCadence(market.intervalSec)}</span>
         </span>

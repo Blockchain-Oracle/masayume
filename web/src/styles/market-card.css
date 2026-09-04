@@ -9,7 +9,7 @@
    Lanes here are whatever the venue lists, so an asset with no mark of its own
    gets its initial on a neutral disc rather than wearing Bitcoin's colour. Same
    rule and the same neutral values as `.mh-asset-badge` in the hero and
-   `.wq-generic` on the word board — the third surface to need it. */
+   `.wq-btc.generic` on the word board — the third surface to need it. */
 .mc-asset .glyph.generic {
   background: rgba(255, 255, 255, 0.1);
   color: var(--white);

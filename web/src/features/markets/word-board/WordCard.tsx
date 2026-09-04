@@ -8,7 +8,7 @@ import Link from "next/link";
 import { Countdown } from "@/components/data";
 import { MARKETS, PLAIN_WORDS, WORD_BOARD, wordQuestion } from "@/lib/copy";
 import { cn } from "@/lib/utils";
-import { assetMark } from "../hero/asset-mark";
+import { AssetDisc } from "../hero/asset-mark";
 import { useTopOfBook } from "../hero/useTopOfBook";
 
 interface WordCardProps {
@@ -44,7 +44,6 @@ const cents = (value: number | null, hydrating: boolean): string =>
  */
 export function WordCard({ market, nowMs }: WordCardProps) {
   const { upCents, downCents, hydrating } = useTopOfBook(market);
-  const mark = assetMark(market.asset);
   const closeMs = market.expirySec * 1000;
   const closeClock = formatWallClock(closeMs);
   const question = wordQuestion({ ...market, marketId: String(market.marketId) }, ORACLE_PRICE_SCALE, closeClock);
@@ -53,9 +52,7 @@ export function WordCard({ market, nowMs }: WordCardProps) {
   return (
     <div className="wq-card">
       <div className="wq-top">
-        <span className={cn("wq-btc", mark.variant === undefined && "wq-generic")} aria-hidden>
-          <span>{mark.glyph}</span>
-        </span>
+        <AssetDisc asset={market.asset} className="wq-btc" />
         <span className="wq-meta">{market.asset}</span>
         <Countdown expirySec={market.expirySec} intervalSec={market.intervalSec} nowMs={nowMs} className="wq-clock" />
       </div>

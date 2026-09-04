@@ -9,17 +9,17 @@
    venue lists. An asset with no mark of its own gets its initial on a neutral disc
    rather than wearing Bitcoin's colour — the same rule as `.mh-asset-badge` in the
    hero (markets-hero.css), and the same neutral values. */
-.wq-btc.wq-generic {
+.wq-btc.generic {
   background: rgba(255, 255, 255, 0.1);
   box-shadow: none;
 }
 
-.wq-btc.wq-generic span {
+.wq-btc.generic span {
   color: var(--white);
   transform: none;
 }
 
-[data-theme="light"] .wq-btc.wq-generic {
+[data-theme="light"] .wq-btc.generic {
   background: rgba(20, 18, 16, 0.1);
 }
 
