@@ -2,6 +2,7 @@ export * from "./AppShell";
 export * from "./LiveTicker";
 export * from "./nav-items";
 export * from "./NavLink";
+export * from "./Pager";
 export * from "./PillNav";
 export * from "./SectionHeader";
 export * from "./Ticker";

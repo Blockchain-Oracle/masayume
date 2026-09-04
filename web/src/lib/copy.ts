@@ -215,6 +215,8 @@ export const PORTFOLIO = {
   openBets: (n: number) => `${n} open`,
   settled: (n: number) => `${n} to collect`,
   betsTitle: "Your bets",
+  /** The two tabs of Yosuku's own portfolio spec (§Section 4): the live list and the settled one. */
+  tabs: { open: "Open", history: "History" },
   noBets: "No bets yet.",
   firstCall: "make your first call",
   live: "Live",
@@ -226,6 +228,14 @@ export const PORTFOLIO = {
   toMarkets: "Go to Markets",
   collectTitle: "To collect",
   recordTitle: "Your record",
+} as const;
+
+/** Under every paged list: the owner's "next" (2026-09-04) in place of an endless scroll. */
+export const PAGER = {
+  aria: "Pages",
+  prev: "← Prev",
+  next: "Next →",
+  range: (from: number, to: number, total: number) => `${from}–${to} of ${total}`,
 } as const;
 
 export const BALANCE = {

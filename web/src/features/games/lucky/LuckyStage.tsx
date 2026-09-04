@@ -136,7 +136,7 @@ export function LuckyStage() {
           {phase.kind === "failed" && <LuckyFailedPlate message={phase.message} hadDeal={phase.deal !== null} onAgain={draw.reset} />}
         </div>
 
-        <LuckySide />
+        <LuckySide wallet={address ?? null} watchDrawId={phase.kind === "placed" ? phase.deal.drawId : null} decimals={decimals} symbol={symbol} />
       </div>
     </div>
   );
