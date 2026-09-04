@@ -77,7 +77,12 @@
    flex gap-1 */
 .tk-levs {
   display: flex;
+  align-items: center;
   gap: 4px;
+}
+/* The word beside the chips — the group's label, printed (owner, 2026-09-04). */
+.tk-levs-label {
+  margin-right: 4px;
 }
 
 /* min-w-10 rounded border px-2 py-1 font-mono text-[9px] transition-colors

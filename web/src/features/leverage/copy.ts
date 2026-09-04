@@ -5,6 +5,8 @@
  */
 export const LEVERAGE = {
   label: "Leverage",
+  /** The chips' title when a boost can be placed — the owner's ask (2026-09-04): say what the multiple is. */
+  boostHint: "Leverage: the reserve fronts the rest of the position. Your loss is capped at your stake, and a boost can knock out before expiry.",
   multiple: (x: number) => `${x}×`,
   /** The reference: "Private bets are placed at 1x." Ours: a boost is bought by the reserve, so it takes the wallet route. */
   lockedForRoute: "Boosts are placed from the wallet. Choose Wallet to bet at 2× or 3×.",

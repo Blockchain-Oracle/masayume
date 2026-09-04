@@ -21,10 +21,17 @@ export interface LeverageChipsProps {
  * cannot be placed — exactly as the reference disables them for a private bet. 1× is a plain order; a
  * higher multiple is a boost the reserve buys. The 2026-09-02 sliding highlight was reverted with the rest
  * of the leverage redesign on 2026-09-04.
+ *
+ * One word the reference only puts in the group's `aria-label`: "Leverage", printed beside the chips in the
+ * Ticket's own control-label type, because the owner found that nobody reading 1×/2×/3× knew what they were
+ * (2026-09-04). The enabled boosts carry the one-line explanation as their title.
  */
 export function LeverageChips({ value, onChange, available, maxMultiple, lockedReason }: LeverageChipsProps) {
   return (
     <div className="tk-levs" role="group" aria-label={LEVERAGE.label}>
+      <span className="tk-control-label tk-levs-label" aria-hidden>
+        {LEVERAGE.label}
+      </span>
       {LEVERAGE_MULTIPLES.map((multiple) => {
         const label = LEVERAGE.multiple(multiple);
         const reason = multiple === 1 ? null : !available ? TICKET_PENDING.leveragePending(label) : (lockedReason ?? (multiple > maxMultiple ? TICKET_PENDING.leverageCapped(label, LEVERAGE.multiple(maxMultiple)) : null));
@@ -35,7 +42,7 @@ export function LeverageChips({ value, onChange, available, maxMultiple, lockedR
             className="tk-lev"
             aria-pressed={value === multiple}
             disabled={reason !== null}
-            title={reason ?? undefined}
+            title={reason ?? (multiple > 1 ? LEVERAGE.boostHint : undefined)}
             onClick={() => onChange(multiple)}
             data-cursor="hover"
           >
