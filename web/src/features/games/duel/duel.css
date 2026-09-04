@@ -124,6 +124,11 @@
 .dl-picked-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .dl-picked-row .dl-v { font-size: 13px; }
 .dl-picked-row .dl-foot { margin-left: auto; }
+/* On a phone the money wraps onto its own line, and pushing it right there leaves every row ragged.
+ * It reads as part of the row it belongs to when it starts where the row starts. */
+@media (max-width: 560px) {
+  .dl-picked-row .dl-foot { margin-left: 0; flex-basis: 100%; }
+}
 /* The side's own dot, defined here rather than borrowed from practice.css — a feature that reaches
  * into another feature's stylesheet breaks the moment that one is loaded on a different route. */
 .dl-dot { width: 7px; height: 7px; border-radius: 9999px; flex-shrink: 0; }
