@@ -163,6 +163,21 @@ Lucky's table). Gate on the merged main: 54 files, 809 tests, invariants clean; 
 - The RPC outages also showed a rough edge worth a later slice: the SDK's websocket reconnects print raw
   `ErrorEvent` objects into the ops log, drowning the actors' own lines.
 
+## 6b. The venue came back, and two of the five live checks passed
+
+Around 21:00 UTC the 1h Windows were trading again and the maker (refuelled) quoted them (`quoted 2`).
+With the scripted demo wallet at 390px:
+
+- **Lucky, live.** Stake 1 → SPIN → dealt BTC · DOWN · 2× (commitment, both seeds, nonce 1, policy v1,
+  three candidate Windows hashed; the browser's own check agreed) → one tap → the approval and the order
+  (`0x9b9e…21f0`) → "Sent, no receipt yet" → the history row reconciled from the wallet's own fills:
+  **2.036 contracts, 0.908 tUSDC charged, `pending`** until the Window closes.
+- **The Room's remembered join, live.** A real UP call on BTC 1h (0.90 tUSDC, `Buy UP for 0.99`) unlocked the
+  Room; **one** `personal_sign` to join; the sheet closed and reopened into the thread with no prompt and no
+  join button; a full page reload and reopen — still joined, still one signature in the wallet's log.
+
+Still pending live: a posted arcade score, a Moonshot round, an agent trade (no agent strategy is published yet).
+
 ## 7. The domain went live, and the X rail is one portal step from working
 
 - **`masayume.app` resolves to Vercel** (the owner switched the nameservers; `ns1/ns2.vercel-dns.com`).
