@@ -49,6 +49,7 @@ export { laneNextStart } from "./next-window";
 export { fetchOpeningPrices } from "./prices";
 export { readVenueBoard, type BoardScope, type VenueBoard } from "./board";
 export type { TractionCall, TractionPoint, VenueTraction } from "./traction";
+export { listWalletFills, type WalletFillsQuery } from "./fills";
 export { listWalletHistory, mapPool, toRoundMarket } from "./history";
 export { quoteFromBook, type QuoteInput } from "./quotes";
 export { forgetReading, unwrap, withReading, type Unwrap } from "./reading";
