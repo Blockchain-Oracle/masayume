@@ -56,6 +56,13 @@ export interface LuckyDealWire {
   refusal: string | null;
 }
 
+/** A deal the scan actually made: the Window and the dealt quote are present, by type. */
+export type DealtLuckyWire = LuckyDealWire & { window: LuckyWindowWire; quote: LuckyQuoteWire; result: "drawn" };
+
+export function isDealt(deal: LuckyDealWire): deal is DealtLuckyWire {
+  return deal.result === "drawn" && deal.window !== null && deal.quote !== null;
+}
+
 /** What the Ticket lane came back as, reported by the browser; only `confirmed` is checked against the tape. */
 export type LuckyPlacedStatus = "confirmed" | "nothingFilled" | "refused" | "reverted" | "unknown" | "declined";
 

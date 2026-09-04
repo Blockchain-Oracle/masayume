@@ -156,6 +156,16 @@ export function playSfx(name: SfxName): void {
   }
 }
 
+/**
+ * The context and the effects bus, for a voice built from oscillators rather than a sample (Lucky's
+ * reels, `lucky/reel-sfx.ts`). Null while locked or silenced, so a synthesized cue obeys the same slider
+ * and the same first-gesture unlock as every sample does.
+ */
+export function synthContext(): { ctx: AudioContext; out: AudioNode } | null {
+  if (sfxVolume === 0 || !unlocked || !ctx || !sfxGain) return null;
+  return { ctx, out: sfxGain };
+}
+
 // ── Pips's press and release ──
 
 function between(lo: number, hi: number): number {
