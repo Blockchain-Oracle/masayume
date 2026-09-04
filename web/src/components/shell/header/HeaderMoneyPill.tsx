@@ -2,7 +2,7 @@
 
 import { isOk } from "@masayume/core/schemas";
 import { formatBaseUnits } from "@masayume/core/units";
-import { Coins } from "lucide-react";
+import { TUsdcMark } from "@/components/icons/AssetMarks";
 import { FUNDING } from "@/features/funding";
 import { useBalancePlate } from "@/features/markets/balance";
 
@@ -16,6 +16,9 @@ const AMOUNT_DP = 2;
  * "Never show a half-loaded sum": until the balance sheet has answered, the figure is an em dash, not a
  * zero. The sum is what a bet can actually be paid from — the wallet's spendable plus the Trading Balance —
  * as the reference sums its account and wallet; claimable credit is different money and is not in it.
+ *
+ * The coin is the collateral's own mark (the reference draws a generic `Coins` glyph; the owner asked for
+ * the token's logo, 2026-09-04), in the same 14px slot.
  */
 export function HeaderMoneyPill({ onOpen }: { onOpen: () => void }) {
   const balance = useBalancePlate();
@@ -26,7 +29,7 @@ export function HeaderMoneyPill({ onOpen }: { onOpen: () => void }) {
 
   return (
     <button type="button" onClick={onOpen} title={FUNDING.pill.title} aria-label={FUNDING.pill.aria} className="dusdc-pill" data-cursor="hover">
-      <Coins className="dusdc-coin" aria-hidden />
+      <TUsdcMark className="dusdc-coin" />
       <span className={`dusdc-total${total === null ? " dusdc-total--dim" : ""}`}>{total === null || !sheet ? "—" : formatBaseUnits(total, sheet.decimals, { maxDp: AMOUNT_DP, minDp: AMOUNT_DP })}</span>
       <span className="dusdc-unit">{symbol}</span>
       <span className="dusdc-plus" aria-hidden>

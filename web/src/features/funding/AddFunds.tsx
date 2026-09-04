@@ -5,6 +5,7 @@ import { collateralOrNull } from "@masayume/markets";
 import { X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { TUsdcMark } from "@/components/icons/AssetMarks";
 import { useFaucet } from "@/features/markets/faucet";
 import { diagnosisCopy } from "@/lib/copy";
 import { useWalletSession } from "@/lib/wallet-session";
@@ -94,6 +95,7 @@ export function AddFunds({ open, onClose }: { open: boolean; onClose: () => void
             ) : (
               <div className="fund-rows">
                 <button type="button" onClick={() => void faucet.mint()} disabled={minting || !faucet.hasSigner} className="fund-cta-white" data-cursor="hover">
+                  <TUsdcMark className="fund-cta-mark" />
                   {minting ? FUNDING.modal.requesting : FUNDING.modal.request(amountText, symbol)}
                 </button>
               </div>
