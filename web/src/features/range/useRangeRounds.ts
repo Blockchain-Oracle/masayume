@@ -1,7 +1,7 @@
 "use client";
 
 import { MARKETS_POLL_MS } from "@masayume/core/constants";
-import type { RangeRound } from "@masayume/core/range";
+import { classifyRangeBand, type RangeBandKind, type RangeRound } from "@masayume/core/range";
 import type { Reading } from "@masayume/core/schemas";
 import type { Address, IndexedStatus, MarketId } from "@masayume/core/types";
 import { marketsProvider, withReading } from "@masayume/markets";
@@ -14,6 +14,8 @@ export interface RangeRoundView extends RangeRound {
   intervalSec: number | null;
   /** The venue has resolved or voided the Window: the hub's print is there to settle on. */
   settledOnchain: boolean;
+  /** A band, or a Moonshot — read off the band's shape, since the contract stores no such flag. */
+  kind: RangeBandKind;
 }
 
 const SETTLED: ReadonlySet<IndexedStatus> = new Set<IndexedStatus>(["Resolved", "Voided", "Finalized"]);
@@ -29,7 +31,13 @@ export async function listRangeRounds(wallet: Address): Promise<Reading<RangeRou
     const byId = new Map<MarketId, (typeof rows)[number][1]>(rows);
     return rounds.map((round) => {
       const market = byId.get(round.marketId) ?? null;
-      return { ...round, asset: market?.asset ?? null, intervalSec: market?.intervalSec ?? null, settledOnchain: market ? SETTLED.has(market.status) : false };
+      return {
+        ...round,
+        asset: market?.asset ?? null,
+        intervalSec: market?.intervalSec ?? null,
+        settledOnchain: market ? SETTLED.has(market.status) : false,
+        kind: classifyRangeBand(round.openingPrint, round.lowPrint, round.highPrint),
+      };
     });
   });
 }
