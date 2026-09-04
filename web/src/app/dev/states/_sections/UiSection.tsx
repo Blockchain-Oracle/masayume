@@ -42,7 +42,7 @@ export function UiSection() {
             <Badge variant="secondary">14 settled</Badge>
             <Badge variant="outline">HOUSE</Badge>
             <Separator orientation="vertical" className="h-5" />
-            <Switch defaultChecked aria-label="Plain words" />
+            <Switch defaultChecked aria-label="Sound" />
           </div>
         </Fixture>
         <Fixture label="Tabs — cadence lanes">

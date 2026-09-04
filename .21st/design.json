@@ -46,7 +46,7 @@
     },
     "typography": {
       "display": "Sora (var(--font-display)), extrabold, tight tracking for figures",
-      "mono": "JetBrains Mono (var(--font-mono)) for labels, 9\u201310px uppercase tracked 0.14\u20130.18em",
+      "mono": "JetBrains Mono (var(--font-mono)) for labels, 9–10px uppercase tracked 0.14–0.18em",
       "body": "utility classes type-body / type-caption / type-data / type-label-micro"
     },
     "spacing": {
@@ -65,7 +65,7 @@
       "ease": "var(--ease) cubic-bezier(0.4,0,0.2,1)",
       "easeOut": "var(--ease-out) cubic-bezier(0.22,1,0.36,1)",
       "bounce": "var(--ease-bounce) cubic-bezier(0.34,1.56,0.64,1)",
-      "durations": "200ms colour, 300\u2013500ms layout, count-ups ~600ms",
+      "durations": "200ms colour, 300–500ms layout, count-ups ~600ms",
       "reducedMotion": "must be honoured"
     },
     "density": "compact, editorial: mono micro-labels, big display figures, hairlines"
@@ -89,15 +89,15 @@
       "components/data Money+Odds for every figure"
     ],
     "patterns": [
-      "the Ticket: side segments \u2192 stake \u2192 chips \u2192 quote strip \u2192 CTA",
+      "the Ticket: side segments → stake → chips → quote strip → CTA",
       "BlockedButton: the blocker is the CTA's label",
-      "rows: status \u00b7 market \u00b7 cadence \u00b7 countdown \u00b7 figures"
+      "rows: status · market · cadence · countdown · figures"
     ]
   },
   "constraints": {
     "must": [
       "keep Yosuku's palette and fonts exactly",
-      "no hex or px literals in TSX (design-literals invariant) \u2014 values live in a CSS module with the source utility named above each rule",
+      "no hex or px literals in TSX (design-literals invariant) — values live in a CSS module with the source utility named above each rule",
       "files under 400 lines",
       "theme-aware: never var(--white) on a non-flipping surface",
       "every figure is a real chain reading or a named loading/unavailable state",
@@ -123,12 +123,16 @@
     {
       "date": "2026-09-03",
       "decision": "Navigation uses a hybrid information architecture: compact desktop primary links plus Games, Build and Explore menus; mobile keeps Markets, Reels, Games, Portfolio and a complete More drawer. A typed registry includes every accepted user-facing route, account actions stay contextual, internal routes use Next Link, and existing Base UI/Sheet primitives provide accessible interaction."
+    },
+    {
+      "date": "2026-09-04",
+      "decision": "SUPERSEDED for leverage: the user reverted the Ticket's leverage to Yosuku's verbatim chips and one-line caveat (Ticket624Drawer.tsx L1074-1121) and the portfolio's boost row to its flat form. BoostCard, KnockoutMeter, Odometer and boost-card.css are removed; `motion` stays for the games. 21st.dev is used only where the user names a surface from now on."
     }
   ],
   "evidence": [
-    "web/src/styles/yosuku/part-01.css L42\u201365",
+    "web/src/styles/yosuku/part-01.css L42–65",
     "web/src/styles/ticket.css",
-    "docs/implementation/parity-ledger.md \u00a7LeverageReserve"
+    "docs/implementation/parity-ledger.md §LeverageReserve"
   ],
   "generatedAt": "2026-09-03T12:00:00.000Z"
 }

@@ -2,12 +2,10 @@
 
 import { formatCadence, type BlockerContext } from "@masayume/core/copy";
 import type { Side } from "@masayume/core/types";
-import { formatBaseUnits, priceRawToBps } from "@masayume/core/units";
-import type { ReactNode } from "react";
-import { Money, Odds } from "@/components/data";
-import { BlockedButton, ErrorState, LoadingState } from "@/components/states";
+import { formatBaseUnits } from "@masayume/core/units";
+import { Money } from "@/components/data";
+import { BlockedButton } from "@/components/states";
 import { SIDE_WORD } from "../markets/side-styles";
-import { TICKET } from "@/lib/copy";
 import { PRIVATE } from "./copy";
 import type { PrivateTicketState } from "./usePrivateTicket";
 import "./private-ticket.css";
@@ -18,43 +16,6 @@ interface PartProps {
   stakeBase: bigint;
   decimals: number;
   symbol: string;
-}
-
-function Row({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="contents">
-      <dt className="type-caption text-ink-secondary">{label}</dt>
-      <dd className="type-data text-ink text-right">{children}</dd>
-    </div>
-  );
-}
-
-/** Cost · payout if right · max loss · odds — the desk contract's own sizing off the live book, never a midpoint. */
-export function PrivateQuoteRows({ priv, side, stakeBase, decimals, symbol }: PartProps) {
-  if (priv.pending) return null;
-  if (side === null || stakeBase === 0n) return <p className="type-caption text-ink-muted">{TICKET.enterStake}</p>;
-  if (priv.quoteError) return <ErrorState diagnosis={priv.quoteError} retry={priv.retryQuote} />;
-  if (!priv.quote) return priv.quoteLoading ? <LoadingState shape="row" /> : null;
-  const q = priv.quote;
-  return (
-    <div className="flex flex-col gap-2">
-      <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1">
-        <Row label={PRIVATE.quote.cost}>
-          <Money value={q.costBase} decimals={decimals} symbol={symbol} />
-        </Row>
-        <Row label={PRIVATE.quote.payoutIfRight(SIDE_WORD[side])}>
-          <Money value={q.quantityRaw} decimals={decimals} symbol={symbol} />
-        </Row>
-        <Row label={PRIVATE.quote.maxLoss}>
-          <Money value={q.costBase} decimals={decimals} symbol={symbol} />
-        </Row>
-        <Row label={PRIVATE.quote.odds}>
-          <Odds bps={priceRawToBps(q.priceRaw, decimals)} />
-        </Row>
-      </dl>
-      {q.costBase < stakeBase && <p className="type-caption text-ink-secondary">{PRIVATE.quote.sized(formatBaseUnits(q.costBase, decimals), symbol)}</p>}
-    </div>
-  );
 }
 
 /**

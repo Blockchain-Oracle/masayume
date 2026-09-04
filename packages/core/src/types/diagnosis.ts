@@ -12,6 +12,10 @@ export const DIAGNOSIS_KINDS = [
   "order-expired",
   "post-only-would-cross",
   "no-liquidity",
+  /** The resting book is thinner than this order, or its spread too wide to price. Nothing to do with the reserve's capital. */
+  "thin-book",
+  /** A funded reserve refusing on its own policy: per-position, per-Window or aggregate caps. A smaller stake fits. */
+  "reserve-cap",
   "below-min-quantity",
   "outside-band",
   "daily-stop",

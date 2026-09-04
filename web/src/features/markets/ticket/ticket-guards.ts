@@ -73,6 +73,9 @@ export function deriveBlocker(i: TicketBlockerInput): BlockerKind | null {
   if (i.quoting || i.quote === null) return "quoting";
   if (!i.quote.ok) return "stale-quote";
   if (i.quote.value === null) return "no-liquidity-at-size";
+  // The book can fill part of it. Yosuku caps a stake to money only, because it has no book; ours has one, so the
+  // guard names what the book can actually take — and leaves the typed amount alone, the reference's own rule.
+  if (i.quote.value.partial) return "over-book";
   const band = admissibilityBlocker(i.quote.value.avgPriceBps);
   if (band) return band;
   if (i.quoteStale) return "stale-quote";

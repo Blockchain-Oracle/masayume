@@ -1,7 +1,7 @@
 /**
- * The Ticket's leverage — the reference's own words where it has them (`Ticket624Drawer.tsx` L1074–1090:
- * the 1×/2×/3× chips, "L× can knock out before expiry."; `BetPlacedCard.tsx` L123: the caveat on The Call)
- * and the reserve's real numbers where the reference showed none: what it fronts, the fee, the line.
+ * The Ticket's leverage — the reference's own words (`Ticket624Drawer.tsx` L1074–1090: the 1×/2×/3× chips and
+ * "L× can knock out before expiry."; `BetPlacedCard.tsx` L123: the caveat on The Call). Verbatim again since
+ * 2026-09-04: the 21st.dev breakdown card was reverted on the user's call.
  */
 export const LEVERAGE = {
   label: "Leverage",
@@ -17,22 +17,6 @@ export const LEVERAGE = {
     knockout: (x: number) => `${x}× can knock out before expiry.`,
     sized: (charged: string, symbol: string) => `Sized to the venue's lot: ${charged} ${symbol} is charged, the rest stays in your wallet.`,
     requote: (contracts: string) => `The book moved — your stake now buys ${contracts} contracts. Confirm again at the new size.`,
-  },
-  /** The boost card: the reference's numbers laid out as a breakdown — the user's 2026-09-02 redesign call. */
-  card: {
-    boost: "Boost",
-    you: "you",
-    reserve: "the reserve fronts",
-    fee: "fee",
-    knocksOutAt: (line: string, symbol: string) => `knocks out at ${line} ${symbol}`,
-    how: "Sold at the bids if the position's value falls to the line: the reserve is repaid first, the rest is yours.",
-  },
-  meter: {
-    label: "Room before the knock-out",
-    line: (line: string, symbol: string) => `line ${line} ${symbol}`,
-    room: (pct: string) => `${pct}% of room left`,
-    under: "under the line",
-    unpriced: "no bids to mark against",
   },
   cta: {
     buy: (side: string, x: number) => `Buy ${side} ${x}× for`,

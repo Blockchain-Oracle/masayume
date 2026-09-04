@@ -19,6 +19,8 @@ export const BLOCKER_KINDS = [
   "over-balance",
   "quoting",
   "no-liquidity-at-size",
+  /** The book fills part of this stake: the guard names the ceiling and the amount stays the user's (the reference never clamps). */
+  "over-book",
   "outside-band-low",
   "outside-band-high",
   "stale-quote",
@@ -98,7 +100,9 @@ export function blockerLabel(kind: BlockerKind, ctx: BlockerContext = {}): strin
     case "quoting":
       return "Quoting…";
     case "no-liquidity-at-size":
-      return ctx.fillableStakeText ? `Only ${ctx.fillableStakeText} fillable at this size` : "No liquidity at this size";
+      return "No liquidity at this size — nobody is on the other side of this book";
+    case "over-book":
+      return ctx.fillableStakeText ? `Above what the book can fill — up to ${ctx.fillableStakeText}` : "Above what the book can fill";
     case "outside-band-low":
       return `Too close to impossible — this book is quoting ${ctx.quotedCents ?? 1}¢`;
     case "outside-band-high":

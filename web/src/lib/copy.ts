@@ -53,6 +53,7 @@ export const FAUCET = {
   intro: (amountText: string) => `Mint test tUSDC straight from the venue's own faucet — ${amountText} per tap, no sign-up.`,
   cta: (amountText: string) => `Mint ${amountText} tUSDC`,
   minted: "Minted — your balance updates on its own",
+  minting: "Minting…",
   gasTitle: "Get STT for gas first",
   yourAddress: "Your address:",
   recheck: "I've got STT — check again",
@@ -83,7 +84,6 @@ export const DEV = {
 
 export const MARKETS = {
   title: "Markets",
-  plainWords: "Plain words",
   up: "UP",
   down: "DOWN",
   estimated: "estimated",
@@ -324,59 +324,4 @@ export const CLAIM = {
   },
 } as const;
 
-export const TICKET = {
-  title: "Your call",
-  sideLabel: "Side",
-  stakeLabel: "Stake",
-  stakePlaceholder: "0.00",
-  minStake: (floorText: string) => `Minimum stake ${floorText}`,
-  chips: "Quick amounts",
-  chipBelowMin: "below the minimum stake",
-  enterStake: "Pick a side and enter a stake to see the exact deal.",
-  cost: "Cost",
-  payoutIfRight: (side: string) => `Payout if ${side} lands`,
-  maxLoss: "Max loss",
-  odds: "Odds",
-  requoting: "requoting…",
-  noLiquidity: "No liquidity at this size — nobody is on the other side right now.",
-  partial: (fillableText: string) => `Fills up to ${fillableText} at this size — the rest stays in your wallet.`,
-  creditNote: (creditText: string) => `${creditText} comes from your venue payout credit first.`,
-  approvalNote: "Two signatures this first time: approve tUSDC, then your order.",
-  advanced: (fromCadence: string, toCadence: string) =>
-    `That ${fromCadence} Window closed for entries — moved you to the next ${toCadence} Window. Side and stake kept.`,
-  buy: (side: string) => `Buy ${side} for`,
-  buyPlain: "Buy",
-  booked: (contractsText: string, side: string, avgPriceBps: number) => `Bought ${contractsText} ${side} contracts at ${Math.round(avgPriceBps / 100)}¢`,
-  bookedPrefix: "Bought",
-  bookedAt: "at",
-  nothingFilled: "Nothing filled — the book moved before your order landed. Your stake was never taken.",
-  requotePrefix: "The book moved — it now costs up to",
-  requoteSuffix: "Confirm again to buy at the new price.",
-  txLabel: "entry tx",
-  syncing: "Syncing the chain clock…",
-  gotIt: "Got it",
-  sheetCta: (side: string) => `Your call · ${side}`,
-  sheetCtaPlain: "Open your call",
-  srCost: (costText: string) => `Cost ${costText}`,
-} as const;
-
-/**
- * Reference controls whose product is real but whose contract is not yet deployed.
- *
- * Both are Yosuku parity and both belong to Stage 5 (`RangeReserve`, and the
- * prefunded model that backs leverage). They stay where the reference puts them
- * and say exactly what is missing — omitting them would misrepresent the product,
- * and wiring them to an ordinary Up/Down order would misrepresent the trade.
- */
-export const TICKET_PENDING = {
-  modeLabel: "Bet type",
-  modeDirection: "Up / Down",
-  modeRange: "Range",
-  rangePending: "Range bets settle against the RangeReserve contract, which is not deployed yet. Up / Down is live.",
-  leverageLabel: "Leverage",
-  leverageOne: "1×",
-  leveragePending: (multiple: string) =>
-    `${multiple} needs the prefunded reserve that backs leveraged payouts. It is not deployed yet, so every bet here is 1×.`,
-  /** A live reserve whose ceiling sits below this chip — a different cause from "not deployed", so a different sentence. */
-  leverageCapped: (multiple: string, ceiling: string) => `${multiple} is above this reserve's ceiling of ${ceiling}.`,
-} as const;
+export { TICKET, TICKET_PENDING } from "./copy-ticket";

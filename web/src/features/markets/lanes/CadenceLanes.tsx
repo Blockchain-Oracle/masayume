@@ -4,7 +4,6 @@ import type { Reading } from "@masayume/core/schemas";
 import type { Bytes32, EventMarket, LaneSet, MarketId, Side } from "@masayume/core/types";
 import { ReadingBoundary } from "@/components/states";
 import { MARKETS } from "@/lib/copy";
-import { PlainWordsList } from "../plain-words";
 import { BetweenRounds } from "./BetweenRounds";
 import { LaneRows } from "./LaneRows";
 import { LaneTabs } from "./LaneTabs";
@@ -17,7 +16,6 @@ interface CadenceLanesProps {
   boot: Reading<unknown> | null;
   venueId: Bytes32 | null;
   nowMs: number;
-  plainWords: boolean;
   selectedMarketId: MarketId | null;
   onSelect: (marketId: MarketId, side?: Side) => void;
   onOpenRoom: (market: EventMarket) => void;
@@ -28,7 +26,7 @@ function laneReading(state: LanesState, boot: Reading<unknown> | null): Reading<
   return state.reading;
 }
 
-export function CadenceLanes({ state, boot, venueId, nowMs, plainWords, selectedMarketId, onSelect, onOpenRoom }: CadenceLanesProps) {
+export function CadenceLanes({ state, boot, venueId, nowMs, selectedMarketId, onSelect, onOpenRoom }: CadenceLanesProps) {
   return (
     <ReadingBoundary
       reading={laneReading(state, boot)}
@@ -46,8 +44,6 @@ export function CadenceLanes({ state, boot, venueId, nowMs, plainWords, selected
           />
           {state.activeLane === null || state.activeLane.markets.length === 0 ? (
             <BetweenRounds venueId={venueId} intervalSec={state.activeIntervalSec ?? 0} nowMs={nowMs} />
-          ) : plainWords ? (
-            <PlainWordsList markets={state.activeLane.markets} nowMs={nowMs} selectedMarketId={selectedMarketId} />
           ) : (
             <LaneRows lane={state.activeLane} nowMs={nowMs} selectedMarketId={selectedMarketId} onSelect={onSelect} onOpenRoom={onOpenRoom} />
           )}

@@ -10,7 +10,6 @@ import { MarketRoom } from "@/features/room";
 import { HERO_HEAD, SECTIONS } from "@/lib/copy";
 import { CadenceLanes, useLanesState } from "./lanes";
 import { MarketsHero } from "./MarketsHero";
-import { PlainWordsToggle, usePlainWords } from "./plain-words";
 import { useChainNowMs } from "./useChainNow";
 import { useMarketsSelection, type MarketsSelection } from "./useMarketsSelection";
 import { SenseiDock } from "@/features/sensei";
@@ -43,7 +42,6 @@ export function MarketsScreen({ renderTicket, renderVerdict }: MarketsScreenProp
   const venue = useVenue();
   const nowMs = useChainNowMs();
   const lanes = useLanesState(venue.venueId);
-  const [plainWords, setPlainWords] = usePlainWords();
   const { selection, setSelection } = useMarketsSelection(lanes.laneSet, lanes.activeLane, nowMs);
   // The open Room is held here, not inside the hero or a card — the reference's own
   // reasoning (markets/page.tsx L893–895): mounted at the page, a cadence switch
@@ -60,17 +58,12 @@ export function MarketsScreen({ renderTicket, renderVerdict }: MarketsScreenProp
           {renderVerdict(selection)}
 
           <section className="markets-section flex flex-col gap-4" aria-label={SECTIONS.lanes.title}>
-            <SectionHeader
-              index={SECTIONS.lanes.index}
-              title={SECTIONS.lanes.title}
-              aside={<PlainWordsToggle on={plainWords} onChange={setPlainWords} />}
-            />
+            <SectionHeader index={SECTIONS.lanes.index} title={SECTIONS.lanes.title} />
             <CadenceLanes
               state={lanes}
               boot={venue.boot}
               venueId={venue.venueId}
               nowMs={nowMs}
-              plainWords={plainWords}
               selectedMarketId={selection.marketId}
               onSelect={setSelection}
               onOpenRoom={setRoomMarket}

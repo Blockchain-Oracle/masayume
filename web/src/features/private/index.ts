@@ -3,7 +3,7 @@ export { PRIVATE } from "./copy";
 export { derivePrivateBlocker, type PrivateGuardInput } from "./private-blocker";
 export { PrivateBalancePanel } from "./PrivateBalancePanel";
 export { PrivateClaims, type PrivateClaimsProps } from "./PrivateClaims";
-export { PrivateCta, PrivateNote, PrivateQuoteRows } from "./PrivateTicketParts";
+export { PrivateCta, PrivateNote } from "./PrivateTicketParts";
 export { usePrivateCashout } from "./usePrivateCashout";
 export { usePrivateOpen, type PrivateOpenInput } from "./usePrivateOpen";
 export { usePrivateQuote, type PrivateQuoteState } from "./usePrivateQuote";

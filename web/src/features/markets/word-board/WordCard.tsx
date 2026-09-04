@@ -79,11 +79,11 @@ export function WordCard({ market, nowMs }: WordCardProps) {
       </div>
 
       <div className="wq-actions">
-        <Link className="wq-btn yes" href={marketDeepLink({ marketId: market.marketId, dir: "up" })} scroll={false} data-cursor="hover">
+        <Link className="wq-btn yes" href={marketDeepLink({ marketId: market.marketId, dir: "up" })} data-cursor="hover">
           <span className="wq-side">{PLAIN_WORDS.yes}</span>
           <span className="wq-cents">{cents(upCents, hydrating)}</span>
         </Link>
-        <Link className="wq-btn no" href={marketDeepLink({ marketId: market.marketId, dir: "down" })} scroll={false} data-cursor="hover">
+        <Link className="wq-btn no" href={marketDeepLink({ marketId: market.marketId, dir: "down" })} data-cursor="hover">
           <span className="wq-side">{PLAIN_WORDS.no}</span>
           <span className="wq-cents">{cents(downCents, hydrating)}</span>
         </Link>

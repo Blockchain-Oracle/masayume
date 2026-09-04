@@ -2,16 +2,14 @@
 
 import { equityOf, type LeverageMark, type LeveragePosition } from "@masayume/core/leverage";
 import { countdown } from "@masayume/core/lifecycle";
-import { formatBaseUnits, oneUnit } from "@masayume/core/units";
+import { formatBaseUnits } from "@masayume/core/units";
 import { marketDeepLink } from "@masayume/core/urls";
 import Link from "next/link";
-import { Countdown, Money, Odometer } from "@/components/data";
+import { Countdown, Money } from "@/components/data";
 import { formatCadence, PORTFOLIO } from "@/lib/copy";
 import { cn } from "@/lib/utils";
 import { SIDE_WORD } from "../markets/side-styles";
 import { LEVERAGE } from "./copy";
-import { KnockoutMeter } from "./KnockoutMeter";
-import "./boost-card.css";
 import type { LeverageBusyKey } from "./useLeverageWrites";
 
 /** The owner's own slippage guard on a cash-out: the book may move between the mark and the send. */
@@ -50,7 +48,9 @@ function settledLabel(position: LeveragePosition): string {
  * One boost the reserve holds for the wallet — `BetRow`'s grammar (reference `Portfolio624Section` L431)
  * with the reference's leverage column made real: the multiple only where it is one, and beside it what
  * the reference's `LeveragePortfolioPanel` showed for a live position — your equity at the book's mark
- * and the line it knocks out at. Settled, knocked-out and cashed-out boosts keep their row and say what came back.
+ * and the line it knocks out at, as words. The 2026-09-02 meter and rolling figure were reverted on the
+ * user's 2026-09-04 call: the reference's row is flat. Settled, knocked-out and cashed-out boosts keep
+ * their row and say what came back.
  */
 export function LeverageBetRow(p: LeverageBetRowProps) {
   const { position, market, mark, symbol, decimals, nowMs, busy, canSign, isOwner, onCashOut, onSettle } = p;
@@ -61,7 +61,6 @@ export function LeverageBetRow(p: LeverageBetRowProps) {
   const priced = mark !== null && mark.filledRaw >= position.quantityRaw;
   const equity = mark ? equityOf(mark.markBase, position.frontedBase) : null;
   const minProceeds = mark ? (mark.markBase * CASH_OUT_FLOOR_BPS) / 10_000n : 0n;
-  const entryBase = (position.quantityRaw * position.entryPriceRaw) / oneUnit(decimals);
   const cashingOut = busy === `close:${position.positionId}`;
   const settlingNow = busy === `settle:${position.positionId}`;
 
@@ -99,14 +98,14 @@ export function LeverageBetRow(p: LeverageBetRowProps) {
         <>
           {priced && equity !== null ? (
             <span className="type-caption text-ink-secondary">
-              {bets.yours} <Odometer value={equity} decimals={decimals} />
+              {bets.yours} <Money value={equity} decimals={decimals} symbol={symbol} />
             </span>
           ) : (
             <span className="type-caption text-ink-muted">{bets.unpriced}</span>
           )}
           {mark && position.frontedBase > 0n && (
-            <span className={cn("type-caption", mark.knockable ? "text-warning" : "text-ink-muted")} title={mark.knockable ? bets.knockable : bets.line(formatBaseUnits(mark.lineBase, decimals))}>
-              <KnockoutMeter entryBase={entryBase} lineBase={mark.lineBase} markBase={priced ? mark.markBase : null} knockable={mark.knockable} unpriced={!priced} decimals={decimals} symbol={symbol ?? ""} compact />
+            <span className={cn("type-caption", mark.knockable ? "text-warning" : "text-ink-muted")}>
+              {mark.knockable ? bets.knockable : bets.line(formatBaseUnits(mark.lineBase, decimals))}
             </span>
           )}
           {settling

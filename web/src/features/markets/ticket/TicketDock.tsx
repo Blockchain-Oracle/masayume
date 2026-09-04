@@ -1,17 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { TICKET } from "@/lib/copy";
 import { Ticket } from "./Ticket";
 import type { TicketSelection } from "./types";
 
-/**
- * The width at which the hero grid keeps its second column (part-04.css,
- * `@media (max-width: 900px)`). Above it the ticket is docked in the rail beside
- * the chart; below it the rail is gone and the ticket is a drawer.
- */
-const RAIL_QUERY = "(min-width: 56.3125rem)";
+/** Tailwind's `lg` — the reference docks the ticket at `lg:static` and slides it over the page below. */
+const RAIL_QUERY = "(min-width: 64rem)";
 
 function useHasRail(): boolean {
   const [hasRail, setHasRail] = useState(false);
@@ -26,20 +21,33 @@ function useHasRail(): boolean {
 }
 
 /**
- * Docked beside the chart where there is room for it; a drawer where there is not.
+ * Docked beside the chart where there is room for it; the reference's right-edge drawer where there is not
+ * (`Ticket624Drawer.tsx` L768–777: a backdrop, a full-height panel at `max-w-[440px]`, `translate-x-full`
+ * → `translate-x-0` over 300 ms, `role="dialog"`).
  *
- * The drawer has no trigger of its own — the hero's UP/DOWN buttons are the
- * trigger, exactly as in the reference. Choosing a side *is* opening the ticket,
- * so there is never a second tap between the call and the deal.
+ * The drawer has no trigger of its own. Every tap that selects a Window — the hero's UP/DOWN, a card's
+ * side buttons, the card body, a word-board Yes/No, the Room's "bet" — bumps the selection's session id,
+ * and that is what opens it. It used to open only when the *side* changed, so a card tapped without a
+ * side, or tapped again on the same side, did nothing; the reference opens on `!!ticket`, side or not.
  */
 export function TicketDock({ selection }: { selection: TicketSelection }) {
   const hasRail = useHasRail();
   const [open, setOpen] = useState(false);
-  const { side, market } = selection;
+  const { sessionId } = selection;
 
   useEffect(() => {
-    if (!hasRail && side) setOpen(true);
-  }, [hasRail, side, market.marketId]);
+    if (!hasRail && sessionId > 0) setOpen(true);
+  }, [hasRail, sessionId]);
+
+  // Escape closes the drawer, as every dialog in the reference does. The rail is persistent and never closes.
+  useEffect(() => {
+    if (!open || hasRail) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, hasRail]);
 
   if (hasRail) {
     return (
@@ -49,14 +57,13 @@ export function TicketDock({ selection }: { selection: TicketSelection }) {
     );
   }
 
+  const close = () => setOpen(false);
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetContent side="bottom" className="max-h-dvh overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>{TICKET.title}</SheetTitle>
-        </SheetHeader>
-        <div className="px-4 pb-4">{open && <Ticket selection={selection} />}</div>
-      </SheetContent>
-    </Sheet>
+    <>
+      {open && <div className="tk-drawer-backdrop" onClick={close} aria-hidden="true" />}
+      <div className={`tk-drawer${open ? " tk-drawer--open" : ""}`} role="dialog" aria-label={TICKET.title} aria-hidden={!open}>
+        {open && <Ticket selection={selection} drawer={{ onClose: close }} />}
+      </div>
+    </>
   );
 }
