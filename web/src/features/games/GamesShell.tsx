@@ -25,9 +25,9 @@ export function GamesShell({ children }: { children: ReactNode }) {
   );
 }
 
-/** What sounds its press and release: every control under the frame, and the settings sheet's, which portals out of it. */
+/** What sounds its press and release: every control under the frame, and the settings plate's, which portals out of it. */
 const CONTROL = "button, a[href], [role='button'], [role='radio'], input[type='range']";
-const SCOPE = ".gm-frame, .gm-sheet";
+const SCOPE = ".gm-frame, .gm-settings-modal";
 
 function isControl(target: EventTarget | null): boolean {
   return target instanceof Element && target.closest(SCOPE) !== null && target.closest(CONTROL) !== null;

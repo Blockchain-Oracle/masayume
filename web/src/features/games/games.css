@@ -17,7 +17,7 @@
   font-style: normal;
   font-display: swap;
 }
-.gm-frame, .du-modal, .gm-howto, .gm-sheet { --font-pixel: "Masayume Pixel", var(--font-mono); }
+.gm-frame, .du-modal, .gm-howto, .gm-settings-modal { --font-pixel: "Masayume Pixel", var(--font-mono); }
 
 .gm-frame { --gm-accent: var(--vermilion); }
 
@@ -297,23 +297,19 @@ a.gm-card:hover { border-color: color-mix(in srgb, var(--vermilion) 40%, transpa
   background: linear-gradient(135deg, var(--vermilion) 0 34%, var(--profit) 34% 67%, var(--loss) 67% 100%);
 }
 
-/* The settings sheet must sit above the fixed ticker (850) and header (800) — at the base z-index
- * of 50 its own title, description and close button rendered underneath them. Same rungs the
- * mobile navigation drawer already uses. */
-.gm-sheet-overlay { z-index: 980; }
-.gm-sheet {
-  z-index: 990;
-  /* shadcn's `bg-popover` is a mid grey that belongs to no part of this palette; it read as a
-   * foreign panel dropped on Yosuku's near-black. `--ms-surface-1` is the card surface the rest of
-   * the app already uses, and it is theme-aware, so one value serves both. */
-  background: var(--ms-surface-1);
-  border-top: 1px solid var(--ms-hairline);
-  color: var(--white);
+/* The settings plate (Flicky menu-modal.tsx: centred, max-w-xs, the volume block) portals out of the
+ * frame, so it takes the rung above the fixed ticker (850) and header (800) that the old sheet had, and
+ * it scrolls inside itself — never taller than four fifths of the viewport, which is what kept a phone
+ * from reading it as a page. */
+.gm-modal-root { z-index: 980; }
+.gm-settings-modal { max-height: 80dvh; overflow-y: auto; gap: 10px; }
+.gm-settings-modal .gm-settings { padding: 0; max-width: none; gap: 14px; }
+.gm-settings-modal .gm-settings > button:last-child { align-self: stretch; }
+/* Flicky's volume well: `rounded-2xl bg-black/25 p-3`, as a step of the plate's own ink so it reads in both themes. */
+.gm-set-block {
+  display: flex; flex-direction: column; gap: 12px; padding: 12px; border-radius: 16px;
+  background: color-mix(in srgb, currentColor 7%, transparent);
 }
-.gm-sheet [data-slot="sheet-title"] { font-family: var(--font-display); font-weight: 800; color: var(--white); }
-.gm-sheet [data-slot="sheet-description"] { color: var(--gray-400); }
-
-.gm-sheet [data-slot="sheet-header"] { width: 100%; max-width: 640px; margin: 0 auto; }
 
 /* ── Your match (Flicky my-match-tile.tsx), the last game, the two link plates, how to play ──────── */
 .gm-match-tile { display: flex; flex-direction: column; gap: 10px; }
