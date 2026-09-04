@@ -30,8 +30,12 @@ export const PRACTICE = {
   },
 
   card: {
-    question: (asset: string) => `Is ${asset} higher ${PRACTICE_WATCH_SEC} seconds after you swipe?`,
+    /** The quote box, on the same bands as the duel's: the eyebrow and the question it sets up. */
+    eyebrow: (asset: string) => `will ${asset} be higher`,
+    question: `${PRACTICE_WATCH_SEC}s after you swipe?`,
     live: "Live",
+    stake: "stake",
+    noStake: "none",
     window: "From the Window",
     windowValue: (cadence: string) => `${cadence} · settles on its own clock`,
     noPrice: "Waiting for the live price",

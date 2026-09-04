@@ -8,6 +8,7 @@ import type { MakerVaultState, MakerWindowView } from "@masayume/core/maker";
 import type { LeverageMark, LeveragePosition, LeverageReserveState } from "@masayume/core/leverage";
 import type { PrivateBudget, PrivateDeskState, PrivateSlot } from "@masayume/core/private";
 import type { ArenaMatchView, ArenaState } from "../games/read";
+import type { ArenaQuote, Pick } from "@masayume/core/games";
 import type { VaultHoldings, VaultSnapshot } from "@masayume/core/vault";
 import { getBalanceSheet } from "../provider/balances";
 import { getBookParams } from "../provider/books";
@@ -26,7 +27,7 @@ import { getRangeReserveState, listRangesOf } from "../range/read";
 import { getMakerSharesOf, getMakerVaultState, listMakerHistory, listMakerOpenWindows } from "../maker/read";
 import { getLeverageMark, getLeverageReserveState, listLeveragePositionsOf } from "../leverage/read";
 import { getPrivateBudget, getPrivateDeskState, getPrivateSlot } from "../private/read";
-import { getArenaCredit, getArenaMatch, getArenaState } from "../games/read";
+import { getArenaCredit, getArenaMatch, getArenaState, quoteArenaPick } from "../games/read";
 import { getVaultHoldings, getVaultSnapshot } from "../vault/read";
 import { mark } from "../perf/milestones";
 import { keys } from "./keys";
@@ -223,4 +224,17 @@ export function useArenaMatch(matchId: Bytes32 | null): Reading<ArenaMatchView |
 /** What the arena owes one wallet — card payouts and pot alike, waiting on a pull. Zero without an arena. */
 export function useArenaCredit(wallet: Address | null): Reading<bigint> | null {
   return useReadingQuery(keys.arenaCredit(wallet), () => getArenaCredit(wallet as Address), { pollMs: MARKETS_POLL_MS, enabled: wallet !== null });
+}
+
+/**
+ * What a stake buys on one side of one card right now — the arena's own `sizeForStake`, polled on the
+ * market cadence. A revert is an answer, not an outage: the walk refusing (too thin, too late, not
+ * trading) comes back as the error arm, which is exactly the "locked" a card face shows on that side.
+ */
+export function useArenaQuote(marketId: MarketId | null, pick: Pick, stakeBase: bigint | null): Reading<ArenaQuote | null> | null {
+  const signature = `${marketId ?? ""}:${pick}:${stakeBase?.toString() ?? ""}`;
+  return useReadingQuery(keys.arenaQuote(signature), () => quoteArenaPick(marketId as MarketId, pick, stakeBase as bigint), {
+    pollMs: MARKETS_POLL_MS,
+    enabled: marketId !== null && stakeBase !== null && stakeBase > 0n,
+  });
 }

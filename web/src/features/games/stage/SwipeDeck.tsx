@@ -22,12 +22,31 @@ import "./stage.css";
  *
  * **The buttons are not a fallback.** Doc 04 requires a keyboard and pointer alternative to every
  * swipe, so the two calls are always rendered and always sufficient; the drag is the flourish on
- * top. That is also why turning motion off removes the drag and loses nothing.
+ * top. That is also why turning motion off removes the drag and loses nothing. They are drawn as the
+ * reference's fifth band — the YES/NO chips with a side's odds on each (`swipe-screen.tsx` L407–451).
  *
  * **A refusal is not a failure.** `refusal` is for a card the chain would not take right now — the
  * arena's own entry gate — and it holds the card in place with its reason rather than letting a
- * player throw it at a transaction that would revert.
+ * player throw it at a transaction that would revert. A locked side is the same idea for one side of
+ * one card: the book cannot fill that side at this stake, so the throw springs back with the reason.
  */
+
+/** One side's live odds: the venue's own ask at the stake, as a whole percent; locked when the arena would refuse it. */
+export interface SideOdds {
+  pct: number | null;
+  locked: boolean;
+}
+
+export interface DeckOdds {
+  up: SideOdds;
+  down: SideOdds;
+}
+
+/** Where the active card sits in its deck, handed to the face for its title band. */
+export interface DeckPlace {
+  position: number;
+  total: number;
+}
 
 export interface SwipeDeckProps {
   cards: readonly DeckCard[];
@@ -40,7 +59,9 @@ export interface SwipeDeckProps {
   busy?: boolean;
   /** Why this card cannot be played right now, in the player's words. Null when it can. */
   refusal?: string | null;
-  renderFace: (card: DeckCard) => ReactNode;
+  /** The active card's per-side odds. Null (or a null pct) draws the calls without a figure. */
+  odds?: DeckOdds | null;
+  renderFace: (card: DeckCard, place: DeckPlace) => ReactNode;
   /** Rendered under the calls in place of the default hint — the mode's own sentence, when it has one. */
   hint?: ReactNode;
 }
@@ -52,6 +73,8 @@ const COMMIT_VELOCITY = 480;
 const THROW_DISTANCE = 420;
 /** The card's height before the deck has measured itself — only the tilt's scale depends on it. */
 const FALLBACK_HEIGHT = 420;
+/** How long the locked-side reason stays under the calls after a refused throw. */
+const LOCKED_HINT_MS = 4_000;
 
 /**
  * Flicky's throw: the card leaves opaque, spinning off past the tilt it was dragged to
@@ -81,15 +104,19 @@ function cadenceLabel(intervalSec: number): string {
   return `${intervalSec}s`;
 }
 
-export function SwipeDeck({ cards, active, playedSide, onPick, busy = false, refusal = null, renderFace, hint }: SwipeDeckProps) {
+const NO_ODDS: SideOdds = { pct: null, locked: false };
+
+export function SwipeDeck({ cards, active, playedSide, onPick, busy = false, refusal = null, odds = null, renderFace, hint }: SwipeDeckProps) {
   const { reducedMotion, feedback } = useGames();
   const [thrown, setThrown] = useState<Pick | null>(null);
+  const [lockedHint, setLockedHint] = useState<Pick | null>(null);
   const deckRef = useRef<HTMLDivElement>(null);
   /** Set only when the card itself had focus when it was played — see the focus effect below. */
   const refocus = useRef(false);
 
   const held = busy || refusal !== null;
   const draggable = active !== null && !held && !reducedMotion;
+  const sideOdds = { up: odds?.up ?? NO_ODDS, down: odds?.down ?? NO_ODDS };
 
   /**
    * Flicky's drag carries five signals at once (`swipe-screen.tsx` L159–297): the card tilts with the
@@ -110,10 +137,25 @@ export function SwipeDeck({ cards, active, playedSide, onPick, busy = false, ref
   const [leaning, setLeaning] = useState<Pick | null>(null);
   useMotionValueEvent(y, "change", (v) => setLeaning(v < -STAMP_AT_PX ? "up" : v > STAMP_AT_PX ? "down" : null));
 
+  // The locked reason clears on its own, and with the card: a new card has its own sides.
+  useEffect(() => {
+    if (!lockedHint) return;
+    const timer = setTimeout(() => setLockedHint(null), LOCKED_HINT_MS);
+    return () => clearTimeout(timer);
+  }, [lockedHint]);
+  useEffect(() => setLockedHint(null), [active]);
+
   const commit = useCallback(
     (side: Pick) => {
       if (!active || held) {
         feedback("deny");
+        return;
+      }
+      // Flicky refuses the long-shot side before the chain can (`swipe-screen.tsx` L121–130): the card
+      // springs back and says why, instead of flying off into a revert.
+      if (sideOdds[side].locked) {
+        feedback("deny");
+        setLockedHint(side);
         return;
       }
       // Flicky's swipe sound, the instant the commit is accepted and before any transaction.
@@ -124,7 +166,7 @@ export function SwipeDeck({ cards, active, playedSide, onPick, busy = false, ref
       setThrown(side);
       onPick(active, side);
     },
-    [active, held, onPick, feedback],
+    [active, held, onPick, feedback, sideOdds.up.locked, sideOdds.down.locked],
   );
 
   const onDragEnd = useCallback(
@@ -172,6 +214,7 @@ export function SwipeDeck({ cards, active, playedSide, onPick, busy = false, ref
 
   const position = active ? cards.findIndex((card) => card.index === active.index) : cards.length;
   const behind = active ? cards.slice(position + 1, position + 3) : [];
+  const place: DeckPlace = { position: Math.min(position + 1, cards.length), total: cards.length };
 
   return (
     <div className="st-stage">
@@ -183,7 +226,7 @@ export function SwipeDeck({ cards, active, playedSide, onPick, busy = false, ref
             return <span key={card.index} className={`st-pip ${state}`} />;
           })}
         </div>
-        <span className="st-progress-label">{STAGE.cardOf(Math.min(position + 1, cards.length), cards.length)}</span>
+        <span className="st-progress-label">{STAGE.cardOf(place.position, place.total)}</span>
       </div>
 
       <div className="st-deck" ref={deckRef}>
@@ -224,7 +267,7 @@ export function SwipeDeck({ cards, active, playedSide, onPick, busy = false, ref
               aria-label={STAGE.cardLabel(active.asset, cadenceLabel(active.intervalSec))}
               onKeyDown={onKeyDown}
             >
-              {renderFace(active)}
+              {renderFace(active, place)}
               {!reducedMotion && (
                 <>
                   <motion.span className="st-tint st-tint--up" style={{ opacity: upTint }} aria-hidden />
@@ -247,24 +290,39 @@ export function SwipeDeck({ cards, active, playedSide, onPick, busy = false, ref
       </div>
 
       <span className="sr-only" aria-live="polite">
-        {active ? STAGE.announce(position + 1, cards.length, active.asset, cadenceLabel(active.intervalSec)) : ""}
+        {active ? STAGE.announce(place.position, place.total, active.asset, cadenceLabel(active.intervalSec)) : ""}
       </span>
 
       {refusal && <p className="st-refusal">{refusal}</p>}
 
+      {/* The fifth band: the reference's YES/NO chips, each carrying its side's odds, dimmed and locked when the arena would refuse that side. */}
       <div className="st-actions">
-        <button type="button" className="st-call st-call--up" onClick={() => commit("up")} disabled={!active || held}>
-          <ChevronUp aria-hidden />
-          {STAGE.up}
-        </button>
-        <button type="button" className="st-call st-call--down" onClick={() => commit("down")} disabled={!active || held}>
-          <ChevronDown aria-hidden />
-          {STAGE.down}
-        </button>
+        <Call side="up" odds={sideOdds.up} disabled={!active || held} onClick={() => commit("up")} />
+        <Call side="down" odds={sideOdds.down} disabled={!active || held} onClick={() => commit("down")} />
       </div>
 
-      {hint ?? <p className="st-hint">{held && refusal ? STAGE.hintHeld : STAGE.hint}</p>}
+      {lockedHint ? <p className="st-hint st-hint--locked">{STAGE.hintLocked(lockedHint)}</p> : (hint ?? <p className="st-hint">{held && refusal ? STAGE.hintHeld : STAGE.hint}</p>)}
     </div>
+  );
+}
+
+function Call({ side, odds, disabled, onClick }: { side: Pick; odds: SideOdds; disabled: boolean; onClick: () => void }) {
+  const Arrow = side === "up" ? ChevronUp : ChevronDown;
+  return (
+    <button
+      type="button"
+      className={`st-call st-call--${side}`}
+      data-locked={odds.locked || undefined}
+      // A locked side stays pressable: the press is how a player learns why, in words, rather than a control that ignores them.
+      disabled={disabled}
+      aria-disabled={odds.locked || undefined}
+      title={odds.locked ? STAGE.hintLocked(side) : undefined}
+      onClick={onClick}
+    >
+      <Arrow aria-hidden />
+      <span className="st-call-word">{side === "up" ? STAGE.up : STAGE.down}</span>
+      {(odds.pct !== null || odds.locked) && <span className="st-call-odds">{odds.locked ? STAGE.locked : `${odds.pct}%`}</span>}
+    </button>
   );
 }
 

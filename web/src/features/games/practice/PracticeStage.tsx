@@ -7,8 +7,8 @@ import { useCallback } from "react";
 import { StaleTick } from "@/components/states";
 import { booleanCodec, usePersistedState } from "@/lib/persisted";
 import { GAMES } from "../copy";
-import { StageFace, StageFact } from "../stage/StageFace";
-import { SwipeDeck } from "../stage/SwipeDeck";
+import { StageFace } from "../stage/StageFace";
+import { SwipeDeck, type DeckPlace } from "../stage/SwipeDeck";
 import { PRACTICE } from "./copy";
 import { PracticeResult } from "./PracticeResult";
 import { PracticeWatch } from "./PracticeWatch";
@@ -36,25 +36,32 @@ export function PracticeStage() {
   const { readiness, round, score } = session;
 
   const renderFace = useCallback(
-    (card: DeckCard) => {
+    (card: DeckCard, place: DeckPlace) => {
       const price = session.priceOf(card.asset);
       const agedMs = price ? session.nowMs - secToMs(price.blockTimestampSec) : 0;
+      const aged = price !== null && session.nowMs > 0 && agedMs > PRICE_STALE_AFTER_MS;
       return (
         <StageFace
           card={card}
+          place={place}
           nowMs={session.nowMs || undefined}
-          question={PRACTICE.card.question(card.asset)}
-          facts={
-            <>
-              <StageFact
-                label={PRACTICE.card.live}
-                value={price ? `$${formatOracleRaw(price.priceRaw, price.decimals, 2)}` : PRACTICE.card.noPrice}
-              />
-              {price && session.nowMs > 0 && agedMs > PRICE_STALE_AFTER_MS && (
-                <StaleTick asOfMs={secToMs(price.blockTimestampSec)} reason="aged" compact />
-              )}
-            </>
-          }
+          eyebrow={PRACTICE.card.eyebrow(card.asset)}
+          question={PRACTICE.card.question}
+          pills={[
+            {
+              label: PRACTICE.card.live,
+              value: price ? (
+                <>
+                  {`$${formatOracleRaw(price.priceRaw, price.decimals, 0)}`}
+                  {aged && <StaleTick asOfMs={secToMs(price.blockTimestampSec)} reason="aged" compact />}
+                </>
+              ) : (
+                <span className="st-question-pending">{PRACTICE.card.noPrice}</span>
+              ),
+              tone: "live",
+            },
+            { label: PRACTICE.card.stake, value: PRACTICE.card.noStake },
+          ]}
         />
       );
     },

@@ -26,6 +26,7 @@ export { useReadingQuery, type PollInterval, type ReadingQueryOptions } from "./
 export {
   useArenaCredit,
   useArenaMatch,
+  useArenaQuote,
   useArenaState,
   useBalanceSheet,
   useBookParams,

@@ -157,7 +157,13 @@ export const DUEL = {
 
   picking: {
     title: "Play every card",
-    stake: "Stake per card",
+    /** Flicky's quote box (`swipe-screen.tsx` L344–349): the eyebrow, then the line the Window settles against. */
+    eyebrow: (asset: string) => `will ${asset} settle`,
+    question: (line: string) => `above ${line}?`,
+    /** The opening print is the line, and until the oracle publishes it there is no level to name. */
+    questionNoLine: "above its open?",
+    now: "now",
+    stake: "stake",
     cost: "This buys",
     costPending: "Reading the book…",
     left: "Left to pick",

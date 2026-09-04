@@ -7,5 +7,5 @@ export { GamesShell } from "./GamesShell";
 export { DuelStage } from "./duel/DuelStage";
 export { PracticeStage } from "./practice/PracticeStage";
 export { SwipeDeck, cadenceLabel } from "./stage/SwipeDeck";
-export { StageFace, StageFact } from "./stage/StageFace";
+export { StageFace, type StagePill } from "./stage/StageFace";
 export { ACCENT_CHOICES, ACCENT_LABELS, reducedMotionFrom, type AccentChoice, type GameSettings, type MotionChoice } from "./settings";

@@ -13,16 +13,18 @@ import {
 } from "@masayume/core/games";
 import { isOk } from "@masayume/core/schemas";
 import type { Address, Bytes32 } from "@masayume/core/types";
-import { formatBaseUnits, formatClock } from "@masayume/core/units";
+import { formatBaseUnits, formatOracleRaw } from "@masayume/core/units";
 import { quoteArenaPick } from "@masayume/markets/games";
-import { useArenaState } from "@masayume/markets/react";
+import { useArenaState, useAssetPrice, useOpeningPrice } from "@masayume/markets/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNowMs } from "@/components/data";
 import { useVenue } from "@/features/markets";
+import { ORACLE_SCALE } from "@/features/markets/hero/units";
 import { webEnv } from "@/lib/env";
-import { clockUrgency, StageFace, StageFact } from "../stage/StageFace";
-import { SwipeDeck } from "../stage/SwipeDeck";
+import { clockUrgency, StageFace } from "../stage/StageFace";
+import { SwipeDeck, type DeckPlace } from "../stage/SwipeDeck";
 import { DUEL } from "./copy";
+import { useArenaOdds } from "./useArenaOdds";
 import { useArenaWrites } from "./useArenaWrites";
 import type { DuelRoom } from "./useDuelRoom";
 
@@ -133,21 +135,11 @@ export function DuelPicking({ state, wallet, room }: { state: Extract<MatchState
   const money = (base: bigint | null) => (base === null || decimals === null ? "—" : formatBaseUnits(base, decimals, { maxDp: 2, minDp: 0 }));
 
   const renderFace = useCallback(
-    (card: DeckCard) => (
-      <StageFace
-        card={card}
-        nowMs={nowMs || undefined}
-        question={DUEL.picking.title}
-        facts={
-          <>
-            <StageFact label={DUEL.picking.stake} value={`${money(stakeBase)} ${symbol}`} />
-            <StageFact label={DUEL.picking.deadline} value={formatClock(leftSec)} />
-          </>
-        }
-      />
-    ),
-    [nowMs, stakeBase, symbol, leftSec, decimals],
+    (card: DeckCard, place: DeckPlace) => <DuelFace card={card} place={place} nowMs={nowMs || undefined} stake={`${money(stakeBase)} ${symbol}`} />,
+    [nowMs, stakeBase, symbol, decimals],
   );
+  // The active card's two quotes, read where the deck can refuse a throw on them rather than after the chain has.
+  const odds = useArenaOdds(active?.marketId ?? null, stakeBase, decimals);
 
   const held = !canSign ? DUEL.lobby.noSigner : keyed && refusal?.gasShort ? DUEL.picking.keyGasShort : active && params && !playable ? DUEL.picking.tooLate : null;
   const lastAuto = autoPlayed.length > 0 ? mine.find((r) => r.cardIndex === autoPlayed[autoPlayed.length - 1]) : undefined;
@@ -205,6 +197,7 @@ export function DuelPicking({ state, wallet, room }: { state: Extract<MatchState
         onPick={onPick}
         busy={busy !== null}
         refusal={held}
+        odds={odds}
         renderFace={renderFace}
         hint={
           <p className="st-hint">
@@ -253,5 +246,34 @@ export function DuelPicking({ state, wallet, room }: { state: Extract<MatchState
         </div>
       )}
     </section>
+  );
+}
+
+
+/** Whole dollars, grouped — the reference's `usd0`. */
+const usd0 = (raw: bigint): string => `$${formatOracleRaw(raw, ORACLE_SCALE, 0)}`;
+
+/**
+ * The duel's face on the five bands: the Window's line as the question — the oracle's opening print,
+ * which is what the Window settles against — the live price as `now`, and the tier's per-card stake.
+ * Its own component because the line and the price are reads, and a read is a hook.
+ */
+function DuelFace({ card, place, nowMs, stake }: { card: DeckCard; place: DeckPlace; nowMs: number | undefined; stake: string }) {
+  const opening = useOpeningPrice(card.marketId);
+  const lineRaw = opening?.ok ? opening.value : null;
+  const price = useAssetPrice(card.asset);
+  const spot = price?.ok ? price.value : null;
+  return (
+    <StageFace
+      card={card}
+      place={place}
+      nowMs={nowMs}
+      eyebrow={DUEL.picking.eyebrow(card.asset)}
+      question={lineRaw === null ? <span className="st-question-pending">{DUEL.picking.questionNoLine}</span> : DUEL.picking.question(usd0(lineRaw))}
+      pills={[
+        { label: DUEL.picking.now, value: spot ? usd0(spot.priceRaw) : "—", tone: "live" },
+        { label: DUEL.picking.stake, value: stake, tone: "up" },
+      ]}
+    />
   );
 }
