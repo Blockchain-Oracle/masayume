@@ -1,6 +1,6 @@
 "use client";
 
-import { describeSpec, encodeStrategyMetadata } from "@masayume/core/strategies";
+import { describeSpec, isSpec, PRESETS } from "@masayume/core/strategies";
 import { parseDecimalToBaseUnits } from "@masayume/core/units";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -8,7 +8,8 @@ import { notify } from "@/lib/toast";
 import { AgentPortrait } from "./AgentPortrait";
 import { STRATEGIES } from "./copy";
 import { codenameFromAddress } from "./names";
-import { draftSpec, StudioForm, type StudioDraft } from "./StudioForm";
+import { draftSpec, type StudioDraft } from "./studio-draft";
+import { StudioForm } from "./StudioForm";
 import type { useDeskWrites } from "./useDeskWrites";
 import "./strategies.css";
 
@@ -27,7 +28,8 @@ interface CreatorStudioProps {
 /**
  * Creator studio (reference section "Launch an agent"). The reference wears a "Coming soon" badge
  * and never opens its builder; here the same builder opens and publishes to the registry, because
- * the house runner honours the momentum spec today. Recorded for the user's review in the ledger.
+ * the house runner honours the momentum spec and the agent spec today. The persona rides inside
+ * the spec in the metadata and is hashed with it; no model name is published on-chain.
  */
 export function CreatorStudio({ writes, decimals, symbol, asset, houseRunner }: CreatorStudioProps) {
   const [open, setOpen] = useState(false);
@@ -38,7 +40,7 @@ export function CreatorStudio({ writes, decimals, symbol, asset, houseRunner }: 
 
   const runner = form.hosting === "house" ? houseRunner : form.agent.trim();
   const validRunner = Boolean(runner && ADDRESS.test(runner));
-  const previewSeed = `${runner ?? ""}:${form.preset}:${form.lookback}:${form.thresholdPct}`;
+  const previewSeed = `${runner ?? ""}:${form.preset}:${form.preset === "agent" ? form.posture : `${form.lookback}:${form.thresholdPct}`}`;
   const previewName = validRunner ? codenameFromAddress(previewSeed) : S.yourAgent;
 
   const publish = async () => {
@@ -49,13 +51,13 @@ export function CreatorStudio({ writes, decimals, symbol, asset, houseRunner }: 
     if (perTrade <= 0n) return notify.warning("Most per trade must be greater than 0");
     if (daily < perTrade) return notify.warning("Most per day must be at least the per-trade cap");
     const spec = draftSpec(form);
+    if (!isSpec(spec)) return notify.warning(S.agent.dry.badRequest);
     const metadata = { name: form.name.trim() || codenameFromAddress(previewSeed), description: describeSpec(spec, asset), spec, ...(form.playbook.trim() ? { playbook: form.playbook.trim() } : {}) };
     const result = await writes.publish({ kind: "strategy-publish", runner: runner as `0x${string}`, spec, metadata, envelope: { maxStakePerTradeBase: perTrade, maxDailySpendBase: daily, maxOpenPositions: 2, maxPriceRaw: 0n }, feeBase: fee });
     if (result.ok) {
       notify.neutral(form.hosting === "house" ? "Agent listed on Somnia. It starts trading once the runner picks it up." : "Strategy published. Users can now copy it.");
       setOpen(false);
     } else notify.warning(result.reason ?? "Publish failed.");
-    void encodeStrategyMetadata;
   };
 
   return (
@@ -82,7 +84,7 @@ export function CreatorStudio({ writes, decimals, symbol, asset, houseRunner }: 
 
       {writes.address && open && (
         <div className="mt-7 grid items-start gap-7 lg:grid-cols-[1fr_20rem]">
-          <StudioForm form={form} setForm={(update) => setForm(update)} symbol={symbol} asset={asset} houseRunner={houseRunner} />
+          <StudioForm form={form} setForm={(update) => setForm(update)} symbol={symbol} asset={asset} decimals={decimals} houseRunner={houseRunner} />
           <aside className="space-y-4 lg:sticky lg:top-24">
             <div className="strat-preview group">
               <div className="flex items-center justify-between">
@@ -94,7 +96,7 @@ export function CreatorStudio({ writes, decimals, symbol, asset, houseRunner }: 
                 <div className="min-w-0">
                   <div className="strat-choice-title truncate text-white">{previewName}</div>
                   <div className="strat-mono-10 text-white/40">
-                    {form.preset === "momentum" ? "Momentum" : "Mean-reversion"} · {S.cap(`${form.maxPerTrade || "0"} ${symbol}`)}
+                    {PRESETS[form.preset].name} · {S.cap(`${form.maxPerTrade || "0"} ${symbol}`)}
                   </div>
                 </div>
               </div>

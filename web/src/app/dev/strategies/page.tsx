@@ -4,20 +4,27 @@ import { useState } from "react";
 import { SectionHeader } from "@/components/chrome";
 import { CapabilityPending } from "@/components/shell";
 import { RecordCard, StrategyCard, STRATEGIES } from "@/features/strategies";
+import { AgentMemory } from "@/features/strategies/AgentMemory";
 import { RecentCopyTrades } from "@/features/strategies/RecentCopyTrades";
 import { DeskPulse } from "@/features/strategies/DeskStates";
+import { StudioAgentFields } from "@/features/strategies/StudioAgentFields";
+import type { StudioDraft } from "@/features/strategies/studio-draft";
 import { cn } from "@/lib/utils";
-import { DECIMALS, FIXTURE_NOW_MS, FILLS, HOUSE, PAYLOADS, SYMBOL, YOUNG, FRESH } from "./fixtures";
+import { AGENT, DECIMALS, FIXTURE_NOW_MS, FILLS, HOUSE, PAYLOADS, SYMBOL, YOUNG, FRESH } from "./fixtures";
 
 const DEV = {
   title: "Strategies",
   intro: "The desk's record card, the archive cards in each tier, the runner pulse in every health state, recent copy-trades with and without a store, and the honest not-deployed state — no registry, no runner.",
   record: "Track record — a public curve with drawdown drawn",
-  cards: "Archive cards — settled, active, new",
+  cards: "Archive cards — settled, an AI agent with memory, active, new",
   pulse: "Runner pulse — alive, dead, never started, store offline",
   recent: "Recent copy-trades — grouped rows, then the store-off state",
   states: "Payload states — live, empty registry, no store, not deployed",
+  studio: "Studio — the AI agent's brief, posture, Windows and dry read",
+  memory: "Drawer — agent memory, with and without a store",
 } as const;
+
+const DRAFT: StudioDraft = { preset: "agent", lookback: 6, thresholdPct: "0.2", persona: "", posture: "balanced", cadences: [900, 3600], hosting: "house", agent: "", name: "", maxPerTrade: "5", maxDaily: "50", subFee: "0", playbook: "" };
 
 const PULSES = [
   { live: true, label: STRATEGIES.desk.status.watching("BTC") },
@@ -30,6 +37,7 @@ const PULSES = [
 
 export default function DevStrategiesPage() {
   const [state, setState] = useState<keyof typeof PAYLOADS>("live");
+  const [draft, setDraft] = useState<StudioDraft>(DRAFT);
   const payload = PAYLOADS[state];
   return (
     <div className="mx-auto flex w-full max-w-(--content-wide) flex-col gap-10 px-gutter py-8">
@@ -50,7 +58,7 @@ export default function DevStrategiesPage() {
       <section className="flex flex-col gap-4">
         <SectionHeader index="02" title={DEV.cards} />
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          {[HOUSE, YOUNG, FRESH].map((card) => (
+          {[HOUSE, AGENT, YOUNG, FRESH].map((card) => (
             <StrategyCard key={card.strategyId} card={card} sub={null} decimals={DECIMALS} symbol={SYMBOL} asset="BTC" onOpen={() => undefined} />
           ))}
         </div>
@@ -74,7 +82,24 @@ export default function DevStrategiesPage() {
       </section>
 
       <section className="flex flex-col gap-4">
-        <SectionHeader index="05" title={DEV.states} />
+        <SectionHeader index="05" title={DEV.studio} />
+        <div className="strat-preview">
+          <StudioAgentFields form={draft} setForm={(update) => setDraft(update)} asset="BTC" decimals={DECIMALS} />
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <SectionHeader index="06" title={DEV.memory} />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="strat-preview">{AGENT.agent && <AgentMemory agent={AGENT.agent} storeConnected asset="BTC" nowMs={FIXTURE_NOW_MS} />}</div>
+          <div className="strat-preview">
+            <AgentMemory agent={{ model: null, decisions: [] }} storeConnected={false} asset="BTC" nowMs={FIXTURE_NOW_MS} />
+          </div>
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <SectionHeader index="07" title={DEV.states} />
         <div className="flex flex-wrap gap-2">
           {(Object.keys(PAYLOADS) as Array<keyof typeof PAYLOADS>).map((k) => (
             <button key={k} type="button" onClick={() => setState(k)} className={cn("rounded-full border border-hairline px-3 py-1 type-caption", state === k ? "text-accent" : "text-ink-secondary")}>
