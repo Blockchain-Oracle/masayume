@@ -192,6 +192,14 @@ Lucky's table). Gate on the merged main: 54 files, 809 tests, invariants clean; 
 - `room.masayume.app` is issued and answering (`/health` 200 over the domain); `GAME_ROOM_PUBLIC_URL` is
   `wss://room.masayume.app` on Vercel and Fly. Vercel DNS carries Fly's A/AAAA records and the ACME CNAME
   (the first CNAME to `masayume-ops.fly.dev` was not what Fly validates against).
-- The AI key was not in the owner's message. Either provider works: `AI_MODEL=openai/gpt-5.4` with
-  `OPENAI_API_KEY`, or the default `anthropic/claude-opus-5` with `ANTHROPIC_API_KEY`; the same pair goes on
-  Vercel (Sensei) and Fly (the agent runner).
+- **OpenAI is the AI provider.** The owner asked for OpenAI and to look in the local env: `~/.openai/credentials`
+  held a revoked project key (401 "Incorrect API key"); the one in `~/dev/hackathon/keeperhub-copilot/.env.local`
+  answers 200 and lists `gpt-5.4`. It is `OPENAI_API_KEY` + `AI_MODEL=openai/gpt-5.4` on Vercel (Sensei now
+  reports `openai/gpt-5.4 via direct` on production) and on Fly (the agent runner); `~/.openai/credentials`
+  now holds the working key.
+- **The house runner existed only in the studio's copy.** Fly had no `RUNNER_PRIVATE_KEY` and Vercel no
+  `STRATEGY_RUNNER_ADDRESS`, so "Let Masayume run it" named nothing and the runner idled on an empty
+  `STRATEGY_IDS`. A `strategy-runner` role key (`0xfE22…AA52`, 3 STT) is now on Fly, its address on Vercel and
+  in `web/.env.local`, and `846ad24` makes the runner **discover its strategies from the registry** — every
+  active strategy naming its key, re-read each cycle — so a creator's launch runs without anyone editing a
+  secret. The static list remains as an override.
