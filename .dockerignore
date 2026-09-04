@@ -1,0 +1,19 @@
+# The ops image is built from the repo root; everything a Node process never reads stays out of the context.
+.git
+node_modules
+**/node_modules
+web/.next
+web/public
+web/src
+reference
+context
+docs
+contracts/lib
+contracts/out
+contracts/cache
+contracts/broadcast
+.masayume
+**/*.log
+**/.env
+**/.env.*
+!**/.env.example

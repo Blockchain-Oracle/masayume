@@ -1,0 +1,11 @@
+# The web deploy uploads the workspace; the reference clones, the contracts' build output and the records are not part of it.
+reference
+context
+docs
+contracts/lib
+contracts/out
+contracts/cache
+contracts/broadcast
+services/ops/node_modules
+.masayume
+**/*.log
