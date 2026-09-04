@@ -3,11 +3,12 @@
 import { isOk } from "@masayume/core/schemas";
 import type { MarketId } from "@masayume/core/types";
 import { usePositions } from "@masayume/markets/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSignMessage } from "wagmi";
 import { useWalletSession } from "@/lib/wallet-session";
 import { ROOM_ERRORS } from "./copy";
 import { type RoomComment, type RoomGate, roomJoinMessage } from "./protocol";
+import { clearRoomToken, readRoomToken, writeRoomToken } from "./room-session";
 
 /** The reference polls its thread every 9 s (`useCommentRoom.ts` L37). */
 const POLL_MS = 9_000;
@@ -41,6 +42,10 @@ export interface Room {
  * The reference's `alsoTry` is gone with it: it exists because its ticket silently
  * rolls a bet onto the next round, leaving the room pinned to a round you did not
  * bet. Our ticket does not roll, so the Room is always about the Window you opened.
+ *
+ * One signature per hour, not per opening: the join token is remembered per wallet and
+ * market (`room-session.ts`), so closing the sheet and opening it again lands on
+ * `joined` with the thread, and the wallet is only asked again once the token has aged out.
  */
 export function useRoom(marketId: MarketId | null, open: boolean): Room {
   const { address } = useWalletSession();
@@ -69,12 +74,14 @@ export function useRoom(marketId: MarketId | null, open: boolean): Room {
     };
   }, [open, address, marketId]);
 
-  const [gate, setGate] = useState<RoomGate>("connect");
+  // A remembered session opens the Room already joined: the token the last join minted, if it is
+  // still inside its hour.
+  const [token, setToken] = useState<string | null>(() => (address && marketId ? readRoomToken(address, marketId) : null));
+  const [gate, setGate] = useState<RoomGate>(() => (token ? "joined" : "connect"));
   const [comments, setComments] = useState<RoomComment[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const tokenRef = useRef<string | null>(null);
-  const joined = tokenRef.current !== null;
+  const joined = token !== null;
 
   useEffect(() => {
     if (!open || configured !== null) return;
@@ -92,11 +99,14 @@ export function useRoom(marketId: MarketId | null, open: boolean): Room {
     };
   }, [open, configured]);
 
-  // A token is bound to one wallet and one market; changing either invalidates it.
+  // A token is bound to one wallet and one market; changing either swaps it for that pair's own
+  // remembered token, or none.
   useEffect(() => {
-    tokenRef.current = null;
+    const remembered = address && marketId ? readRoomToken(address, marketId) : null;
+    setToken(remembered);
     setComments([]);
     setError(null);
+    if (remembered) setGate("joined");
   }, [marketId, address]);
 
   // The resting gate, derived rather than stored — only `joining` and `joined` are
@@ -117,28 +127,32 @@ export function useRoom(marketId: MarketId | null, open: boolean): Room {
     setGate(seat === true || holds ? "joinable" : "locked");
   }, [configured, address, positions, marketId, joined, gate, seat]);
 
-  const load = useCallback(async () => {
-    if (!marketId || !tokenRef.current) return;
-    const url = `/api/room?marketId=${encodeURIComponent(marketId)}&token=${encodeURIComponent(tokenRef.current)}`;
-    const response = await fetch(url);
-    if (response.status === 401) {
-      // The session aged out mid-read. Fall back to joinable rather than showing a
-      // thread that is quietly no longer being refreshed.
-      tokenRef.current = null;
-      setGate("joinable");
-      setError(ROOM_ERRORS.notJoined);
-      return;
-    }
-    const body = (await response.json()) as { comments?: RoomComment[]; error?: string };
-    if (response.ok && body.comments) setComments(body.comments);
-  }, [marketId]);
+  const load = useCallback(
+    async (current: string) => {
+      if (!marketId) return;
+      const url = `/api/room?marketId=${encodeURIComponent(marketId)}&token=${encodeURIComponent(current)}`;
+      const response = await fetch(url);
+      if (response.status === 401) {
+        // The session aged out mid-read. Forget it and fall back to joinable rather than
+        // showing a thread that is quietly no longer being refreshed.
+        if (address) clearRoomToken(address, marketId);
+        setToken(null);
+        setGate("joinable");
+        setError(ROOM_ERRORS.notJoined);
+        return;
+      }
+      const body = (await response.json()) as { comments?: RoomComment[]; error?: string };
+      if (response.ok && body.comments) setComments(body.comments);
+    },
+    [marketId, address],
+  );
 
   useEffect(() => {
-    if (gate !== "joined" || !open) return;
-    void load();
-    const id = setInterval(() => void load(), POLL_MS);
+    if (gate !== "joined" || !open || !token) return;
+    void load(token);
+    const id = setInterval(() => void load(token), POLL_MS);
     return () => clearInterval(id);
-  }, [gate, open, load]);
+  }, [gate, open, token, load]);
 
   const join = useCallback(async () => {
     if (!marketId || !address) return;
@@ -160,9 +174,10 @@ export function useRoom(marketId: MarketId | null, open: boolean): Room {
         setError(body.error ?? ROOM_ERRORS.badRequest);
         return;
       }
-      tokenRef.current = body.token;
+      writeRoomToken(address, marketId, body.token, issuedAtMs);
+      setToken(body.token);
       setGate("joined");
-      await load();
+      await load(body.token);
     } catch (cause) {
       // A rejected signature prompt is a choice, not a failure — say nothing and
       // leave the door open.
@@ -174,14 +189,14 @@ export function useRoom(marketId: MarketId | null, open: boolean): Room {
 
   const post = useCallback(
     async (body: string) => {
-      if (!marketId || !tokenRef.current) return;
+      if (!marketId || !token) return;
       setBusy(true);
       setError(null);
       try {
         const response = await fetch("/api/room", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ marketId, token: tokenRef.current, body }),
+          body: JSON.stringify({ marketId, token, body }),
         });
         const payload = (await response.json()) as { comment?: RoomComment; error?: string };
         if (!response.ok || !payload.comment) {
@@ -197,7 +212,7 @@ export function useRoom(marketId: MarketId | null, open: boolean): Room {
         setBusy(false);
       }
     },
-    [marketId],
+    [marketId, token],
   );
 
   return { gate, comments, busy, error, join, post };
