@@ -4,7 +4,7 @@ import { formatCadence } from "@masayume/core/copy";
 import { formatOracleRaw, secToMs } from "@masayume/core/units";
 import { addressUrl, marketDeepLink } from "@masayume/core/urls";
 import Link from "next/link";
-import type { CSSProperties } from "react";
+import { memo, type CSSProperties } from "react";
 import { ORACLE_SCALE } from "@/features/markets/hero/units";
 import { timeAgo } from "@/features/markets/history/time-ago";
 import { addressHue } from "@/lib/address-hue";
@@ -40,7 +40,7 @@ interface TakeReelCardProps {
  * The frame is `.reel-card`, so it follows the theme exactly as the market card does
  * (the user's 2026-09-01 ruling) — one ink triplet, no dark island.
  */
-export function TakeReelCard({ take, nowMs }: TakeReelCardProps) {
+export const TakeReelCard = memo(function TakeReelCard({ take, nowMs }: TakeReelCardProps) {
   const { glyph, dir, band } = callParts(take);
   const open = nowMs > 0 && secToMs(take.expirySec) > nowMs;
   const otherSide = take.side === "up" ? "down" : "up";
@@ -103,4 +103,4 @@ export function TakeReelCard({ take, nowMs }: TakeReelCardProps) {
       </div>
     </article>
   );
-}
+});

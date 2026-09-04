@@ -10,10 +10,13 @@ import { useVenue } from "../useVenue";
 import { ReelCard } from "./ReelCard";
 import { ReelHolding } from "./ReelHolding";
 import { useActiveReel } from "./useActiveReel";
-import { useReelRounds } from "./useReelRounds";
+import { useReelPosition } from "./useReelPosition";
+import { isClosing, reelPhase, useReelRounds } from "./useReelRounds";
 
 /** A real move, not the first stray pixel of momentum — the reference's own correction. */
 const SCROLLED_PX = 60;
+/** A take's age prints at a minute's grain, so its card is handed the clock at that grain and re-renders once a minute. */
+const MINUTE_MS = 60_000;
 
 /**
  * The reel — a full-screen vertical snap feed of live Windows and community takes.
@@ -43,7 +46,9 @@ export function ReelsScreen() {
   const waiting = lanes.reading === null || nowMs === 0;
   const feed = useTakes(!waiting);
   const reel = useMemo(() => weaveReel(rounds, feed?.takes ?? []), [rounds, feed]);
-  const { register, isNear } = useActiveReel(scrollRef, reel.length);
+  const { register, isNear, activeIndex } = useActiveReel(scrollRef, reel.length);
+  useReelPosition(scrollRef, reel, activeIndex);
+  const minuteMs = Math.floor(nowMs / MINUTE_MS) * MINUTE_MS;
 
   // The Take pill only makes sense once there is a live card to attach to — the
   // reference's own rule (L286–289): UP/DOWN stays the first action a viewer meets.
@@ -68,11 +73,11 @@ export function ReelsScreen() {
           reel.map((item, index) =>
             item.kind === "market" ? (
               <section key={item.market.marketId} ref={register(index)} className="feed-card reel-slot">
-                <ReelCard market={item.market} nowMs={nowMs} near={isNear(index)} />
+                <ReelCard market={item.market} near={isNear(index)} closing={isClosing(reelPhase(item.market, nowMs))} />
               </section>
             ) : (
               <section key={`take-${item.take.id}`} ref={register(index)} className="feed-card reel-slot">
-                <TakeReelCard take={item.take} nowMs={nowMs} />
+                <TakeReelCard take={item.take} nowMs={minuteMs} />
               </section>
             ),
           )

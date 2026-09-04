@@ -5,12 +5,11 @@ import type { EventMarket } from "@masayume/core/types";
 import { formatClock } from "@masayume/core/units";
 import { formatCadence, REELS } from "@/lib/copy";
 import { cn } from "@/lib/utils";
+import { useChainNowMs } from "../useChainNow";
 import { AssetDisc } from "../hero/asset-mark";
 
 interface ReelHeadProps {
   market: EventMarket;
-  /** Chain-corrected clock; 0 before the first client tick. */
-  nowMs: number;
 }
 
 /** Local wall-clock hour and minute — the reference's `clockHM`, in the viewer's own zone. */
@@ -18,8 +17,12 @@ function closesAt(expirySec: number): string {
   return new Date(expirySec * 1_000).toLocaleTimeString(undefined, { hour12: false, hour: "2-digit", minute: "2-digit" });
 }
 
-/** Asset, round length, closing time, and the bell — everything above the question. */
-export function ReelHead({ market, nowMs }: ReelHeadProps) {
+/**
+ * Asset, round length, closing time, and the bell — everything above the question. The clock is read
+ * here rather than passed down, so the memoised card above holds no value that ticks.
+ */
+export function ReelHead({ market }: ReelHeadProps) {
+  const nowMs = useChainNowMs();
   const state = nowMs > 0 ? countdown(nowMs, market.expirySec, market.intervalSec) : null;
   return (
     <div className="reel-head">
