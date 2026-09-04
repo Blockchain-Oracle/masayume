@@ -7,6 +7,7 @@ import type { RangeReserveState, RangeRound } from "@masayume/core/range";
 import type { MakerVaultState, MakerWindowView } from "@masayume/core/maker";
 import type { LeverageMark, LeveragePosition, LeverageReserveState } from "@masayume/core/leverage";
 import type { PrivateBudget, PrivateDeskState, PrivateSlot } from "@masayume/core/private";
+import type { ArenaMatchView, ArenaState } from "../games/read";
 import type { VaultHoldings, VaultSnapshot } from "@masayume/core/vault";
 import { getBalanceSheet } from "../provider/balances";
 import { getBookParams } from "../provider/books";
@@ -25,6 +26,7 @@ import { getRangeReserveState, listRangesOf } from "../range/read";
 import { getMakerSharesOf, getMakerVaultState, listMakerHistory, listMakerOpenWindows } from "../maker/read";
 import { getLeverageMark, getLeverageReserveState, listLeveragePositionsOf } from "../leverage/read";
 import { getPrivateBudget, getPrivateDeskState, getPrivateSlot } from "../private/read";
+import { getArenaCredit, getArenaMatch, getArenaState } from "../games/read";
 import { getVaultHoldings, getVaultSnapshot } from "../vault/read";
 import { mark } from "../perf/milestones";
 import { keys } from "./keys";
@@ -201,4 +203,24 @@ export function usePrivateBudget(wallet: Address | null): Reading<PrivateBudget>
 /** One slot as the contract records it — no owner on it. */
 export function usePrivateSlot(slotId: Bytes32 | null): Reading<PrivateSlot | null> | null {
   return useReadingQuery(keys.privateSlot(slotId), () => getPrivateSlot(slotId as Bytes32), { pollMs: MARKETS_POLL_MS, enabled: slotId !== null });
+}
+
+/** The duel arena's tunables, priced tiers and pause switch; null (never an error) where none is deployed. */
+export function useArenaState(): Reading<ArenaState | null> | null {
+  return useReadingQuery(keys.arenaState(), getArenaState, { pollMs: MARKETS_POLL_MS });
+}
+
+/**
+ * One match as the chain holds it — the record, the deck, both seats' picks and the running PnL.
+ *
+ * Polled on the on-chain cadence rather than the market one: this is what a settling deck fills in
+ * card by card, and it is also the reading a room's own deltas are checked against.
+ */
+export function useArenaMatch(matchId: Bytes32 | null): Reading<ArenaMatchView | null> | null {
+  return useReadingQuery(keys.arenaMatch(matchId), () => getArenaMatch(matchId as Bytes32), { pollMs: ONCHAIN_POLL_MS, enabled: matchId !== null });
+}
+
+/** What the arena owes one wallet — card payouts and pot alike, waiting on a pull. Zero without an arena. */
+export function useArenaCredit(wallet: Address | null): Reading<bigint> | null {
+  return useReadingQuery(keys.arenaCredit(wallet), () => getArenaCredit(wallet as Address), { pollMs: MARKETS_POLL_MS, enabled: wallet !== null });
 }

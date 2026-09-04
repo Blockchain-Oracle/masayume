@@ -1,0 +1,271 @@
+"use client";
+
+import {
+  IDLE,
+  matchEventsOf,
+  serverMessageSchema,
+  transition,
+  ROOM_PROTOCOL_VERSION,
+  type ClientMessage,
+  type DuelMode,
+  type MatchState,
+  type RoomErrorCode,
+  type ServerMessage,
+  type StakeTierId,
+} from "@masayume/core/games";
+import type { Address } from "@masayume/core/types";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { keccak256 } from "viem";
+import { useRoomToken, type RoomAuth } from "./useRoomToken";
+
+/**
+ * The duel room, as one socket and one reducer.
+ *
+ * Everything economic on this screen comes from `transition`, folded from messages the server built
+ * out of chain logs. This hook adds no state of its own to the match: there is no local "I think I
+ * picked" — the arena's own `pick.confirmed` is what moves the deck on, which is the rule doc 06
+ * states as "only snapshots and events from chain and Postgres can change economic UI".
+ *
+ * **The seed never leaves this browser until the pairing is fixed.** A commitment goes out with the
+ * queue entry, and the seed itself only after `match.found` names an opponent — so neither the
+ * server nor the other player can choose theirs after seeing this one. The commitment is
+ * `keccak256(seed)`, the same one line the matchmaker checks it against.
+ *
+ * **A dropped socket is not a lost match.** Reconnecting sends `hello` with no match id, and the
+ * server answers from the arena and its projection with a whole snapshot, which the reducer treats as
+ * the truth. Nothing about the previous connection is remembered on either side — which is exactly
+ * why the queue is lost on a reconnect and the match is not.
+ */
+
+const SUBPROTOCOL = "masayume.room.v1";
+const BACKOFF_MS = [1_000, 2_000, 4_000, 8_000, 15_000];
+/** Closed by us, on purpose. Anything else is worth retrying. */
+const CLOSED_DELIBERATELY = 1_000;
+
+export type RoomStatus = "idle" | "connecting" | "open" | "reconnecting" | "closed";
+
+export interface DuelRoomError {
+  code: RoomErrorCode;
+  message: string;
+  retryable: boolean;
+  about: string | null;
+}
+
+export interface QueueView {
+  waitingCount: number;
+  bandNow: number;
+  waitedMs: number;
+  /**
+   * A number is a countdown; `null` is "further out than the projection looked"; **absent** is "not
+   * known yet". Three different answers, kept apart all the way to the screen — rendering absent as
+   * null would tell someone whose deck is one tick away that there is none coming.
+   */
+  nextDeckInSec: number | null | undefined;
+}
+
+export interface PresenceRow {
+  wallet: Address;
+  online: boolean;
+  lastSeenMs: number;
+}
+
+export interface DuelRoom {
+  auth: RoomAuth;
+  authorize: () => Promise<void>;
+  status: RoomStatus;
+  state: MatchState;
+  queue: QueueView | null;
+  presence: readonly PresenceRow[];
+  error: DuelRoomError | null;
+  joinQueue: (mode: DuelMode, tier: StakeTierId) => void;
+  leaveQueue: () => void;
+  resync: () => void;
+  /** True when a dropped socket took this browser out of the queue. Cleared by the next search. */
+  queueDropped: boolean;
+  dismissError: () => void;
+  /** The socket, for the slices that send more than the queue does. Silently ignored when closed. */
+  send: (message: ClientMessage) => void;
+}
+
+function freshSeed(): `0x${string}` {
+  const bytes = new Uint8Array(32);
+  globalThis.crypto.getRandomValues(bytes);
+  return `0x${[...bytes].map((b) => b.toString(16).padStart(2, "0")).join("")}`;
+}
+
+export function useDuelRoom(region = "default"): DuelRoom {
+  const { auth, authorize } = useRoomToken();
+  const [state, dispatch] = useReducer(transition, IDLE);
+  const [status, setStatus] = useState<RoomStatus>("idle");
+  const [queue, setQueue] = useState<QueueView | null>(null);
+  const [presence, setPresence] = useState<readonly PresenceRow[]>([]);
+  const [error, setError] = useState<DuelRoomError | null>(null);
+  const [queueDropped, setQueueDropped] = useState(false);
+
+  const socketRef = useRef<WebSocket | null>(null);
+  /** The reducer's current phase, readable from the socket's own callbacks. */
+  const phaseRef = useRef(state.phase);
+  const seedRef = useRef<`0x${string}` | null>(null);
+  const attemptRef = useRef(0);
+  const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Set while this component is tearing the socket down, so its `close` does not schedule a retry. */
+  const closingRef = useRef(false);
+
+  phaseRef.current = state.phase;
+
+  const send = useCallback((message: ClientMessage) => {
+    const socket = socketRef.current;
+    if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(message));
+  }, []);
+
+  const onMessage = useCallback(
+    (raw: unknown) => {
+      const parsed = serverMessageSchema.safeParse(raw);
+      // A frame this client cannot read is the server's problem, not the player's: drop it rather
+      // than tearing down a live match over a field added on the other side.
+      if (!parsed.success) return;
+      const message: ServerMessage = parsed.data;
+
+      switch (message.type) {
+        case "queue.update":
+          setQueue({
+            waitingCount: message.waitingCount,
+            bandNow: message.bandNow,
+            waitedMs: message.waitedMs,
+            // Read off the key's presence, not off the value — `null` and absent mean different things.
+            nextDeckInSec: "nextDeckInSec" in message ? message.nextDeckInSec : undefined,
+          });
+          break;
+        case "presence":
+          setPresence(message.players);
+          break;
+        case "error":
+          setError({ code: message.code, message: message.message, retryable: message.retryable, about: message.about ?? null });
+          break;
+        case "match.found":
+          // The other half of the ceremony, sent the moment a pairing exists and not one message before.
+          if (seedRef.current) send({ type: "seed.reveal", matchId: message.room.matchId, seed: seedRef.current });
+          break;
+        default:
+          break;
+      }
+
+      for (const event of matchEventsOf(message)) dispatch(event);
+    },
+    [send],
+  );
+
+  /** Opens a socket for the current token; every close that we did not ask for schedules a retry. */
+  useEffect(() => {
+    if (auth.kind !== "ready") {
+      setStatus("idle");
+      return;
+    }
+
+    let disposed = false;
+    closingRef.current = false;
+
+    const open = () => {
+      if (disposed) return;
+      setStatus(attemptRef.current === 0 ? "connecting" : "reconnecting");
+      // Both protocols are offered: the room answers with its own, and a client that offered only the
+      // token would be handed a subprotocol it never asked for and fail the handshake itself.
+      const socket = new WebSocket(auth.url, [auth.token, SUBPROTOCOL]);
+      socketRef.current = socket;
+
+      socket.onopen = () => {
+        attemptRef.current = 0;
+        setStatus("open");
+        setError(null);
+        // No `resumeMatchId`: the server asks its own projection which match this wallet is in, which
+        // is a better answer than anything this browser could remember.
+        send({ type: "hello", protocolVersion: ROOM_PROTOCOL_VERSION });
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          onMessage(JSON.parse(String(event.data)));
+        } catch {
+          // Not JSON. The room only ever sends JSON text, so this is a proxy, not the room.
+        }
+      };
+
+      socket.onclose = (event) => {
+        socketRef.current = null;
+        /**
+         * A queue entry does not survive a socket. The server drops it the moment the connection
+         * goes (`announceDeparture` calls the matchmaker's `leave`), so a client that kept showing
+         * its spinner would be waiting on a queue it is no longer in — which is what the room log
+         * showed a browser doing. A match is different and is deliberately NOT cleared here: it
+         * lives on chain, and the reconnect's snapshot restores it.
+         */
+        if (phaseRef.current === "queued") {
+          dispatch({ kind: "leaveQueue" });
+          setQueue(null);
+          setQueueDropped(true);
+        }
+        if (disposed || closingRef.current || event.code === CLOSED_DELIBERATELY) {
+          setStatus("closed");
+          return;
+        }
+        const wait = BACKOFF_MS[Math.min(attemptRef.current, BACKOFF_MS.length - 1)] ?? 15_000;
+        attemptRef.current += 1;
+        setStatus("reconnecting");
+        retryRef.current = setTimeout(open, wait);
+      };
+
+      // `onerror` carries nothing a browser is allowed to read; `onclose` follows it and does the work.
+      socket.onerror = () => undefined;
+    };
+
+    open();
+
+    return () => {
+      disposed = true;
+      closingRef.current = true;
+      if (retryRef.current) clearTimeout(retryRef.current);
+      socketRef.current?.close(CLOSED_DELIBERATELY, "leaving");
+      socketRef.current = null;
+    };
+  }, [auth, onMessage, send]);
+
+  const joinQueue = useCallback(
+    (mode: DuelMode, tier: StakeTierId) => {
+      const seed = freshSeed();
+      seedRef.current = seed;
+      const clientSeedCommitment = keccak256(seed);
+      setError(null);
+      setQueueDropped(false);
+      dispatch({ kind: "open", mode, tier });
+      dispatch({ kind: "queue", nowMs: Date.now(), clientSeedCommitment });
+      send({ type: "queue.join", mode, tier, region, clientSeedCommitment });
+    },
+    [region, send],
+  );
+
+  const leaveQueue = useCallback(() => {
+    send({ type: "queue.leave" });
+    dispatch({ kind: "leaveQueue" });
+    setQueue(null);
+  }, [send]);
+
+  const resync = useCallback(() => {
+    if ("matchId" in state) send({ type: "resync", matchId: state.matchId });
+  }, [send, state]);
+
+  return {
+    auth,
+    authorize,
+    status,
+    state,
+    queue,
+    presence,
+    error,
+    joinQueue,
+    leaveQueue,
+    resync,
+    queueDropped,
+    dismissError: useCallback(() => setError(null), []),
+    send,
+  };
+}

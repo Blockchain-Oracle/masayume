@@ -24,6 +24,9 @@ export { BOOT_FACTS, type BootFact } from "./boot-fact";
 export { useBootFacts, type BootFactReadiness } from "./boot-facts-context";
 export { useReadingQuery, type PollInterval, type ReadingQueryOptions } from "./useReadingQuery";
 export {
+  useArenaCredit,
+  useArenaMatch,
+  useArenaState,
   useBalanceSheet,
   useBookParams,
   useClaimables,

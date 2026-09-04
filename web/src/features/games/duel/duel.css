@@ -1,0 +1,130 @@
+/* The duel: the gate, the entry, the queue and the lobby. The deck itself is stage.css.
+ *
+ * Same two rules as games.css — dark values first with a `[data-theme="light"]` override, and every
+ * colour a Yosuku token or an alpha step over one.
+ */
+
+.dl-head { margin-bottom: 20px; }
+.dl-title {
+  margin-top: 8px;
+  font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(2rem, 5.6vw, 3rem); line-height: 0.96; letter-spacing: -0.04em;
+  color: var(--white);
+}
+.dl-title .accent { color: var(--vermilion); }
+
+.dl-layout { display: grid; gap: 16px; grid-template-columns: 1fr; align-items: start; }
+@media (min-width: 900px) {
+  .dl-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 300px); gap: 24px; }
+}
+.dl-side { display: flex; flex-direction: column; gap: 12px; }
+.dl-intro { font-size: 13px; line-height: 1.65; color: var(--gray-400); }
+
+.dl-plate,
+.dl-entry,
+.dl-queue,
+.dl-lobby,
+.dl-error {
+  display: flex; flex-direction: column; gap: 12px;
+  border-radius: 16px; padding: 20px;
+  border: 1px solid var(--color-hairline); background: var(--color-surface-1);
+}
+.dl-error { border-color: color-mix(in srgb, var(--vermilion) 34%, transparent); }
+
+.dl-k { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gray-500); }
+.dl-v { font-family: var(--font-mono); font-size: 14px; color: var(--white); }
+.dl-mono { font-family: var(--font-mono); }
+.dl-body { font-size: 13px; line-height: 1.65; color: var(--gray-400); }
+.dl-foot { font-family: var(--font-mono); font-size: 10px; line-height: 1.6; color: var(--gray-400); }
+.dl-blurb { font-size: 12px; line-height: 1.6; color: var(--gray-400); }
+
+/* A closed match's last word, above the entry that follows it. */
+.dl-notice {
+  border-radius: 12px; padding: 12px 14px; margin-bottom: 12px;
+  border: 1px solid var(--color-hairline); background: var(--color-surface-2);
+  font-size: 13px; line-height: 1.6; color: var(--gray-400);
+}
+
+.dl-refusal {
+  border-radius: 12px; padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--vermilion) 34%, transparent);
+  background: color-mix(in srgb, var(--vermilion) 7%, transparent);
+  font-size: 12px; line-height: 1.55; color: var(--gray-400);
+}
+
+.dl-cta {
+  align-self: stretch; min-height: var(--button-primary-height);
+  border-radius: var(--button-primary-radius);
+  background: var(--button-primary-fill); color: var(--button-primary-ink);
+  font-family: var(--font-display); font-weight: 700; font-size: 14px; letter-spacing: 0.02em;
+  transition: filter 160ms var(--ease);
+}
+.dl-cta:not(:disabled):hover { background: var(--button-primary-hover); }
+.dl-cta:disabled { opacity: 0.45; cursor: not-allowed; }
+.dl-quiet {
+  align-self: flex-start;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--gray-400);
+  transition: color 200ms var(--ease);
+}
+.dl-quiet:hover { color: var(--vermilion); }
+
+/* ── Choosing a stake ─────────────────────────────────────────────────────── */
+
+.dl-choices { display: flex; flex-direction: column; gap: 8px; }
+.dl-tiers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+@media (min-width: 560px) { .dl-tiers { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.dl-tier {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  border-radius: 12px; padding: 10px 12px;
+  border: 1px solid var(--color-hairline); background: transparent;
+  transition: border-color 180ms var(--ease), background 180ms var(--ease);
+}
+.dl-tier--on { border-color: var(--vermilion); background: color-mix(in srgb, var(--vermilion) 8%, transparent); }
+.dl-tier-name { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray-500); }
+.dl-tier-amount { font-family: var(--font-display); font-weight: 700; font-size: 14px; color: var(--white); }
+
+.dl-cost { display: flex; flex-direction: column; gap: 6px; }
+.dl-cost-list { display: flex; flex-direction: column; gap: 6px; padding-left: 16px; }
+.dl-cost-list li { font-size: 12px; line-height: 1.6; color: var(--gray-400); }
+
+/* ── The queue and the lobby ──────────────────────────────────────────────── */
+
+.dl-queue-head { display: flex; align-items: center; gap: 10px; }
+.dl-queue-title { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--white); }
+.dl-spinner {
+  width: 12px; height: 12px; flex-shrink: 0;
+  border-radius: 9999px;
+  border: 2px solid color-mix(in srgb, var(--vermilion) 30%, transparent);
+  border-top-color: var(--vermilion);
+  animation: dl-spin 900ms linear infinite;
+}
+@keyframes dl-spin { to { transform: rotate(360deg); } }
+
+.dl-facts { display: flex; flex-wrap: wrap; gap: 10px 24px; }
+.dl-fact { display: flex; flex-direction: column; gap: 2px; }
+.dl-deck { font-size: 13px; line-height: 1.6; color: var(--white); }
+
+.dl-seats { display: flex; align-items: center; gap: 14px; }
+.dl-seat { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.dl-seat-name { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dl-seat-name .dl-mono { font-size: 12px; color: var(--white); }
+.dl-avatar {
+  width: 28px; height: 28px; flex-shrink: 0; border-radius: 9999px;
+  background: hsl(calc(var(--dl-hue, 0) * 1deg) 58% 52%);
+}
+.dl-versus { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; color: var(--gray-500); }
+.dl-seat-note { font-family: var(--font-mono); font-size: 10px; color: var(--gray-500); }
+
+/* ── The socket's own state, said quietly ─────────────────────────────────── */
+
+.dl-conn { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10px; color: var(--gray-400); }
+.dl-conn-dot { width: 6px; height: 6px; border-radius: 9999px; background: var(--gray-600); }
+.dl-conn--open .dl-conn-dot { background: var(--profit); }
+.dl-conn--reconnecting .dl-conn-dot { background: var(--vermilion); animation: dl-pulse 1.2s var(--ease) infinite; }
+.dl-conn--closed .dl-conn-dot { background: var(--loss); }
+@keyframes dl-pulse { 50% { opacity: 0.3; } }
+
+@media (max-width: 400px) {
+  .dl-plate, .dl-entry, .dl-queue, .dl-lobby, .dl-error { padding: 16px; }
+}

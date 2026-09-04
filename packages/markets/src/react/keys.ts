@@ -53,6 +53,11 @@ export const keys = {
   privateBudget: (wallet: string | null) => [QUERY_KEY_SCOPE, APP, "privateBudget", wallet] as const,
   privateQuote: (signature: string) => [QUERY_KEY_SCOPE, APP, "privateQuote", signature] as const,
   privateSlot: (slotId: string | null) => [QUERY_KEY_SCOPE, APP, "privateSlot", slotId] as const,
+  /** The arena's sheet, one match whole, one wallet's unclaimed credit and a stake's size on one card. */
+  arenaState: () => [QUERY_KEY_SCOPE, APP, "arena"] as const,
+  arenaMatch: (matchId: string | null) => [QUERY_KEY_SCOPE, APP, "arena", "match", matchId] as const,
+  arenaCredit: (wallet: string | null) => [QUERY_KEY_SCOPE, APP, "arena", "credit", wallet] as const,
+  arenaQuote: (signature: string) => [QUERY_KEY_SCOPE, APP, "arenaQuote", signature] as const,
   balanceSheet: (wallet: string | null) => [QUERY_KEY_SCOPE, APP, "balanceSheet", wallet] as const,
   nextWindow: (marketId: MarketId | null) => [QUERY_KEY_SCOPE, APP, "nextWindow", marketId] as const,
   /** Nested under the boot prefix so the boot fact and `useClock` are one cache entry, not two chain reads. */
