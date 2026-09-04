@@ -1,6 +1,6 @@
 import { phase } from "@masayume/core/lifecycle";
 import { isOk } from "@masayume/core/schemas";
-import { decideOracleFollow, distanceToTriggerBps, type Decision, type StrategySpec } from "@masayume/core/strategies";
+import { decideOracleFollow, distanceToTriggerBps, type Decision, type OracleFollowSpec } from "@masayume/core/strategies";
 import type { Bytes32, EventMarket } from "@masayume/core/types";
 import { marketsProvider } from "@masayume/markets";
 
@@ -16,7 +16,7 @@ export interface Scan {
  * One read of the venue: every Trading Window with an opening print and a fresh feed, decided by
  * the pure model. Reads only — nothing here can send.
  */
-export async function scanVenue(venueId: Bytes32, spec: StrategySpec, nowMs: number): Promise<Scan> {
+export async function scanVenue(venueId: Bytes32, spec: OracleFollowSpec, nowMs: number): Promise<Scan> {
   const lanes = await marketsProvider.listLiveLanes(venueId);
   if (!isOk(lanes)) return { candidates: [], scanned: 0, closestBps: null, why: `lanes unreadable: ${lanes.error.technical}` };
   const markets = lanes.value.lanes.flatMap((lane) => lane.markets).filter((m) => phase(m, nowMs) === "trading");

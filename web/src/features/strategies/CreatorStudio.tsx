@@ -31,7 +31,7 @@ interface CreatorStudioProps {
  */
 export function CreatorStudio({ writes, decimals, symbol, asset, houseRunner }: CreatorStudioProps) {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<StudioDraft>({ preset: "momentum", lookback: 6, thresholdPct: "0.2", hosting: houseRunner ? "house" : "self", agent: "", name: "", maxPerTrade: "5", maxDaily: "50", subFee: "0", playbook: "" });
+  const [form, setForm] = useState<StudioDraft>({ preset: "momentum", lookback: 6, thresholdPct: "0.2", persona: "", posture: "balanced", cadences: [900, 3600], hosting: houseRunner ? "house" : "self", agent: "", name: "", maxPerTrade: "5", maxDaily: "50", subFee: "0", playbook: "" });
   useEffect(() => {
     if (writes.address && !form.agent) setForm((f) => ({ ...f, agent: writes.address as string }));
   }, [writes.address, form.agent]);

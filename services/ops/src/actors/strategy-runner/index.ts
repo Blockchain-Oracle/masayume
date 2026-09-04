@@ -45,6 +45,7 @@ async function cycle(runner: Runner, strategyId: bigint, nowMs: number): Promise
   }
   const meta = parseStrategyMetadata(strategy.metadata);
   if (!meta) return heartbeat(runner, strategyId, "metadata carries no readable spec; idle", 0, null);
+  if (meta.spec.preset === "agent") return heartbeat(runner, strategyId, "agent preset: this runner has no agent brain wired yet; holding", 0, null);
 
   const scan = await scanVenue(runner.venueId, meta.spec, nowMs);
   const subscribers = await listLiveSubscribers(strategyId);

@@ -3,15 +3,35 @@ import type { Address, Hex } from "../types/primitives";
 import type { VaultCaps } from "../vault/types";
 
 /** A creator's strategy expressed as DATA the fixed runner evaluates — never code (reference `StrategySpec`). */
-export type PresetKey = "momentum" | "reversion";
+export type PresetKey = "momentum" | "reversion" | "agent";
 
-export interface StrategySpec {
-  preset: PresetKey;
+/** How hard the gate leans on an agent's call: the confidence floor, the price cap, the breaker. */
+export type AgentPosture = "guarded" | "balanced" | "active";
+
+/** The house model's data: how far back it reads and how big a move earns a bet. */
+export interface OracleFollowSpec {
+  preset: "momentum" | "reversion";
   /** How many recent price samples the runner reads (2–12). */
   lookback: number;
   /** The smallest move, in bps, worth a bet; below it the runner sits the round out. */
   thresholdBps: number;
 }
+
+/**
+ * An agent's data: a persona a language model reads, a posture the gate enforces, the cadences it
+ * may trade. No model name lives here — the model actually used is recorded per decision, so the
+ * spec hash never pins a vendor string.
+ */
+export interface AgentSpec {
+  preset: "agent";
+  /** The creator's brief, 1–600 characters. Untrusted input to the prompt; never a rule the gate reads. */
+  persona: string;
+  posture: AgentPosture;
+  /** Window cadences it may read, in seconds — unique, ascending, drawn from `AGENT_CADENCES_SEC`. */
+  cadences: number[];
+}
+
+export type StrategySpec = OracleFollowSpec | AgentSpec;
 
 /** What the registry holds on-chain for one strategy, decoded. */
 export interface StrategyRecord {

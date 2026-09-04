@@ -1,6 +1,6 @@
 "use client";
 
-import { describeSpec, LOOKBACK_MAX, LOOKBACK_MIN, PRESETS, type PresetKey, type StrategySpec } from "@masayume/core/strategies";
+import { describeSpec, LOOKBACK_MAX, LOOKBACK_MIN, PRESETS, type AgentPosture, type PresetKey, type StrategySpec } from "@masayume/core/strategies";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { STRATEGIES } from "./copy";
@@ -12,6 +12,9 @@ export interface StudioDraft {
   preset: PresetKey;
   lookback: number;
   thresholdPct: string;
+  persona: string;
+  posture: AgentPosture;
+  cadences: number[];
   hosting: "house" | "self";
   agent: string;
   name: string;
@@ -22,6 +25,7 @@ export interface StudioDraft {
 }
 
 export function draftSpec(form: StudioDraft): StrategySpec {
+  if (form.preset === "agent") return { preset: "agent", persona: form.persona.trim(), posture: form.posture, cadences: [...form.cadences].sort((a, b) => a - b) };
   return { preset: form.preset, lookback: form.lookback, thresholdBps: Math.round((parseFloat(form.thresholdPct) || 0) * 100) };
 }
 
