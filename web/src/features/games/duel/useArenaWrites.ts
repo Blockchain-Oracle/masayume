@@ -38,7 +38,7 @@ import { useGameSession, type GameSession } from "./useGameSession";
  * before it sends, so a floor is always a fraction of a live quote rather than of a stale one.
  */
 
-export type ArenaBusy = "create" | "join" | "claim" | "finalize" | "lock" | `pick:${number}` | `settle:${number}` | null;
+export type ArenaBusy = "create" | "join" | "claim" | "finalize" | "lock" | "authorize" | `pick:${number}` | `settle:${number}` | null;
 
 /**
  * The last transaction this screen asked for and did not get — and the reason a duel needed it.
@@ -146,6 +146,12 @@ export function useArenaWrites() {
   const claim = useCallback((player: Address) => send({ kind: "arena-claim", player }, "claim"), [send]);
 
   /**
+   * Names this browser's key for a seat after the entry did not — the way back in when the key that
+   * entered is on another device, or was lost with its storage. One wallet transaction, then the key swipes.
+   */
+  const authorize = useCallback((matchId: Bytes32, agent: Address, ttlSec: number) => send({ kind: "arena-authorize", matchId, agent, ttlSec }, "authorize"), [send]);
+
+  /**
    * The two permissionless cranks a player may need to run themselves.
    *
    * Doc 04's recovery list requires it: with the operator's settler unavailable, a player or anyone
@@ -216,6 +222,7 @@ export function useArenaWrites() {
     create,
     join,
     claim,
+    authorize,
     settleCard,
     finalize,
     lock,

@@ -15,7 +15,8 @@
     "spike:pick-one": "tsx src/spike/pick-one.ts",
     "spike:deck-supply": "tsx src/spike/deck-supply.ts",
     "spike:arena-params": "tsx src/spike/arena-params.ts",
-    "spike:abandon": "tsx src/spike/abandon-drive.ts"
+    "spike:abandon": "tsx src/spike/abandon-drive.ts",
+    "spike:room-key": "tsx src/spike/room-key-check.ts"
   },
   "dependencies": {
     "@masayume/core": "workspace:*",

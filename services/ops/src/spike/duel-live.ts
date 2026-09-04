@@ -78,7 +78,7 @@ async function main(): Promise<void> {
 
   const session = await createSubmitterSession({ env, authority: "user-wallet", signer: { privateKey: key as Hex }, journal: createMemoryJournal() });
   const wallet = session.address.toLowerCase() as Address;
-  const token = mintRoomToken(roomSessionClaims(wallet, deployment.chainId, deployment.gameArena, Date.now()), (payload) => roomMac(SECRET, payload));
+  const token = mintRoomToken(roomSessionClaims(wallet, wallet, deployment.chainId, deployment.gameArena, Date.now()), (payload) => roomMac(SECRET, payload));
 
   const socket = new WebSocket(`ws://127.0.0.1:${PORT}/`, ["masayume.room.v1", token]);
   await new Promise<void>((resolve, reject) => {

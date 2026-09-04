@@ -8,8 +8,10 @@ import {
   type MatchState,
   type ServerMessage,
 } from "@masayume/core/games";
+import { isOk } from "@masayume/core/schemas";
 import { isBytes32, type Address, type Bytes32 } from "@masayume/core/types";
 import { marketsProvider } from "@masayume/markets";
+import { readArenaAgent } from "@masayume/markets/games";
 import type { PendingMatch } from "../matchmaker/pending";
 import type { RoomConnection, RoomHub } from "./hub";
 import { buildMatchSnapshot } from "./snapshot";
@@ -22,6 +24,11 @@ import { buildMatchSnapshot } from "./snapshot";
  * being one of its two players, checked against the arena's own record rather than against anything the
  * client said — there is no spectator seat, so a wallet that is not in the match is refused rather than
  * given a read-only view of somebody else's picks.
+ *
+ * The wallet a token claims is the browser key's word until the chain says otherwise — Flicky's `hello`
+ * — so the seat check has a second half: once the arena names an agent for `(match, wallet)`, only a
+ * socket holding that key is admitted to the seat's room. A key the entry never named is refused with
+ * `wrong-key` and the match it is about, which is what the browser needs to offer a re-key.
  */
 
 /** Pairing and the queue, when a matchmaker is running. Absent, the queue is honestly unavailable. */
@@ -108,12 +115,28 @@ async function sendSnapshot(ctx: RoomContext, connection: RoomConnection, matchI
     ctx.hub.send(connection, roomError("forbidden", "this match is not yours", about));
     return;
   }
+  if (!(await keyIsTheSeats(connection, matchId, serverTimeMs))) {
+    ctx.hub.send(connection, roomError("wrong-key", "this seat named another browser's key", about, matchId));
+    return;
+  }
 
   const ref = roomRef(ctx.chainId, ctx.arena, matchId);
   ctx.hub.join(connection, ref, players);
   ctx.hub.send(connection, { type: "snapshot", serverTimeMs, wallet: connection.wallet, room: ref, state: encodeMatchState(built.state) });
   const presence = ctx.hub.presenceOf(ref.key);
   if (presence) ctx.hub.broadcast(ref.key, presence);
+}
+
+/**
+ * True unless the arena has named a live agent for this seat that is not this connection's key. No agent
+ * yet — before the entry, or a seat that entered without one — is the reference's trust in the claim; an
+ * unreadable arena is not a refusal either, because a node blinking must not lock a player out mid-duel.
+ */
+async function keyIsTheSeats(connection: RoomConnection, matchId: Bytes32, nowMs: number): Promise<boolean> {
+  const named = await readArenaAgent(matchId, connection.wallet);
+  if (!isOk(named) || !named.value) return true;
+  if (named.value.expiresAtSec <= Math.floor(nowMs / 1_000)) return true;
+  return named.value.agent === connection.key;
 }
 
 /** A committed deck the arena has not been told about, as the `committed` state it already is. */

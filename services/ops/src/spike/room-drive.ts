@@ -78,7 +78,7 @@ async function connect(token: string): Promise<Client | number> {
 }
 
 function tokenFor(chainId: number, arena: Address, wallet: Address = WALLET, nowMs = Date.now()): string {
-  return mintRoomToken(roomSessionClaims(wallet, chainId, arena, nowMs), (payload) => roomMac(SECRET, payload));
+  return mintRoomToken(roomSessionClaims(wallet, wallet, chainId, arena, nowMs), (payload) => roomMac(SECRET, payload));
 }
 
 async function main(): Promise<void> {

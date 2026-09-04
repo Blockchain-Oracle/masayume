@@ -17,6 +17,7 @@ import {
 import type { Address } from "@masayume/core/types";
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { keccak256 } from "viem";
+import { useGameKey } from "./useGameKey";
 import { useRoomToken, type RoomAuth } from "./useRoomToken";
 import { playSfx } from "../audio";
 
@@ -53,6 +54,8 @@ export interface DuelRoomError {
   message: string;
   retryable: boolean;
   about: string | null;
+  /** The match a refusal names, when it names one — `wrong-key` carries the seat to re-key. */
+  matchId: string | null;
 }
 
 export interface QueueView {
@@ -149,7 +152,7 @@ function freshSeed(): `0x${string}` {
  * this wallet is in, which is a better answer than anything this browser could remember.
  */
 export function useDuelRoom(region = "default", resumeMatchId: string | null = null): DuelRoom {
-  const { auth, authorize } = useRoomToken();
+  const { auth, authorize } = useRoomToken(useGameKey());
   const [state, dispatch] = useReducer(transition, IDLE);
   const [status, setStatus] = useState<RoomStatus>("idle");
   const [queue, setQueue] = useState<QueueView | null>(null);
@@ -210,7 +213,7 @@ export function useDuelRoom(region = "default", resumeMatchId: string | null = n
           if (message.player.toLowerCase() !== walletRef.current) setOpponentPending({ cardIndex: message.cardIndex, atMs: Date.now() });
           break;
         case "error":
-          setError({ code: message.code, message: message.message, retryable: message.retryable, about: message.about ?? null });
+          setError({ code: message.code, message: message.message, retryable: message.retryable, about: message.about ?? null, matchId: message.matchId ?? null });
           break;
         case "match.found":
           // Flicky's cue, before the screen swaps: the sound is how a player looking away learns.

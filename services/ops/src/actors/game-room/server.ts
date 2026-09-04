@@ -34,7 +34,6 @@ import { roomMacVerifier } from "./token";
  */
 
 const SUBPROTOCOL = "masayume.room.v1";
-const TOKEN_PREFIX = "r1.";
 
 function offeredProtocols(req: IncomingMessage): readonly string[] {
   const header = req.headers["sec-websocket-protocol"];
@@ -46,7 +45,8 @@ function offeredProtocols(req: IncomingMessage): readonly string[] {
 }
 
 function tokenOf(req: IncomingMessage): { token: string | null; fromQuery: boolean } {
-  const offered = offeredProtocols(req).find((part) => part.startsWith(TOKEN_PREFIX));
+  // The token is whichever offered protocol is not ours: its own version prefix is core's to check, not this file's.
+  const offered = offeredProtocols(req).find((part) => part !== SUBPROTOCOL && part.includes("."));
   if (offered) return { token: offered, fromQuery: false };
   const url = new URL(req.url ?? "/", "http://room.invalid");
   return { token: url.searchParams.get("token"), fromQuery: true };
@@ -112,8 +112,8 @@ export function startRoomServer({ ctx, env }: RoomServerOptions): RoomServer {
   });
 
   function accept(socket: WebSocket, claims: RoomTokenClaims): void {
-    const connection = ctx.hub.open(socket, claims.wallet, Date.now());
-    ctx.log(`${connection.id} ${connection.wallet}: connected (${ctx.hub.stats().connections} open)`);
+    const connection = ctx.hub.open(socket, claims.wallet, claims.key, Date.now());
+    ctx.log(`${connection.id} ${connection.wallet} (key ${connection.key}): connected (${ctx.hub.stats().connections} open)`);
 
     socket.on("pong", () => {
       connection.lastSeenMs = Date.now();

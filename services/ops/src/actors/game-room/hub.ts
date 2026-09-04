@@ -18,6 +18,8 @@ import { WebSocket } from "ws";
 export interface RoomConnection {
   id: string;
   wallet: Address;
+  /** The browser key that signed the token — what a seat's on-chain agent record is checked against. */
+  key: Address;
   socket: WebSocket;
   rates: RateState;
   room: RoomRef | null;
@@ -36,7 +38,7 @@ interface Room {
 }
 
 export interface RoomHub {
-  open(socket: WebSocket, wallet: Address, nowMs: number): RoomConnection;
+  open(socket: WebSocket, wallet: Address, key: Address, nowMs: number): RoomConnection;
   close(connection: RoomConnection): void;
   /** `players` is the match's roster from the arena, so presence can report an absent player as absent. */
   join(connection: RoomConnection, ref: RoomRef, players: readonly Address[]): void;
@@ -70,11 +72,12 @@ export function createRoomHub(): RoomHub {
   }
 
   return {
-    open(socket, wallet, nowMs) {
+    open(socket, wallet, key, nowMs) {
       seq += 1;
       const connection: RoomConnection = {
         id: `c${seq}`,
         wallet: wallet.toLowerCase() as Address,
+        key: key.toLowerCase() as Address,
         socket,
         rates: createRateState(),
         room: null,

@@ -15,12 +15,10 @@ export const DUEL = {
   auth: {
     unavailable:
       "This deployment has no duel room. The arena, the room server and the matchmaker are separate things, and at least one of them is not configured here.",
-    signTitle: "One signature opens the room",
-    signBody:
-      "The duel room needs to know this browser is your wallet. Signing is not a transaction: it moves no funds, costs no gas, and lasts one sitting.",
-    sign: "Sign to open the room",
-    signing: "Waiting for your wallet…",
-    refused: "The room refused that signature.",
+    /** No prompt: the browser's own key signs the room in, and the entry transaction is what names it on chain. */
+    openingTitle: "Opening the room",
+    openingBody: "This browser's key vouches for your seat — no wallet prompt. The one signature a duel asks of your wallet is the entry.",
+    refused: "The room refused this browser's key.",
     retry: "Try again",
     /**
      * Said before the signature, because it is the reason to give one.
@@ -35,6 +33,16 @@ export const DUEL = {
     roomDown: "The duel room is not answering, so no match can be found at the moment.",
     connectTitle: "Connect a wallet to duel",
     connectBody: "A duel escrows against your address and places orders you own. There is nothing to show until there is a wallet.",
+  },
+
+  /** The room refused this browser's key for a seat the wallet holds: the entry named another one. */
+  rekey: {
+    title: "This seat named another key",
+    body: "Your wallet is in this match, but the entry named the key of another browser — the one you entered from, or one whose storage is gone. That browser can keep playing. To play from this one, name this browser's key for the seat.",
+    cta: "Name this browser's key",
+    naming: "Naming…",
+    note: "One transaction from your wallet, and it replaces the other key for this match only. Nothing about the pot or your picks changes.",
+    noSigner: "This browser has no signing session, so it cannot send that transaction.",
   },
 
   status: {
@@ -121,6 +129,7 @@ export const DUEL = {
       pot === "0" ? "The match is on chain and waiting for you. Joining escrows nothing and starts the reveal." : `The match is on chain and waiting for you. Joining escrows your ${pot} ${symbol} and starts the reveal.`,
     /** Said under the entry's own sentence once this browser holds a key: what else the one signature does. */
     oneSignature: "This is the only signature the match asks of your wallet: it also names the key this browser holds to place your picks, and sends it the gas they need.",
+    oneSignatureSponsored: "This is the only signature the match asks of your wallet: it also names the key this browser holds to place your picks. Their gas is the sponsor's.",
     waitingCreate: "Waiting for the other player to put the match on chain.",
     opening: "Opening…",
     joining: "Joining…",

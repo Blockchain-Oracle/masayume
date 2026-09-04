@@ -18,7 +18,7 @@ import { verifyMessage } from "viem";
 /**
  * Minting the duel room's credential — server only. Nothing here may be imported by a component.
  *
- * The wallet signs once; this route turns that signature into a token the ops room server can check on
+ * The browser's game key signs, silently; this route turns that signature into a token the ops room server can check on
  * its own, with no shared database and no call back to the app. `ROOM_TOKEN_SECRET` is the only thing
  * the two processes share, and it is the same variable the Stage 3 comment Room already uses — one
  * secret for the deployment, not one per feature.
@@ -66,17 +66,21 @@ export function roomArena(): { chainId: number; arena: Address } | null {
 
 export type MintOutcome = { ok: true; grant: RoomTokenGrant } | { ok: false; status: number; error: string };
 
-/** A first token: the signature is verified against the message this app would have asked for, then discarded. */
-export async function mintFromSignature(wallet: Address, issuedAtMs: number, signature: string, nowMs: number): Promise<MintOutcome> {
+/**
+ * A first token: the browser key's signature is verified against the message this app would have asked
+ * for, then discarded. The wallet it claims is taken on the key's word here — the reference's `hello` —
+ * and checked against the arena's own agent record the moment a seat exists (`handlers.ts` §sendSnapshot).
+ */
+export async function mintFromSignature(wallet: Address, key: Address, issuedAtMs: number, signature: string, nowMs: number): Promise<MintOutcome> {
   const target = roomArena();
   if (!target) return { ok: false, status: 503, error: "No duel arena is deployed on this network." };
-  if (!roomAuthFresh(issuedAtMs, nowMs)) return { ok: false, status: 400, error: "That signature is too old. Sign again." };
+  if (!roomAuthFresh(issuedAtMs, nowMs)) return { ok: false, status: 400, error: "That signature is too old." };
 
-  const message = roomAuthMessage({ wallet, chainId: target.chainId, arena: target.arena, issuedAtMs });
-  const verified = await verifyMessage({ address: wallet, message, signature: signature as `0x${string}` }).catch(() => false);
-  if (!verified) return { ok: false, status: 401, error: "That signature is not this wallet's." };
+  const message = roomAuthMessage({ wallet, key, chainId: target.chainId, arena: target.arena, issuedAtMs });
+  const verified = await verifyMessage({ address: key, message, signature: signature as `0x${string}` }).catch(() => false);
+  if (!verified) return { ok: false, status: 401, error: "That signature is not this key's." };
 
-  return { ok: true, grant: grant(roomSessionClaims(wallet, target.chainId, target.arena, nowMs)) };
+  return { ok: true, grant: grant(roomSessionClaims(wallet, key, target.chainId, target.arena, nowMs)) };
 }
 
 /**
@@ -86,7 +90,7 @@ export async function mintFromSignature(wallet: Address, issuedAtMs: number, sig
 export function renewFromToken(token: string, nowMs: number): MintOutcome {
   const parsed = parseRoomToken(token);
   if (!parsed || !macMatches(parsed.payload, parsed.mac)) return { ok: false, status: 401, error: "That room token is not ours." };
-  if (!canRenewRoomToken(parsed.claims, nowMs)) return { ok: false, status: 401, error: "That room session has ended. Sign again." };
+  if (!canRenewRoomToken(parsed.claims, nowMs)) return { ok: false, status: 401, error: "That room session has ended." };
 
   const target = roomArena();
   if (!target || parsed.claims.chainId !== target.chainId || parsed.claims.arena !== target.arena.toLowerCase()) {
@@ -94,11 +98,11 @@ export function renewFromToken(token: string, nowMs: number): MintOutcome {
   }
 
   const next = renewRoomTokenClaims(parsed.claims, nowMs);
-  return next ? { ok: true, grant: grant(next) } : { ok: false, status: 401, error: "That room session has ended. Sign again." };
+  return next ? { ok: true, grant: grant(next) } : { ok: false, status: 401, error: "That room session has ended." };
 }
 
-/** The text the browser must put in front of the wallet, built here so the two copies cannot drift. */
-export function roomAuthPrompt(wallet: Address, issuedAtMs: number): string | null {
+/** The text the browser's key signs, built here so the two copies cannot drift. */
+export function roomAuthPrompt(wallet: Address, key: Address, issuedAtMs: number): string | null {
   const target = roomArena();
-  return target ? roomAuthMessage({ wallet, chainId: target.chainId, arena: target.arena, issuedAtMs }) : null;
+  return target ? roomAuthMessage({ wallet, key, chainId: target.chainId, arena: target.arena, issuedAtMs }) : null;
 }

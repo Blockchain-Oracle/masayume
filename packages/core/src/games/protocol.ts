@@ -69,6 +69,8 @@ export const ROOM_ERROR_CODES = [
   "bad-protocol",
   "unauthenticated",
   "forbidden",
+  /** The wallet is in this match, but the seat named another browser's key on chain. Re-key, or play from that browser. */
+  "wrong-key",
   "unknown-match",
   "bad-message",
   "rate-limited",
@@ -241,14 +243,16 @@ export const serverMessageSchema = z.discriminatedUnion("type", [
     retryable: z.boolean(),
     /** The client message that caused it, when there was one — so a UI can blame the right control. */
     about: z.string().max(40).nullish(),
+    /** The match a refusal is about, when it is about one — `wrong-key` names the seat to re-key. */
+    matchId: matchIdSchema.nullish(),
   }),
 ]);
 
 export type ServerMessage = z.infer<typeof serverMessageSchema>;
 export type ServerMessageType = ServerMessage["type"];
 
-export function roomError(code: RoomErrorCode, message: string, about?: ClientMessageType): Extract<ServerMessage, { type: "error" }> {
-  return { type: "error", code, message, retryable: isRetryable(code), about: about ?? null };
+export function roomError(code: RoomErrorCode, message: string, about?: ClientMessageType, matchId?: string): Extract<ServerMessage, { type: "error" }> {
+  return { type: "error", code, message, retryable: isRetryable(code), about: about ?? null, matchId: matchId ?? null };
 }
 
 /**

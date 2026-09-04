@@ -57,7 +57,7 @@ interface Player {
 async function connect(chainId: number, arena: Address, label: string): Promise<Player> {
   const wallet = `0x${randomBytes(20).toString("hex")}` as Address;
   const seed = `0x${randomBytes(32).toString("hex")}` as Bytes32;
-  const token = mintRoomToken(roomSessionClaims(wallet, chainId, arena, Date.now()), (payload) => roomMac(SECRET, payload));
+  const token = mintRoomToken(roomSessionClaims(wallet, wallet, chainId, arena, Date.now()), (payload) => roomMac(SECRET, payload));
   const socket = new WebSocket(`ws://127.0.0.1:${PORT}/`, ["masayume.room.v1", token]);
   const seen: ServerMessage[] = [];
   const waiting = new Map<string, (m: ServerMessage) => void>();

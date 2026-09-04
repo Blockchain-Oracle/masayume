@@ -3,12 +3,20 @@ import { isAddress } from "../types/primitives";
 import type { RoomErrorCode } from "./protocol";
 
 /**
- * The credential that opens a duel room, and the message a wallet signs to get one.
+ * The credential that opens a duel room, and the message the browser's own key signs to get one.
  *
  * A WebSocket upgrade is a GET with no body, so whatever authenticates it has to fit in a string that
  * the browser can attach and the room server can check without asking anything else. That string is this
- * token: claims plus a MAC over them, minted by the web app after it has verified a wallet signature,
- * and verified by the ops room server against the same shared secret.
+ * token: claims plus a MAC over them, minted by the web app after it has verified a signature, and
+ * verified by the ops room server against the same shared secret.
+ *
+ * **The wallet does not sign this.** Flicky's room takes a bare `hello(address)` and lets the chain be the
+ * authority for everything that costs money; the wallet signs nothing before the entry. Here the browser's
+ * game key — the key the entry transaction will name as the seat's agent — signs a message that claims a
+ * wallet, so the room asks the wallet for no prompt at all and still holds a signature it can check. Before
+ * the entry the claim is exactly as trusted as the reference's `hello`; from the entry on, the arena's own
+ * `agentOf(matchId, wallet)` is what the room checks a socket's key against, so a key the chain never named
+ * cannot sit in a seat's room (`handlers.ts` §sendSnapshot).
  *
  * Three properties are deliberate.
  *
@@ -17,9 +25,8 @@ import type { RoomErrorCode } from "./protocol";
  *
  * **It carries two clocks.** `issuedAtMs` bounds how long one token is good for — fifteen minutes, so a
  * copied URL is not a durable credential — while `sessionEndsAtMs` bounds how long the *signature* behind
- * it may keep minting new ones. Without the second clock, rolling renewal would make the first meaningless;
- * without the first, a duel that runs past the token's life would stop mid-match to ask the wallet to sign
- * again, and a signature prompt in the middle of a swipe deadline is a lost card.
+ * it may keep minting new ones. A re-mint costs no prompt now, but a token that renews rather than re-signs
+ * is one fewer thing for a phone mid-swipe to do.
  *
  * **No crypto lives here.** `@masayume/core` stays free of platform dependencies, so the HMAC is passed in
  * — the same shape `verifyDeckCommitment` uses for keccak. Both callers hold one line of `node:crypto`
@@ -32,17 +39,20 @@ import type { RoomErrorCode } from "./protocol";
 
 /** A signature is only good for a few minutes, so a captured one cannot be presented tomorrow. */
 export const ROOM_AUTH_TTL_MS = 5 * 60_000;
-/** One token's life. A room that outlives it renews rather than re-prompting. */
+/** One token's life. A room that outlives it renews rather than re-signing. */
 export const ROOM_TOKEN_TTL_MS = 15 * 60_000;
-/** How long one signature may keep renewing. Past this, the wallet signs again — once a sitting, not once a match. */
+/** How long one signature may keep renewing. Past this, the key signs again — silently, once a sitting. */
 export const ROOM_SESSION_MS = 12 * 60 * 60_000;
 /** A client clock a minute ahead is common and harmless; an hour ahead is not. */
 export const ROOM_CLOCK_SLACK_MS = 60_000;
 
-const VERSION = "r1";
+/** `r1` carried no key and was signed by the wallet; a token of that shape is refused on its format. */
+const VERSION = "r2";
 
 export interface RoomTokenClaims {
   wallet: Address;
+  /** The browser key that signed for this wallet — the one an entry names as the seat's agent. */
+  key: Address;
   chainId: number;
   arena: Address;
   issuedAtMs: number;
@@ -50,16 +60,17 @@ export interface RoomTokenClaims {
   sessionEndsAtMs: number;
 }
 
-/** The exact text the wallet signs. It names the arena and says what it is not, because people read these. */
-export function roomAuthMessage(claims: Pick<RoomTokenClaims, "wallet" | "chainId" | "arena"> & { issuedAtMs: number }): string {
+/** The exact text the key signs. It names the wallet it claims, the arena, and what it is not, because people read these. */
+export function roomAuthMessage(claims: Pick<RoomTokenClaims, "wallet" | "key" | "chainId" | "arena"> & { issuedAtMs: number }): string {
   return [
     "Masayume — open the duel room",
     "",
     `Wallet: ${claims.wallet.toLowerCase()}`,
+    `Key: ${claims.key.toLowerCase()}`,
     `Arena: ${claims.arena.toLowerCase()} on chain ${claims.chainId}`,
     `Issued: ${new Date(claims.issuedAtMs).toISOString()}`,
     "",
-    "Signing lets this browser join your duel rooms. It is not a transaction, it moves no funds, and it costs nothing.",
+    "This browser's own key signs this, not the wallet. It opens the wallet's duel rooms; the entry transaction is what names the key on chain. It is not a transaction, it moves no funds, and it costs nothing.",
   ].join("\n");
 }
 
@@ -68,10 +79,11 @@ export function roomAuthFresh(issuedAtMs: number, nowMs: number): boolean {
   return age <= ROOM_AUTH_TTL_MS && age >= -ROOM_CLOCK_SLACK_MS;
 }
 
-/** Claims for a wallet that has just signed: a fresh token on a session ending twelve hours out. */
-export function roomSessionClaims(wallet: Address, chainId: number, arena: Address, nowMs: number): RoomTokenClaims {
+/** Claims for a key that has just signed for a wallet: a fresh token on a session ending twelve hours out. */
+export function roomSessionClaims(wallet: Address, key: Address, chainId: number, arena: Address, nowMs: number): RoomTokenClaims {
   return {
     wallet: wallet.toLowerCase() as Address,
+    key: key.toLowerCase() as Address,
     chainId,
     arena: arena.toLowerCase() as Address,
     issuedAtMs: nowMs,
@@ -81,7 +93,7 @@ export function roomSessionClaims(wallet: Address, chainId: number, arena: Addre
 
 /** The dot-joined claims a MAC is taken over. Addresses lowercased, numbers decimal — no field may contain a dot. */
 export function roomTokenPayload(claims: RoomTokenClaims): string {
-  return [VERSION, claims.wallet.toLowerCase(), claims.chainId, claims.arena.toLowerCase(), claims.issuedAtMs, claims.sessionEndsAtMs].join(".");
+  return [VERSION, claims.wallet.toLowerCase(), claims.key.toLowerCase(), claims.chainId, claims.arena.toLowerCase(), claims.issuedAtMs, claims.sessionEndsAtMs].join(".");
 }
 
 export type SignPayload = (payload: string) => string;
@@ -102,7 +114,7 @@ export function canRenewRoomToken(claims: RoomTokenClaims, nowMs: number): boole
   return nowMs < claims.sessionEndsAtMs;
 }
 
-/** A fresh token on the same session — the renewal that keeps a long duel from asking for a second signature. */
+/** A fresh token on the same session — the renewal that keeps a long duel from re-signing mid-swipe. */
 export function renewRoomTokenClaims(claims: RoomTokenClaims, nowMs: number): RoomTokenClaims | null {
   return canRenewRoomToken(claims, nowMs) ? { ...claims, issuedAtMs: nowMs } : null;
 }
@@ -116,16 +128,17 @@ interface ParsedRoomToken {
 /** Structure only — nothing here is trusted until the MAC has been checked against it. */
 export function parseRoomToken(token: string): ParsedRoomToken | null {
   const parts = token.split(".");
-  if (parts.length !== 7) return null;
-  const [version, wallet, chainId, arena, issuedAtMs, sessionEndsAtMs, mac] = parts as [string, string, string, string, string, string, string];
+  if (parts.length !== 8) return null;
+  const [version, wallet, key, chainId, arena, issuedAtMs, sessionEndsAtMs, mac] = parts as [string, string, string, string, string, string, string, string];
   if (version !== VERSION || !mac) return null;
-  if (!isAddress(wallet) || !isAddress(arena)) return null;
+  if (!isAddress(wallet) || !isAddress(key) || !isAddress(arena)) return null;
   if (!/^\d+$/.test(chainId) || !/^\d+$/.test(issuedAtMs) || !/^\d+$/.test(sessionEndsAtMs)) return null;
   return {
-    payload: parts.slice(0, 6).join("."),
+    payload: parts.slice(0, 7).join("."),
     mac,
     claims: {
       wallet: wallet.toLowerCase() as Address,
+      key: key.toLowerCase() as Address,
       chainId: Number(chainId),
       arena: arena.toLowerCase() as Address,
       issuedAtMs: Number(issuedAtMs),

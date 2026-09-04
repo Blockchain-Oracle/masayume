@@ -16,7 +16,10 @@ import { DuelPicking } from "./DuelPicking";
 import { DuelPublicResult } from "./DuelPublicResult";
 import { DuelQueue } from "./DuelQueue";
 import { DuelResult } from "./DuelResult";
+import { RefusalPlate } from "./DuelWaiting";
+import { useArenaWrites } from "./useArenaWrites";
 import { useDuelRoom } from "./useDuelRoom";
+import { MATCH_AGENT_TTL_SEC } from "./useGameSession";
 import { searchingNow, useRoomOccupancy, type RoomOccupancy } from "./useRoomOccupancy";
 import "./duel.css";
 
@@ -90,17 +93,17 @@ export function DuelStage({ resumeMatchId = null }: { resumeMatchId?: Bytes32 | 
 }
 
 /**
- * Everything before the socket: no room here, no wallet, or one signature still to give.
+ * Everything before the socket: no room here, no wallet, or the key still signing the room in.
  *
- * Every arm of it now carries the room's occupancy, read with no credential at all. A gate that shows
- * only a button asks a player to spend a wallet prompt to discover whether anybody is on the other side
- * of it — which was the first thing this screen got wrong.
+ * Nothing here is a wallet prompt any more — Flicky's room takes a bare `hello`, and ours takes the
+ * browser key's word until the chain names it — so the only button left is a retry after a refusal.
+ * Every arm carries the room's occupancy, read with no credential at all: a player standing here is
+ * deciding whether anybody is on the other side, and that is answered for free.
  */
 function Gate({ room, occupancy }: { room: ReturnType<typeof useDuelRoom>; occupancy: RoomOccupancy | null }) {
   const { auth, authorize } = room;
   const here = <Occupancy occupancy={occupancy} />;
 
-  if (auth.kind === "asking") return <p className="du-body">{DUEL.status.connecting}</p>;
   if (auth.kind === "unavailable") {
     return (
       <div className="du-plate">
@@ -118,16 +121,28 @@ function Gate({ room, occupancy }: { room: ReturnType<typeof useDuelRoom>; occup
       </div>
     );
   }
+  if (auth.kind === "refused") {
+    return (
+      <div className="du-plate">
+        <h2 className="du-queue-title">{DUEL.auth.openingTitle}</h2>
+        <p className="du-body">{DUEL.auth.openingBody}</p>
+        {here}
+        <p className="du-refusal">{auth.why}</p>
+        <button type="button" className="du-cta" onClick={() => void authorize()}>
+          {DUEL.auth.retry}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="du-plate">
-      <h2 className="du-queue-title">{DUEL.auth.signTitle}</h2>
-      <p className="du-body">{DUEL.auth.signBody}</p>
+      <div className="du-queue-head">
+        <span className="du-spinner" aria-hidden />
+        <h2 className="du-queue-title">{DUEL.auth.openingTitle}</h2>
+      </div>
+      <p className="du-body">{DUEL.auth.openingBody}</p>
       {here}
-      {auth.kind === "refused" && <p className="du-refusal">{auth.why}</p>}
-      <button type="button" className="du-cta" disabled={auth.kind === "signing"} onClick={() => void authorize()}>
-        {auth.kind === "signing" ? DUEL.auth.signing : auth.kind === "refused" ? DUEL.auth.retry : DUEL.auth.sign}
-      </button>
     </div>
   );
 }
@@ -149,6 +164,9 @@ function Match({
   const { state } = room;
   const nowMs = useNowMs();
   const entry = <DuelEntry onFind={room.joinQueue} roomOpen={room.status === "open"} tierId={tierId} onTier={onTier} occupancy={occupancy} />;
+
+  // The room admitted the wallet and refused the key: the seat is real and this browser cannot yet swipe for it.
+  if (room.error?.code === "wrong-key" && room.error.matchId) return <Rekey matchId={room.error.matchId as Bytes32} room={room} wallet={wallet} />;
 
   switch (state.phase) {
     case "idle":
@@ -193,6 +211,50 @@ function Match({
       // Picking, locked, settling, finalized and forfeited: live on chain, not yet drawn here.
       return <Beyond state={state} />;
   }
+}
+
+/**
+ * The way back into a seat from a browser whose key the entry did not name.
+ *
+ * The arena admits one agent per seat per match, and the room now checks a socket's key against it. So a
+ * player on a second device, or one whose IndexedDB was cleared mid-duel, is not locked out: their wallet
+ * names this browser's key with `authorizeAgent` — one transaction, this match only — and the room is asked
+ * again. The other browser's key stops swiping the moment this lands; nothing about the pot or the picks
+ * already on the book changes.
+ */
+function Rekey({ matchId, room, wallet }: { matchId: Bytes32; room: ReturnType<typeof useDuelRoom>; wallet: string | null }) {
+  const { authorize, busy, canSign, refusal, game } = useArenaWrites();
+  const words = DUEL.rekey;
+  const name = () => {
+    if (!game.key) return;
+    void authorize(matchId, game.key, MATCH_AGENT_TTL_SEC).then((outcome) => {
+      if (outcome?.status === "confirmed") {
+        room.dismissError();
+        room.send({ type: "resync", matchId });
+      }
+    });
+  };
+  return (
+    <div className="du-plate">
+      <h2 className="du-queue-title">{words.title}</h2>
+      <p className="du-body">{words.body}</p>
+      <dl className="du-facts">
+        <div className="du-fact">
+          <dt className="du-k">{DUEL.beyond.match}</dt>
+          <dd className="du-v du-mono">{shortHex(matchId, 10, 8)}</dd>
+        </div>
+      </dl>
+      {!canSign || !game.key ? (
+        <p className="du-refusal">{words.noSigner}</p>
+      ) : (
+        <button type="button" className="du-cta" disabled={busy !== null} onClick={name}>
+          {busy === "authorize" ? words.naming : words.cta}
+        </button>
+      )}
+      <p className="du-foot">{words.note}</p>
+      {refusal && <RefusalPlate diagnosis={refusal.diagnosis} gasShort={refusal.gasShort} wallet={wallet as `0x${string}` | null} />}
+    </div>
+  );
 }
 
 /** The room's own count, or the honest absence of one. Never a zero standing in for a service that is down. */
