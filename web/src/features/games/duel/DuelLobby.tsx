@@ -1,10 +1,15 @@
 "use client";
 
-import type { MatchState } from "@masayume/core/games";
-import { shortHex } from "@masayume/core/units";
+import { STAKE_TIERS, type MatchState } from "@masayume/core/games";
+import { isOk } from "@masayume/core/schemas";
+import type { Bytes32 } from "@masayume/core/types";
+import { formatBaseUnits, shortHex } from "@masayume/core/units";
+import { useArenaMatch, useArenaState } from "@masayume/markets/react";
 import type { CSSProperties } from "react";
+import { useVenue } from "@/features/markets";
 import { addressHue } from "@/lib/address-hue";
 import { DUEL } from "./copy";
+import { useArenaWrites } from "./useArenaWrites";
 
 /**
  * Between the pairing and the first swipe: an opponent, a sealed deck, and the deck opening.
@@ -44,7 +49,7 @@ export function DuelLobby({ state, wallet }: { state: Extract<MatchState, { matc
         </div>
         <p className="dl-body">{stage.body}</p>
 
-        {state.phase === "committed" && <p className="dl-refusal">{DUEL.lobby.createPending}</p>}
+        {state.phase === "committed" && <OnChain state={state} isCreator={isCreator} />}
 
         {"commitment" in state && (
           <dl className="dl-facts">
@@ -72,5 +77,77 @@ function Seat({ label, address }: { label: string; address: string | null }) {
         <span className="dl-mono">{address ? shortHex(address, 6, 4) : "—"}</span>
       </span>
     </div>
+  );
+}
+
+/**
+ * The two transactions a paired match needs from its players, and neither of them is automatic.
+ *
+ * The creator puts the match on chain with the sealed deck's hash; the challenger joins once it is
+ * there. Both escrow, so both are a button a player presses — nothing here signs on its own, and the
+ * amount named is the arena's own tier price rather than the table's.
+ *
+ * The challenger's button appears only when the chain says the match is `waiting`. Offering it before
+ * the creation has landed would be offering a transaction that reverts.
+ */
+function OnChain({ state, isCreator }: { state: Extract<MatchState, { phase: "committed" }>; isCreator: boolean }) {
+  const arena = useArenaState();
+  const onChain = useArenaMatch(state.matchId as Bytes32);
+  const { boot } = useVenue();
+  const { create, join, busy, canSign } = useArenaWrites();
+
+  const tiers = arena && isOk(arena) ? arena.value?.tiers : undefined;
+  const potBase = tiers?.[STAKE_TIERS.findIndex((t) => t.id === state.tier)]?.potBase ?? null;
+  const decimals = boot && isOk(boot) ? boot.value.collateral.decimals : null;
+  const symbol = boot && isOk(boot) ? boot.value.collateral.symbol : "";
+  const pot = potBase === null || decimals === null ? "—" : formatBaseUnits(potBase, decimals, { maxDp: 2, minDp: 0 });
+
+  const created = onChain && isOk(onChain) && onChain.value !== null;
+  const { challenger } = state.players;
+
+  if (!canSign) return <p className="dl-refusal">{DUEL.lobby.noSigner}</p>;
+
+  if (isCreator) {
+    if (created) return <p className="dl-body">{DUEL.lobby.waitingCreate}</p>;
+    return (
+      <>
+        <p className="dl-body">{DUEL.lobby.openBody(pot, symbol)}</p>
+        <button
+          type="button"
+          className="dl-cta"
+          disabled={busy !== null || potBase === null || !challenger}
+          onClick={() =>
+            challenger &&
+            potBase !== null &&
+            void create({
+              matchId: state.matchId as Bytes32,
+              challenger,
+              tier: state.tier,
+              deckHash: state.commitment.hash,
+              deckSize: state.commitment.size,
+              policyVersion: state.commitment.policyVersion,
+              potBase,
+            })
+          }
+        >
+          {busy === "create" ? DUEL.lobby.opening : DUEL.lobby.openCta}
+        </button>
+      </>
+    );
+  }
+
+  if (!created) return <p className="dl-body">{DUEL.lobby.waitingCreate}</p>;
+  return (
+    <>
+      <p className="dl-body">{DUEL.lobby.joinBody(pot, symbol)}</p>
+      <button
+        type="button"
+        className="dl-cta"
+        disabled={busy !== null || potBase === null}
+        onClick={() => potBase !== null && void join(state.matchId as Bytes32, potBase)}
+      >
+        {busy === "join" ? DUEL.lobby.joining : DUEL.lobby.joinCta}
+      </button>
+    </>
   );
 }

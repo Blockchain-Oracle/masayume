@@ -143,11 +143,19 @@ export function seatOf(match: ArenaMatch, wallet: Address): Seat | null {
 }
 
 /** The tier the arena priced, matched back to the table core already publishes. */
+const TIER_IDS: readonly StakeTierId[] = ["free", "t1", "t5", "t10"];
+
 export function stakeTierIdOf(tier: number): StakeTierId {
-  const ids: readonly StakeTierId[] = ["free", "t1", "t5", "t10"];
-  const id = ids[tier];
+  const id = TIER_IDS[tier];
   if (!id) throw new Error(`unknown arena tier ${tier}`);
   return id;
+}
+
+/** The index the contract keys a tier by — the inverse, so a caller never hard-codes the order. */
+export function stakeTierIndex(id: StakeTierId): number {
+  const index = TIER_IDS.indexOf(id);
+  if (index === -1) throw new Error(`unknown stake tier ${id}`);
+  return index;
 }
 
 /**

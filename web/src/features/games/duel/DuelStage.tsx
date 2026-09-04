@@ -9,6 +9,7 @@ import { useGames } from "../GamesProvider";
 import { DUEL } from "./copy";
 import { DuelEntry } from "./DuelEntry";
 import { DuelLobby } from "./DuelLobby";
+import { DuelPicking } from "./DuelPicking";
 import { DuelQueue } from "./DuelQueue";
 import { useDuelRoom } from "./useDuelRoom";
 import "./duel.css";
@@ -122,6 +123,9 @@ function Match({ room, wallet, tierId, onTier }: { room: ReturnType<typeof useDu
     case "revealed":
       return <DuelLobby state={state} wallet={wallet} />;
 
+    case "picking":
+      return <DuelPicking state={state} wallet={wallet} room={room} />;
+
     case "cancelled":
     case "expired":
       return <Ended body={state.phase === "expired" ? DUEL.ended.expired : room.queueDropped ? DUEL.ended.dropped : DUEL.ended.cancelled} entry={entry} />;
@@ -154,7 +158,7 @@ function Beyond({ state }: { state: MatchState }) {
   return (
     <div className="dl-plate">
       <h2 className="dl-queue-title">{DUEL.beyond.title}</h2>
-      <p className="dl-body">{DUEL.beyond.body}</p>
+      <p className="dl-body">{isTerminal(state.phase) || state.phase === "forfeited" ? DUEL.beyond.done : DUEL.beyond.live}</p>
       {"matchId" in state && (
         <dl className="dl-facts">
           <div className="dl-fact">
@@ -162,8 +166,8 @@ function Beyond({ state }: { state: MatchState }) {
             <dd className="dl-v dl-mono">{shortHex(state.matchId, 10, 8)}</dd>
           </div>
           <div className="dl-fact">
-            <dt className="dl-k">{DUEL.status.open}</dt>
-            <dd className="dl-v">{isTerminal(state.phase) ? state.phase : `${state.phase}…`}</dd>
+            <dt className="dl-k">{DUEL.beyond.phase}</dt>
+            <dd className="dl-v">{state.phase}</dd>
           </div>
         </dl>
       )}

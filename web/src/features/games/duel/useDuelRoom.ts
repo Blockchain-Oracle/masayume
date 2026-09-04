@@ -63,6 +63,12 @@ export interface QueueView {
   nextDeckInSec: number | null | undefined;
 }
 
+/** "Your opponent is on this card" — advisory, and deliberately without a side (`protocol.ts`). */
+export interface OpponentPending {
+  cardIndex: number;
+  atMs: number;
+}
+
 export interface PresenceRow {
   wallet: Address;
   online: boolean;
@@ -76,6 +82,8 @@ export interface DuelRoom {
   state: MatchState;
   queue: QueueView | null;
   presence: readonly PresenceRow[];
+  /** The opponent's last advisory swipe. Never carries a side; the chain publishes that. */
+  opponentPending: OpponentPending | null;
   error: DuelRoomError | null;
   joinQueue: (mode: DuelMode, tier: StakeTierId) => void;
   leaveQueue: () => void;
@@ -99,10 +107,13 @@ export function useDuelRoom(region = "default"): DuelRoom {
   const [status, setStatus] = useState<RoomStatus>("idle");
   const [queue, setQueue] = useState<QueueView | null>(null);
   const [presence, setPresence] = useState<readonly PresenceRow[]>([]);
+  const [opponentPending, setOpponentPending] = useState<OpponentPending | null>(null);
   const [error, setError] = useState<DuelRoomError | null>(null);
   const [queueDropped, setQueueDropped] = useState(false);
 
   const socketRef = useRef<WebSocket | null>(null);
+  /** This socket's own wallet, lowercased — the room's snapshot names it, and so does the token. */
+  const walletRef = useRef<string | null>(null);
   /** The reducer's current phase, readable from the socket's own callbacks. */
   const phaseRef = useRef(state.phase);
   const seedRef = useRef<`0x${string}` | null>(null);
@@ -139,6 +150,10 @@ export function useDuelRoom(region = "default"): DuelRoom {
         case "presence":
           setPresence(message.players);
           break;
+        case "pick.pending":
+          // Relayed to both seats; a client's own swipe is not news to it.
+          if (message.player.toLowerCase() !== walletRef.current) setOpponentPending({ cardIndex: message.cardIndex, atMs: Date.now() });
+          break;
         case "error":
           setError({ code: message.code, message: message.message, retryable: message.retryable, about: message.about ?? null });
           break;
@@ -172,6 +187,8 @@ export function useDuelRoom(region = "default"): DuelRoom {
       // token would be handed a subprotocol it never asked for and fail the handshake itself.
       const socket = new WebSocket(auth.url, [auth.token, SUBPROTOCOL]);
       socketRef.current = socket;
+
+      walletRef.current = auth.wallet.toLowerCase();
 
       socket.onopen = () => {
         attemptRef.current = 0;
@@ -260,6 +277,7 @@ export function useDuelRoom(region = "default"): DuelRoom {
     state,
     queue,
     presence,
+    opponentPending,
     error,
     joinQueue,
     leaveQueue,

@@ -86,14 +86,19 @@ export const DUEL = {
       "The deck is chosen and hashed before either of you sees a card. The hash goes on chain first, so the cards cannot be changed once they are known.",
     committed: "Deck sealed",
     committedBody: "This is the commitment the arena will check the revealed deck against.",
-    /**
-     * True of this build and nothing else: the pairing and the commitment are done, and the next step
-     * is the creator's own `createMatch` transaction, which the pick surface carries. Until that
-     * exists a sealed deck stays sealed, and a screen that implied otherwise would be lying by
-     * omission — a spinner is a promise.
-     */
-    createPending:
-      "The next step is a transaction from the player who opened this match, which escrows the pot and puts the deck on chain. This build does not send it yet, so this deck stays sealed. Nothing has been staked.",
+    /** The creator's own transaction, named as one: it escrows and puts the deck's hash on chain. */
+    openCta: "Open the match",
+    openBody: (pot: string, symbol: string) =>
+      pot === "0"
+        ? "You opened this search, so the match is yours to put on chain. This transaction escrows nothing and publishes the sealed deck's hash."
+        : `You opened this search, so the match is yours to put on chain. This transaction escrows your ${pot} ${symbol} and publishes the sealed deck's hash.`,
+    joinCta: "Join the match",
+    joinBody: (pot: string, symbol: string) =>
+      pot === "0" ? "The match is on chain and waiting for you. Joining escrows nothing and starts the reveal." : `The match is on chain and waiting for you. Joining escrows your ${pot} ${symbol} and starts the reveal.`,
+    waitingCreate: "Waiting for the other player to put the match on chain.",
+    opening: "Opening…",
+    joining: "Joining…",
+    noSigner: "This browser has no signing session, so it cannot send the transaction this match needs.",
     commitment: "Commitment",
     cards: (n: number) => `${n} cards`,
     revealing: "Opening the deck…",
@@ -103,11 +108,32 @@ export const DUEL = {
     seatChallenger: "You were matched into this one",
   },
 
+  picking: {
+    title: "Play every card",
+    stake: "Stake per card",
+    cost: "This buys",
+    costPending: "Reading the book…",
+    left: "Left to pick",
+    deadline: "Pick deadline",
+    /** The arena's own gate, not our client buffer — see `picking.ts`. */
+    tooLate: "This card is too close to its settlement for the arena to take an order on it. It cannot be played.",
+    placing: (attempt: number) => (attempt === 1 ? "Placing your pick…" : `Asking again — attempt ${attempt}`),
+    raceNote: "Both players draw on the same book, so a pick can lose a race. Asking again is normal and costs nothing extra.",
+    failed: "That card did not fill before the deadline. The pot still settles on the cards that did.",
+    opponentDeciding: "Your opponent is on this card",
+    yourPicks: "Your picks",
+    filled: (size: string, cost: string, symbol: string) => `${size} for ${cost} ${symbol}`,
+  },
+
   /** Phases this build does not draw yet. It says where the match really is; it invents nothing. */
   beyond: {
     title: "This match is past what this build can show",
-    body: "The deck is open and the match is live on chain. Nothing is lost: settlement, the pot and every payout are permissionless cranks that run without this screen.",
+    /** Still running: the cranks that finish it need nobody watching. */
+    live: "Every pick is in and the match is settling on chain. Nothing is lost: settlement, the pot and every payout are permissionless cranks that run without this screen.",
+    /** Already decided: the arena holds the result and the credit, and neither expires. */
+    done: "The arena has decided this match and holds whatever it owes you as credit. The result and the claim are the next slice; the credit does not expire while you wait for it.",
     match: "Match",
+    phase: "Phase",
   },
 
   ended: {

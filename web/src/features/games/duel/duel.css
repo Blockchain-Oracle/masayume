@@ -116,6 +116,26 @@
 .dl-versus { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; color: var(--gray-500); }
 .dl-seat-note { font-family: var(--font-mono); font-size: 10px; color: var(--gray-500); }
 
+/* ── Picking ──────────────────────────────────────────────────────────────── */
+
+.dl-picking { display: flex; flex-direction: column; gap: 16px; }
+.dl-picked { display: flex; flex-direction: column; gap: 8px; }
+.dl-picked-list { display: flex; flex-direction: column; gap: 6px; }
+.dl-picked-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.dl-picked-row .dl-v { font-size: 13px; }
+.dl-picked-row .dl-foot { margin-left: auto; }
+/* The side's own dot, defined here rather than borrowed from practice.css — a feature that reaches
+ * into another feature's stylesheet breaks the moment that one is loaded on a different route. */
+.dl-dot { width: 7px; height: 7px; border-radius: 9999px; flex-shrink: 0; }
+.dl-dot--up { background: var(--profit); }
+.dl-dot--down { background: var(--loss); }
+
+.dl-pending {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font-mono); font-size: 10px; color: var(--vermilion);
+}
+.dl-pending-dot { width: 6px; height: 6px; border-radius: 9999px; background: var(--vermilion); animation: dl-pulse 1.2s var(--ease) infinite; }
+
 /* ── The socket's own state, said quietly ─────────────────────────────────── */
 
 .dl-conn { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10px; color: var(--gray-400); }
