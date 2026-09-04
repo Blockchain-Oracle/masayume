@@ -8,6 +8,7 @@ import {
   roomAuthMessage,
   roomSessionClaims,
   roomTokenExpiresAtMs,
+  verifyRoomToken,
   type RoomTokenClaims,
 } from "@masayume/core/games";
 import type { Address } from "@masayume/core/types";
@@ -99,6 +100,21 @@ export function renewFromToken(token: string, nowMs: number): MintOutcome {
 
   const next = renewRoomTokenClaims(parsed.claims, nowMs);
   return next ? { ok: true, grant: grant(next) } : { ok: false, status: 401, error: "That room session has ended." };
+}
+
+export type TokenWallet = { ok: true; wallet: Address } | { ok: false; status: number; error: string };
+
+/**
+ * The wallet a live token claims — the arcade's posting identity, checked the way the room checks it:
+ * the MAC first, then the arena binding and the clocks. The claim is the browser key's word for a
+ * wallet that never entered a duel; the arcade's label says what that is worth, and no money rides on it.
+ */
+export function walletFromRoomToken(token: string, nowMs: number): TokenWallet {
+  const target = roomArena();
+  if (!target) return { ok: false, status: 503, error: "No duel arena is deployed on this network, so no key can vouch for a wallet here." };
+  const verdict = verifyRoomToken(token, { chainId: target.chainId, arena: target.arena }, nowMs, macMatches);
+  if (!verdict.ok) return { ok: false, status: verdict.code === "forbidden" ? 403 : 401, error: `That room token is not accepted: ${verdict.why}.` };
+  return { ok: true, wallet: verdict.claims.wallet };
 }
 
 /** The text the browser's key signs, built here so the two copies cannot drift. */

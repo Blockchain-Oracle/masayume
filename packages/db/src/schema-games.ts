@@ -197,7 +197,14 @@ CREATE TABLE IF NOT EXISTS arcade_scores (
   engine_version  INTEGER     NOT NULL,
   duration_ms     INTEGER     NOT NULL CHECK (duration_ms > 0),
   -- What the server checked before accepting: 'replayed' re-ran the trace, 'envelope' only bounded it.
+  -- Slice 4 writes 'replayed' only: a run too long to replay is refused, never accepted on its envelope.
   checked         TEXT        NOT NULL CHECK (checked IN ('replayed', 'envelope')),
+  -- The eight hex characters the run's line or candles were drawn from, and a SHA-256 of the trace the
+  -- server replayed — enough to say later which run a row was, without keeping every input.
+  seed            TEXT,
+  trace_hash      TEXT,
+  -- The calmer ramp reduced motion offers. It changes the mechanic, so the board says which runs took it.
+  calm            BOOLEAN     NOT NULL DEFAULT false,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -206,6 +213,15 @@ CREATE INDEX IF NOT EXISTS arcade_scores_board_idx
 
 CREATE INDEX IF NOT EXISTS arcade_scores_wallet_idx
   ON arcade_scores (wallet, created_at DESC);
+
+-- A board is one row per wallet — its best — so the lookup is by wallet inside a game and build.
+CREATE INDEX IF NOT EXISTS arcade_scores_best_idx
+  ON arcade_scores (game, engine_version, wallet, score DESC);
+
+-- Slice 4's columns on a table slice 1 may already have created; the CREATE above is the fresh shape.
+ALTER TABLE arcade_scores ADD COLUMN IF NOT EXISTS seed TEXT;
+ALTER TABLE arcade_scores ADD COLUMN IF NOT EXISTS trace_hash TEXT;
+ALTER TABLE arcade_scores ADD COLUMN IF NOT EXISTS calm BOOLEAN NOT NULL DEFAULT false;
 
 -- Slice 7 added three columns to tables slice 1 may already have created. Both forms are here on
 -- purpose: the CREATE above is what a fresh database gets, and these are what an existing one needs.

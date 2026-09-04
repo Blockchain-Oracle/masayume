@@ -68,8 +68,8 @@ export const GAMES = {
     lucky: ["A live Window and a side are drawn for you from a seed you can check.", "You see the real quote before anything is placed; one tap places one order.", "It settles like any other order on the book."],
     range: ["Choose a band around the price and a Window.", "The house prices the band; you win the full payout if the print closes inside it.", "Outside the band, the stake is lost — and the odds say so up front."],
     moonshot: ["Pick a multiple. A level is solved so that hitting it pays that multiple.", "It is one band with a far edge, priced by the same house model as Range.", "Hit it and the payout is the multiple; miss and the stake is lost."],
-    "line-rider": ["Ride the live price line; stay on it as long as you can.", "The score is verified against the tape after the run.", "No stake — the arcade is for the leaderboard."],
-    "candle-hop": ["Hop the candles as they form on the live feed.", "The score is verified against the tape after the run.", "No stake — the arcade is for the leaderboard."],
+    "line-rider": ["A line scrolls in from the right, drawn from a seed you can see. Drag on the screen, scroll, or hold the arrow keys to keep the dot on it.", "Hugging the line builds a combo and refills your grip; drifting off drains it. Grip empty, run over.", "No stake and nothing on chain. Your inputs are recorded and the server replays the run before it records the score."],
+    "candle-hop": ["Candles scroll in from a seed you can see. Tap the screen or press Space to hop; gravity does the rest.", "Slip through each gap for a point. Clip a candle or the floor and the run ends.", "No stake and nothing on chain. Your inputs are recorded and the server replays the run before it records the score."],
   } as Record<string, readonly string[]>,
 
   profile: {
