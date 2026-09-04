@@ -14,7 +14,7 @@ export const GAMES = {
     duel: { number: "02", title: "Duel", desc: "The swipe loop — alone with no stake, or against another player." },
     arcade: { number: "03", title: "Arcade", desc: "Score-only runs. Nothing here touches the chain." },
     profile: { number: "04", title: "Your games", desc: "Who you are in the games, and what the arena has recorded for you." },
-    history: { number: "05", title: "History", desc: "Every finished match, with the transactions that decided it." },
+    history: { number: "05", title: "History", desc: "Every finished match and every spin, with the transactions that decided them." },
   },
 
   card: {
@@ -148,8 +148,8 @@ export const GAMES = {
     cta: "see the prizes",
   },
   history: {
-    body: "Every duel you have played, newest first, with how it ended and what the arena measured.",
-    cta: "See your duels",
+    body: "Every duel you have played and every spin you have made, newest first, with how each ended and what the chain measured.",
+    cta: "See your history",
     title: "Finished matches",
     pending:
       "Finished matches are read back from the arena's own events, indexed so a history page is one query rather than a log replay. The arena is not built yet.",

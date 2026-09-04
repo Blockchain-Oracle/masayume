@@ -6,6 +6,7 @@ export { useGames } from "./GamesProvider";
 export { GamesShell } from "./GamesShell";
 export { ArcadeStage } from "./arcade/ArcadeStage";
 export { DuelStage } from "./duel/DuelStage";
+export { LuckyStage } from "./lucky/LuckyStage";
 export { PracticeStage } from "./practice/PracticeStage";
 export { SwipeDeck, cadenceLabel } from "./stage/SwipeDeck";
 export { StageFace, type StagePill } from "./stage/StageFace";

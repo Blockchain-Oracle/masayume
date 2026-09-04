@@ -37,7 +37,7 @@ const NAV_BY_ID: Readonly<Record<GameId, NavItem>> = {
 const READINESS: Readonly<Record<GameId, GameReadiness>> = {
   practice: { kind: "built" },
   duel: { kind: "built" },
-  lucky: { kind: "pending", dependency: "the seeded draw and eligibility service (slice 5)" },
+  lucky: { kind: "built" },
   range: { kind: "built" },
   moonshot: { kind: "built" },
   "line-rider": { kind: "built" },

@@ -13,6 +13,7 @@ export * from "./client";
 export * from "./comments";
 export * from "./decks";
 export * from "./games";
+export * from "./lucky";
 export * from "./migrate";
 export * from "./schema";
 export * from "./takes";

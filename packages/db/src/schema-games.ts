@@ -222,6 +222,52 @@ CREATE INDEX IF NOT EXISTS arcade_scores_best_idx
 ALTER TABLE arcade_scores ADD COLUMN IF NOT EXISTS seed TEXT;
 ALTER TABLE arcade_scores ADD COLUMN IF NOT EXISTS trace_hash TEXT;
 ALTER TABLE arcade_scores ADD COLUMN IF NOT EXISTS calm BOOLEAN NOT NULL DEFAULT false;
+-- One Lucky spin, from the commitment to the chain's verdict (slice 5).
+--
+-- The seed is written at commit, not at reveal: a Next route on Vercel keeps no memory between two
+-- requests, so a seed held "until the client seed arrives" would be a seed lost on the second one. That
+-- is safe for fairness because nothing here is on chain — the commitment is what the browser saw before
+-- it chose its seed, and a row nobody but the server can read cannot change what that hash binds. Every
+-- money column is a decimal string in base units, and the row's result is the only economic claim it
+-- makes: 'pending' onward is written from a fill the tape shows and a settlement the chain decided.
+CREATE TABLE IF NOT EXISTS lucky_draws (
+  draw_id             TEXT        PRIMARY KEY,
+  wallet              TEXT        NOT NULL,
+  nonce               INTEGER     NOT NULL,
+  policy_version      INTEGER     NOT NULL,
+  stake_base          TEXT        NOT NULL,
+  commitment          TEXT        NOT NULL,
+  server_seed         TEXT        NOT NULL,
+  -- Null until the browser reveals its seed; the deal's fields below fill in with it.
+  client_seed         TEXT,
+  asset               TEXT,
+  side                TEXT        CHECK (side IN ('up', 'down')),
+  multiplier          INTEGER,
+  -- keccak256 of the eligible Windows' ids under the policy: what the chooser was allowed to pick from.
+  candidate_hash      TEXT,
+  market_id           TEXT,
+  quote_avg_price_bps INTEGER,
+  quote_contracts_raw TEXT,
+  tx_hash             TEXT,
+  -- Measured from the wallet's own fills for that transaction, never from the quote.
+  cost_base           TEXT,
+  quantity_raw        TEXT,
+  result              TEXT        NOT NULL CHECK (result IN
+                        ('drawn','placed','pending','won','lost','void','cashed-out','refused','unknown')),
+  -- Why a row is 'refused': the venue was thin, the signature was declined, the fill crossed nothing.
+  refusal             TEXT,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  revealed_at         TIMESTAMPTZ,
+  placed_at           TIMESTAMPTZ,
+  settled_at          TIMESTAMPTZ,
+  UNIQUE (wallet, nonce)
+);
+
+CREATE INDEX IF NOT EXISTS lucky_draws_wallet_idx
+  ON lucky_draws (wallet, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS lucky_draws_result_idx
+  ON lucky_draws (result);
 
 -- Slice 7 added three columns to tables slice 1 may already have created. Both forms are here on
 -- purpose: the CREATE above is what a fresh database gets, and these are what an existing one needs.
