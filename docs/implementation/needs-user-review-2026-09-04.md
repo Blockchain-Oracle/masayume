@@ -1,12 +1,14 @@
 ---
 title: Deviations awaiting the owner's decision
-status: for review — 2026-09-04
+status: decided — 2026-09-04, all 45 rows KEEP (the owner: "I actually approve of everything")
 authority: docs/implementation/parity-ledger.md (every row below is a row there, quoted)
 ---
 
 # The unreviewed deviations, in one table
 
-Every row here is marked **Needs user review** in the parity ledger and has never been decided. Each is a place where Masayume differs from Yosuku on purpose — an adaptation to DreamDEX, an honesty rule, or an addition — that the ledger's own rule says only you may approve. Fill the last column: **keep** (approve the deviation; the ledger row becomes Approved) or **revert** (port the reference's behaviour; a new slice). A blank stays open.
+**Decided 2026-09-04.** The owner approved every row below as **keep** in one ruling; the ledger's 45 `Needs user review` markers now read `Approved (owner, 2026-09-04)`. Any row may still be named later to revert. The table stays as the record of what was decided.
+
+Every row here was marked **Needs user review** in the parity ledger. Each is a place where Masayume differs from Yosuku on purpose — an adaptation to DreamDEX, an honesty rule, or an addition — that the ledger's own rule says only the owner may approve.
 
 | # | Surface | The deviation | Evidence | Keep / revert |
 |---|---|---|---|---|
