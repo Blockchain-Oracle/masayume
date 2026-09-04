@@ -31,7 +31,7 @@ export const POSTURES: Record<AgentPosture, PostureRules> = {
 };
 
 /** The one shape the model may answer with. Anything else is a parse failure, and a parse failure holds. */
-export const agentVerdictSchema = z.object({ side: z.enum(["up", "down", "hold"]), confidence: z.number().min(0).max(1), why: z.string().min(1).max(240) }).strict();
+export const agentVerdictSchema = z.strictObject({ side: z.enum(["up", "down", "hold"]), confidence: z.number().min(0).max(1), why: z.string().min(1).max(240) });
 export type AgentVerdict = z.infer<typeof agentVerdictSchema>;
 export type AgentReadFailure = "timeout" | "parse" | "upstream" | "refusal";
 

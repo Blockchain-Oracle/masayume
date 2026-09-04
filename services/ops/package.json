@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "start": "tsx src/main.ts",
+    "start:runner": "tsx src/runner-main.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "spike:room": "tsx src/spike/room-drive.ts",
     "spike:arena-open": "tsx src/spike/arena-open.ts",
@@ -22,6 +23,7 @@
     "season:distribute": "tsx src/tools/season-distribute.ts"
   },
   "dependencies": {
+    "@masayume/brain": "workspace:*",
     "@masayume/core": "workspace:*",
     "@masayume/db": "workspace:*",
     "@masayume/markets": "workspace:*",
