@@ -216,4 +216,16 @@ ALTER TABLE duel_matches ADD COLUMN IF NOT EXISTS refund_reason TEXT;
 -- database created before that carries a CHECK no legal deck can satisfy.
 ALTER TABLE duel_matches DROP CONSTRAINT IF EXISTS duel_matches_deck_size_check;
 ALTER TABLE duel_matches ADD CONSTRAINT duel_matches_deck_size_check CHECK (deck_size BETWEEN 2 AND 5);
+
+-- Addresses were written in whatever case the decoder produced (viem checksums an address off a log)
+-- and read back through lower(), so no query ever matched its own rows. The key() helper in games.ts
+-- fixes the writes; these repair what a build before it wrote. Idempotent, and not applied to the
+-- primary keys, which are hashes and were already lowercase by construction.
+UPDATE duel_matches SET arena = lower(arena) WHERE arena <> lower(arena);
+UPDATE duel_matches SET creator = lower(creator) WHERE creator <> lower(creator);
+UPDATE duel_matches SET challenger = lower(challenger) WHERE challenger IS NOT NULL AND challenger <> lower(challenger);
+UPDATE duel_matches SET winner = lower(winner) WHERE winner IS NOT NULL AND winner <> lower(winner);
+UPDATE duel_matches SET deck_hash = lower(deck_hash) WHERE deck_hash <> lower(deck_hash);
+UPDATE duel_cards SET player = lower(player) WHERE player <> lower(player);
+UPDATE duel_cards SET market_id = lower(market_id) WHERE market_id <> lower(market_id);
 `;

@@ -15,6 +15,26 @@ import { ensureSchema } from "./migrate";
 
 export type DuelStatus = "waiting" | "activeUnrevealed" | "picking" | "settling" | "finalized" | "refunded" | "forfeited";
 
+/**
+ * Every address and hash in this table is stored lowercase, and this is the one function that makes
+ * that true.
+ *
+ * It is not tidiness. Every read here filters on `lower(...)` of what the caller passed, while the
+ * writes took whatever the decoder produced — and viem returns a checksummed address from an event
+ * log. So `duel_matches` filled up with `0xec71498B...` while `listLiveMatches` asked for
+ * `0xec71498b...`, and matched nothing, ever. The settler read "no live match in the projection"
+ * through a real duel sitting one row away: no deck revealed, no card settled, no pot awarded, and
+ * `activeMatchFor` could never tell a reconnecting browser which match it was in. Found by the first
+ * drive that ran the settler and a browser against the same database (2026-09-04).
+ */
+function key(value: string): string {
+  return value.toLowerCase();
+}
+
+function keyOrNull(value: string | null | undefined): string | null {
+  return value === null || value === undefined ? null : value.toLowerCase();
+}
+
 export interface DuelMatchRow {
   matchId: string;
   chainId: number;
@@ -51,8 +71,8 @@ export async function recordMatchCreated(row: DuelMatchRow): Promise<void> {
     INSERT INTO duel_matches
       (match_id, chain_id, arena, mode, tier, creator, challenger, status, deck_hash, deck_size, policy_version, pot_per_player)
     VALUES
-      (${row.matchId}, ${row.chainId}, ${row.arena}, ${row.mode}, ${row.tier}, ${row.creator}, ${row.challenger},
-       ${row.status}, ${row.deckHash}, ${row.deckSize}, ${row.policyVersion}, ${row.potPerPlayerBase})
+      (${key(row.matchId)}, ${row.chainId}, ${key(row.arena)}, ${row.mode}, ${row.tier}, ${key(row.creator)}, ${keyOrNull(row.challenger)},
+       ${row.status}, ${key(row.deckHash)}, ${row.deckSize}, ${row.policyVersion}, ${row.potPerPlayerBase})
     ON CONFLICT (match_id) DO UPDATE SET status = EXCLUDED.status, challenger = COALESCE(duel_matches.challenger, EXCLUDED.challenger)
   `;
 }
@@ -81,15 +101,15 @@ export async function recordMatchProgress(matchId: string, progress: MatchProgre
   await db`
     UPDATE duel_matches SET
       status = ${progress.status},
-      challenger = COALESCE(${progress.challenger ?? null}, challenger),
+      challenger = COALESCE(${keyOrNull(progress.challenger)}, challenger),
       cards = COALESCE(${progress.cards ? JSON.stringify(progress.cards) : null}::jsonb, cards),
       policy_version = COALESCE(${progress.policyVersion ?? null}, policy_version),
       refund_reason = COALESCE(${progress.refundReason ?? null}, refund_reason),
-      winner = COALESCE(${progress.winner ?? null}, winner),
+      winner = COALESCE(${keyOrNull(progress.winner)}, winner),
       creator_pnl = COALESCE(${progress.creatorPnlBase ?? null}, creator_pnl),
       challenger_pnl = COALESCE(${progress.challengerPnlBase ?? null}, challenger_pnl),
       finalized_at = CASE WHEN ${progress.finalized ?? false} THEN COALESCE(finalized_at, now()) ELSE finalized_at END
-    WHERE match_id = ${matchId}
+    WHERE match_id = ${key(matchId)}
   `;
 }
 
@@ -100,7 +120,7 @@ export async function recordPick(row: DuelCardRow): Promise<void> {
   await ensureSchema();
   await db`
     INSERT INTO duel_cards (pick_key, match_id, card_index, player, market_id, side, quantity, cost, filled_at_sec)
-    VALUES (${row.pickKey}, ${row.matchId}, ${row.cardIndex}, ${row.player}, ${row.marketId}, ${row.side},
+    VALUES (${key(row.pickKey)}, ${key(row.matchId)}, ${row.cardIndex}, ${key(row.player)}, ${key(row.marketId)}, ${row.side},
             ${row.quantity}, ${row.costBase}, ${row.filledAtSec})
     ON CONFLICT (pick_key) DO UPDATE SET quantity = EXCLUDED.quantity, cost = EXCLUDED.cost
   `;
@@ -114,7 +134,7 @@ export async function recordSettlement(pickKey: string, payoutBase: string): Pro
   const db = getDb();
   if (!db) return;
   await ensureSchema();
-  await db`UPDATE duel_cards SET payout = ${payoutBase} WHERE pick_key = ${pickKey}`;
+  await db`UPDATE duel_cards SET payout = ${payoutBase} WHERE pick_key = ${key(pickKey)}`;
 }
 
 /** How far the projector has read. Absent until it has written a block. */
