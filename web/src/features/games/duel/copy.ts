@@ -66,7 +66,8 @@ export const DUEL = {
     costNoPot: "No side-pot is escrowed.",
     costCards: (cap: string, symbol: string) =>
       `Up to ${cap} ${symbol} per card, spent as a real order on that Window. You keep what those positions pay, win or lose the pot.`,
-    costGas: "One signature. Entering names a key this browser holds to place your picks and sends it the gas they need; nothing else is asked of your wallet. There is no sponsor on this deployment, so that gas is yours.",
+    costGas: "One signature. Entering names a key this browser holds to place your picks and sends it the gas they need; nothing else is asked of your wallet. There is no sponsor ready on this deployment, so that gas is yours.",
+    costGasSponsored: "One signature. Entering names a key this browser holds to place your picks; this deployment's sponsor sends that key the gas they need. Your wallet pays only for the entry itself.",
     /** The chosen stake's own queue, so "nobody is here" is never said about the wrong one. */
     queueHere: (n: number) => (n === 0 ? "Nobody is waiting at this stake" : n === 1 ? "1 player waiting at this stake" : `${n} players waiting at this stake`),
     find: "Find a match",
@@ -88,6 +89,7 @@ export const DUEL = {
      * live session held 0 STT and the entry let them queue anyway.
      */
     gasShort: "This wallet holds no STT, and every step of a duel — opening the match, joining it, each pick — is a transaction you sign and pay for yourself.",
+    gasShortSponsored: "This wallet holds no STT. Your picks' gas is the sponsor's, but opening or joining a match is a transaction your wallet pays for itself.",
     gasCheck: "Checking this wallet can pay for its own transactions…",
     gasRecheck: "I have funded it — check again",
   },
@@ -130,6 +132,8 @@ export const DUEL = {
     /** Said under the entry's own sentence once this browser holds a key: what else the one signature does. */
     oneSignature: "This is the only signature the match asks of your wallet: it also names the key this browser holds to place your picks, and sends it the gas they need.",
     oneSignatureSponsored: "This is the only signature the match asks of your wallet: it also names the key this browser holds to place your picks. Their gas is the sponsor's.",
+    sponsorFunded: (amount: string) => (amount === "0" ? "Your key already holds the gas its picks need." : `The sponsor sent your key ${amount} STT for its picks.`),
+    sponsorDeclined: (why: string) => `The sponsor declined to fund your key: ${why}. Your picks will wait until it holds gas — the stage offers a way.`,
     waitingCreate: "Waiting for the other player to put the match on chain.",
     opening: "Opening…",
     joining: "Joining…",
@@ -194,7 +198,13 @@ export const DUEL = {
     locking: "Closing…",
     /** The key's own state, while it is the thing placing picks. */
     keySwipes: "Your key places each pick — no wallet prompt.",
-    keyGasShort: "Your key has run out of gas, so it cannot place this pick. The entry funds it; a duel this long has spent that.",
+    keyGasShort: "Your key holds no gas for this pick, so nothing will fill until it does.",
+    keyGasShortWhy: "The entry funds a key for one deck's picks and a retry each; a longer run of retries spends that.",
+    askSponsor: "Ask the sponsor to fund it",
+    asking: "Asking the sponsor…",
+    fundKey: (amount: string) => `Fund it from your wallet (${amount} STT)`,
+    funding: "Waiting for your wallet…",
+    keyFunded: "Your key holds gas again.",
     /** Flicky's auto-swipe: at a card's own deadline the favoured side is played rather than the card forfeited. */
     autoPlayed: "played for you at the deadline",
     autoNote: (side: string) => `Time ran out on that card, so your key played the favoured side — ${side}.`,

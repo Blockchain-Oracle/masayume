@@ -2,10 +2,11 @@
 
 import type { ArenaAgentGrant } from "@masayume/core/games";
 import type { Address } from "@masayume/core/types";
-import { createLocalStorageJournal, createSessionKeySession, keyGasBalance, nowMs, requiredGasWei, type SubmitterSession } from "@masayume/markets";
+import { createLocalStorageJournal, createSessionKeySession, keyGasBalance, nowMs, type SubmitterSession } from "@masayume/markets";
 import { useCallback, useEffect, useState } from "react";
 import { webEnv } from "@/lib/env";
 import { useWalletSession } from "@/lib/wallet-session";
+import { deckGasWei } from "./gas";
 import { forgetGameKey, useGameKey } from "./useGameKey";
 
 /**
@@ -23,13 +24,6 @@ import { forgetGameKey, useGameKey } from "./useGameKey";
  */
 /** The grant's life: a full pick window, a slow reveal before it and every crank after it. */
 export const MATCH_AGENT_TTL_SEC = 6 * 3_600;
-/** Gas the key is sent at entry: the arena lane's envelope for every card, twice — a pick and a retry. */
-export const PICK_ATTEMPTS_FUNDED = 2;
-
-/** The gas a deck's picks need from the key, in wei — what an entry sends it, or a sponsor tops it up to. */
-export function deckGasWei(deckSize: number): bigint {
-  return requiredGasWei("arena") * BigInt(deckSize * PICK_ATTEMPTS_FUNDED);
-}
 
 export interface GameSession {
   /** The key's address, once this browser holds one for the connected wallet. */

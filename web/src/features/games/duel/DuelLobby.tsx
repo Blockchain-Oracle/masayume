@@ -9,9 +9,12 @@ import type { CSSProperties } from "react";
 import { useVenue } from "@/features/markets";
 import { addressHue } from "@/lib/address-hue";
 import { DUEL } from "./copy";
+import { formatBaseUnits as formatWei } from "@masayume/core/units";
+import { useState } from "react";
 import { DealingPlate, RefusalPlate } from "./DuelWaiting";
 import { useArenaWrites } from "./useArenaWrites";
 import type { DealingView } from "./useDuelRoom";
+import { useGameSponsor, type FundOutcome } from "./useGameSponsor";
 
 /**
  * Between the pairing and the first swipe: an opponent, a sealed deck, and the deck opening.
@@ -100,15 +103,28 @@ function OnChain({ state, isCreator, wallet }: { state: Extract<MatchState, { ph
   const onChain = useArenaMatch(state.matchId as Bytes32);
   const { boot } = useVenue();
   const { create, join, busy, canSign, refusal, game } = useArenaWrites();
+  const sponsor = useGameSponsor();
+  const [funded, setFunded] = useState<FundOutcome | null>(null);
 
   const tiers = arena && isOk(arena) ? arena.value?.tiers : undefined;
   const arenaTier = tiers?.[STAKE_TIERS.findIndex((t) => t.id === state.tier)];
   const potBase = arenaTier?.potBase ?? null;
   const capBase = arenaTier?.perCardCapBase ?? null;
-  // The seat's key, named and funded by this one transaction. Without a key (storage refused) the entry
-  // is the plain one and every pick is a wallet signature, as the first duels were.
-  const grant = () => (capBase !== null ? game.grant(state.commitment.size, capBase) : Promise.resolve(null));
-  const oneSignature = game.key ? <p className="du-foot">{DUEL.lobby.oneSignature}</p> : null;
+  // The seat's key, named by this one transaction — and funded by it too, unless a sponsor is ready to
+  // send the gas itself once the chain has named the key. Without a key (storage refused) the entry is
+  // the plain one and every pick is a wallet signature, as the first duels were.
+  const grant = () => (capBase !== null ? game.grant(state.commitment.size, capBase, sponsor.ready) : Promise.resolve(null));
+  const oneSignature = game.key ? <p className="du-foot">{sponsor.ready ? DUEL.lobby.oneSignatureSponsored : DUEL.lobby.oneSignature}</p> : null;
+  /** The entry confirmed: the arena now names the key, so the sponsor may fund it. Fire and forget; the stage reports a dry key on its own. */
+  const afterEntry = (outcome: { status: string } | null) => {
+    if (outcome?.status !== "confirmed" || !sponsor.ready || !game.key || !wallet) return;
+    void sponsor.fund(state.matchId as Bytes32, wallet, game.key).then(setFunded);
+  };
+  const fundedNote = funded ? (
+    <p className={funded.ok ? "du-foot" : "du-refusal"}>
+      {funded.ok ? DUEL.lobby.sponsorFunded(formatWei(funded.amountWei, 18, { maxDp: 3, minDp: 0 })) : DUEL.lobby.sponsorDeclined(funded.error)}
+    </p>
+  ) : null;
   const decimals = boot && isOk(boot) ? boot.value.collateral.decimals : null;
   const symbol = boot && isOk(boot) ? boot.value.collateral.symbol : "";
   const pot = potBase === null || decimals === null ? "—" : formatBaseUnits(potBase, decimals, { maxDp: 2, minDp: 0 });
@@ -132,23 +148,26 @@ function OnChain({ state, isCreator, wallet }: { state: Extract<MatchState, { ph
           onClick={() =>
             challenger &&
             potBase !== null &&
-            void grant().then((agent) =>
-              create({
-                matchId: state.matchId as Bytes32,
-                challenger,
-                tier: state.tier,
-                deckHash: state.commitment.hash,
-                deckSize: state.commitment.size,
-                policyVersion: state.commitment.policyVersion,
-                potBase,
-                ...(agent ? { agent } : {}),
-              }),
-            )
+            void grant()
+              .then((agent) =>
+                create({
+                  matchId: state.matchId as Bytes32,
+                  challenger,
+                  tier: state.tier,
+                  deckHash: state.commitment.hash,
+                  deckSize: state.commitment.size,
+                  policyVersion: state.commitment.policyVersion,
+                  potBase,
+                  ...(agent ? { agent } : {}),
+                }),
+              )
+              .then(afterEntry)
           }
         >
           {busy === "create" ? DUEL.lobby.opening : refusal ? DUEL.lobby.refusedRetry : DUEL.lobby.openCta}
         </button>
         {oneSignature}
+        {fundedNote}
         {refused}
       </>
     );
@@ -162,11 +181,17 @@ function OnChain({ state, isCreator, wallet }: { state: Extract<MatchState, { ph
         type="button"
         className="du-cta"
         disabled={busy !== null || potBase === null}
-        onClick={() => potBase !== null && void grant().then((agent) => join(state.matchId as Bytes32, potBase, agent ?? undefined))}
+        onClick={() =>
+          potBase !== null &&
+          void grant()
+            .then((agent) => join(state.matchId as Bytes32, potBase, agent ?? undefined))
+            .then(afterEntry)
+        }
       >
         {busy === "join" ? DUEL.lobby.joining : refusal ? DUEL.lobby.refusedRetry : DUEL.lobby.joinCta}
       </button>
       {oneSignature}
+      {fundedNote}
       {refused}
     </>
   );

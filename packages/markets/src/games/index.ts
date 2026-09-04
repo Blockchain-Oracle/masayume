@@ -1,6 +1,7 @@
 export { resolveArenaDeployment } from "./deployment";
 export { diagnoseArena } from "./errors";
 export { arenaHeadBlock, listArenaEvents } from "./logs";
+export { sponsorKeyTopUp, type SponsorKeyTopUpInput } from "./sponsor";
 export {
   cardsOutstanding,
   getArenaCredit,

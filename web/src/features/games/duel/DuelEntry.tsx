@@ -9,6 +9,7 @@ import { useVenue } from "@/features/markets";
 import { useWalletSession } from "@/lib/wallet-session";
 import { DUEL } from "./copy";
 import { useArenaGas } from "./useArenaGas";
+import { useGameSponsor } from "./useGameSponsor";
 import { waitingIn, type RoomOccupancy } from "./useRoomOccupancy";
 
 export interface DuelEntryProps {
@@ -36,8 +37,8 @@ export interface DuelEntryProps {
  * actually prices, and the amounts quoted here are **the contract's**, not the table's — the table in
  * core says what was asked for, the arena says what it will take, and a screen has to quote the
  * second. The wallet's own balance is compared to that pot, so "not enough" is answered here rather
- * than by a revert. And the gas line is not a warning but a fact of this deployment: there is no
- * sponsor, so every pick is a transaction the player signs and funds.
+ * than by a revert. And the gas line names the payer as a fact of this deployment, read before the
+ * prompt: the sponsor when one is configured and funded, the player's own STT otherwise.
  */
 export function DuelEntry({ onFind, roomOpen, tierId, onTier, occupancy }: DuelEntryProps) {
   const { address } = useWalletSession();
@@ -45,6 +46,8 @@ export function DuelEntry({ onFind, roomOpen, tierId, onTier, occupancy }: DuelE
   const arena = useArenaState();
   const sheet = useBalanceSheet(address);
   const { gas, recheck } = useArenaGas();
+  // Who pays the picks' gas, read before anything is signed — doc 04's "show payer before asking for a signature".
+  const sponsor = useGameSponsor();
 
   const tier = stakeTier(tierId);
   const state = arena && isOk(arena) ? arena.value : null;
@@ -107,7 +110,7 @@ export function DuelEntry({ onFind, roomOpen, tierId, onTier, occupancy }: DuelE
         <ul className="du-cost-list">
           <li>{tier.potUnits === 0 ? DUEL.entry.costNoPot : DUEL.entry.costPot(money(potBase), symbol)}</li>
           <li>{DUEL.entry.costCards(money(capBase), symbol)}</li>
-          <li>{DUEL.entry.costGas}</li>
+          <li>{sponsor.ready ? DUEL.entry.costGasSponsored : DUEL.entry.costGas}</li>
         </ul>
       </div>
 
@@ -117,7 +120,7 @@ export function DuelEntry({ onFind, roomOpen, tierId, onTier, occupancy }: DuelE
       {short && <p className="du-refusal">{DUEL.entry.balanceShort(money(potBase), money(spendable), symbol)}</p>}
       {gasShort && (
         <div className="du-refusal" role="status">
-          <p className="du-body">{DUEL.entry.gasShort}</p>
+          <p className="du-body">{sponsor.ready ? DUEL.entry.gasShortSponsored : DUEL.entry.gasShort}</p>
           <ul className="du-faucets">
             {STT_FAUCETS.map((faucet) => (
               <li key={faucet.url}>

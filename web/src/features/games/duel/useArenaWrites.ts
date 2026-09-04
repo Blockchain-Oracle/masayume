@@ -12,6 +12,7 @@ import {
 } from "@masayume/core/games";
 import { isOk } from "@masayume/core/schemas";
 import { diagnosis, type Address, type Bytes32, type Diagnosis, type MarketId } from "@masayume/core/types";
+import { topUpSessionGas } from "@masayume/markets";
 import { quoteArenaPick, submitArenaPick, type ArenaPickOutcome } from "@masayume/markets/games";
 import { invalidateAfterWrite, useSubmitter } from "@masayume/markets/react";
 import { getClient } from "@masayume/markets/runtime";
@@ -38,7 +39,7 @@ import { useGameSession, type GameSession } from "./useGameSession";
  * before it sends, so a floor is always a fraction of a live quote rather than of a stale one.
  */
 
-export type ArenaBusy = "create" | "join" | "claim" | "finalize" | "lock" | "authorize" | `pick:${number}` | `settle:${number}` | null;
+export type ArenaBusy = "create" | "join" | "claim" | "finalize" | "lock" | "authorize" | "fund" | `pick:${number}` | `settle:${number}` | null;
 
 /**
  * The last transaction this screen asked for and did not get — and the reason a duel needed it.
@@ -187,6 +188,7 @@ export function useArenaWrites() {
       const keyed = game.session;
       const ctx = keyed ? { journal: keyed.submitter.journal, wallet: keyed.address, contracts: keyed.contracts } : { journal: submitter.journal, wallet: address, contracts: c };
       setBusy(`pick:${input.cardIndex}`);
+      setRefusal(null);
       let last: ArenaPickOutcome = { status: "refused", diagnosis: diagnosis("order-expired", "the pick deadline passed before a fill landed") };
 
       try {
@@ -205,6 +207,11 @@ export function useArenaWrites() {
               : { kind: "arena-pick", matchId: input.matchId, cardIndex: input.cardIndex, pick: input.side, stakeBase: input.stakeBase, minQuantityRaw: floor },
           );
           if (last.status === "confirmed" || last.status === "unknown") return last;
+          // A dry tank is not a lost race: nothing will fill until the key is funded, so say that and stop retrying.
+          if (last.status === "refused" && last.diagnosis.kind === "out-of-gas") {
+            setRefusal({ key: `pick:${input.cardIndex}`, diagnosis: last.diagnosis, gasShort: true });
+            return last;
+          }
         }
         return last;
       } finally {
@@ -216,9 +223,33 @@ export function useArenaWrites() {
     [submitter, address, contracts, refresh, game.session],
   );
 
+  /**
+   * The player's own top-up of the key — one wallet transaction, the fallback when no sponsor will pay and
+   * the entry's envelope has been spent. The amount is the caller's, sized off the cards still to play.
+   */
+  const fundKey = useCallback(
+    async (amountWei: bigint) => {
+      if (!walletClient || !game.key) return null;
+      setBusy("fund");
+      setRefusal(null);
+      try {
+        const hash = await topUpSessionGas({ ownerWalletClient: walletClient, key: game.key, amountWei });
+        return hash;
+      } catch (cause) {
+        setRefusal({ key: "fund", diagnosis: diagnosis("unknown", String((cause as Error)?.message ?? cause).slice(0, 200)), gasShort: false });
+        return null;
+      } finally {
+        setBusy(null);
+        await refresh();
+      }
+    },
+    [walletClient, game.key, refresh],
+  );
+
   return {
     /** The key this browser swipes with, and the grant an entry names for it. */
     game: game as GameSession,
+    fundKey,
     create,
     join,
     claim,

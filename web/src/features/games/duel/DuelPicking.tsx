@@ -14,6 +14,7 @@ import {
 import { isOk } from "@masayume/core/schemas";
 import type { Address, Bytes32 } from "@masayume/core/types";
 import { formatBaseUnits, formatOracleRaw } from "@masayume/core/units";
+import { keyGasBalance, requiredGasWei } from "@masayume/markets";
 import { quoteArenaPick } from "@masayume/markets/games";
 import { useArenaState, useAssetPrice, useOpeningPrice } from "@masayume/markets/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -24,9 +25,11 @@ import { webEnv } from "@/lib/env";
 import { clockUrgency, StageFace } from "../stage/StageFace";
 import { SwipeDeck, type DeckPlace } from "../stage/SwipeDeck";
 import { DUEL } from "./copy";
+import { deckGasWei } from "./gas";
 import { useArenaOdds } from "./useArenaOdds";
 import { useArenaWrites } from "./useArenaWrites";
 import type { DuelRoom } from "./useDuelRoom";
+import { useGameSponsor, type FundOutcome } from "./useGameSponsor";
 
 /**
  * A card's own cutoff is the earlier of the pick window and the arena's floor on its life; this long
@@ -58,8 +61,12 @@ export function DuelPicking({ state, wallet, room }: { state: Extract<MatchState
   const nowMs = useNowMs();
   const arena = useArenaState();
   const { boot } = useVenue();
-  const { pick, lock, progress, busy, canSign, refusal, game } = useArenaWrites();
+  const { pick, lock, fundKey, progress, busy, canSign, refusal, game } = useArenaWrites();
+  const sponsor = useGameSponsor();
   const [failed, setFailed] = useState<number | null>(null);
+  /** The key's own tank, read before a throw rather than discovered by one; null until read. */
+  const [keyDry, setKeyDry] = useState<boolean | null>(null);
+  const [asked, setAsked] = useState<FundOutcome | null>(null);
   /** Cards the key played at their cutoff, so the list can say so — the chain records a pick, not who chose it. */
   const [autoPlayed, setAutoPlayed] = useState<readonly number[]>([]);
   const autoRef = useRef<string | null>(null);
@@ -141,7 +148,43 @@ export function DuelPicking({ state, wallet, room }: { state: Extract<MatchState
   // The active card's two quotes, read where the deck can refuse a throw on them rather than after the chain has.
   const odds = useArenaOdds(active?.marketId ?? null, stakeBase, decimals);
 
-  const held = !canSign ? DUEL.lobby.noSigner : keyed && refusal?.gasShort ? DUEL.picking.keyGasShort : active && params && !playable ? DUEL.picking.tooLate : null;
+  /**
+   * The key's tank, checked on its own clock. A dry key used to be found out by the first throw, which
+   * read as a lost race; now the stage says so before a card is played, and clears the moment a sponsor's
+   * or the wallet's top-up lands.
+   */
+  const keyAddress = game.key;
+  useEffect(() => {
+    if (!keyed || !keyAddress) return;
+    let alive = true;
+    const read = () =>
+      keyGasBalance(keyAddress)
+        .then((held) => alive && setKeyDry(held < requiredGasWei("arena")))
+        .catch(() => undefined);
+    void read();
+    const timer = setInterval(() => void read(), 8_000);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, [keyed, keyAddress]);
+
+  const dry = keyed && (keyDry === true || refusal?.gasShort === true);
+  const held = !canSign ? DUEL.lobby.noSigner : dry ? DUEL.picking.keyGasShort : active && params && !playable ? DUEL.picking.tooLate : null;
+  const cardsLeft = Math.max(1, state.cards.length - mine.length);
+  const topUpWei = deckGasWei(cardsLeft);
+  const askSponsor = () => {
+    if (!keyAddress || !you) return;
+    setAsked(null);
+    void sponsor.fund(state.matchId as Bytes32, you as Address, keyAddress).then((outcome) => {
+      setAsked(outcome);
+      if (outcome.ok) setKeyDry(false);
+    });
+  };
+  const fundFromWallet = () => {
+    setAsked(null);
+    void fundKey(topUpWei).then((hash) => hash && setKeyDry(false));
+  };
   const lastAuto = autoPlayed.length > 0 ? mine.find((r) => r.cardIndex === autoPlayed[autoPlayed.length - 1]) : undefined;
 
   /** The opponent's cue only means anything while it is fresh; a stale one is a lie about presence. */
@@ -190,6 +233,22 @@ export function DuelPicking({ state, wallet, room }: { state: Extract<MatchState
       <div className="st-deplete" aria-hidden>
         <span className="st-deplete-fill" data-urgency={urgency.level} data-pulse={urgency.pulse || undefined} style={{ width: `${depleted}%` }} />
       </div>
+      {dry && (
+        <div className="du-refusal" role="status">
+          <p className="du-body">{DUEL.picking.keyGasShortWhy}</p>
+          <div className="du-cranks">
+            {sponsor.status?.configured && (
+              <button type="button" className="du-quiet" disabled={busy !== null} onClick={askSponsor}>
+                {DUEL.picking.askSponsor}
+              </button>
+            )}
+            <button type="button" className="du-quiet" disabled={busy !== null} onClick={fundFromWallet}>
+              {busy === "fund" ? DUEL.picking.funding : DUEL.picking.fundKey(formatBaseUnits(topUpWei, 18, { maxDp: 3, minDp: 0 }))}
+            </button>
+          </div>
+          {asked && <p className="du-foot">{asked.ok ? DUEL.lobby.sponsorFunded(formatBaseUnits(asked.amountWei, 18, { maxDp: 3, minDp: 0 })) : DUEL.lobby.sponsorDeclined(asked.error)}</p>}
+        </div>
+      )}
       <SwipeDeck
         cards={state.cards}
         active={active}
