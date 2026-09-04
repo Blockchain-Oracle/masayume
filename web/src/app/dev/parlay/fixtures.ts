@@ -77,13 +77,13 @@ export const WINDOWS: EventMarket[] = [
 export const WINDOW_BY_ID = new Map(WINDOWS.map((w) => [w.marketId, w]));
 
 export const LEGS: DraftLeg[] = [
-  { key: "a", marketId: MARKET_A, side: "up" },
-  { key: "b", marketId: MARKET_B, side: "down" },
+  { key: "a", marketId: MARKET_A, asset: "BTC", intervalSec: 300, side: "up" },
+  { key: "b", marketId: MARKET_B, asset: "ETH", intervalSec: 900, side: "down" },
 ];
 export const LEGS_CORRELATED: DraftLeg[] = [
-  { key: "a", marketId: MARKET_A, side: "up" },
-  { key: "b", marketId: MARKET_B, side: "down" },
-  { key: "c", marketId: MARKET_C, side: "up" },
+  { key: "a", marketId: MARKET_A, asset: "BTC", intervalSec: 300, side: "up" },
+  { key: "b", marketId: MARKET_B, asset: "ETH", intervalSec: 900, side: "down" },
+  { key: "c", marketId: MARKET_C, asset: "BTC", intervalSec: 900, side: "up" },
 ];
 
 export const QUOTE: ParlayQuote = {
