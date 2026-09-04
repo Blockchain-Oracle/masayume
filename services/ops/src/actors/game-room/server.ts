@@ -8,7 +8,7 @@ import {
   ROOM_MAX_PAYLOAD_BYTES,
   type RoomTokenClaims,
 } from "@masayume/core/games";
-import { createServer, type IncomingMessage, type Server } from "node:http";
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { Duplex } from "node:stream";
 import { WebSocketServer, type WebSocket } from "ws";
 import type { RoomEnv } from "./env";
@@ -72,12 +72,32 @@ export function startRoomServer({ ctx, env }: RoomServerOptions): RoomServer {
   const expect = { chainId: ctx.chainId, arena: ctx.arena };
   const wss = new WebSocketServer({ noServer: true, maxPayload: ROOM_MAX_PAYLOAD_BYTES, handleProtocols: () => SUBPROTOCOL });
 
+  function json(res: ServerResponse, value: unknown): void {
+    const body = JSON.stringify(value);
+    res.writeHead(200, {
+      "content-type": "application/json",
+      "content-length": Buffer.byteLength(body),
+      // Read by a page that has no wallet and no token, from the Next server rather than the browser.
+      "cache-control": "no-store",
+    });
+    res.end(body);
+  }
+
   const http = createServer((req, res) => {
     if (req.url?.startsWith("/health")) {
-      const body = JSON.stringify({ ok: true, ...ctx.hub.stats(), arena: ctx.arena, chainId: ctx.chainId });
-      res.writeHead(200, { "content-type": "application/json", "content-length": Buffer.byteLength(body) });
-      res.end(body);
-      return;
+      return json(res, { ok: true, ...ctx.hub.stats(), arena: ctx.arena, chainId: ctx.chainId });
+    }
+    /**
+     * Who is waiting, with no credential at all.
+     *
+     * A duel used to show a player nothing until they had connected a wallet and signed, so "is anyone
+     * even here?" — the one question that decides whether to bother — could only be answered by paying
+     * a signature to find out. Occupancy is not private: it is counts per queue, no wallets, no ratings,
+     * and the room already broadcasts the same number to everyone standing in one.
+     */
+    if (req.url?.startsWith("/occupancy")) {
+      const occupancy = ctx.matchmaker?.occupancy() ?? { queues: [], pairing: 0 };
+      return json(res, { ...occupancy, online: ctx.hub.stats().connections, arena: ctx.arena, chainId: ctx.chainId });
     }
     res.writeHead(404).end();
   });

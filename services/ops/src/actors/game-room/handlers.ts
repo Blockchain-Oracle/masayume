@@ -10,6 +10,7 @@ import {
 } from "@masayume/core/games";
 import { isBytes32, type Address, type Bytes32 } from "@masayume/core/types";
 import { marketsProvider } from "@masayume/markets";
+import type { PendingMatch } from "../matchmaker/pending";
 import type { RoomConnection, RoomHub } from "./hub";
 import { buildMatchSnapshot } from "./snapshot";
 
@@ -29,6 +30,19 @@ export interface Matchmaker {
   leave(connection: RoomConnection): void;
   /** The second half of the queue's commitment, checked against the hash the player queued with. */
   revealSeed(connection: RoomConnection, message: Extract<ClientMessage, { type: "seed.reveal" }>): Promise<void>;
+  /** A sealed deck this wallet is in that the arena has not been told about yet — see `pending.ts`. */
+  pendingFor(wallet: Address): PendingMatch | null;
+  /** Called when the chain turns out to hold the match after all, so the room stops waiting for it. */
+  releasePending(matchId: string): void;
+  /** Who is waiting, per queue. Read without a wallet, so a lobby can show it before anyone signs. */
+  occupancy(): RoomOccupancy;
+}
+
+export interface RoomOccupancy {
+  queues: readonly { key: string; mode: string; tier: string; waiting: number }[];
+  /** Pairs past the queue and not yet on chain: sealing a deck, or waiting on a signature. */
+  pairing: number;
+  nextDeckInSec?: number | null;
 }
 
 /** Where a fresh browser learns which match it is already in, without being told by the browser. */
@@ -66,6 +80,16 @@ function asMatchId(value: string): Bytes32 | null {
 async function sendSnapshot(ctx: RoomContext, connection: RoomConnection, matchId: Bytes32 | null, about: ClientMessage["type"]): Promise<void> {
   const serverTimeMs = marketsProvider.nowMs();
   if (!matchId) {
+    /**
+     * Before the chain, the room is the only record there is.
+     *
+     * A deck sealed and not yet created exists in Postgres and in this process and nowhere else, so the
+     * projection — which is the reconnect path's first question — answers "nothing". A browser that
+     * reloaded in that window used to land back at the entry with its match gone, which is precisely
+     * what "I refresh and it takes me back" was.
+     */
+    const pending = ctx.matchmaker?.pendingFor(connection.wallet) ?? null;
+    if (pending) return sendPending(ctx, connection, pending, serverTimeMs);
     ctx.hub.send(connection, { type: "snapshot", serverTimeMs, wallet: connection.wallet, room: null, state: IDLE_SNAPSHOT });
     return;
   }
@@ -75,6 +99,8 @@ async function sendSnapshot(ctx: RoomContext, connection: RoomConnection, matchI
     ctx.hub.send(connection, roomError(built.code, built.why, about));
     return;
   }
+  // The arena holds it, so the pre-chain record has done its job and must not outlive it.
+  ctx.matchmaker?.releasePending(matchId);
   if (built.warning) ctx.log(built.warning);
 
   const players = playersOf(built.state);
@@ -86,6 +112,29 @@ async function sendSnapshot(ctx: RoomContext, connection: RoomConnection, matchI
   const ref = roomRef(ctx.chainId, ctx.arena, matchId);
   ctx.hub.join(connection, ref, players);
   ctx.hub.send(connection, { type: "snapshot", serverTimeMs, wallet: connection.wallet, room: ref, state: encodeMatchState(built.state) });
+  const presence = ctx.hub.presenceOf(ref.key);
+  if (presence) ctx.hub.broadcast(ref.key, presence);
+}
+
+/** A committed deck the arena has not been told about, as the `committed` state it already is. */
+function sendPending(ctx: RoomContext, connection: RoomConnection, pending: PendingMatch, serverTimeMs: number): void {
+  const ref = roomRef(ctx.chainId, ctx.arena, pending.matchId);
+  const players = [pending.players.creator, pending.players.challenger].filter((w): w is Address => Boolean(w));
+  ctx.hub.join(connection, ref, players);
+  ctx.hub.send(connection, {
+    type: "snapshot",
+    serverTimeMs,
+    wallet: connection.wallet,
+    room: ref,
+    state: encodeMatchState({
+      phase: "committed",
+      matchId: pending.matchId,
+      players: pending.players,
+      mode: pending.mode,
+      tier: pending.tier,
+      commitment: pending.commitment,
+    }),
+  });
   const presence = ctx.hub.presenceOf(ref.key);
   if (presence) ctx.hub.broadcast(ref.key, presence);
 }
@@ -205,6 +254,8 @@ export async function resnapshotRoom(ctx: RoomContext, matchId: Bytes32): Promis
   }
   if (built.warning) ctx.log(built.warning);
 
+  // A chain event for this match proves the arena holds it; the pre-chain record is spent.
+  ctx.matchmaker?.releasePending(matchId);
   const state = encodeMatchState(built.state);
   const serverTimeMs = marketsProvider.nowMs();
   let sent = 0;

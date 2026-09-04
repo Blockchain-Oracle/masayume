@@ -168,6 +168,41 @@ export const serverMessageSchema = z.discriminatedUnion("type", [
     opponent: z.object({ wallet: addressSchema, rating: z.number().int().min(0) }),
   }),
   z.object({ type: z.literal("deck.committed"), matchId: matchIdSchema, commitment: wireCommitmentSchema }),
+  /**
+   * A pairing that no longer exists, said as a state change rather than as an error string.
+   *
+   * It exists because the room used to report this as an `error`, which carries no lifecycle meaning —
+   * so a client whose pairing had dissolved sat on "sealing the deck" forever while the server paired it
+   * with somebody else. A dissolve is a fact about the match, so it travels as one, and it names the
+   * match it ends: a late dissolve for an abandoned pairing must never take down the live one.
+   */
+  z.object({
+    type: z.literal("match.dissolved"),
+    matchId: matchIdSchema,
+    /** Said in the room's own words, and shown to the player. Never a code they have to look up. */
+    why: z.string().max(200),
+    /** True when nobody was at fault and searching again is the obvious next step. */
+    searchAgain: z.boolean(),
+  }),
+  /**
+   * A pairing waiting on something, with the clock the room is actually keeping.
+   *
+   * Two waits happen between `match.found` and `deck.committed` and a spinner cannot tell them apart: the
+   * seed ceremony (both browsers, seconds) and the venue's supply (up to minutes, because Windows roll on
+   * aligned boundaries). Sending both deadlines is what lets the screen say which one it is and how long
+   * is left, instead of a spinner that has looked identical for ninety seconds.
+   */
+  z.object({
+    type: z.literal("match.dealing"),
+    matchId: matchIdSchema,
+    /** Seeds in, of two. Below two the wait is on a browser; at two it is on the venue. */
+    seedsIn: z.number().int().min(0).max(2),
+    /** When this pairing is given up on, in server time — the same clock `snapshot.serverTimeMs` carries. */
+    givesUpAtMs: z.number().int().positive(),
+    serverTimeMs: z.number().int().positive(),
+    /** The queue's own three-valued supply fact, repeated here for a pair that is past the queue. */
+    nextDeckInSec: z.number().int().min(0).nullish(),
+  }),
   z.object({
     type: z.literal("deck.revealed"),
     matchId: matchIdSchema,
@@ -248,6 +283,8 @@ export function matchEventsOf(message: ServerMessage): readonly MatchEvent[] {
       return [{ kind: "finalized", outcome: decodeOutcome(message.outcome) }];
     case "match.refunded":
       return [{ kind: "refunded", reason: message.reason }];
+    case "match.dissolved":
+      return [{ kind: "pairingDissolved", matchId: message.matchId }];
     default:
       return [];
   }

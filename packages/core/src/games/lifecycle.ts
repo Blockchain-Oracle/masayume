@@ -88,6 +88,13 @@ export type MatchEvent =
   | { kind: "cardSettled"; receipt: CardReceipt }
   | { kind: "finalized"; outcome: MatchOutcome }
   | { kind: "refunded"; reason: RefundReason }
+  /**
+   * The room's pairing for this match is gone, before anything reached the chain.
+   *
+   * It carries the match id because a dissolve can arrive late — after the player has been paired again —
+   * and a dissolve that took down the wrong match would be worse than the stall it was added to fix.
+   */
+  | { kind: "pairingDissolved"; matchId: string }
   /** A reconnect's snapshot, rebuilt from the arena and the projection. It always wins. */
   | { kind: "resync"; snapshot: MatchState };
 
@@ -136,6 +143,19 @@ export function everyCardSettled(cards: readonly DeckCard[], receipts: readonly 
   return picksComplete(cards, receipts) && receipts.every((r) => r.payoutBase !== null);
 }
 
+/**
+ * Back to the entry, keeping the stake that was chosen.
+ *
+ * Deliberately NOT back to `queued`: the queue entry is the client's to hold, and the room re-queueing on
+ * a player's behalf is what let a browser sit on a dead pairing while the server matched it with someone
+ * else. It also reused a seed the player had already revealed. Searching again is the client's next move,
+ * with a fresh seed, and this returns it to the state that can make it.
+ */
+function dissolved(state: IdentifiedState, matchId: string): MatchState {
+  if (state.matchId.toLowerCase() !== matchId.toLowerCase()) return state;
+  return { phase: "readiness", mode: state.mode, tier: state.tier };
+}
+
 export function transition(state: MatchState, event: MatchEvent): MatchState {
   if (event.kind === "resync") return event.snapshot;
 
@@ -171,12 +191,20 @@ export function transition(state: MatchState, event: MatchEvent): MatchState {
       return state;
 
     case "matched":
+      if (event.kind === "pairingDissolved") return dissolved(state, event.matchId);
       return event.kind === "commitmentPublished" ? { ...identityOf(state), phase: "committed", commitment: event.commitment } : state;
 
     case "committed":
       if (event.kind === "deckRevealed") {
         return { ...identityOf(state), phase: "revealed", commitment: state.commitment, cards: event.cards };
       }
+      /**
+       * A sealed deck whose match never reached the chain also dissolves. The arena is the only thing
+       * that can carry a match past this point, so a commitment nobody paid for is a pairing like any
+       * other — and leaving the player on "open the match" for a match no opponent can join is the
+       * stall this branch exists to end.
+       */
+      if (event.kind === "pairingDissolved") return dissolved(state, event.matchId);
       return state;
 
     case "revealed":

@@ -139,6 +139,31 @@ describe("match lifecycle", () => {
     expect(transition(reduce(TO_PICKING), { kind: "resync", snapshot })).toBe(snapshot);
   });
 
+  /**
+   * The stall this event exists to end: a dissolve used to arrive as a plain `error`, which carries no
+   * lifecycle meaning, so a client sat on "sealing the deck" while the room paired it with somebody else.
+   */
+  it("leaves a pairing the room has dissolved, keeping the stake that was chosen", () => {
+    const matched = reduce(TO_PICKING.slice(0, 3));
+    expect(matched.phase).toBe("matched");
+    const after = transition(matched, { kind: "pairingDissolved", matchId: "0xm1" });
+    expect(after).toEqual({ phase: "readiness", mode: "ranked", tier: "t5" });
+    expect(canQueue(after)).toBe(true);
+
+    // A deck sealed for a match the arena was never told about dissolves the same way.
+    const committed = reduce(TO_PICKING.slice(0, 4));
+    expect(committed.phase).toBe("committed");
+    expect(transition(committed, { kind: "pairingDissolved", matchId: "0xM1" }).phase).toBe("readiness");
+  });
+
+  it("ignores a dissolve that names a different match", () => {
+    const matched = reduce(TO_PICKING.slice(0, 3));
+    expect(transition(matched, { kind: "pairingDissolved", matchId: "0xm2" })).toBe(matched);
+    // And one that arrives after the match reached the chain leaves the live match alone.
+    const picking = reduce(TO_PICKING);
+    expect(transition(picking, { kind: "pairingDissolved", matchId: "0xm1" })).toBe(picking);
+  });
+
   it("offers a new queue only when nothing is in flight", () => {
     expect(canQueue(IDLE)).toBe(true);
     const picking = reduce(TO_PICKING);
