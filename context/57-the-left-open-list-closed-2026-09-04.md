@@ -130,3 +130,32 @@ on `/games`; it is `useLastGame` now, null on the server. The chrome-devtools br
 - Moonshot A/B and the deal-headroom trade (context/54 §5) — unchanged.
 - The vault's sponsor lane is now configured and unexercised; the tile's PnL sparkline; first-run onboarding
   and achievements behind their stores; Lucky, the arcade pair and Moonshot, in the owner's order.
+
+## 10. Hosted (added later the same day)
+
+The user's closing line was "now it's a good time to start thinking of if you want to deploy". The rules in
+force: the repo is private on GitHub, so pushing is a backup, not a publication; a Vercel production promotion
+needs an explicit yes (the `vercel:deploy` skill's own rule), so the plan was a preview. What happened:
+
+- **Pushed.** `main` → `origin/main` (private `Blockchain-Oracle/masayume`), 45 commits.
+- **Ops on Fly.** App `masayume-ops` (org personal, region iad — Neon's region), one `shared-cpu-1x`/1 GB machine
+  that never auto-stops, volume `ops_data` at `/data` for the deck journal (`GAME_DECK_JOURNAL`), the room on
+  `0.0.0.0:8787` behind Fly's TLS: **`wss://masayume-ops.fly.dev`** (`/health`, `/occupancy` answer 200). Secrets:
+  the nine ops variables plus `DRY_RUN=0` and `SEASON_*`. The first deploy provisioned no IPs (an org-slug error on
+  the v6 allocation) — `fly ips allocate-v4 --shared` and `allocate-v6` fixed it; the Mac's resolver then cached the
+  miss for a few minutes. The key-signed room check passed through Fly. **The local ops is stopped**: the hosted
+  one holds the maker, settler and room keys, and one writer per key is the rule — never run both.
+  `web/.env.local` now points the local web at the hosted room.
+- **Web on Vercel.** Project `masayume` (team blockchain-oracles-projects, root directory `web`, Node 24), the
+  server env set for production and preview (`DATABASE_URL`, `ROOM_TOKEN_SECRET`, `PRIVATE_DESK_PRIVATE_KEY`,
+  `SPONSOR_PRIVATE_KEY`, `GAME_ROOM_PUBLIC_URL`, `SEASON_*`). `vercel deploy --yes` from `main` produced a
+  deployment Vercel tagged **Production** (`https://masayume-umber.vercel.app`, build 3 min, Ready) rather than a
+  preview. It is **not public**: the project's Vercel Authentication is `all_except_custom_domains`, so every
+  vercel.app URL 302s to a team login; through `vercel curl` `/api/status` reports healthy, the room URL is the Fly
+  one, the season and sponsor routes answer, `/markets` and `/games` render.
+
+**To make it public — the owner's yes:** either attach a custom domain (`masayume.app`, the constant in
+`features/share/copy.ts`; protection already exempts custom domains) or set the project's protection to preview
+only (`PATCH /v9/projects/prj_GiCyzXpMuxRmai2OT4wdLcZyGW7e {"ssoProtection":{"deploymentType":"preview"}}`).
+`NEXT_PUBLIC_APP_ORIGIN` should then be set to the public origin. Not done: git integration (deploys are CLI
+uploads), drains/monitoring, the vault sponsor lane's first hosted exercise.
