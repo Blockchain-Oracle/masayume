@@ -2,14 +2,16 @@
 
 import { STAKE_TIERS, type MatchState } from "@masayume/core/games";
 import { isOk } from "@masayume/core/schemas";
-import type { Bytes32 } from "@masayume/core/types";
+import type { Address, Bytes32 } from "@masayume/core/types";
 import { formatBaseUnits, shortHex } from "@masayume/core/units";
 import { useArenaMatch, useArenaState } from "@masayume/markets/react";
 import type { CSSProperties } from "react";
 import { useVenue } from "@/features/markets";
 import { addressHue } from "@/lib/address-hue";
 import { DUEL } from "./copy";
+import { DealingPlate, RefusalPlate } from "./DuelWaiting";
 import { useArenaWrites } from "./useArenaWrites";
+import type { DealingView } from "./useDuelRoom";
 
 /**
  * Between the pairing and the first swipe: an opponent, a sealed deck, and the deck opening.
@@ -19,7 +21,7 @@ import { useArenaWrites } from "./useArenaWrites";
  * re-derives it — so showing the hash here is not decoration, it is the receipt for "these cards were
  * fixed before you knew them".
  */
-export function DuelLobby({ state, wallet }: { state: Extract<MatchState, { matchId: string }>; wallet: string | null }) {
+export function DuelLobby({ state, wallet, dealing }: { state: Extract<MatchState, { matchId: string }>; wallet: string | null; dealing: DealingView | null }) {
   const you = wallet?.toLowerCase() ?? null;
   const isCreator = you !== null && state.players.creator.toLowerCase() === you;
   const opponent = isCreator ? state.players.challenger : state.players.creator;
@@ -49,7 +51,10 @@ export function DuelLobby({ state, wallet }: { state: Extract<MatchState, { matc
         </div>
         <p className="dl-body">{stage.body}</p>
 
-        {state.phase === "committed" && <OnChain state={state} isCreator={isCreator} />}
+        {/* The room's own clock for this pairing, only while it is the thing being waited on. */}
+        {state.phase === "matched" && dealing?.matchId === state.matchId && <DealingPlate dealing={dealing} />}
+
+        {state.phase === "committed" && <OnChain state={state} isCreator={isCreator} wallet={you as Address | null} />}
 
         {"commitment" in state && (
           <dl className="dl-facts">
@@ -90,11 +95,11 @@ function Seat({ label, address }: { label: string; address: string | null }) {
  * The challenger's button appears only when the chain says the match is `waiting`. Offering it before
  * the creation has landed would be offering a transaction that reverts.
  */
-function OnChain({ state, isCreator }: { state: Extract<MatchState, { phase: "committed" }>; isCreator: boolean }) {
+function OnChain({ state, isCreator, wallet }: { state: Extract<MatchState, { phase: "committed" }>; isCreator: boolean; wallet: Address | null }) {
   const arena = useArenaState();
   const onChain = useArenaMatch(state.matchId as Bytes32);
   const { boot } = useVenue();
-  const { create, join, busy, canSign } = useArenaWrites();
+  const { create, join, busy, canSign, refusal } = useArenaWrites();
 
   const tiers = arena && isOk(arena) ? arena.value?.tiers : undefined;
   const potBase = tiers?.[STAKE_TIERS.findIndex((t) => t.id === state.tier)]?.potBase ?? null;
@@ -106,6 +111,8 @@ function OnChain({ state, isCreator }: { state: Extract<MatchState, { phase: "co
   const { challenger } = state.players;
 
   if (!canSign) return <p className="dl-refusal">{DUEL.lobby.noSigner}</p>;
+
+  const refused = refusal ? <RefusalPlate diagnosis={refusal.diagnosis} gasShort={refusal.gasShort} wallet={wallet} /> : null;
 
   if (isCreator) {
     if (created) return <p className="dl-body">{DUEL.lobby.waitingCreate}</p>;
@@ -130,8 +137,9 @@ function OnChain({ state, isCreator }: { state: Extract<MatchState, { phase: "co
             })
           }
         >
-          {busy === "create" ? DUEL.lobby.opening : DUEL.lobby.openCta}
+          {busy === "create" ? DUEL.lobby.opening : refusal ? DUEL.lobby.refusedRetry : DUEL.lobby.openCta}
         </button>
+        {refused}
       </>
     );
   }
@@ -146,8 +154,9 @@ function OnChain({ state, isCreator }: { state: Extract<MatchState, { phase: "co
         disabled={busy !== null || potBase === null}
         onClick={() => potBase !== null && void join(state.matchId as Bytes32, potBase)}
       >
-        {busy === "join" ? DUEL.lobby.joining : DUEL.lobby.joinCta}
+        {busy === "join" ? DUEL.lobby.joining : refusal ? DUEL.lobby.refusedRetry : DUEL.lobby.joinCta}
       </button>
+      {refused}
     </>
   );
 }

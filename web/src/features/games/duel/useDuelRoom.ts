@@ -41,6 +41,8 @@ const SUBPROTOCOL = "masayume.room.v1";
 const BACKOFF_MS = [1_000, 2_000, 4_000, 8_000, 15_000];
 /** Closed by us, on purpose. Anything else is worth retrying. */
 const CLOSED_DELIBERATELY = 1_000;
+/** Long enough to read why a pairing fell through, short enough that the search feels continuous. */
+const RESEARCH_MS = 2_500;
 
 export type RoomStatus = "idle" | "connecting" | "open" | "reconnecting" | "closed";
 
@@ -61,6 +63,34 @@ export interface QueueView {
    * null would tell someone whose deck is one tick away that there is none coming.
    */
   nextDeckInSec: number | null | undefined;
+}
+
+/**
+ * What a paired-but-undealt match is waiting on, and until when.
+ *
+ * Two waits sit between "opponent found" and a playable deck and a spinner cannot tell them apart: the
+ * seed ceremony, which is two browsers and takes a second, and the venue's supply, which can be minutes
+ * because Windows roll on aligned boundaries. This is what lets the lobby say which one and how long —
+ * the room measured ninety seconds of "sealing the deck…" with nothing on screen to explain it.
+ */
+export interface DealingView {
+  matchId: string;
+  seedsIn: number;
+  givesUpAtMs: number;
+  /** The server's own clock at the time, so a browser with a skewed one still counts down correctly. */
+  serverTimeMs: number;
+  /** The queue's three-valued supply fact, unchanged: a number, a real null, or absent. */
+  nextDeckInSec: number | null | undefined;
+  /** When this browser received it, so the countdown runs on elapsed time rather than on ticks. */
+  atMs: number;
+}
+
+/** A pairing the room has ended before anything reached the chain. */
+export interface DissolvedView {
+  matchId: string;
+  why: string;
+  /** True when nobody was at fault; the hook re-searches on its own with a fresh seed. */
+  searchAgain: boolean;
 }
 
 /** "Your opponent is on this card" — advisory, and deliberately without a side (`protocol.ts`). */
@@ -84,6 +114,10 @@ export interface DuelRoom {
   presence: readonly PresenceRow[];
   /** The opponent's last advisory swipe. Never carries a side; the chain publishes that. */
   opponentPending: OpponentPending | null;
+  /** What the pairing is waiting on, while it is waiting. Null once a deck exists or the match ends. */
+  dealing: DealingView | null;
+  /** The last pairing the room ended. Cleared by the next search. */
+  dissolved: DissolvedView | null;
   error: DuelRoomError | null;
   joinQueue: (mode: DuelMode, tier: StakeTierId) => void;
   leaveQueue: () => void;
@@ -110,6 +144,8 @@ export function useDuelRoom(region = "default"): DuelRoom {
   const [opponentPending, setOpponentPending] = useState<OpponentPending | null>(null);
   const [error, setError] = useState<DuelRoomError | null>(null);
   const [queueDropped, setQueueDropped] = useState(false);
+  const [dealing, setDealing] = useState<DealingView | null>(null);
+  const [dissolved, setDissolved] = useState<DissolvedView | null>(null);
 
   const socketRef = useRef<WebSocket | null>(null);
   /** This socket's own wallet, lowercased — the room's snapshot names it, and so does the token. */
@@ -117,6 +153,8 @@ export function useDuelRoom(region = "default"): DuelRoom {
   /** The reducer's current phase, readable from the socket's own callbacks. */
   const phaseRef = useRef(state.phase);
   const seedRef = useRef<`0x${string}` | null>(null);
+  /** The last search this browser asked for, so a dissolve can be answered with the same one. */
+  const entryRef = useRef<{ mode: DuelMode; tier: StakeTierId } | null>(null);
   const attemptRef = useRef(0);
   const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** Set while this component is tearing the socket down, so its `close` does not schedule a retry. */
@@ -150,6 +188,10 @@ export function useDuelRoom(region = "default"): DuelRoom {
         case "presence":
           setPresence(message.players);
           break;
+        case "deck.committed":
+          // The wait this described is over; leaving it up would count down to a deadline that passed.
+          setDealing(null);
+          break;
         case "pick.pending":
           // Relayed to both seats; a client's own swipe is not news to it.
           if (message.player.toLowerCase() !== walletRef.current) setOpponentPending({ cardIndex: message.cardIndex, atMs: Date.now() });
@@ -160,6 +202,22 @@ export function useDuelRoom(region = "default"): DuelRoom {
         case "match.found":
           // The other half of the ceremony, sent the moment a pairing exists and not one message before.
           if (seedRef.current) send({ type: "seed.reveal", matchId: message.room.matchId, seed: seedRef.current });
+          setDissolved(null);
+          break;
+        case "match.dealing":
+          setDealing({
+            matchId: message.matchId,
+            seedsIn: message.seedsIn,
+            givesUpAtMs: message.givesUpAtMs,
+            serverTimeMs: message.serverTimeMs,
+            nextDeckInSec: "nextDeckInSec" in message ? message.nextDeckInSec : undefined,
+            atMs: Date.now(),
+          });
+          break;
+        case "match.dissolved":
+          // The reducer leaves `matched` on the event below; this is only what to say about it.
+          setDealing(null);
+          setDissolved({ matchId: message.matchId, why: message.why, searchAgain: message.searchAgain });
           break;
         default:
           break;
@@ -246,13 +304,24 @@ export function useDuelRoom(region = "default"): DuelRoom {
     };
   }, [auth, onMessage, send]);
 
+  /**
+   * A search, and always a **fresh** seed.
+   *
+   * The seed is never reused across pairings, including the one this browser already revealed to a
+   * pairing that fell through: a server that has seen a seed must not be able to pair against it again
+   * before the next reveal. The room used to re-queue a player itself, carrying that same commitment
+   * forward, which quietly turned the commit-reveal into neither.
+   */
   const joinQueue = useCallback(
     (mode: DuelMode, tier: StakeTierId) => {
       const seed = freshSeed();
       seedRef.current = seed;
+      entryRef.current = { mode, tier };
       const clientSeedCommitment = keccak256(seed);
       setError(null);
       setQueueDropped(false);
+      setDissolved(null);
+      setDealing(null);
       dispatch({ kind: "open", mode, tier });
       dispatch({ kind: "queue", nowMs: Date.now(), clientSeedCommitment });
       send({ type: "queue.join", mode, tier, region, clientSeedCommitment });
@@ -263,8 +332,27 @@ export function useDuelRoom(region = "default"): DuelRoom {
   const leaveQueue = useCallback(() => {
     send({ type: "queue.leave" });
     dispatch({ kind: "leaveQueue" });
+    entryRef.current = null;
     setQueue(null);
+    setDissolved(null);
+    setDealing(null);
   }, [send]);
+
+  /**
+   * A pairing that fell through through nobody's fault puts this browser straight back in the queue.
+   *
+   * It is the client that does it, and that is the point: the room announcing a dissolve and the browser
+   * deciding what to do about it are one round trip, where the room silently re-queueing was a state the
+   * two disagreed about. The short delay is so the reason is readable rather than a flash, and the search
+   * is only sent over a socket that is actually open — a local `queued` the server never heard is the
+   * spinner-on-nothing this whole slice exists to remove.
+   */
+  useEffect(() => {
+    const entry = entryRef.current;
+    if (!dissolved?.searchAgain || !entry || status !== "open") return;
+    const timer = setTimeout(() => joinQueue(entry.mode, entry.tier), RESEARCH_MS);
+    return () => clearTimeout(timer);
+  }, [dissolved, status, joinQueue]);
 
   const resync = useCallback(() => {
     if ("matchId" in state) send({ type: "resync", matchId: state.matchId });
@@ -278,6 +366,8 @@ export function useDuelRoom(region = "default"): DuelRoom {
     queue,
     presence,
     opponentPending,
+    dealing,
+    dissolved,
     error,
     joinQueue,
     leaveQueue,

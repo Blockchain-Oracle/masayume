@@ -4,9 +4,11 @@ import { STAKE_TIERS, stakeTier, type DuelMode, type StakeTierId } from "@masayu
 import { isOk } from "@masayume/core/schemas";
 import { formatBaseUnits } from "@masayume/core/units";
 import { useArenaState, useBalanceSheet } from "@masayume/markets/react";
+import { STT_FAUCETS } from "@masayume/core/constants";
 import { useVenue } from "@/features/markets";
 import { useWalletSession } from "@/lib/wallet-session";
 import { DUEL } from "./copy";
+import { useArenaGas } from "./useArenaGas";
 
 export interface DuelEntryProps {
   onFind: (mode: DuelMode, tier: StakeTierId) => void;
@@ -39,6 +41,7 @@ export function DuelEntry({ onFind, roomOpen, tierId, onTier }: DuelEntryProps) 
   const { boot } = useVenue();
   const arena = useArenaState();
   const sheet = useBalanceSheet(address);
+  const { gas, recheck } = useArenaGas();
 
   const tier = stakeTier(tierId);
   const state = arena && isOk(arena) ? arena.value : null;
@@ -62,7 +65,15 @@ export function DuelEntry({ onFind, roomOpen, tierId, onTier }: DuelEntryProps) 
   /** Never a guessed decimals: without the boot fact an amount is a dash, not a wrong number. */
   const money = (base: bigint | null) => (base === null || decimals === null ? "—" : formatBaseUnits(base, decimals, { maxDp: 2, minDp: 0 }));
 
-  const blocked = paused || notDeployed || !enabled || short || !roomOpen;
+  /**
+   * An empty gas tank blocks the search itself.
+   *
+   * Not a warning beside an enabled button: every step of a duel — the creation, the join, each pick —
+   * is a transaction this wallet signs and funds, so a player with no STT cannot complete one, and
+   * letting them queue costs a real opponent a real pairing.
+   */
+  const gasShort = gas.kind === "short";
+  const blocked = paused || notDeployed || !enabled || short || !roomOpen || gasShort;
 
   return (
     <section className="dl-entry" aria-label={DUEL.entry.tier}>
@@ -99,6 +110,23 @@ export function DuelEntry({ onFind, roomOpen, tierId, onTier }: DuelEntryProps) 
       {paused && <p className="dl-refusal">{DUEL.entry.paused}</p>}
       {!paused && !notDeployed && !enabled && <p className="dl-refusal">{DUEL.entry.tierDisabled}</p>}
       {short && <p className="dl-refusal">{DUEL.entry.balanceShort(money(potBase), money(spendable), symbol)}</p>}
+      {gasShort && (
+        <div className="dl-refusal" role="status">
+          <p className="dl-body">{DUEL.entry.gasShort}</p>
+          <ul className="dl-faucets">
+            {STT_FAUCETS.map((faucet) => (
+              <li key={faucet.url}>
+                <a href={faucet.url} target="_blank" rel="noreferrer">
+                  {faucet.name} →
+                </a>
+              </li>
+            ))}
+          </ul>
+          <button type="button" className="dl-quiet" onClick={() => void recheck()}>
+            {DUEL.entry.gasRecheck}
+          </button>
+        </div>
+      )}
 
       <button type="button" className="dl-cta" disabled={blocked} onClick={() => onFind(tier.mode, tierId)}>
         {roomOpen ? DUEL.entry.find : DUEL.entry.waitingRoom}

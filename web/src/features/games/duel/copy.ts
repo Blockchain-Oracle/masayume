@@ -59,6 +59,16 @@ export const DUEL = {
     balance: "Your balance",
     balanceShort: (need: string, have: string, symbol: string) => `This entry needs ${need} ${symbol} and this wallet holds ${have}.`,
     gasNeeded: "Picks are your own transactions, so this wallet also needs STT for gas.",
+    /**
+     * Said before the search, not at the first transaction.
+     *
+     * A duel with no gas is a duel that cannot be opened, joined or played, and finding that out at the
+     * "open the match" button costs the other player the whole pairing. On 2026-09-04 both browsers in a
+     * live session held 0 STT and the entry let them queue anyway.
+     */
+    gasShort: "This wallet holds no STT, and every step of a duel — opening the match, joining it, each pick — is a transaction you sign and pay for yourself.",
+    gasCheck: "Checking this wallet can pay for its own transactions…",
+    gasRecheck: "I have funded it — check again",
   },
 
   queue: {
@@ -106,6 +116,27 @@ export const DUEL = {
     waitingPot: "Waiting for both side-pots to land on chain.",
     seatCreator: "You opened this match",
     seatChallenger: "You were matched into this one",
+
+    /** The wait, named. A spinner cannot tell a browser's second from the venue's ninety. */
+    seedWait: (seedsIn: number) => (seedsIn >= 2 ? "Both seeds are in." : `${seedsIn} of 2 seeds are in.`),
+    seedBody: "Each browser reveals the seed it committed to when it queued. Neither side, and not the server, can choose one after seeing the other's.",
+    venueWait: "The venue rolls its Windows on fixed boundaries, and a duel needs ones with enough life left for both players to play every card. For a few minutes an hour there are none, and this is one of those minutes.",
+    deckIn: (sec: number) => (sec <= 0 ? "A deck is dealable now" : `Next dealable deck in ${sec}s`),
+    deckUnknown: "Checking what the venue can deal…",
+    deckNone: "The venue has nothing dealable within the hour.",
+    givesUp: (sec: number) => `This pairing is given up on in ${sec}s`,
+    /** The pre-chain deadline: a sealed deck nobody pays for is released rather than left on screen. */
+    createBy: (sec: number) => `${sec}s left to put this match on chain`,
+    createLapsed: "The window to put this match on chain has passed.",
+
+    /** A pairing that ended before anything reached the chain. Never an error plate: it is a state. */
+    dissolvedTitle: "That pairing fell through",
+    dissolvedAgain: "Nobody paid anything and nothing was staked. Searching again with a fresh seed…",
+    dissolvedStop: "That will happen the same way again. Nothing was staked.",
+
+    /** A transaction the arena or this browser refused, said out loud rather than swallowed. */
+    refusedTitle: "That transaction was not sent",
+    refusedRetry: "Try again",
   },
 
   picking: {

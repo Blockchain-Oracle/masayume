@@ -52,6 +52,18 @@
   font-size: 12px; line-height: 1.55; color: var(--gray-400);
 }
 
+/* A refusal with somewhere to go. Only an empty gas tank gets links; nothing else has a route out. */
+.dl-faucets { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+.dl-faucets a {
+  font-family: var(--font-mono); font-size: 11px; color: var(--white);
+  text-decoration: underline; text-decoration-color: var(--color-hairline); text-underline-offset: 4px;
+}
+.dl-faucets a:hover { text-decoration-color: var(--accent); }
+
+/* Stacked children, because a refusal now carries a reason, an address and a way to fix it. */
+.dl-refusal > * + * { margin-top: 6px; }
+.dl-notice > * + * { margin-top: 6px; }
+
 .dl-cta {
   align-self: stretch; min-height: var(--button-primary-height);
   border-radius: var(--button-primary-radius);

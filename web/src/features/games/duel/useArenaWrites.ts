@@ -10,7 +10,7 @@ import {
   type StakeTierId,
 } from "@masayume/core/games";
 import { isOk } from "@masayume/core/schemas";
-import { diagnosis, type Address, type Bytes32, type MarketId } from "@masayume/core/types";
+import { diagnosis, type Address, type Bytes32, type Diagnosis, type MarketId } from "@masayume/core/types";
 import { quoteArenaPick, submitArenaPick, type ArenaPickOutcome } from "@masayume/markets/games";
 import { invalidateAfterWrite, useSubmitter } from "@masayume/markets/react";
 import { getClient } from "@masayume/markets/runtime";
@@ -38,6 +38,22 @@ import { useOwnerWalletClient } from "@/providers/UserSessionProvider";
 
 export type ArenaBusy = "create" | "join" | "claim" | "finalize" | `pick:${number}` | `settle:${number}` | null;
 
+/**
+ * The last transaction this screen asked for and did not get — and the reason a duel needed it.
+ *
+ * `create` and `join` used to be sent with `void`, so every refusal was discarded. A wallet with no STT
+ * therefore pressed "open the match", watched it say "opening…", and got the same button back with
+ * nothing said: the gas pre-check had refused it before the wallet was ever asked. Measured on
+ * 2026-09-04 — both browsers in that session held 0 STT and not one of their three sealed decks reached
+ * the chain. A write that fails silently is worse than one that fails loudly.
+ */
+export interface ArenaRefusal {
+  key: Exclude<ArenaBusy, null>;
+  diagnosis: Diagnosis;
+  /** The one refusal with somewhere to go: an empty tank routes to the faucets (FR-2), never a revert. */
+  gasShort: boolean;
+}
+
 export interface PickProgress {
   cardIndex: number;
   attempt: number;
@@ -52,6 +68,7 @@ export function useArenaWrites() {
   const queryClient = useQueryClient();
   const [busy, setBusy] = useState<ArenaBusy>(null);
   const [progress, setProgress] = useState<PickProgress | null>(null);
+  const [refusal, setRefusal] = useState<ArenaRefusal | null>(null);
 
   const contracts = useCallback((): VaultContracts | null => {
     if (!walletClient) return null;
@@ -62,12 +79,33 @@ export function useArenaWrites() {
     if (address) await invalidateAfterWrite(queryClient, { wallet: address });
   }, [address, queryClient]);
 
+  /**
+   * One write, with its answer kept.
+   *
+   * Gas is checked before the wallet is asked, the same order the faucet uses: an empty tank routes the
+   * player to a faucet instead of opening a prompt for a transaction that cannot be paid for. Everything
+   * that is not `confirmed` lands in `refusal`, so no button can go quiet.
+   */
   const send = useCallback(
     async (intent: ArenaIntent, key: Exclude<ArenaBusy, null>) => {
       if (!submitter || !address) return null;
       setBusy(key);
+      setRefusal(null);
       try {
-        return await submitter.submitTx(intent);
+        const gas = await submitter.checkGas("arena");
+        if (!gas.ok) {
+          setRefusal({ key, diagnosis: gas.diagnosis, gasShort: gas.diagnosis.kind === "out-of-gas" });
+          return { status: "refused", diagnosis: gas.diagnosis } as const;
+        }
+        const outcome = await submitter.submitTx(intent);
+        if (outcome.status !== "confirmed") {
+          setRefusal({ key, diagnosis: outcome.diagnosis, gasShort: outcome.diagnosis.kind === "out-of-gas" });
+        }
+        return outcome;
+      } catch (cause) {
+        const diag = diagnosis("unknown", String((cause as Error)?.message ?? cause).slice(0, 200));
+        setRefusal({ key, diagnosis: diag, gasShort: false });
+        return { status: "refused", diagnosis: diag } as const;
       } finally {
         setBusy(null);
         await refresh();
@@ -162,5 +200,17 @@ export function useArenaWrites() {
     [submitter, address, contracts, refresh],
   );
 
-  return { create, join, claim, settleCard, finalize, pick, busy, progress, canSign: Boolean(submitter && walletClient) };
+  return {
+    create,
+    join,
+    claim,
+    settleCard,
+    finalize,
+    pick,
+    busy,
+    progress,
+    refusal,
+    dismissRefusal: useCallback(() => setRefusal(null), []),
+    canSign: Boolean(submitter && walletClient),
+  };
 }

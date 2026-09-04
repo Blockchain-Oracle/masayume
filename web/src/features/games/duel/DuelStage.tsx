@@ -112,8 +112,17 @@ function Match({ room, wallet, tierId, onTier }: { room: ReturnType<typeof useDu
 
   switch (state.phase) {
     case "idle":
-    case "readiness":
       return entry;
+
+    /**
+     * The entry again, with what just happened above it.
+     *
+     * `readiness` is where a dissolved pairing lands, and saying nothing here would put the player back
+     * at "find a match" as though the last two minutes had not happened — which, before `match.dissolved`
+     * existed, is what a silent re-queue did to them.
+     */
+    case "readiness":
+      return room.dissolved ? <Dissolved dissolved={room.dissolved} entry={entry} /> : entry;
 
     case "queued":
       // `nowMs` ticks, so the wait counts up instead of freezing at whatever the last render saw.
@@ -122,7 +131,7 @@ function Match({ room, wallet, tierId, onTier }: { room: ReturnType<typeof useDu
     case "matched":
     case "committed":
     case "revealed":
-      return <DuelLobby state={state} wallet={wallet} />;
+      return <DuelLobby state={state} wallet={wallet} dealing={room.dealing} />;
 
     case "picking":
       return <DuelPicking state={state} wallet={wallet} room={room} />;
@@ -144,6 +153,21 @@ function Match({ room, wallet, tierId, onTier }: { room: ReturnType<typeof useDu
       // Picking, locked, settling, finalized and forfeited: live on chain, not yet drawn here.
       return <Beyond state={state} />;
   }
+}
+
+/** A pairing the room ended before the chain was involved: what happened, and what is being done about it. */
+function Dissolved({ dissolved, entry }: { dissolved: NonNullable<ReturnType<typeof useDuelRoom>["dissolved"]>; entry: ReactNode }) {
+  return (
+    <>
+      <div className="dl-notice" role="status">
+        <p className="dl-body">
+          {DUEL.lobby.dissolvedTitle}: {dissolved.why}.
+        </p>
+        <p className="dl-foot">{dissolved.searchAgain ? DUEL.lobby.dissolvedAgain : DUEL.lobby.dissolvedStop}</p>
+      </div>
+      {entry}
+    </>
+  );
 }
 
 /** A match that ended without a winner. It says what happened, then offers the entry again. */
