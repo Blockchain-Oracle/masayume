@@ -1,4 +1,4 @@
-import type { RangeQuote, RangeReserveState } from "@masayume/core/range";
+import { classifyRangeBand, type RangeQuote, type RangeReserveState } from "@masayume/core/range";
 import { diagnosis, toMarketId, type Address, type Diagnosis, type EventMarket, type MarketId } from "@masayume/core/types";
 import type { RangeRoundView } from "@/features/range";
 
@@ -84,7 +84,7 @@ export const QUOTE: RangeQuote = {
 export const QUOTE_ERROR: Diagnosis = diagnosis("no-liquidity", "ThinBook(0x…11393, 0, 20000000)", { errorName: "ThinBook" });
 
 function round(n: number, patch: Partial<RangeRoundView>): RangeRoundView {
-  return {
+  const base: Omit<RangeRoundView, "kind"> = {
     roundId: BigInt(n),
     owner: OWNER,
     status: "live",
@@ -107,6 +107,8 @@ function round(n: number, patch: Partial<RangeRoundView>): RangeRoundView {
     settledOnchain: false,
     ...patch,
   };
+  // The kind is read off the band's shape, exactly as the live view does it.
+  return { ...base, kind: patch.kind ?? classifyRangeBand(base.openingPrint, base.lowPrint, base.highPrint) };
 }
 
 export const ROUNDS: RangeRoundView[] = [

@@ -44,6 +44,10 @@ export function RangeCard({ round, nowMs, symbol, decimals, staleAfterSec, busy,
   const claiming = busy === `claim:${round.roundId}`;
   const payout = formatBaseUnits(round.maxPayoutBase, decimals);
   const inside = round.closingPrint !== null && round.closingPrint >= round.lowPrint && round.closingPrint <= round.highPrint;
+  const { kind } = round;
+  // A Moonshot is one edge, not two: "above $K" for a LONG, "below $K" for a SHORT (the other edge saturates).
+  const what = kind.kind === "moonshot" ? slip.target(kind.direction, usdBand(kind.strikePrint)) : slip.band(usdBand(round.lowPrint), usdBand(round.highPrint), round.side);
+  const closedLine = round.closingPrint === null ? null : kind.kind === "moonshot" ? slip.closedTarget(usd2(round.closingPrint), inside) : slip.closed(usd2(round.closingPrint), inside);
 
   return (
     <div className={cn("pl-card pl-rise", status === "won" && "pl-card--won", dead && "pl-card--lost")}>
@@ -65,10 +69,10 @@ export function RangeCard({ round, nowMs, symbol, decimals, staleAfterSec, busy,
         <div className="pl-cleg">
           <div className="pl-cleg-main">
             <div className="pl-cleg-name">
-              <span className="rg-card-side">{slip.band(usdBand(round.lowPrint), usdBand(round.highPrint), round.side)}</span>
+              <span className="rg-card-side">{what}</span>
               <span className="pl-cleg-line"> · {slip.opening(usd2(round.openingPrint))}</span>
             </div>
-            {round.closingPrint !== null && <div className="rg-card-close">{slip.closed(usd2(round.closingPrint), inside)}</div>}
+            {closedLine && <div className="rg-card-close">{closedLine}</div>}
           </div>
           <span className={cn("pl-cleg-state", status === "won" || status === "claimed" ? "pl-cleg-state--won" : status === "live" ? "pl-cleg-state--pending" : "pl-cleg-state--lost")}>
             {status === "live" &&

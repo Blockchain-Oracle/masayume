@@ -121,8 +121,11 @@ export const RANGE = {
     voided: "Voided",
     paid: "Paid",
     band: (from: string, to: string, side: "inside" | "outside") => `${side} ${from} – ${to}`,
+    /** A Moonshot row: the one edge that matters, in Pips' words for the side. */
+    target: (direction: "long" | "short", strike: string) => (direction === "long" ? `long · above ${strike}` : `short · below ${strike}`),
     opening: (print: string) => `opened at ${print}`,
     closed: (print: string, inside: boolean) => `closed at ${print} · ${inside ? "inside" : "outside"} the band`,
+    closedTarget: (print: string, hit: boolean) => `closed at ${print} · ${hit ? "past the target" : "short of the target"}`,
     settle: "Settle",
     settling: "Settling…",
     voidStale: "Void (no oracle answer)",

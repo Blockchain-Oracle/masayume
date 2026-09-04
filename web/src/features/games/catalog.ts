@@ -10,9 +10,9 @@ import { NAV_ITEMS, type NavItem } from "@/components/shell/header/nav-items";
  * honest label about whose money is at risk is the same fact the write lanes gate on.
  *
  * `readiness` is a build fact, not a chain read — it says whether the thing behind the route
- * exists in this repository yet. Range is the only mode with real code behind it (Stage 5's
- * reserve); the hub adds the reserve's *live* state on top of that, because "built" and
- * "playable right now" are different claims and the card must not merge them.
+ * exists in this repository yet. Range and Moonshot share Stage 5's reserve; the hub adds the
+ * reserve's *live* state on top of that, because "built" and "playable right now" are different
+ * claims and the card must not merge them.
  */
 export type GameReadiness = { kind: "built" } | { kind: "pending"; dependency: string };
 
@@ -39,7 +39,7 @@ const READINESS: Readonly<Record<GameId, GameReadiness>> = {
   duel: { kind: "built" },
   lucky: { kind: "pending", dependency: "the seeded draw and eligibility service (slice 5)" },
   range: { kind: "built" },
-  moonshot: { kind: "pending", dependency: "the Moonshot solver over the live RangeReserve (slice 9)" },
+  moonshot: { kind: "built" },
   "line-rider": { kind: "pending", dependency: "the ride engine and its score API (slice 4)" },
   "candle-hop": { kind: "pending", dependency: "the flight engine and its score API (slice 4)" },
 };

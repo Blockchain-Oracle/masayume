@@ -48,7 +48,7 @@ export function GamesHub() {
     return occupancy.pairing > 0 ? GAMES.card.inMatch(occupancy.pairing) : GAMES.card.nobody;
   };
   const status = (entry: GameEntry): CardStatus =>
-    entry.id === "range" ? rangeStatus(reserve) : entry.readiness.kind === "built" ? { kind: "live" } : { kind: "pending", dependency: entry.readiness.dependency };
+    entry.id === "range" || entry.id === "moonshot" ? rangeStatus(reserve) : entry.readiness.kind === "built" ? { kind: "live" } : { kind: "pending", dependency: entry.readiness.dependency };
 
   return (
     <div className="container gm-page">
@@ -122,7 +122,7 @@ export function GamesHub() {
   );
 }
 
-/** Range is the one mode with a contract behind it, so its card reports the contract, not the repo. */
+/** Range and Moonshot sit on one contract, so their cards report the contract, not the repo. */
 function rangeStatus(reading: Reading<RangeReserveState | null> | null): CardStatus {
   if (reading === null) return { kind: "loading" };
   if (!isOk(reading)) return { kind: "unavailable", why: diagnosisCopy(reading.error.kind).headline };
