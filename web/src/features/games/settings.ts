@@ -30,14 +30,12 @@ export const ACCENT_LABELS: Readonly<Record<AccentChoice, string>> = {
 };
 
 export interface GameSettings {
-  sound: boolean;
   haptics: boolean;
   motion: MotionChoice;
   accent: AccentChoice;
 }
 
 const MOTION_KEY = "masayume.games.motion";
-const SOUND_KEY = "masayume.games.sound";
 const HAPTICS_KEY = "masayume.games.haptics";
 const ACCENT_KEY = "masayume.games.accent";
 
@@ -53,7 +51,6 @@ const accentCodec = {
 
 export interface GameSettingsStore {
   settings: GameSettings;
-  setSound: (on: boolean) => void;
   setHaptics: (on: boolean) => void;
   setMotion: (choice: MotionChoice) => void;
   setAccent: (accent: AccentChoice) => void;
@@ -61,20 +58,21 @@ export interface GameSettingsStore {
   hydrated: boolean;
 }
 
-/** Four independent persisted values rather than one JSON blob: a corrupt key loses one setting. */
+/**
+ * Three independent persisted values rather than one JSON blob: a corrupt key loses one setting. Sound
+ * is not among them any more — it is two sliders, persisted by `audio.ts`, which is what Flicky ships.
+ */
 export function useGameSettingsStore(): GameSettingsStore {
-  const [sound, setSound, soundReady] = usePersistedState(SOUND_KEY, true, booleanCodec);
   const [haptics, setHaptics, hapticsReady] = usePersistedState(HAPTICS_KEY, true, booleanCodec);
   const [motion, setMotion, motionReady] = usePersistedState<MotionChoice>(MOTION_KEY, "system", motionCodec);
   const [accent, setAccent, accentReady] = usePersistedState<AccentChoice>(ACCENT_KEY, "default", accentCodec);
 
   return {
-    settings: { sound, haptics, motion, accent },
-    setSound,
+    settings: { haptics, motion, accent },
     setHaptics,
     setMotion,
     setAccent,
-    hydrated: soundReady && hapticsReady && motionReady && accentReady,
+    hydrated: hapticsReady && motionReady && accentReady,
   };
 }
 

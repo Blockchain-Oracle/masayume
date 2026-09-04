@@ -24,7 +24,8 @@ export function PracticeResult({ round, score, onAgain }: { round: PracticeRound
 
   // One cue when the round lands, on the settings the player chose — never on every re-render.
   useEffect(() => {
-    feedback(score.winner === "you" ? "confirm" : "tap");
+    // A loss gets its own sound, not a tap: the result is the one moment the cue carries the verdict.
+    feedback(score.winner === "you" ? "duel-win" : score.winner === "bot" ? "duel-lose" : "modal-open");
     // The round is over; the cue belongs to arriving here, not to the score object's identity.
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

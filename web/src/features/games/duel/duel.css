@@ -116,6 +116,23 @@
 
 /* ── The queue and the lobby ──────────────────────────────────────────────── */
 
+/* The searching plate breathes in opacity and glow — no scale, no pings (Flicky pvp.tsx L367–372). */
+.du-searching {
+  position: relative; display: grid; place-items: center; gap: 10px;
+  min-height: 120px; border-radius: 16px; padding: 20px;
+  border: 1px solid color-mix(in srgb, var(--vermilion) 35%, transparent);
+  background: color-mix(in srgb, var(--vermilion) 6%, transparent);
+}
+.du-breathe { animation: du-breathe 2.4s ease-in-out infinite; }
+@keyframes du-breathe { 50% { border-color: color-mix(in srgb, var(--vermilion) 70%, transparent); box-shadow: 0 0 24px color-mix(in srgb, var(--vermilion) 22%, transparent); } }
+.du-searching-word { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gray-400); }
+.du-dots { display: inline-flex; gap: 8px; }
+.du-dots span { width: 8px; height: 8px; border-radius: 9999px; background: var(--white); animation: du-bounce 1s ease-in-out infinite; }
+.du-dots span:nth-child(2) { animation-delay: 0.15s; }
+.du-dots span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes du-bounce { 30% { transform: translateY(-6px); } 60% { transform: none; } }
+/* Leaving the queue is a real button in the loss colour, as Flicky's cancel is red — not a whisper. */
+.du-cta--leave { background: color-mix(in srgb, var(--loss) 14%, transparent); border-color: color-mix(in srgb, var(--loss) 50%, transparent); color: var(--loss); }
 .du-queue-head { display: flex; align-items: center; gap: 10px; }
 .du-queue-title { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--white); }
 .du-spinner {
@@ -179,8 +196,54 @@
 .du-verdict--lost { border-color: color-mix(in srgb, var(--loss) 40%, transparent); }
 .du-verdict-line { font-family: var(--font-display); font-weight: 750; font-size: 20px; color: var(--white); }
 .du-cranks { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+/* Flicky duel-view.tsx L814–826: a card flips to its side's colour as it settles; the live one carries a pulsing dot. */
+.du-picked-row { border-radius: 10px; padding: 6px 8px; transition: background 300ms var(--ease); }
+.du-picked-row[data-settled="true"][data-won="true"] { background: color-mix(in srgb, var(--profit) 14%, transparent); }
+.du-picked-row[data-settled="true"][data-won="false"] { background: color-mix(in srgb, var(--loss) 14%, transparent); }
+.du-live-dot { width: 6px; height: 6px; border-radius: 9999px; background: var(--vermilion); box-shadow: 0 0 5px var(--vermilion); animation: du-pulse 1.2s var(--ease) infinite; }
 .du-up { color: var(--profit); }
 .du-down { color: var(--loss); }
+
+/* ── The result modal (Flicky duel-result-modal.tsx L148–231), in the shell's overlay grammar ──────── */
+
+.du-modal-root {
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+  background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+}
+.du-modal {
+  position: relative; width: 100%; max-width: 384px;
+  border-radius: 24px; padding: 36px 24px 24px;
+  border: 1px solid var(--color-hairline); background: var(--color-surface-1);
+  display: flex; flex-direction: column; gap: 20px;
+  animation: gm-enter 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.du-modal-close {
+  position: absolute; top: 12px; right: 12px; display: grid; place-items: center;
+  width: 32px; height: 32px; font-size: 18px; color: var(--gray-500);
+}
+.du-modal-close:hover { color: var(--white); }
+/* text-4xl tracking-[0.16em] uppercase, in the verdict's own colour */
+.du-modal-verdict {
+  text-align: center; font-family: var(--font-display); font-weight: 900; font-size: 36px; line-height: 1.1;
+  letter-spacing: 0.16em; text-transform: uppercase; color: var(--white);
+}
+.du-modal--won .du-modal-verdict, .du-modal--won .du-modal-return { color: var(--profit); }
+.du-modal--lost .du-modal-verdict, .du-modal--lost .du-modal-return { color: var(--loss); }
+/* text-5xl font-bold tabular-nums */
+.du-modal-return { margin-top: -12px; text-align: center; font-family: var(--font-display); font-weight: 800; font-size: 48px; line-height: 1; font-variant-numeric: tabular-nums; color: var(--white); }
+.du-modal-seats { display: flex; align-items: center; justify-content: center; gap: 16px; }
+.du-avatar--lg { width: 64px; height: 64px; }
+.du-modal-vs { font-family: var(--font-mono); font-size: 18px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gray-500); }
+.du-modal-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; text-align: center; }
+.du-modal-stat { display: flex; flex-direction: column; gap: 4px; border-radius: 8px; padding: 8px; background: rgba(0, 0, 0, 0.3); }
+[data-theme="light"] .du-modal-stat { background: rgba(20, 18, 16, 0.06); }
+.du-modal-stat--wide { grid-column: span 2; justify-content: center; }
+.du-modal-stat-v { font-family: var(--font-mono); font-size: 16px; font-weight: 600; color: var(--white); font-variant-numeric: tabular-nums; }
+.du-modal-stat-v--soft { font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gray-400); }
+.du-modal-stat-k { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gray-500); }
+.du-modal-actions { display: flex; flex-direction: column; gap: 8px; }
+.du-cta--quiet { background: transparent; color: var(--white); border-color: var(--color-hairline); }
 
 /* ── The socket's own state, said quietly ─────────────────────────────────── */
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
+import { BGM_FILE, playSfx, setBgmVolume, setSfxVolume, useBgmVolume, useModalSfx, useSfxVolume } from "./audio";
 import { GAMES } from "./copy";
 import { fireFeedback, hapticsSupported } from "./feedback";
 import { useGames } from "./GamesProvider";
@@ -20,8 +21,11 @@ const MOTION_ORDER: readonly MotionChoice[] = ["system", "full", "reduced"];
  * is a lie the shell can easily avoid telling.
  */
 export function GameSettingsSheet() {
-  const { settings, settingsOpen, setSettingsOpen, setSound, setHaptics, setMotion, setAccent, systemPrefersReduced, reducedMotion, feedback } = useGames();
+  const { settings, settingsOpen, setSettingsOpen, setHaptics, setMotion, setAccent, systemPrefersReduced, reducedMotion, feedback } = useGames();
   const [canVibrate, setCanVibrate] = useState(true);
+  const sfxVolume = useSfxVolume();
+  const bgmVolume = useBgmVolume();
+  useModalSfx(settingsOpen);
 
   // Read after mount: `navigator` does not exist while rendering on the server.
   useEffect(() => setCanVibrate(hapticsSupported()), []);
@@ -48,20 +52,44 @@ export function GameSettingsSheet() {
         </SheetHeader>
 
         <div className="gm-settings">
-          <label className="gm-set-row">
+          {/* Flicky's two channels, each its own slider; zero is that channel's mute. The effect slider
+              demonstrates itself on release, at the level it was just set to. */}
+          <label className="gm-set-row gm-set-row--stack">
             <span className="gm-set-text">
-              <span className="gm-set-label">{GAMES.settings.sound.label}</span>
-              <span className="gm-set-hint">{GAMES.settings.sound.hint}</span>
+              <span className="gm-set-label">{GAMES.settings.sfx.label}</span>
+              <span className="gm-set-hint">{GAMES.settings.sfx.hint}</span>
             </span>
-            <Switch
-              checked={settings.sound}
-              // `feedback` closes over the settings as they are now, and `on` is what they are
-              // about to become — so a switch turned on must announce itself with the new value.
-              onCheckedChange={(on) => {
-                setSound(on);
-                if (on) fireFeedback("confirm", { sound: true, haptics: settings.haptics });
-              }}
+            <input
+              type="range"
+              className="gm-range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={sfxVolume}
+              aria-label={GAMES.settings.sfx.label}
+              onChange={(event) => setSfxVolume(Number(event.target.value))}
+              onPointerUp={() => playSfx("click")}
+              onKeyUp={() => playSfx("click")}
             />
+          </label>
+
+          <label className="gm-set-row gm-set-row--stack">
+            <span className="gm-set-text">
+              <span className="gm-set-label">{GAMES.settings.music.label}</span>
+              <span className="gm-set-hint">{BGM_FILE ? GAMES.settings.music.hint : GAMES.settings.music.none}</span>
+            </span>
+            {BGM_FILE && (
+              <input
+                type="range"
+                className="gm-range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={bgmVolume}
+                aria-label={GAMES.settings.music.label}
+                onChange={(event) => setBgmVolume(Number(event.target.value))}
+              />
+            )}
           </label>
 
           <label className="gm-set-row">
@@ -74,7 +102,7 @@ export function GameSettingsSheet() {
               disabled={!canVibrate}
               onCheckedChange={(on) => {
                 setHaptics(on);
-                if (on) fireFeedback("confirm", { sound: settings.sound, haptics: true });
+                if (on) fireFeedback("confirm", { haptics: true });
               }}
             />
           </label>
@@ -137,6 +165,7 @@ export function GameSettingsSheet() {
           </div>
 
           <p className="gm-set-scope">{GAMES.settings.scope}</p>
+          <p className="gm-set-scope">{GAMES.settings.credits}</p>
           <Button variant="secondary" onClick={() => setSettingsOpen(false)}>{GAMES.settings.close}</Button>
         </div>
       </SheetContent>

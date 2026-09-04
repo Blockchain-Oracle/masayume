@@ -18,6 +18,7 @@ import type { Address } from "@masayume/core/types";
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { keccak256 } from "viem";
 import { useRoomToken, type RoomAuth } from "./useRoomToken";
+import { playSfx } from "../audio";
 
 /**
  * The duel room, as one socket and one reducer.
@@ -207,6 +208,8 @@ export function useDuelRoom(region = "default"): DuelRoom {
           setError({ code: message.code, message: message.message, retryable: message.retryable, about: message.about ?? null });
           break;
         case "match.found":
+          // Flicky's cue, before the screen swaps: the sound is how a player looking away learns.
+          playSfx("match-found");
           // The other half of the ceremony, sent the moment a pairing exists and not one message before.
           if (seedRef.current) send({ type: "seed.reveal", matchId: message.room.matchId, seed: seedRef.current });
           setDissolved(null);

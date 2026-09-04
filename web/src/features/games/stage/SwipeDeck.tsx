@@ -2,9 +2,10 @@
 
 import type { DeckCard, Pick } from "@masayume/core/games";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { AnimatePresence, motion, type PanInfo } from "motion/react";
+import { AnimatePresence, motion, useMotionValue, useMotionValueEvent, useTransform, type PanInfo } from "motion/react";
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { useGames } from "../GamesProvider";
+import { DRAG_MAX_ROTATE_DEG, FLY_ROTATE_DEG, SETTLE, STAMP_AT_PX, THROW } from "../motion";
 import { STAGE } from "./copy";
 import "./stage.css";
 
@@ -46,18 +47,22 @@ export interface SwipeDeckProps {
 /** Past this many pixels of travel, or this fast, the throw counts. Below both, the card springs back. */
 const COMMIT_TRAVEL = 84;
 const COMMIT_VELOCITY = 480;
-const THROW = { duration: 0.26, ease: [0.22, 1, 0.36, 1] as const };
-const SETTLE = { type: "spring" as const, stiffness: 260, damping: 26 };
 /** Far enough to clear the tallest card at any width; the stack is clipped by the page, not by this. */
 const THROW_DISTANCE = 420;
+/** The card's height before the deck has measured itself — only the tilt's scale depends on it. */
+const FALLBACK_HEIGHT = 420;
 
+/**
+ * Flicky's throw: the card leaves opaque, spinning off past the tilt it was dragged to
+ * (`swipe-screen.tsx` L178–186), rather than fading. Our axis is vertical, so the spin follows it.
+ */
 const FULL = {
   enter: { opacity: 0, scale: 0.96, y: 12 },
-  in: { opacity: 1, scale: 1, y: 0 },
+  in: { opacity: 1, scale: 1, y: 0, rotate: 0 },
   out: (side: Pick | null) => ({
-    opacity: 0,
-    scale: 0.92,
+    opacity: 1,
     y: side === "up" ? -THROW_DISTANCE : side === "down" ? THROW_DISTANCE : 0,
+    rotate: side === "up" ? -FLY_ROTATE_DEG : side === "down" ? FLY_ROTATE_DEG : 0,
     transition: THROW,
   }),
 };
@@ -85,13 +90,33 @@ export function SwipeDeck({ cards, active, playedSide, onPick, busy = false, ref
   const held = busy || refusal !== null;
   const draggable = active !== null && !held && !reducedMotion;
 
+  /**
+   * Flicky's drag carries five signals at once (`swipe-screen.tsx` L159–297): the card tilts with the
+   * travel, a tint rises on the side being chosen, a stamp appears past a little travel, the face
+   * reacts, and the next card comes forward behind it. All of them derive from one motion value so
+   * they move on the compositor with the finger; only the stamp, which mounts and unmounts, is state.
+   */
+  const y = useMotionValue(0);
+  const rotate = useTransform(y, (v) => {
+    const half = (deckRef.current?.offsetHeight || FALLBACK_HEIGHT) / 2;
+    return Math.max(-DRAG_MAX_ROTATE_DEG, Math.min(DRAG_MAX_ROTATE_DEG, -(v / half) * DRAG_MAX_ROTATE_DEG));
+  });
+  const progress = useTransform(y, (v) => Math.min(1, Math.abs(v) / COMMIT_TRAVEL));
+  const upTint = useTransform(y, (v) => (v < 0 ? Math.min(1, -v / COMMIT_TRAVEL) : 0));
+  const downTint = useTransform(y, (v) => (v > 0 ? Math.min(1, v / COMMIT_TRAVEL) : 0));
+  const nextY = useTransform(progress, (p) => 10 * (1 - p));
+  const nextScale = useTransform(progress, (p) => 0.965 + 0.035 * p);
+  const [leaning, setLeaning] = useState<Pick | null>(null);
+  useMotionValueEvent(y, "change", (v) => setLeaning(v < -STAMP_AT_PX ? "up" : v > STAMP_AT_PX ? "down" : null));
+
   const commit = useCallback(
     (side: Pick) => {
       if (!active || held) {
         feedback("deny");
         return;
       }
-      feedback("confirm");
+      // Flicky's swipe sound, the instant the commit is accepted and before any transaction.
+      feedback(side === "up" ? "swipe-up" : "swipe-down");
       // Whether to hand focus onward is decided HERE, while the played card still holds it. The
       // calls live outside `.st-deck`, so "focus is inside the deck" means "the card had it".
       refocus.current = document.activeElement !== null && deckRef.current?.contains(document.activeElement) === true;
@@ -161,11 +186,18 @@ export function SwipeDeck({ cards, active, playedSide, onPick, busy = false, ref
       </div>
 
       <div className="st-deck" ref={deckRef}>
-        {behind.map((card, depth) => (
-          <div key={card.index} className="st-card st-card--behind" style={{ "--st-depth": depth + 1 } as CSSProperties} aria-hidden>
-            {renderFace(card)}
-          </div>
-        ))}
+        {behind.map((card, depth) =>
+          depth === 0 ? (
+            // The next card rises and grows toward full size as the top one is dragged away, following the finger.
+            <motion.div key={card.index} className="st-card st-card--behind" style={{ "--st-depth": 1, y: nextY, scale: nextScale } as never} aria-hidden>
+              {renderFace(card)}
+            </motion.div>
+          ) : (
+            <div key={card.index} className="st-card st-card--behind" style={{ "--st-depth": depth + 1 } as CSSProperties} aria-hidden>
+              {renderFace(card)}
+            </div>
+          ),
+        )}
 
         <AnimatePresence initial={false} custom={thrown} mode="popLayout">
           {active ? (
@@ -173,6 +205,8 @@ export function SwipeDeck({ cards, active, playedSide, onPick, busy = false, ref
               key={active.index}
               data-card={active.index}
               className={`st-card st-card--active${held ? " st-card--held" : ""}`}
+              data-swipe={leaning ?? "idle"}
+              style={reducedMotion ? undefined : { y, rotate }}
               variants={reducedMotion ? REDUCED : FULL}
               custom={thrown}
               initial="enter"
@@ -190,6 +224,17 @@ export function SwipeDeck({ cards, active, playedSide, onPick, busy = false, ref
               onKeyDown={onKeyDown}
             >
               {renderFace(active)}
+              {!reducedMotion && (
+                <>
+                  <motion.span className="st-tint st-tint--up" style={{ opacity: upTint }} aria-hidden />
+                  <motion.span className="st-tint st-tint--down" style={{ opacity: downTint }} aria-hidden />
+                </>
+              )}
+              {leaning && (
+                <span className={`st-stamp st-stamp--${leaning}`} aria-hidden>
+                  {leaning === "up" ? STAGE.up : STAGE.down}
+                </span>
+              )}
             </motion.div>
           ) : (
             <div className="st-empty" key="empty">

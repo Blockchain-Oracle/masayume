@@ -1,13 +1,17 @@
 "use client";
 
-import { cardPnl, everyCardSettled, picksComplete, type CardReceipt, type MatchState } from "@masayume/core/games";
+import { STAKE_TIERS, cardPnl, everyCardSettled, picksComplete, type CardReceipt, type MatchState } from "@masayume/core/games";
 import { isOk } from "@masayume/core/schemas";
 import type { Address, Bytes32, MarketId } from "@masayume/core/types";
 import { formatBaseUnits } from "@masayume/core/units";
-import { useArenaCredit, useMarketsLite } from "@masayume/markets/react";
+import { useArenaCredit, useArenaState, useMarketsLite } from "@masayume/markets/react";
+import { useEffect, useRef, useState } from "react";
 import { useVenue } from "@/features/markets";
+import { useGames } from "../GamesProvider";
 import { cadenceLabel } from "../stage/SwipeDeck";
 import { DUEL } from "./copy";
+import type { DuelCard } from "./duel-card";
+import { DuelResultModal } from "./DuelResultModal";
 import { useArenaWrites } from "./useArenaWrites";
 
 /**
@@ -26,6 +30,8 @@ export function DuelResult({ state, wallet }: { state: Extract<MatchState, { pha
   const { boot } = useVenue();
   const credit = useArenaCredit((wallet as Address | null) ?? null);
   const { claim, settleCard, finalize, busy, canSign } = useArenaWrites();
+  const { feedback } = useGames();
+  const arena = useArenaState();
 
   const decimals = boot && isOk(boot) ? boot.value.collateral.decimals : null;
   const symbol = boot && isOk(boot) ? boot.value.collateral.symbol : "";
@@ -67,6 +73,53 @@ export function DuelResult({ state, wallet }: { state: Extract<MatchState, { pha
         : outcome.winner.toLowerCase() === you
           ? DUEL.result.won
           : DUEL.result.lost;
+
+  // Flicky's settlement cue (`duel-view.tsx` L237–249): one per card, only on a pending→settled
+  // transition seen live — never on first load, where every settled card would ring at once.
+  const seen = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    const settledNow = new Set(mine.filter((r) => r.payoutBase !== null).map((r) => r.pickKey));
+    if (seen.current === null) {
+      seen.current = settledNow;
+      return;
+    }
+    for (const receipt of mine) {
+      if (receipt.payoutBase === null || seen.current.has(receipt.pickKey)) continue;
+      feedback(receipt.payoutBase > receipt.costBase ? "card-win" : "card-loss");
+    }
+    seen.current = settledNow;
+  }, [mine, feedback]);
+
+  // The verdict's own sound, once per match, as the result modal opens itself — Flicky's `duel-result-modal.tsx` L70–78; a tie takes the modal's own chirp.
+  const [modalOpen, setModalOpen] = useState(false);
+  const sounded = useRef<string | null>(null);
+  useEffect(() => {
+    if (!outcome || sounded.current === state.matchId) return;
+    sounded.current = state.matchId;
+    setModalOpen(true);
+    feedback(outcome.winner === null ? "modal-open" : outcome.winner.toLowerCase() === you ? "duel-win" : "duel-lose");
+  }, [outcome, state.matchId, you, feedback]);
+
+  // What the modal and its share card say: the chain's figures, and the pot the tier priced.
+  const tierPot = arena && isOk(arena) ? (arena.value?.tiers[STAKE_TIERS.findIndex((t) => t.id === state.tier)]?.potBase ?? null) : null;
+  const costBase = mine.reduce((sum, r) => sum + r.costBase, 0n);
+  const card: DuelCard | null =
+    outcome && decimals !== null
+      ? {
+          matchId: state.matchId,
+          verdict: outcome.winner === null ? "tied" : outcome.winner.toLowerCase() === you ? "won" : "lost",
+          returnPct: state.tier === "free" || yourPnl === null || costBase === 0n ? null : Number((yourPnl * 100n) / costBase),
+          you,
+          opponent: you === null ? null : state.players.creator.toLowerCase() === you ? state.players.challenger : state.players.creator,
+          hits: mine.filter((r) => r.payoutBase !== null && r.payoutBase > r.costBase).length,
+          total: cards.length,
+          pnlBase: yourPnl,
+          potAwardedBase: tierPot === null ? null : outcome.winner === null ? tierPot : tierPot * 2n,
+          free: state.tier === "free",
+          decimals,
+          symbol,
+        }
+      : null;
 
   return (
     <section className="du-result" aria-label={DUEL.result.title}>
@@ -114,8 +167,14 @@ export function DuelResult({ state, wallet }: { state: Extract<MatchState, { pha
           </div>
           <p className="du-foot">{DUEL.result.pnlNote}</p>
           <p className="du-foot">{state.tier === "free" ? DUEL.result.freePotNote : DUEL.result.potNote}</p>
+          {card && !modalOpen && (
+            <button type="button" className="du-quiet" onClick={() => setModalOpen(true)}>
+              {DUEL.result.modal.reopen}
+            </button>
+          )}
         </div>
       )}
+      {card && <DuelResultModal open={modalOpen} onClose={() => setModalOpen(false)} card={card} />}
 
       {receipts.length > 0 && (
         <div className="du-plate">
@@ -200,9 +259,10 @@ function Row({
 }) {
   const card = cards.find((c) => c.index === receipt.cardIndex);
   const pnl = cardPnl(receipt);
+  const settled = receipt.payoutBase !== null;
   return (
-    <li className="du-picked-row">
-      <span className={`du-dot du-dot--${receipt.pick}`} aria-hidden />
+    <li className="du-picked-row" data-settled={settled} data-won={settled && pnl !== null && pnl > 0n}>
+      {settled ? <span className={`du-dot du-dot--${receipt.pick}`} aria-hidden /> : <span className="du-live-dot" aria-hidden />}
       <span className="du-v">{card?.asset ?? "—"}</span>
       <span className="du-k">{card ? cadenceLabel(card.intervalSec) : ""}</span>
       <span className="du-k">{receipt.player.toLowerCase() === you ? DUEL.result.you : DUEL.result.opponent}</span>

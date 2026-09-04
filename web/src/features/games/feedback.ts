@@ -1,79 +1,62 @@
 "use client";
 
+import { playSfx, type SfxName } from "./audio";
+
 /**
- * Sound and haptics for the stages — the smallest service that makes both settings real.
+ * One cue, two channels: the sample it plays (Flicky's set, `audio.ts`) and the buzz it gives.
  *
- * Doc 06 rejected Howler and `web-haptics`: two short tones and `navigator.vibrate` do not justify
- * another runtime, and platform support is the real limit rather than the API surface. So the tones
- * are synthesised, which also means there is no audio asset to load before a stage can answer.
- *
- * The AudioContext is created on the first gesture that plays something, never at import: browsers
- * refuse to start one otherwise, and a context created and suspended at load is a page that reports
- * itself as playing audio while silent.
+ * The three original cues stay as names so nothing that calls them has to change: `tap` is a buzz
+ * only, because every control under `/games` already sounds its own press and release; `confirm` is
+ * a buzz only, because the swipe that confirms has its own two sounds; `deny` is the refusal sample.
+ * The rest are Flicky's cue moments by name.
  */
+export type FeedbackCue = "tap" | "confirm" | "deny" | SfxName;
 
-export type FeedbackCue = "tap" | "confirm" | "deny";
-
-interface Tone {
-  hz: number;
-  durationMs: number;
-  /** Peak gain. Kept low: a game tone that talks over a podcast is a setting people turn off once. */
-  gain: number;
-  vibrateMs: number;
-}
-
-const TONES: Readonly<Record<FeedbackCue, Tone>> = {
-  tap: { hz: 660, durationMs: 28, gain: 0.05, vibrateMs: 8 },
-  confirm: { hz: 880, durationMs: 90, gain: 0.06, vibrateMs: 18 },
-  deny: { hz: 180, durationMs: 120, gain: 0.06, vibrateMs: 36 },
+const SAMPLE: Readonly<Record<FeedbackCue, SfxName | null>> = {
+  tap: null,
+  confirm: null,
+  deny: "card-loss",
+  "swipe-up": "swipe-up",
+  "swipe-down": "swipe-down",
+  "card-win": "card-win",
+  "card-loss": "card-loss",
+  "match-found": "match-found",
+  "duel-win": "duel-win",
+  "duel-lose": "duel-lose",
+  click: "click",
+  "modal-open": "modal-open",
+  "modal-close": "modal-close",
 };
 
-let context: AudioContext | null = null;
-
-function audioContext(): AudioContext | null {
-  if (context) return context;
-  const Ctor = typeof window === "undefined" ? undefined : window.AudioContext;
-  if (!Ctor) return null;
-  try {
-    context = new Ctor();
-  } catch {
-    context = null;
-  }
-  return context;
-}
-
-function playTone(tone: Tone): void {
-  const ctx = audioContext();
-  if (!ctx) return;
-  // A context started before the first gesture arrives suspended; resuming inside the gesture is
-  // the only moment the browser will allow it.
-  if (ctx.state === "suspended") void ctx.resume().catch(() => undefined);
-
-  const now = ctx.currentTime;
-  const seconds = tone.durationMs / 1000;
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = "sine";
-  osc.frequency.setValueAtTime(tone.hz, now);
-  // Ramp to near-silence rather than stopping at full gain: an abrupt stop is an audible click.
-  gain.gain.setValueAtTime(tone.gain, now);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + seconds);
-  osc.connect(gain).connect(ctx.destination);
-  osc.start(now);
-  osc.stop(now + seconds);
-}
+/** Kept short: a game buzz that talks over a hand is a setting people turn off once. Zero is none. */
+const VIBRATE_MS: Readonly<Record<FeedbackCue, number>> = {
+  tap: 8,
+  confirm: 18,
+  deny: 36,
+  "swipe-up": 18,
+  "swipe-down": 18,
+  "card-win": 24,
+  "card-loss": 36,
+  "match-found": 40,
+  "duel-win": 60,
+  "duel-lose": 60,
+  click: 8,
+  "modal-open": 0,
+  "modal-close": 0,
+};
 
 /** Whether this device reports vibration at all — iOS Safari does not, and saying so is honest. */
 export function hapticsSupported(): boolean {
   return typeof navigator !== "undefined" && typeof navigator.vibrate === "function";
 }
 
-export function fireFeedback(cue: FeedbackCue, opts: { sound: boolean; haptics: boolean }): void {
-  const tone = TONES[cue];
-  if (opts.sound) playTone(tone);
-  if (opts.haptics && hapticsSupported()) {
+export function fireFeedback(cue: FeedbackCue, opts: { haptics: boolean }): void {
+  const sample = SAMPLE[cue];
+  if (sample) playSfx(sample);
+  const ms = VIBRATE_MS[cue];
+  if (ms > 0 && opts.haptics && hapticsSupported()) {
     try {
-      navigator.vibrate(tone.vibrateMs);
+      navigator.vibrate(ms);
     } catch {
       // Best effort: a device that refuses is not an error the player needs to hear about.
     }

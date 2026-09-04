@@ -85,6 +85,7 @@ export const DUEL = {
   },
 
   queue: {
+    searching: "finding a duelist for you",
     title: "Looking for an opponent",
     waiting: (n: number) => `${n} waiting in this queue`,
     band: (band: number) => `Rating band ±${band}`,
@@ -195,6 +196,26 @@ export const DUEL = {
   },
 
   result: {
+    /** Flicky's result modal, in our words. */
+    modal: {
+      close: "Close",
+      eyebrow: "A duel on Masayume",
+      recordType: "DUEL RESULT",
+      verdict: { won: "Victory", lost: "Defeat", tied: "Draw" } as const,
+      hits: "Cards won",
+      pnl: "Your PnL",
+      pot: "The pot",
+      free: "Free duel",
+      share: "Share image",
+      sharing: "Rendering…",
+      copy: "Copy link",
+      copied: "Copied!",
+      verifyLine: "Verify on Shannon explorer",
+      footerKind: "DUEL",
+      reopen: "See the result",
+      shareText: (verdict: "won" | "lost" | "tied", ret: string | null, url: string) =>
+        `${verdict === "won" ? "Won" : verdict === "lost" ? "Lost" : "Drew"} a duel on Masayume${ret ? ` — ${ret} on the cards` : ""}. ${url}`,
+    },
     title: "Result",
     won: "You took the match",
     lost: "Your opponent took it",

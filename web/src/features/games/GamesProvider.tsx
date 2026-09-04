@@ -15,7 +15,6 @@ import {
 interface GamesContextValue {
   settings: GameSettings;
   hydrated: boolean;
-  setSound: (on: boolean) => void;
   setHaptics: (on: boolean) => void;
   setMotion: (choice: MotionChoice) => void;
   setAccent: (accent: AccentChoice) => void;
@@ -53,15 +52,14 @@ export function GamesProvider({ children }: { children: ReactNode }) {
   const reducedMotion = reducedMotionFrom(settings.motion, systemPrefersReduced);
 
   const feedback = useCallback(
-    (cue: FeedbackCue) => fireFeedback(cue, { sound: settings.sound, haptics: settings.haptics }),
-    [settings.sound, settings.haptics],
+    (cue: FeedbackCue) => fireFeedback(cue, { haptics: settings.haptics }),
+    [settings.haptics],
   );
 
   const value = useMemo<GamesContextValue>(
     () => ({
       settings,
       hydrated: store.hydrated,
-      setSound: store.setSound,
       setHaptics: store.setHaptics,
       setMotion: store.setMotion,
       setAccent: store.setAccent,
@@ -74,7 +72,7 @@ export function GamesProvider({ children }: { children: ReactNode }) {
       settingsOpen,
       setSettingsOpen,
     }),
-    [settings, store.hydrated, store.setSound, store.setHaptics, store.setMotion, store.setAccent, systemPrefersReduced, reducedMotion, feedback, match, settingsOpen],
+    [settings, store.hydrated, store.setHaptics, store.setMotion, store.setAccent, systemPrefersReduced, reducedMotion, feedback, match, settingsOpen],
   );
 
   return <GamesContext.Provider value={value}>{children}</GamesContext.Provider>;

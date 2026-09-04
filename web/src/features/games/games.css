@@ -9,6 +9,46 @@
  */
 
 .gm-frame { --gm-accent: var(--vermilion); }
+
+/* ── The checker canvas (Flicky globals.css L49–78), drifting one tile per cycle in Yosuku's surfaces ──
+ * The SidOfc four-gradient trick keeps the tile edges clean; the tile is a step of ink over the page's own
+ * ground rather than the reference's sky blue, so the games sit inside the shell instead of beside it. */
+@keyframes gm-checker-drift {
+  from { background-position: 0 0, 64px 0, 64px -64px, 0 64px; }
+  to { background-position: 128px 128px, 192px 128px, 192px 64px, 128px 192px; }
+}
+.gm-frame {
+  --gm-tile: rgba(255, 255, 255, 0.028);
+  background-image:
+    linear-gradient(45deg, var(--gm-tile) 26%, transparent 26%),
+    linear-gradient(135deg, var(--gm-tile) 26%, transparent 26%),
+    linear-gradient(45deg, transparent 75%, var(--gm-tile) 75%),
+    linear-gradient(135deg, transparent 75%, var(--gm-tile) 75%);
+  background-size: 128px 128px;
+  background-position: 0 0, 64px 0, 64px -64px, 0 64px;
+  animation: gm-checker-drift 12s linear infinite;
+}
+[data-theme="light"] .gm-frame { --gm-tile: rgba(20, 18, 16, 0.035); }
+
+/* ── Press physics (Pips styles.css L199–211): a control is a little object, not a swatch ──
+ * Every control under the frame depresses on press; the commit buttons carry the lip — a light on the top
+ * edge, a shadow on the bottom, the 2px step beneath — so they read as raised until pressed. */
+.gm-frame button:not(:disabled):active,
+.gm-frame a[role="button"]:active,
+.gm-frame .gm-card:active,
+.gm-sheet button:not(:disabled):active { transform: scale(0.97); }
+.du-cta, .st-call {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), inset 0 -2px 0 rgba(0, 0, 0, 0.32), 0 2px 0 rgba(0, 0, 0, 0.55);
+}
+.du-cta:not(:disabled):active, .st-call:not(:disabled):active {
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.25), inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* ── Entrances: a screen arrives (Flicky .queue-enter, 280ms) and a game surface slides in (.route-swipe-*, 260ms) ── */
+@keyframes gm-enter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.gm-enter { animation: gm-enter 280ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes gm-route { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+.gm-page { animation: gm-route 260ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 .gm-frame[data-accent="up"] { --gm-accent: var(--profit); }
 .gm-frame[data-accent="down"] { --gm-accent: var(--loss); }
 /* `default` is the address's own hue, so the frame contributes no accent and the avatar decides. */
@@ -213,6 +253,8 @@ a.gm-card:hover { border-color: color-mix(in srgb, var(--vermilion) 40%, transpa
 .gm-settings > button:last-child { align-self: flex-start; }
 .gm-set-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .gm-set-row--stack { flex-direction: column; align-items: stretch; gap: 10px; }
+/* Flicky's two sliders — the native range in the brand accent, full width */
+.gm-range { width: 100%; accent-color: var(--vermilion); cursor: pointer; }
 .gm-set-text { display: flex; flex-direction: column; gap: 3px; }
 .gm-set-label { font-family: var(--font-display); font-weight: 700; font-size: 13px; color: var(--white); }
 /* gray-500 on the sheet's raised surface measured 3.78:1 dark / 4.07:1 light at 12px. These hints

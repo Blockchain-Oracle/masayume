@@ -24,7 +24,17 @@ export function DuelQueue({ queue, waitedSec, onLeave }: { queue: QueueView | nu
         : DUEL.queue.deckIn(queue.nextDeckInSec);
 
   return (
-    <section className="du-queue" aria-label={DUEL.queue.title}>
+    <section className="du-queue gm-enter" aria-label={DUEL.queue.title}>
+      {/* Flicky's searching banner (`pvp.tsx` L357–430): a plate that breathes rather than pings, and
+          three dots that bounce. The art that fills it is the redrawn banner of slice 8d. */}
+      <div className="du-searching du-breathe" aria-hidden>
+        <span className="du-searching-word">{DUEL.queue.searching}</span>
+        <span className="du-dots">
+          <span />
+          <span />
+          <span />
+        </span>
+      </div>
       <div className="du-queue-head">
         <span className="du-spinner" aria-hidden />
         <h2 className="du-queue-title">{DUEL.queue.title}</h2>
@@ -46,7 +56,7 @@ export function DuelQueue({ queue, waitedSec, onLeave }: { queue: QueueView | nu
       </p>
       <p className="du-foot">{DUEL.queue.deckWhy}</p>
 
-      <button type="button" className="du-quiet" onClick={onLeave}>
+      <button type="button" className="du-cta du-cta--leave" onClick={onLeave}>
         {DUEL.queue.leave}
       </button>
     </section>

@@ -20,7 +20,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNowMs } from "@/components/data";
 import { useVenue } from "@/features/markets";
 import { webEnv } from "@/lib/env";
-import { StageFace, StageFact } from "../stage/StageFace";
+import { clockUrgency, StageFace, StageFact } from "../stage/StageFace";
 import { SwipeDeck } from "../stage/SwipeDeck";
 import { DUEL } from "./copy";
 import { useArenaWrites } from "./useArenaWrites";
@@ -157,8 +157,16 @@ export function DuelPicking({ state, wallet, room }: { state: Extract<MatchState
   const opponentHere =
     room.opponentPending !== null && active !== null && room.opponentPending.cardIndex === active.index && nowMs - room.opponentPending.atMs < OPPONENT_CUE_MS;
 
+  // Flicky's depletion bar: the pick window draining full-width, a second at a time, in the clock's own colour.
+  const windowSec = params?.pickWindowSec ?? 0;
+  const depleted = windowSec > 0 ? Math.max(0, Math.min(100, (leftSec / windowSec) * 100)) : 0;
+  const urgency = clockUrgency(leftSec);
+
   return (
     <section className="du-picking" aria-label={DUEL.picking.title}>
+      <div className="st-deplete" aria-hidden>
+        <span className="st-deplete-fill" data-urgency={urgency.level} data-pulse={urgency.pulse || undefined} style={{ width: `${depleted}%` }} />
+      </div>
       <SwipeDeck
         cards={state.cards}
         active={active}
