@@ -184,6 +184,14 @@ Lucky's table). Gate on the merged main: 54 files, 809 tests, invariants clean; 
   inside a project and re-issue the keys), set the app's permissions to Read and Write, and register
   `https://masayume.app/api/x/callback` as the OAuth 2.0 callback with `https://masayume.app` as the website.
   Nothing on our side changes when that is done; the relay's next poll simply succeeds.
+- **The navigation panels are as wide as their sections** (`1f15014`). The owner, after the removals: "why is
+  the rectangle that big now?" — Build, Games and Explore had fixed widths and column counts (44/52/64rem,
+  two/three/four columns) that the removed sections used to fill. The component now sets `--nav-sections`
+  and the panel is one 17rem column per section: Build is a single column, Explore three (Trade, Proof,
+  Learn), Games three. Explore's height is its Learn column's seven destinations.
+- `room.masayume.app` is issued and answering (`/health` 200 over the domain); `GAME_ROOM_PUBLIC_URL` is
+  `wss://room.masayume.app` on Vercel and Fly. Vercel DNS carries Fly's A/AAAA records and the ACME CNAME
+  (the first CNAME to `masayume-ops.fly.dev` was not what Fly validates against).
 - The AI key was not in the owner's message. Either provider works: `AI_MODEL=openai/gpt-5.4` with
   `OPENAI_API_KEY`, or the default `anthropic/claude-opus-5` with `ANTHROPIC_API_KEY`; the same pair goes on
   Vercel (Sensei) and Fly (the agent runner).
