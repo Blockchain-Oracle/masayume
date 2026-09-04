@@ -1,8 +1,8 @@
 import {
   Activity, BarChart3, BookOpen, Bot, ChartCandlestick, ChartLine, ChartNoAxesCombined,
   CircleHelp, Clapperboard, Coins, Dices, Download, GalleryVerticalEnd, Gamepad2, Goal, Handshake, KeyRound,
-  Layers3, MessageSquare, Mountain, Newspaper, PenTool, Presentation, Radio, Rocket, RotateCcw, ScanSearch,
-  Sparkles, Trophy, UserRound, Users, WalletCards, X as XLogo, type LucideIcon,
+  Layers3, MessageSquare, Mountain, Newspaper, Presentation, Rocket, ScanSearch,
+  Trophy, WalletCards, X as XLogo, type LucideIcon,
 } from "lucide-react";
 
 export type NavItem = {
@@ -118,28 +118,6 @@ export const NAV_ITEMS = {
     icon: WalletCards,
     match: { paths: ["/portfolio"], exact: true },
   },
-  create: {
-    id: "create",
-    name: "Create",
-    href: "/creator/studio",
-    description: "Create and publish a market.",
-    icon: Sparkles,
-    match: { paths: ["/creator/studio"], exact: true },
-  },
-  creators: {
-    id: "creators",
-    name: "Creators",
-    href: "/creators",
-    description: "Discover creator-led markets.",
-    icon: Users,
-  },
-  creatorRecovery: {
-    id: "creator-recovery",
-    name: "Creator recovery",
-    href: "/creator/recover",
-    description: "Recover a creator identity safely.",
-    icon: RotateCcw,
-  },
   strategies: {
     id: "strategies",
     name: "Strategies",
@@ -149,13 +127,6 @@ export const NAV_ITEMS = {
     beta: true,
   },
   agents: { id: "agents", name: "Agents", href: "/agents", description: "Manage automated market agents.", icon: Bot },
-  studio: {
-    id: "studio",
-    name: "Playbook Studio",
-    href: "/studio",
-    description: "Shape reusable market playbooks.",
-    icon: PenTool,
-  },
   xTrade: {
     id: "x-trade",
     name: "X-trade",
@@ -179,20 +150,12 @@ export const NAV_ITEMS = {
     icon: MessageSquare,
     match: { paths: [] },
   },
-  social: { id: "social", name: "Social", href: "/social", description: "Follow the market conversation.", icon: Radio },
   leaderboard: {
     id: "leaderboard",
     name: "Leaderboard",
     href: "/leaderboard",
     description: "See the strongest verified records.",
     icon: Trophy,
-  },
-  waitlist: {
-    id: "waitlist",
-    name: "Waitlist",
-    href: "/waitlist",
-    description: "Manage early-access membership.",
-    icon: UserRound,
   },
   stats: { id: "stats", name: "Stats", href: "/stats", description: "Inspect protocol and market activity.", icon: BarChart3 },
   surface: {
@@ -271,30 +234,24 @@ export const GAMES_GROUP: NavGroup = {
 
 const BUILD_SECTIONS: readonly NavSection[] = [
   {
-    id: "create",
-    name: "Create",
-    description: "Markets and identity",
-    items: [NAV_ITEMS.create, NAV_ITEMS.creators, NAV_ITEMS.creatorRecovery],
-  },
-  {
     id: "automate",
     name: "Automate",
     description: "Playbooks and agents",
-    items: [NAV_ITEMS.strategies, NAV_ITEMS.agents, NAV_ITEMS.studio, NAV_ITEMS.xTrade],
+    items: [NAV_ITEMS.strategies, NAV_ITEMS.agents, NAV_ITEMS.xTrade],
   },
 ];
 
 export const BUILD_GROUP: NavGroup = {
   id: "build",
   name: "Build",
-  description: "Create markets and automate how you trade.",
+  description: "Automate how you trade.",
   sections: BUILD_SECTIONS,
 };
 
 export const EXPLORE_GROUP: NavGroup = {
   id: "explore",
   name: "Explore",
-  description: "Trade tools, community, proof, and product knowledge.",
+  description: "Trade tools, proof, and product knowledge.",
   sections: [
     {
       id: "trade",
@@ -303,16 +260,10 @@ export const EXPLORE_GROUP: NavGroup = {
       items: [NAV_ITEMS.earn, NAV_ITEMS.parlay, NAV_ITEMS.sensei],
     },
     {
-      id: "community",
-      name: "Community",
-      description: "People and records",
-      items: [NAV_ITEMS.social, NAV_ITEMS.leaderboard, NAV_ITEMS.waitlist],
-    },
-    {
       id: "proof",
       name: "Proof",
-      description: "Market evidence",
-      items: [NAV_ITEMS.stats, NAV_ITEMS.surface, NAV_ITEMS.edge],
+      description: "Records and market evidence",
+      items: [NAV_ITEMS.leaderboard, NAV_ITEMS.stats, NAV_ITEMS.surface, NAV_ITEMS.edge],
     },
     {
       id: "learn",
@@ -352,11 +303,11 @@ export const MOBILE_OVERFLOW: readonly NavItem[] = MOBILE_DRAWER_SECTIONS.flatMa
 
 /** Every real, user-facing page that must retain an explicit navigation home. */
 export const NAVIGABLE_ROUTE_PATHS = [
-  "/agents", "/claim", "/creator/recover", "/creator/studio", "/creators", "/demo", "/docs",
+  "/agents", "/claim", "/demo", "/docs",
   "/download", "/earn", "/games", "/games/candle-hop", "/games/duel", "/games/line-rider",
   "/games/lucky", "/games/moonshot", "/games/practice", "/games/range", "/how-it-works", "/leaderboard",
-  "/markets", "/news", "/parlay", "/pitch", "/portfolio", "/portfolio/edge", "/reels", "/social", "/stats",
-  "/status", "/strategies", "/studio", "/surface", "/trade-from-x", "/waitlist",
+  "/markets", "/news", "/parlay", "/pitch", "/portfolio", "/portfolio/edge", "/reels", "/stats",
+  "/status", "/strategies", "/surface", "/trade-from-x",
 ] as const;
 
 /** The X-trade island keeps its own visual chrome but reads routes from this same registry. */
