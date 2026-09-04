@@ -119,14 +119,16 @@ export function replyText(receipt: XReceiptRecord, decimals: number): string {
   const stake = receipt.stakeBase ? `${formatBaseUnits(BigInt(receipt.stakeBase), decimals)} staked` : "";
   const side = receipt.side ? receipt.side.toUpperCase() : "";
   switch (receipt.status) {
+    // No URL in a reply on purpose: X's pay-per-use bills a post with a link at ~13× a plain one
+    // ($0.20 against $0.015, 2026-09-04), and the receipt page is one tap from the app anyway.
     case "filled":
-      return `Filled: ${side}, ${stake}. Receipt: masayume.app/trade-from-x · tx ${receipt.txHash ?? ""}`;
+      return `Filled: ${side}, ${stake}. Your receipt is on the app's Trade-from-X page · tx ${receipt.txHash ?? ""}`;
     case "nothing-filled":
       return `Nothing filled: ${receipt.reason ?? "the book moved"}. Nothing was taken.`;
     case "reverted":
       return `The order reverted on-chain; nothing was taken. tx ${receipt.txHash ?? ""}`;
     case "unknown":
-      return `Sent, but the chain has not answered yet. We will reconcile it — see masayume.app/trade-from-x.`;
+      return `Sent, but the chain has not answered yet. We will reconcile it on the app's Trade-from-X page.`;
     case "submitted":
       return `Submitted — waiting for the chain.`;
     case "refused":

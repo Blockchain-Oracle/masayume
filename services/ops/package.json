@@ -27,6 +27,7 @@
     "@masayume/core": "workspace:*",
     "@masayume/db": "workspace:*",
     "@masayume/markets": "workspace:*",
+    "rettiwt-api": "7.1.3",
     "tsx": "catalog:",
     "viem": "catalog:",
     "ws": "8.21.3"

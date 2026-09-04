@@ -1,9 +1,11 @@
 import { createMemoryJournal, createSubmitterSession, ensureMarkets, getCollateral, loadCollateral, parseMarketsEnv, syncClock } from "@masayume/markets";
 import { xReceiptByMention, xRelayStateGet, xRelayStateSet } from "@masayume/db";
 import type { Bytes32 } from "@masayume/core/types";
-import { fetchMentions, type PostingAuth, replyTo } from "./client";
+import type { PostingAuth } from "./client";
 import { readOAuth1, readRelayEnv, RELAY_ENV } from "./env";
 import { executeMention, replyText, resolveVenue, xReceiptUpsert } from "./execute";
+import { rettiwtTransport } from "./rettiwt";
+import { officialTransport } from "./transport";
 
 const HEARTBEAT_MS = 60_000;
 const CURSOR_KEY = "mentions.since_id";
@@ -38,7 +40,11 @@ export async function startXRelay(log: (why: string) => void): Promise<void> {
   const posting: PostingAuth | null = !relay.postingEnabled ? null : relay.userAccessToken ? { kind: "oauth2", userAccessToken: relay.userAccessToken } : relay.oauth1 ? { kind: "oauth1", credentials: relay.oauth1 } : null;
   const partial = readOAuth1().partial;
   const postingWhy = posting ? `on (${posting.kind})` : !relay.postingEnabled ? "off" : partial.length > 0 ? `off (set ${partial.join(", ")})` : `off (set ${RELAY_ENV.userToken}, or ${RELAY_ENV.apiKey} + ${RELAY_ENV.apiKeySecret} + ${RELAY_ENV.accessToken} + ${RELAY_ENV.accessTokenSecret})`;
-  log(`executor ${session.address} on venue ${venueId}; posting ${postingWhy}`);
+  // The way to X: the account's own session through rettiwt when its key is set, else the paid v2 API.
+  const transport = relay.transport === "rettiwt" ? rettiwtTransport(relay.rettiwtApiKey!, relay.handle!) : officialTransport(relay.bearerToken, relay.accountId, posting);
+  if (!relay.postingEnabled) transport.reply = null;
+  const replyWhy = transport.kind === "rettiwt" ? (transport.reply ? "on (as the account)" : `off (set ${RELAY_ENV.posting}=1)`) : postingWhy;
+  log(`executor ${session.address} on venue ${venueId}; via ${transport.describe()}; posting ${replyWhy}`);
 
   let busy = false;
   const cycle = async () => {
@@ -46,16 +52,24 @@ export async function startXRelay(log: (why: string) => void): Promise<void> {
     busy = true;
     try {
       const sinceId = await xRelayStateGet(CURSOR_KEY);
-      const mentions = await fetchMentions(relay.bearerToken, relay.accountId, sinceId);
+      const mentions = await transport.fetchMentions(sinceId);
+      if (sinceId === null && mentions.length > 0) {
+        // First run: nothing before now is an instruction. The cursor starts at the newest mention and
+        // none of the earlier ones is executed — a tweet written before the relay existed was not written to it.
+        const newest = mentions[mentions.length - 1]!.id;
+        await xRelayStateSet(CURSOR_KEY, newest);
+        log(`first run: the cursor starts at ${newest}; ${mentions.length} earlier mention(s) left alone`);
+        return;
+      }
       if (mentions.length === 0) log(`scanned mentions since ${sinceId ?? "the start"}: none new`);
       for (const mention of mentions) {
         if (await xReceiptByMention(mention.id)) continue;
         await xReceiptUpsert({ mentionId: mention.id, authorId: mention.authorId, handle: mention.handle, wallet: null, grantId: null, marketId: null, side: null, stakeBase: null, status: "submitted", reason: null, txHash: null, instruction: mention.text, atMs: mention.createdAtMs });
         const receipt = await executeMention({ session, venueId, log }, mention);
         await xReceiptUpsert(receipt);
-        if (posting) {
+        if (transport.reply) {
           try {
-            await replyTo(posting, mention.id, replyText(receipt, getCollateral().decimals));
+            await transport.reply(mention.id, replyText(receipt, getCollateral().decimals));
           } catch (error) {
             log(`reply to ${mention.id} failed: ${error instanceof Error ? error.message : String(error)}`);
           }

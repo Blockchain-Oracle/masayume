@@ -207,6 +207,28 @@ Still pending live: a posted arcade score, a Moonshot round, an agent trade (no 
 - `room.masayume.app` is issued and answering (`/health` 200 over the domain); `GAME_ROOM_PUBLIC_URL` is
   `wss://room.masayume.app` on Vercel and Fly. Vercel DNS carries Fly's A/AAAA records and the ACME CNAME
   (the first CNAME to `masayume-ops.fly.dev` was not what Fly validates against).
+- **What "not attached to a Project" actually was: the deprecated Free plan.** The owner attached the app
+  (id 30616821) and registered the callback; the refusal stayed, now carrying `required_enrollment:
+  "Appropriate Level of API Access"`, and the Project's own overview said it — Free, "limited v1.1 access
+  only". Probed with the owner's tokens: v1.1 `verify_credentials` **200** (as `@Chain_Oracle`), v1.1
+  `mentions_timeline` 403 "a subset of X API v2 endpoints and limited v1.1 endpoints (media post, oauth)
+  only", v2 anything 403. The portal's own banner: "The Free plan has been deprecated … no general access
+  to API endpoints … switch to Pay Per Use". Pricing (context7 `/websites/x_x-api`, X's pricing page,
+  [Postproxy](https://postproxy.dev/blog/x-api-pricing-2026/), [opentweet](https://opentweet.io/how-to/x-api-pay-per-use-explained),
+  [sorsa](https://api.sorsa.io/blog/is-twitter-api-free)): credits bought up front, **$5 minimum**, no
+  monthly fee, billed per resource returned — an empty mentions poll costs nothing, a mention read
+  $0.005, a plain reply $0.015, a reply with a URL $0.20 (so the relay's replies carry no link now).
+- **The free route, built (`rettiwt-api` 7.1.3, published 2026-08-07, repo pushed 2026-08-31; context7
+  `/rishikant181/rettiwt-api`).** The relay has two transports behind one contract (`transport.ts`):
+  `official` (v2, pay-per-use) and `rettiwt` — the account's own session encoded as an API key by the
+  library's login, `tweet.search({ mentions: [handle] })` for the instructions and `tweet.post({ replyTo })`
+  for the receipts. `X_TRANSPORT=rettiwt`, `X_RETTIWT_API_KEY`, `X_HANDLE`. Guest-mode smoke from this
+  machine: the user lookup answers. Also new, for both transports: **the first run sets the cursor at the
+  newest mention and executes none of the earlier ones** — a tweet written before the relay existed was not
+  written to it. The alternatives weighed: `@the-convocation/twitter-scraper` (last release April 2026,
+  open guest-token issues), `agent-twitter-client` (dead since December 2024), `twikit` (Python). Unofficial
+  means the account can be restricted (rettiwt has an open "Account Suspensions" thread), so the account
+  should be one made for the purpose; that is the owner's call.
 - **OpenAI is the AI provider.** The owner asked for OpenAI and to look in the local env: `~/.openai/credentials`
   held a revoked project key (401 "Incorrect API key"); the one in `~/dev/hackathon/keeperhub-copilot/.env.local`
   answers 200 and lists `gpt-5.4`. It is `OPENAI_API_KEY` + `AI_MODEL=openai/gpt-5.4` on Vercel (Sensei now

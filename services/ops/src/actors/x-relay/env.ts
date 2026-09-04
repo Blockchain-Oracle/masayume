@@ -1,7 +1,15 @@
 import type { OAuth1Credentials } from "./oauth1";
 
+export type RelayTransportKind = "official" | "rettiwt";
+
 /** What the relay needs, and what is missing — read once, reported in the heartbeat, never a crash. */
 export interface RelayEnv {
+  /** `rettiwt` when its key is set (or asked for), else the official API. */
+  transport: RelayTransportKind;
+  /** The account's session, encoded by rettiwt's own login. */
+  rettiwtApiKey: string | null;
+  /** The handle whose mentions are the instructions, without the `@`. */
+  handle: string | null;
   bearerToken: string;
   accountId: string;
   executorPrivateKey: `0x${string}`;
@@ -15,6 +23,9 @@ export interface RelayEnv {
 }
 
 export const RELAY_ENV = {
+  transport: "X_TRANSPORT",
+  rettiwtKey: "X_RETTIWT_API_KEY",
+  handle: "X_HANDLE",
   bearer: "X_BEARER_TOKEN",
   account: "X_ACCOUNT_ID",
   executor: "X_EXECUTOR_PRIVATE_KEY",
@@ -51,10 +62,19 @@ export function readRelayEnv(): RelayEnvReading {
   const missing: string[] = [];
   const bearerToken = process.env.X_BEARER_TOKEN ?? "";
   const accountId = process.env.X_ACCOUNT_ID ?? "";
+  const rettiwtApiKey = process.env.X_RETTIWT_API_KEY || null;
+  const handle = (process.env.X_HANDLE ?? "").replace(/^@/, "") || null;
+  const asked = process.env.X_TRANSPORT;
+  const transport: RelayTransportKind = asked === "official" ? "official" : asked === "rettiwt" || rettiwtApiKey ? "rettiwt" : "official";
   const executorPrivateKey = process.env.X_EXECUTOR_PRIVATE_KEY ?? "";
   const databaseUrl = process.env.DATABASE_URL ?? "";
-  if (!bearerToken) missing.push(RELAY_ENV.bearer);
-  if (!accountId) missing.push(RELAY_ENV.account);
+  if (transport === "rettiwt") {
+    if (!rettiwtApiKey) missing.push(RELAY_ENV.rettiwtKey);
+    if (!handle) missing.push(RELAY_ENV.handle);
+  } else {
+    if (!bearerToken) missing.push(RELAY_ENV.bearer);
+    if (!accountId) missing.push(RELAY_ENV.account);
+  }
   if (!/^0x[0-9a-fA-F]{64}$/.test(executorPrivateKey)) missing.push(RELAY_ENV.executor);
   if (!databaseUrl) missing.push(RELAY_ENV.db);
   if (missing.length > 0) return { ok: false, missing };
@@ -62,6 +82,9 @@ export function readRelayEnv(): RelayEnvReading {
   return {
     ok: true,
     env: {
+      transport,
+      rettiwtApiKey,
+      handle,
       bearerToken,
       accountId,
       executorPrivateKey: executorPrivateKey as `0x${string}`,
