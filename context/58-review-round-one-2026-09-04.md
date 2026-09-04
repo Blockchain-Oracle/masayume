@@ -162,3 +162,28 @@ Lucky's table). Gate on the merged main: 54 files, 809 tests, invariants clean; 
   has scenarios ready for each (`SCENARIO=room|lucky|pages`).
 - The RPC outages also showed a rough edge worth a later slice: the SDK's websocket reconnects print raw
   `ErrorEvent` objects into the ops log, drowning the actors' own lines.
+
+## 7. The domain went live, and the X rail is one portal step from working
+
+- **`masayume.app` resolves to Vercel** (the owner switched the nameservers; `ns1/ns2.vercel-dns.com`).
+  `https://masayume.app/api/status` answers healthy, `/games` renders — the site is public.
+- **The room's own name:** `room.masayume.app` is a CNAME in Vercel DNS to `masayume-ops.fly.dev`, and Fly has
+  the certificate request (`fly certs add`); once issued, `GAME_ROOM_PUBLIC_URL` becomes
+  `wss://room.masayume.app` on Vercel and Fly and the web is redeployed. Fly's own recommendation is A/AAAA
+  records to its anycast IPs; the CNAME is being validated first.
+- **The owner's X credentials** (the developer portal's API key + secret, OAuth 2.0 client id + secret, the
+  app-only bearer, and the account's OAuth 1.0a access token + secret) are set: the client on Vercel
+  (`X_CLIENT_ID`, `X_CLIENT_SECRET`, `X_REDIRECT_URI=https://masayume.app/api/x/callback`), the rest on Fly
+  (`X_BEARER_TOKEN`, `X_ACCOUNT_ID=1607719987317178368`, `X_POSTING_ENABLED=1`, `X_API_KEY`, `X_API_KEY_SECRET`,
+  `X_ACCESS_TOKEN`, `X_ACCESS_TOKEN_SECRET`). The relay only spoke an OAuth 2.0 user token for replies, which
+  needs an authorization-code flow with `tweet.write`; `725c477` adds OAuth 1.0a signing (RFC 5849, the guide's
+  worked example as the test vector), and the relay's boot line now reads `posting on (oauth1)`.
+- **The blocker is on X's side:** every v2 call — the mentions timeline, even a public user lookup — answers
+  `403 client-not-enrolled`: "you must use keys and tokens from a developer App that is attached to a
+  Project". The owner must create a Project in the developer portal and attach the app (or create the app
+  inside a project and re-issue the keys), set the app's permissions to Read and Write, and register
+  `https://masayume.app/api/x/callback` as the OAuth 2.0 callback with `https://masayume.app` as the website.
+  Nothing on our side changes when that is done; the relay's next poll simply succeeds.
+- The AI key was not in the owner's message. Either provider works: `AI_MODEL=openai/gpt-5.4` with
+  `OPENAI_API_KEY`, or the default `anthropic/claude-opus-5` with `ANTHROPIC_API_KEY`; the same pair goes on
+  Vercel (Sensei) and Fly (the agent runner).
