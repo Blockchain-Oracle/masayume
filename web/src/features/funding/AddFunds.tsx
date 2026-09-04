@@ -2,7 +2,7 @@
 
 import { FAUCET_UNITS, STT_FAUCETS } from "@masayume/core/constants";
 import { collateralOrNull } from "@masayume/markets";
-import { CreditCard, X } from "lucide-react";
+import { X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useFaucet } from "@/features/markets/faucet";
@@ -15,9 +15,9 @@ const short = (a: string) => `${a.slice(0, 8)}…${a.slice(-6)}`;
 
 /**
  * The reference's `AddFunds` (`components/AddFunds.tsx`): a centred dialog over a blurred scrim, opened from
- * the header's money pill or from anywhere via `masayume:open-funds`. One tap mints test funds; the card and
- * bridge rows are there where the reference has them, and say what this deployment lacks rather than
- * navigating to a dead end — the exact dead end Yosuku's own header comment refused to ship (`Header.tsx` L65).
+ * the header's money pill or from anywhere via `masayume:open-funds`. One tap mints test funds. The reference's
+ * card and bridge rows are gone by the owner's ruling (2026-09-04): this testnet has exactly one money rail, the
+ * venue's faucet, and a row that leads nowhere is the dead end Yosuku's own header comment refused to ship.
  *
  * The one factual difference from the reference: its faucet is a treasury drip with no signature, ours is the
  * venue's `faucet(uint)` that the wallet signs — so the mint needs STT, and an empty tank routes to the STT
@@ -95,13 +95,6 @@ export function AddFunds({ open, onClose }: { open: boolean; onClose: () => void
               <div className="fund-rows">
                 <button type="button" onClick={() => void faucet.mint()} disabled={minting || !faucet.hasSigner} className="fund-cta-white" data-cursor="hover">
                   {minting ? FUNDING.modal.requesting : FUNDING.modal.request(amountText, symbol)}
-                </button>
-                <Link href="/fund" onClick={onClose} className="fund-row" data-cursor="hover">
-                  <CreditCard className="h-4 w-4" />
-                  {FUNDING.modal.card}
-                </Link>
-                <button type="button" className="fund-row" disabled title={FUNDING.modal.bridgeUnavailable}>
-                  {FUNDING.modal.bridge}
                 </button>
               </div>
             )}

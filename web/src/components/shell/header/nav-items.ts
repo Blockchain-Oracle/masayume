@@ -1,5 +1,5 @@
 import {
-  Activity, BadgeDollarSign, BarChart3, BookOpen, Bot, ChartCandlestick, ChartLine, ChartNoAxesCombined,
+  Activity, BarChart3, BookOpen, Bot, ChartCandlestick, ChartLine, ChartNoAxesCombined,
   CircleHelp, Clapperboard, Coins, Dices, Download, GalleryVerticalEnd, Gamepad2, Goal, Handshake, KeyRound,
   Layers3, MessageSquare, Mountain, Newspaper, PenTool, Presentation, Radio, Rocket, RotateCcw, ScanSearch,
   Sparkles, Trophy, UserRound, Users, WalletCards, X as XLogo, type LucideIcon,
@@ -234,8 +234,6 @@ export const NAV_ITEMS = {
   },
   demo: { id: "demo", name: "Demo", href: "/demo", description: "Walk through the complete product story.", icon: Clapperboard },
   pitch: { id: "pitch", name: "Pitch", href: "/pitch", description: "Read the concise Masayume thesis.", icon: Presentation },
-  claims: { id: "claims", name: "Claims", href: "/claims", description: "Collect winnings ready for redemption.", icon: BadgeDollarSign },
-  fund: { id: "fund", name: "Add funds", href: "/fund", description: "Fund the wallet used for market actions.", icon: Coins },
   xRecovery: {
     id: "x-recovery",
     name: "X recovery",
@@ -328,8 +326,8 @@ export const EXPLORE_GROUP: NavGroup = {
 export const ACCOUNT_SECTION: NavSection = {
   id: "account",
   name: "Account",
-  description: "Money and recovery",
-  items: [NAV_ITEMS.claims, NAV_ITEMS.fund, NAV_ITEMS.xRecovery],
+  description: "Recovery",
+  items: [NAV_ITEMS.xRecovery],
 };
 
 export type DesktopNavEntry = { kind: "link"; item: NavItem } | { kind: "group"; group: NavGroup };
@@ -354,8 +352,8 @@ export const MOBILE_OVERFLOW: readonly NavItem[] = MOBILE_DRAWER_SECTIONS.flatMa
 
 /** Every real, user-facing page that must retain an explicit navigation home. */
 export const NAVIGABLE_ROUTE_PATHS = [
-  "/agents", "/claim", "/claims", "/creator/recover", "/creator/studio", "/creators", "/demo", "/docs",
-  "/download", "/earn", "/fund", "/games", "/games/candle-hop", "/games/duel", "/games/line-rider",
+  "/agents", "/claim", "/creator/recover", "/creator/studio", "/creators", "/demo", "/docs",
+  "/download", "/earn", "/games", "/games/candle-hop", "/games/duel", "/games/line-rider",
   "/games/lucky", "/games/moonshot", "/games/practice", "/games/range", "/how-it-works", "/leaderboard",
   "/markets", "/news", "/parlay", "/pitch", "/portfolio", "/portfolio/edge", "/reels", "/social", "/stats",
   "/status", "/strategies", "/studio", "/surface", "/trade-from-x", "/waitlist",

@@ -2,14 +2,12 @@
 
 import { FAUCET_UNITS } from "@masayume/core/constants";
 import { formatBaseUnits } from "@masayume/core/units";
+import { OPEN_FUNDS_EVENT } from "@/features/funding";
 import { RouteControl, SessionControl, type FundingSource } from "@/features/session";
 import { diagnosisCopy, FAUCET, TICKET } from "@/lib/copy";
 import type { WalletSession } from "@/lib/wallet-session";
 import { useFaucet } from "../faucet";
 import { ConnectButton } from "../wallet";
-
-/** Anything on the page may ask the header to open the funding modal — the reference's `yosuku:open-funds`. */
-export const OPEN_FUNDS_EVENT = "masayume:open-funds";
 
 interface RouteChoice {
   show: boolean;
