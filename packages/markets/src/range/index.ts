@@ -1,5 +1,6 @@
 export { resolveRangeDeployment } from "./deployment";
 export { diagnoseRange } from "./errors";
+export { quoteMoonshotOnchain, readRangeCapacity, solveMoonshotQuote, type MoonshotQuote, type MoonshotReads, type MoonshotWindow, type RangeCapacity } from "./moonshot";
 export {
   getRange,
   getRangeReserveState,

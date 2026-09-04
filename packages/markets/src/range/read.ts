@@ -54,11 +54,11 @@ type RoundTuple = {
 /** The public `params` getter flattens the struct into a tuple, in declaration order. */
 type ParamsTuple = readonly [number, number, bigint, bigint, number, number, bigint, bigint, number, number, number, bigint, bigint];
 
-function viem(): PublicClient {
+export function reserveClient(): PublicClient {
   return getClient().getViemClient() as PublicClient;
 }
 
-function reserveContract() {
+export function reserveContract() {
   const deployment = getRangeDeployment();
   return deployment ? ({ address: deployment.rangeReserve, abi: rangeReserveAbi } as const) : null;
 }
@@ -110,7 +110,7 @@ export async function getRangeReserveState(): Promise<Reading<RangeReserveState 
     const deployment = getRangeDeployment();
     const contract = reserveContract();
     if (!deployment || !contract) return null;
-    const [params, liquid, locked, supplyShares, paused] = await viem().multicall({
+    const [params, liquid, locked, supplyShares, paused] = await reserveClient().multicall({
       multicallAddress: MULTICALL3_ADDRESS,
       allowFailure: false,
       contracts: [
@@ -139,7 +139,7 @@ export async function getRangeReserveState(): Promise<Reading<RangeReserveState 
 async function roundsByIds(ids: readonly bigint[]): Promise<RangeRound[]> {
   const contract = reserveContract();
   if (!contract || ids.length === 0) return [];
-  const rows = await viem().multicall({
+  const rows = await reserveClient().multicall({
     multicallAddress: MULTICALL3_ADDRESS,
     allowFailure: false,
     contracts: ids.map((id) => ({ ...contract, functionName: "roundOf", args: [id] }) as const),
@@ -154,7 +154,7 @@ export async function listRangesOf(wallet: Address): Promise<Reading<RangeRound[
   return withReading(`ranges:${wallet}`, async () => {
     const contract = reserveContract();
     if (!contract) return [];
-    const client = viem();
+    const client = reserveClient();
     const total = Math.min(Number(await client.readContract({ ...contract, functionName: "roundCountOf", args: [wallet] })), MAX_ROUNDS);
     const ids: bigint[] = [];
     for (let offset = 0; offset < total; offset += PAGE) {
@@ -175,7 +175,7 @@ export async function getRangeSharesOf(wallet: Address): Promise<Reading<{ share
   return withReading(`rangeShares:${wallet}`, async () => {
     const contract = reserveContract();
     if (!contract) return { shares: 0n, worthBase: 0n };
-    const [shares, supplyShares, totalValue] = await viem().multicall({
+    const [shares, supplyShares, totalValue] = await reserveClient().multicall({
       multicallAddress: MULTICALL3_ADDRESS,
       allowFailure: false,
       contracts: [
@@ -199,7 +199,7 @@ export async function previewRangeBasis(marketId: MarketId, asset: string): Prom
   const contract = reserveContract();
   if (!contract) return err(diagnosis("not-deployed", NOT_DEPLOYED));
   try {
-    const [openingPrint, centerQE6, sigmaE8] = await viem().readContract({ ...contract, functionName: "previewBasis", args: [marketId as `0x${string}`, asset] });
+    const [openingPrint, centerQE6, sigmaE8] = await reserveClient().readContract({ ...contract, functionName: "previewBasis", args: [marketId as `0x${string}`, asset] });
     return ok({ openingPrint, centerQE6, sigmaE8 }, nowMs());
   } catch (error) {
     return err(diagnoseRange(error));
@@ -229,7 +229,7 @@ export async function previewRangeOpen(band: RangeBand, maxPayoutBase: bigint): 
   const contract = reserveContract();
   if (!contract) return err(diagnosis("not-deployed", NOT_DEPLOYED));
   try {
-    const [stake, probRaw, openingPrint, basis] = await viem().readContract({
+    const [stake, probRaw, openingPrint, basis] = await reserveClient().readContract({
       ...contract,
       functionName: "previewOpen",
       args: [band.marketId as `0x${string}`, band.asset, rangeSideIndex(band.side), band.lowPrint, band.highPrint, maxPayoutBase],
@@ -240,7 +240,8 @@ export async function previewRangeOpen(band: RangeBand, maxPayoutBase: bigint): 
   }
 }
 
-function toQuote(preview: RangePreview, side: RangeSide, maxPayoutBase: bigint, one: bigint, decimals: number): RangeQuote {
+/** The contract's preview as the one quote shape every ticket reads. */
+export function toRangeQuote(preview: RangePreview, side: RangeSide, maxPayoutBase: bigint, one: bigint, decimals: number): RangeQuote {
   return {
     side,
     insideProbE6: side === "inside" ? (preview.probRaw * 1_000_000n) / one : 1_000_000n - (preview.probRaw * 1_000_000n) / one,
@@ -263,7 +264,7 @@ export async function quoteRangeOnchain(band: RangeBand, mode: RangeMode, params
   const one = oneUnit(decimals);
   if (mode.kind === "fixPayout") {
     const preview = await previewRangeOpen(band, mode.maxPayoutBase);
-    return preview.ok ? ok(toQuote(preview.value, band.side, mode.maxPayoutBase, one, decimals), preview.asOfMs) : preview;
+    return preview.ok ? ok(toRangeQuote(preview.value, band.side, mode.maxPayoutBase, one, decimals), preview.asOfMs) : preview;
   }
   const basis = await previewRangeBasis(band.marketId, band.asset);
   if (!basis.ok) return basis;
@@ -284,5 +285,5 @@ export async function quoteRangeOnchain(band: RangeBand, mode: RangeMode, params
     if (!preview.ok) return preview;
   }
   const stakeBase = floorStake(payout, preview.value.probRaw, one, params.marginBps);
-  return ok(toQuote({ ...preview.value, stakeBase }, band.side, payout, one, decimals), preview.asOfMs);
+  return ok(toRangeQuote({ ...preview.value, stakeBase }, band.side, payout, one, decimals), preview.asOfMs);
 }
