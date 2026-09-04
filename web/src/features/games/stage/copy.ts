@@ -8,7 +8,7 @@
 export const STAGE = {
   up: "Up",
   down: "Down",
-  hint: "Swipe the card up or down — or use the arrow keys, or these two.",
+  hint: "Swipe up or down — the arrow keys and the buttons do the same.",
   hintHeld: "This card is not playable right now. The reason is above.",
   cardOf: (n: number, total: number) => `Card ${n} of ${total}`,
   cardLabel: (asset: string, cadence: string) => `${asset}, ${cadence} Window`,

@@ -63,7 +63,11 @@ export const PRACTICE = {
     won: "You took it",
     lost: "The coin flip took it",
     tied: "Level",
+    /** What the feed did. */
     move: { up: "Rose", down: "Fell", flat: "Flat" },
+    /** What a player called. A call is not a move, and the row must not print one as the other. */
+    call: { up: "Up", down: "Down" },
+    arrow: { up: "↑", down: "↓", flat: "·" },
     cardResult: { won: "Won", lost: "Lost", flat: "Flat" },
     flatNote: "A flat feed is nobody's card — neither side is given it.",
     unscored: (n: number) => `${n} card${n === 1 ? "" : "s"} could not be scored: the live price was unreadable when the watch closed.`,

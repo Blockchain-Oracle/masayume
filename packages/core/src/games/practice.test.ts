@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { toMarketId } from "../types/market";
 import {
+  PRACTICE_CARD_MIN_LIFE_SEC,
   PRACTICE_IDLE,
   PRACTICE_WATCH_SEC,
   practiceBotSide,
@@ -24,7 +25,7 @@ function candidate(n: number, overrides: Partial<PracticeCandidate> = {}): Pract
     marketId: toMarketId(`0x${String(n).padStart(64, "0")}`),
     asset: "BTC",
     intervalSec: 900,
-    expirySec: NOW_SEC + 600 + n * 60,
+    expirySec: NOW_SEC + 300 + n * 60,
     trading: true,
     ...overrides,
   };
@@ -46,9 +47,11 @@ describe("practice deck", () => {
     expect(cards[0]?.expirySec).toBeLessThan(cards[1]?.expirySec ?? 0);
   });
 
-  it("refuses a Window that expires inside the watch, because it could not be scored", () => {
-    const expiring = candidate(1, { expirySec: NOW_SEC + PRACTICE_WATCH_SEC - 1 });
+  it("refuses a Window that cannot outlast the round, so no card dies under the hand playing it", () => {
+    const expiring = candidate(1, { expirySec: NOW_SEC + PRACTICE_CARD_MIN_LIFE_SEC });
     expect(selectPracticeDeck([expiring], NOW_SEC)).toHaveLength(0);
+    const survives = candidate(1, { expirySec: NOW_SEC + PRACTICE_CARD_MIN_LIFE_SEC + 1 });
+    expect(selectPracticeDeck([survives], NOW_SEC)).toHaveLength(1);
   });
 
   it("keeps a suspended Window out and does not filter on spread or depth, which practice never uses", () => {

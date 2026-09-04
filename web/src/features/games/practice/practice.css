@@ -4,6 +4,19 @@
  * Same two rules as games.css: dark first with a `[data-theme="light"]` override, tokens only.
  */
 
+/* A stage is not a marketing page: the hero is an eyebrow and a name, and the mode's own sentence
+ * moves down beside the honesty note. At 390px the full `page-title` hero pushed the deck and both
+ * calls below the fold, which made the first thing a player had to do a scroll. */
+.pr-head { margin-bottom: 20px; }
+.pr-title {
+  margin-top: 8px;
+  font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(2rem, 5.6vw, 3rem); line-height: 0.96; letter-spacing: -0.04em;
+  color: var(--white);
+}
+.pr-title .accent { color: var(--vermilion); }
+.pr-intro { font-size: 13px; line-height: 1.65; color: var(--gray-400); }
+
 .pr-layout { display: grid; gap: 16px; grid-template-columns: 1fr; align-items: start; }
 @media (min-width: 900px) {
   .pr-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 320px); gap: 24px; }
@@ -33,6 +46,7 @@
 .pr-tutorial-title { font-family: var(--font-display); font-weight: 700; font-size: 13px; color: var(--white); }
 .pr-tutorial-list { margin: 10px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 8px; }
 .pr-tutorial-list li { font-size: 12px; line-height: 1.6; color: var(--gray-400); }
+.pr-tutorial .pr-actions { margin-top: 12px; }
 
 .pr-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .pr-link {
@@ -56,6 +70,9 @@
 .pr-watch-bar { height: 3px; border-radius: 9999px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
 [data-theme="light"] .pr-watch-bar { background: rgba(20, 18, 16, 0.12); }
 .pr-watch-fill {
+  /* `display: block` is load-bearing: the fill is a span, and width does nothing to an inline box —
+   * the bar rendered as a bare track with no progress in it at all. */
+  display: block;
   height: 100%; border-radius: 9999px; background: var(--gm-accent, var(--vermilion));
   width: calc(var(--pr-left, 1) * 100%);
   transition: width 900ms linear;
@@ -74,7 +91,10 @@
 .pr-row-name { display: flex; align-items: center; gap: 8px; }
 .pr-row-asset { font-family: var(--font-display); font-weight: 700; font-size: 14px; color: var(--white); }
 .pr-row-meta { font-family: var(--font-mono); font-size: 10px; color: var(--gray-500); }
-.pr-row-move { justify-self: end; font-family: var(--font-mono); font-size: 14px; font-variant-numeric: tabular-nums; }
+.pr-row-move { justify-self: end; display: inline-flex; align-items: baseline; gap: 4px; font-family: var(--font-mono); font-size: 14px; font-variant-numeric: tabular-nums; }
+/* The arrow, not the colour, is what says which way it went: doc 04 forbids a colour-only outcome
+ * cue, and a move that rounds to 0.000% needs something other than its hue to be readable. */
+.pr-row-arrow { font-size: 12px; }
 .pr-row-sides { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px 14px; }
 .pr-side { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 10px; color: var(--gray-500); }
 .pr-side-dot { width: 7px; height: 7px; border-radius: 9999px; }

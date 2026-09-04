@@ -21,6 +21,20 @@ import type { DeckCard, Pick } from "./types";
 /** How long the round watches the live feed before it scores. Short enough to be one sitting. */
 export const PRACTICE_WATCH_SEC = 30;
 
+/** Room for the swipes themselves: five cards, deliberated over, before the watch even starts. */
+export const PRACTICE_SWIPE_BUDGET_SEC = 90;
+
+/**
+ * A card must outlast the whole round — the swipes and then the watch.
+ *
+ * The watch alone is not enough, and the first browser pass showed why: cards are dealt
+ * soonest-settling first, so the top card is the shortest-lived one, and a Window with 31 seconds
+ * left was dealt, counted down to 0:00 under the player's hand and read as broken. Practice scores
+ * on the feed rather than on the Window, so nothing was actually wrong with the score — but a card
+ * naming a Window that has already gone is not a card anyone should be asked to play.
+ */
+export const PRACTICE_CARD_MIN_LIFE_SEC = PRACTICE_SWIPE_BUDGET_SEC + PRACTICE_WATCH_SEC;
+
 /** A practice deck is whatever the venue can show, up to five — one card is enough to teach the motion. */
 export const PRACTICE_DECK_MAX = 5;
 export const PRACTICE_DECK_MIN = 1;
@@ -121,7 +135,7 @@ export function practiceResult(side: Pick, entryRaw: bigint, closeRaw: bigint): 
 }
 
 /**
- * The cards practice can deal: trading now, and still trading when the watch closes.
+ * The cards practice can deal: trading now, and still trading when the round ends.
  *
  * There is no spread or depth filter and no excluded cadence, because both exist in `selectDeck` to
  * protect a real order from an unfillable book — and practice places no order. Soonest-settling
@@ -130,7 +144,7 @@ export function practiceResult(side: Pick, entryRaw: bigint, closeRaw: bigint): 
 export function selectPracticeDeck(candidates: readonly PracticeCandidate[], nowSec: number, size = PRACTICE_DECK_MAX): readonly DeckCard[] {
   const seen = new Set<MarketId>();
   const live = candidates
-    .filter((c) => c.trading && c.expirySec - nowSec > PRACTICE_WATCH_SEC)
+    .filter((c) => c.trading && c.expirySec - nowSec > PRACTICE_CARD_MIN_LIFE_SEC)
     .sort((a, b) => a.expirySec - b.expirySec || a.marketId.localeCompare(b.marketId))
     .filter((c) => (seen.has(c.marketId) ? false : (seen.add(c.marketId), true)));
 

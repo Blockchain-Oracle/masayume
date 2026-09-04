@@ -39,7 +39,7 @@ function Side({ label, side, verdict }: { label: string; side: Pick; verdict?: P
   return (
     <span className="pr-side">
       <span className={`pr-side-dot pr-side-dot--${side}`} aria-hidden />
-      {label} · {side === "up" ? PRACTICE.result.move.up : PRACTICE.result.move.down}
+      {label} · {PRACTICE.result.call[side]}
       {verdict && <span className={`pr-side-verdict pr-side-verdict--${verdict}`}>{PRACTICE.result.cardResult[verdict]}</span>}
     </span>
   );
@@ -54,7 +54,14 @@ export function PracticeRow({ card, side, entryRaw, closeRaw, botSide, you, bot 
         <span className="pr-row-asset">{card.asset}</span>
         <span className="pr-row-meta">{cadenceLabel(card.intervalSec)}</span>
       </div>
-      <span className={`pr-row-move ${move ? moveClass(move) : "pr-flat"}`}>{closeRaw === null ? "—" : movePercent(entryRaw, closeRaw)}</span>
+      <span className={`pr-row-move ${move ? moveClass(move) : "pr-flat"}`}>
+        {move && (
+          <span className="pr-row-arrow" aria-hidden>
+            {PRACTICE.result.arrow[move]}
+          </span>
+        )}
+        {closeRaw === null ? "—" : movePercent(entryRaw, closeRaw)}
+      </span>
       <div className="pr-row-sides">
         {/* The bot's side reads as a call, not as a prediction — the copy names it a coin flip once, above. */}
         <Side label={PRACTICE.result.you} side={side} verdict={you} />

@@ -334,4 +334,17 @@
   --vermilion-d: #B83214;
   --profit: #2E6B4F;    /* matcha — the neon mint is unreadable on cream */
   --loss:   #C2381F;    /* warm red, legible on cream */
+
+  /* The SAME flip for the Tailwind `@theme` direction tokens, which part-01 declares as literals in
+   * `:root` and which nothing here overrode until now. `--profit` flipped and `--color-profit` did
+   * not, so every surface reading the second one kept the neon on cream: measured on the swipe
+   * stage's UP call, #34D399 on cream is about 1.4:1, where the flipped matcha is legible. The
+   * comment two lines up already said the neon is unreadable here; this is that decision applied to
+   * the other half of the pair. Reaches every `--button-up-*` / `--button-down-*` surface — the
+   * Ticket's calls, the word board's rows and the swipe stage — in light mode only. */
+  --color-profit: #2E6B4F;
+  --color-loss:   #C2381F;
+  --color-new-mint:  #2E6B4F;
+  --color-off-green: #2E6B4F;
+  --color-off-red:   #C2381F;
 }

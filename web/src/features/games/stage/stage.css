@@ -28,23 +28,28 @@
 
 /* ── The stack ────────────────────────────────────────────────────────────── */
 
-/* The stack keeps its own height so the two calls do not jump when a card leaves and the next
- * arrives one frame later. `min-height` rather than a fixed height: a face with more to say grows. */
-.st-deck { position: relative; min-height: 268px; }
+/* The stack is exactly one card tall — `popLayout` takes the leaving card out of the flow, so the
+ * two calls do not jump while a throw is in the air and nothing has to be reserved for it. A floor
+ * here instead left a band of dead space under every card that was shorter than the tallest one. */
+.st-deck { position: relative; }
 
+/* Opaque, and that is not a style choice: the cards behind sit directly under this one, so any
+ * translucency prints their asset, question and price straight through the card being played.
+ * `--color-surface-1` is the app's own card surface and already flips with the theme, which is why
+ * there is no light override here. */
 .st-card {
   position: relative;
   display: flex; flex-direction: column; gap: 14px;
   border-radius: 20px; padding: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(23, 23, 23, 0.6);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid var(--color-hairline); background: var(--color-surface-1);
 }
-[data-theme="light"] .st-card { border-color: rgba(20, 18, 16, 0.12); background: rgba(251, 247, 238, 0.96); }
 
-/* The cards still to come, stacked behind and inert. Purely decorative: they carry aria-hidden. */
+/* The cards still to come, stacked behind and inert. Purely decorative: they carry aria-hidden.
+ * Anchored at the top rather than `inset: 0`, so a face taller than the stack's floor is clipped by
+ * its own card instead of spilling out below it. */
 .st-card--behind {
-  position: absolute; inset: 0;
+  position: absolute; top: 0; left: 0; right: 0;
+  max-height: 100%; overflow: hidden;
   transform: translateY(calc(var(--st-depth, 1) * 10px)) scale(calc(1 - var(--st-depth, 1) * 0.035));
   opacity: calc(0.5 - var(--st-depth, 1) * 0.14);
   pointer-events: none;
@@ -103,12 +108,18 @@
 .st-call--up { border-color: var(--button-up-border); background: var(--button-up-fill); color: var(--button-up-ink); }
 .st-call--down { border-color: var(--button-down-border); background: var(--button-down-fill); color: var(--button-down-ink); }
 
-.st-hint { font-family: var(--font-mono); font-size: 10px; line-height: 1.6; color: var(--gray-500); text-align: center; }
+/* The hint is instruction, not metadata: it takes the body ink step rather than the dim meta one,
+ * which measured 4.0:1 on cream and is under the bar for text a first-time player has to read. */
+.st-hint { font-family: var(--font-mono); font-size: 10px; line-height: 1.6; color: var(--gray-400); text-align: center; }
 .st-refusal {
   border-radius: 12px; padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--vermilion) 34%, transparent);
   background: color-mix(in srgb, var(--vermilion) 7%, transparent);
   font-size: 12px; line-height: 1.55; color: var(--gray-400);
+}
+
+@media (max-width: 720px) {
+  .st-empty { min-height: 224px; }
 }
 
 @media (max-width: 400px) {

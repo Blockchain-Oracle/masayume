@@ -67,14 +67,13 @@ export function PracticeStage() {
         <PriceProbe key={asset} asset={asset} onPrice={session.reportPrice} />
       ))}
 
-      <div className="gm-hero">
+      <header className="pr-head">
         <span className="gm-eyebrow">{PRACTICE.eyebrow}</span>
-        <h1 className="page-title">
+        <h1 className="pr-title">
           {PRACTICE.title}
           <span className="accent">.</span>
         </h1>
-        <p className="gm-intro">{PRACTICE.intro}</p>
-      </div>
+      </header>
 
       <div className="pr-layout">
         <div>
@@ -99,6 +98,8 @@ export function PracticeStage() {
         </div>
 
         <aside className="pr-layout-side">
+          <p className="pr-intro">{PRACTICE.intro}</p>
+
           <div className="pr-note">
             <span className="pr-note-k">{PRACTICE.scoring.label}</span>
             <p className="pr-note-body">{PRACTICE.scoring.body}</p>

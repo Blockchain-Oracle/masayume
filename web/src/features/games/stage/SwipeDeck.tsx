@@ -3,7 +3,7 @@
 import type { DeckCard, Pick } from "@masayume/core/games";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { AnimatePresence, motion, type PanInfo } from "motion/react";
-import { useCallback, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { useGames } from "../GamesProvider";
 import { STAGE } from "./copy";
 import "./stage.css";
@@ -78,6 +78,9 @@ function cadenceLabel(intervalSec: number): string {
 export function SwipeDeck({ cards, active, playedSide, onPick, busy = false, refusal = null, renderFace, hint }: SwipeDeckProps) {
   const { reducedMotion, feedback } = useGames();
   const [thrown, setThrown] = useState<Pick | null>(null);
+  const deckRef = useRef<HTMLDivElement>(null);
+  /** Set only when the card itself had focus when it was played — see the focus effect below. */
+  const refocus = useRef(false);
 
   const held = busy || refusal !== null;
   const draggable = active !== null && !held && !reducedMotion;
@@ -89,6 +92,9 @@ export function SwipeDeck({ cards, active, playedSide, onPick, busy = false, ref
         return;
       }
       feedback("confirm");
+      // Whether to hand focus onward is decided HERE, while the played card still holds it. The
+      // calls live outside `.st-deck`, so "focus is inside the deck" means "the card had it".
+      refocus.current = document.activeElement !== null && deckRef.current?.contains(document.activeElement) === true;
       setThrown(side);
       onPick(active, side);
     },
@@ -119,6 +125,25 @@ export function SwipeDeck({ cards, active, playedSide, onPick, busy = false, ref
     [commit],
   );
 
+  /**
+   * A card played from the keyboard hands focus to the next one.
+   *
+   * Without this the deck is unplayable by keyboard past the first card: the played card unmounts,
+   * focus falls back to the body, and the player has to tab all the way in again every time. The
+   * guard matters as much as the effect — focus only moves when the card that left had it, so a
+   * click on a call button leaves focus on that button, where the player put it.
+   *
+   * The incoming card is found by its index rather than held in a ref, and that is the whole point:
+   * while a throw is in the air BOTH cards are mounted, so a single ref is written by whichever
+   * mounts last and cleared by whichever unmounts last. Focusing through it landed on the card on
+   * its way out, which then unmounted and dropped focus to the body — the exact bug this fixes.
+   */
+  useEffect(() => {
+    if (!refocus.current || !active) return;
+    refocus.current = false;
+    deckRef.current?.querySelector<HTMLElement>(`[data-card="${active.index}"]`)?.focus();
+  }, [active]);
+
   const position = active ? cards.findIndex((card) => card.index === active.index) : cards.length;
   const behind = active ? cards.slice(position + 1, position + 3) : [];
 
@@ -135,17 +160,18 @@ export function SwipeDeck({ cards, active, playedSide, onPick, busy = false, ref
         <span className="st-progress-label">{STAGE.cardOf(Math.min(position + 1, cards.length), cards.length)}</span>
       </div>
 
-      <div className="st-deck">
+      <div className="st-deck" ref={deckRef}>
         {behind.map((card, depth) => (
           <div key={card.index} className="st-card st-card--behind" style={{ "--st-depth": depth + 1 } as CSSProperties} aria-hidden>
             {renderFace(card)}
           </div>
         ))}
 
-        <AnimatePresence initial={false} custom={thrown}>
+        <AnimatePresence initial={false} custom={thrown} mode="popLayout">
           {active ? (
             <motion.div
               key={active.index}
+              data-card={active.index}
               className={`st-card st-card--active${held ? " st-card--held" : ""}`}
               variants={reducedMotion ? REDUCED : FULL}
               custom={thrown}
