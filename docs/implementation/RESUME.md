@@ -1,7 +1,7 @@
 ---
 title: Resume point — read this first
 status: working handoff
-updated: 2026-09-03
+updated: 2026-09-04
 ---
 
 # Resume point
@@ -60,6 +60,23 @@ piped through `tail` printed nothing at all (`spike/finish.ts`). **One decision 
 owner's** — `minCardLifeSec` is a floor at reveal while the pick window runs 180s after it, so the last
 120s of a slow player's pick window is refusable; closing that means a 570s deal headroom and 89.2% →
 84.2% availability (context/54 §5 has the four-way measurement and the recommendation).
+**Eighteenth session (2026-09-04, context/55): slice 8 is done and the duel has a screen.**
+`/games/practice` and `/games/duel` are both real and both run on one `SwipeDeck` — the motion a
+player learns with nothing at risk is the same component that later spends their money. The duel
+was driven end to end by **two scripted wallets in two headed Chromes** against the live arena:
+one signature each, the queue, the pairing, both seeds, `createMatch` and `joinMatch` from the
+browsers, the settler's reveal, and **four cards swiped by both seats** — read back from chain as
+`picked0 1111 picked1 1111` on match `0x58b34b68…ce4be8c5`. Settlement was then watched arriving
+card by card ("4 of 8 cards settled") with the arena's own payouts. **Not yet seen live: a
+finalized match on the result screen and a claim** — the deck's 1h Windows had not closed, and
+nothing was owed while it was watched. **One defect made the whole duel unfinishable and had been
+there since the table existed**: `packages/db/src/games.ts` read every address through `lower()`
+and wrote none, and viem checksums an address off a log — so the settler's worklist was empty
+through live duels, no deck ever revealed, and `activeMatchFor` never returned a row. Fixed at the
+write with idempotent repair in the schema; the settler immediately cranked a real backlog.
+**Also app-wide: `--color-profit` / `--color-loss` never flipped for light mode** while `--profit`
+did, so the Ticket's own UP/DOWN and the word board's Yes/No sat at ~1.4:1 on cream; flipping them
+as part-13 already intended takes those to 4.69–6.30.
 context/51 §4 is the rest of what is open. The 21st.dev
 redesign pass on the other surfaces (the leverage ones are done) and the user's own look at Stage 5 (the ledger's
 Needs-user-review rows are all still open) follow.
@@ -114,9 +131,23 @@ Needs-user-review rows are all still open) follow.
 | `a897e28` | Stage 6 slice 7d — the queue, the seed commit-reveal, the sealed deck journalled before any commitment; three defects the live drive found |
 | `a724b94` | Read path 4 — boot readiness through context (the `skipToken` double-observer produced a "Missing queryFn" error instead of the real RPC failure); the sixteen-item Explore menu bounded to `--available-height` so its last five destinations are reachable |
 | `7889340` | Stage 6 — `spike:duel-full`, the duel driven end to end; the deckmaster's countdown un-blinded, the pick retry, the spike exit (context/54) |
+| `5774fc7` | Stage 6 slice 8a — the shared `SwipeDeck`, `practice.ts` and `picking.ts`; Practice real on the venue's live Windows |
+| `5f4bdac` | Slice 8a's browser pass — five defects, and the light-mode `--color-profit` flip that reaches the Ticket |
+| `f224b76` | Stage 6 slice 8b — `useRoomToken`, `useDuelRoom`, the entry, the queue and the lobby; paired live from two browsers |
+| `4dbfabc` | Stage 6 slice 8c — the picks: `useArenaWrites` with the loosening floor, the arena's own entry gate, create and join |
+| `a42c74f` | The projection's address casing — written checksummed, read lowercased, so the settler never saw a match (context/55 §2) |
+| `fdcbba3` | Stage 6 slice 8d — settlement, the result, the claim, and the permissionless crank a player can run themselves |
+| `a3e007a` | The result's money reads with its row on a phone; settlement watched arriving live |
 
-Everything is green: `pnpm typecheck`, `pnpm invariants` (14/14, 0 warnings), `pnpm test` (278),
+Everything is green: `pnpm typecheck`, `pnpm invariants` (14/14, 0 warnings), `pnpm test` (300),
 `forge test --no-match-contract Fork` (213), `pnpm build`.
+
+**To run the duel locally** the ops service needs `ROOM_TOKEN_SECRET` (the same value web mints
+with), `GAME_DECK_KEY`, `DATABASE_URL`, and — to reveal and settle — `GAME_SETTLER_PRIVATE_KEY`
+with `DRY_RUN=0` on a funded key. `web/.env.local` needs `GAME_ROOM_PUBLIC_URL`
+(`ws://127.0.0.1:8787` in development); without it the duel says, correctly, that this deployment
+has no room. **Kill ops by the PID `lsof` reports on the port** — `pkill -f "tsx src/main.ts"`
+matches the wrapper only, and a surviving instance keeps writing to the same database.
 
 **The duel room** (`services/ops`) needs `ROOM_TOKEN_SECRET` (the same value web mints with — a different
 one in each process refuses every token, loudly) and `GAME_DECK_KEY` (32 bytes of hex; without it the
@@ -709,9 +740,10 @@ correctness and conservation, not the envelope. The `arena` gas lane is therefor
 lane already measured live (PrivateDesk's mint, 1,917,880) and set to **8M**, because an under-provisioned
 pick would forfeit a card and its side-pot while over-provisioning costs a player 0.024 STT.
 
-**Next is slice 7/8** — the ops/realtime work (direct `ws` in `services/ops`, room token, queue, deck
-durability, indexer projection, settler) and the Duel stage with Practice merged into it. Slice 3 (Practice)
-merges into slice 8's stage. `GameArena` is deployed, so slice 7 has a real arena to project from.
+**Slices 7 and 8 are done** (context/54, context/55). `/games/practice` and `/games/duel` are real and
+share one `SwipeDeck`. **Next is slice 5 (Lucky), then slice 4 (the arcade pair), then Moonshot** — the
+owner's build order from context/51. Two owner decisions are still open: Moonshot A/B, and the
+deal-headroom trade in context/54 §5.
 
 ## Stage 6 research — the standing proposal
 
