@@ -72,6 +72,16 @@ export const SESSION = {
       walletShort: (haveText: string) => `Your wallet holds ${haveText}; lower the deposit or use the faucet.`,
     },
   },
+  /** The modal's first face — the reference's AccountSetup sentence (L68–72), with our facts in the second half. */
+  modal: {
+    eyebrow: "Tap-trading · session key",
+    close: "Close",
+    lead: "Arm tap-trading once, tap in one signature forever.",
+    sponsored: "Gas is on us: free, takes a few seconds.",
+    keyPays: "Takes a few seconds and a little STT for the key.",
+    skip: "Skip it, and every tap simply asks your wallet instead.",
+    adjust: (perTap: string, daily: string, expiry: string) => `Adjust the caps — ${perTap} a tap · ${daily} a day · ${expiry}`,
+  },
   manager: {
     title: "Tap-trading",
     key: "Key",

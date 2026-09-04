@@ -47,6 +47,8 @@ export const TICKET = {
   chance: (pct: number) => `${pct}% chance`,
   /** The reference says "Gas-free · settles on its own, right on the price." Ours is not gas-free, so the first half is left off. */
   footnote: "Settles on its own, right on the price.",
+  /** Armed, the tap needs no wallet prompt — the nearest true thing to the reference's "Gas-free". */
+  footnoteArmed: "Signed by your session key, no prompt · settles on its own, right on the price.",
   /** Public / Private (L1180–1220). */
   route: "Public or private",
   public: "Public",

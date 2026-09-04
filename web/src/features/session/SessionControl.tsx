@@ -4,7 +4,7 @@ import { useState } from "react";
 import { SessionChip } from "./SessionChip";
 import { useSessionKey } from "./SessionKeyProvider";
 import { SessionManager } from "./SessionManager";
-import { SessionSheet } from "./SessionSheet";
+import { SessionModal } from "./SessionModal";
 
 /** The chip and the two sheets it opens: arm when there is nothing, manage when there is. */
 export function SessionControl({ symbol }: { symbol: string }) {
@@ -18,7 +18,7 @@ export function SessionControl({ symbol }: { symbol: string }) {
   return (
     <>
       <SessionChip status={view.status} onClick={open} />
-      <SessionSheet open={sheet} onOpenChange={setSheet} symbol={symbol} />
+      <SessionModal open={sheet} onOpenChange={setSheet} symbol={symbol} />
       <SessionManager
         open={manager}
         onOpenChange={setManager}

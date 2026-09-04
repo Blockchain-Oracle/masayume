@@ -294,7 +294,7 @@ export function Ticket({ selection, drawer }: TicketProps) {
           <OutcomeNote state={bet.state} decimals={decimals} symbol={symbol} onDismiss={bet.reset} />
           {cta}
           <p className="tk-foot">
-            {isRange ? RANGE.cta.footnote : TICKET.footnote}
+            {isRange ? RANGE.cta.footnote : routing.armed ? TICKET.footnoteArmed : TICKET.footnote}
             {isRange && rangeReserve?.paused ? ` ${RANGE.ticket.reservePaused}` : null}
             {!isRange && !boosted && walletRoute && funding?.ok && funding.needsApproval ? ` ${TICKET.approvalNote}` : null}
             {!isRange && !boosted && walletRoute && funding?.ok && funding.venueCreditUsedBase > 0n ? ` ${TICKET.creditNote(`${formatBaseUnits(funding.venueCreditUsedBase, decimals)} ${symbol}`)}` : null}

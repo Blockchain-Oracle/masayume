@@ -5,11 +5,11 @@ import { capResetsAtSec, dailyHeadroomBase } from "@masayume/core/vault";
 import { requiredGasWei, sessionGasTopUpWei } from "@masayume/markets";
 import { Hash, UtcTime } from "@/components/data";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { notify } from "@/lib/toast";
 import { priceCapText } from "./caps";
 import { SESSION } from "./copy";
 import { useSessionKey } from "./SessionKeyProvider";
+import { SessionModalShell } from "./SessionModal";
 import type { SessionKeyActions, SessionBusy, SessionKeyView } from "./view";
 
 interface SessionManagerProps {
@@ -132,16 +132,8 @@ export function SessionManagerBody({ view, actions, busy, symbol, onArmNew }: { 
 export function SessionManager({ open, onOpenChange, onArmNew, symbol }: SessionManagerProps) {
   const { view, actions, busy } = useSessionKey();
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="max-h-dvh overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>{SESSION.manager.title}</SheetTitle>
-          <SheetDescription>{SESSION.chip.titleOn}</SheetDescription>
-        </SheetHeader>
-        <div className="px-4 pb-4">
-          <SessionManagerBody view={view} actions={actions} busy={busy} symbol={symbol} onArmNew={onArmNew} />
-        </div>
-      </SheetContent>
-    </Sheet>
+    <SessionModalShell open={open} onClose={() => onOpenChange(false)} title={SESSION.manager.title} description={SESSION.chip.titleOn} labelId="session-manager-title">
+      <SessionManagerBody view={view} actions={actions} busy={busy} symbol={symbol} onArmNew={onArmNew} />
+    </SessionModalShell>
   );
 }
