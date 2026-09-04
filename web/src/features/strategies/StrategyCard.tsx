@@ -1,7 +1,7 @@
 "use client";
 
 import type { EquityPoint } from "@masayume/core/projection";
-import type { StrategySubscription } from "@masayume/core/strategies";
+import { parseStrategyMetadata, type StrategySubscription } from "@masayume/core/strategies";
 import { EquitySparkline } from "@/features/markets/history";
 import { cn } from "@/lib/utils";
 import { AgentPortrait } from "./AgentPortrait";
@@ -38,6 +38,10 @@ export function StrategyCard({ card, sub, decimals, symbol, asset, onOpen }: Str
   const points: EquityPoint[] = [{ atMs: null, cumulativeBase: 0n }, ...card.record.curve.map((p) => ({ atMs: p.atSec * 1000, cumulativeBase: BigInt(p.cumBase) }))];
   const fee = BigInt(card.feeBase);
   const copiers = card.subscribers > 0 ? ` · ${card.subscribers} copiers` : "";
+  // The instinct slot is one mono line; the agent's full sentence (`describeSpec`) lives in the drawer.
+  const spec = parseStrategyMetadata(card.metadata)?.spec ?? null;
+  const instinct = spec?.preset === "agent" ? STRATEGIES.archive.agentInstinct(asset, spec.posture) : STRATEGIES.archive.instinct(asset);
+  const memory = Boolean(card.agent && card.agent.decisions.length > 0);
   return (
     <div
       id={`strategy-${card.strategyId}`}
@@ -56,7 +60,7 @@ export function StrategyCard({ card, sub, decimals, symbol, asset, onOpen }: Str
         <AgentPortrait seed={card.strategyId + card.runner} name={name} />
         <div className="min-w-0 flex-1 pt-0.5">
           <h3 className="strat-card-name text-white">{name}</h3>
-          <p className="strat-card-instinct">{STRATEGIES.archive.instinct(asset)}</p>
+          <p className="strat-card-instinct">{instinct}</p>
         </div>
         <span className="strat-card-cap">
           {money(BigInt(card.envelope.maxStakePerTradeBase), decimals)} <span className="text-white/40">{STRATEGIES.archive.max}</span>
@@ -90,6 +94,7 @@ export function StrategyCard({ card, sub, decimals, symbol, asset, onOpen }: Str
         <span className="strat-card-tag strat-card-tag--quiet">
           <span className="strat-card-tag-dot" /> {STRATEGIES.archive.archived}
         </span>
+        {memory && <span className="strat-card-tag strat-mem">{STRATEGIES.archive.memory}</span>}
         {card.playbook && <span className="strat-card-tag strat-mem">{STRATEGIES.archive.playbook}</span>}
       </div>
 

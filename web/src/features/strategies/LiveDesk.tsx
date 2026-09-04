@@ -1,5 +1,6 @@
 "use client";
 
+import { parseStrategyMetadata } from "@masayume/core/strategies";
 import { Share2Icon } from "lucide-react";
 import { useState } from "react";
 import { EmptyState } from "@/components/states";
@@ -49,7 +50,10 @@ export function LiveDesk({ payload, desk }: LiveDeskProps) {
   const reachable = desk.health && desk.health.ok ? desk.health.value.reachable : null;
   const kind = health?.kind ?? featured.health.kind;
   const deskLive = !staleRunner && kind === "alive";
-  const lastSide = /bets (up|down)/.exec(health?.why ?? featured.health.why ?? "")?.[1] ?? null;
+  const why = health?.why ?? featured.health.why ?? "";
+  const lastSide = /bets (up|down)/.exec(why)?.[1] ?? null;
+  const brainOff = why.startsWith("agent brain not configured");
+  const isAgent = parseStrategyMetadata(featured.metadata)?.spec.preset === "agent";
   const status = staleRunner
     ? D.status.stale
     : reachable === null && desk.health === null
@@ -60,9 +64,11 @@ export function LiveDesk({ payload, desk }: LiveDeskProps) {
           ? D.status.neverStarted
           : kind !== "alive"
             ? D.status.offline
-            : lastSide
-              ? D.status.signal(lastSide)
-              : D.status.watching(asset);
+            : brainOff
+              ? D.status.brainOff
+              : lastSide
+                ? D.status.signal(lastSide)
+                : D.status.watching(asset);
 
   const typicalCost = BigInt(featured.record.typicalCostBase);
   const perTrade = grant?.caps.maxStakePerTradeBase ?? 0n;
@@ -121,7 +127,7 @@ export function LiveDesk({ payload, desk }: LiveDeskProps) {
                 <h3 className="desk-name text-white">{name}</h3>
                 <span className="desk-chip-autopilot">{D.autopilot}</span>
               </div>
-              <p className="desk-what text-white/70">{D.what(asset)}</p>
+              <p className="desk-what text-white/70">{isAgent ? D.whatAgent(asset) : D.what(asset)}</p>
             </div>
             <button type="button" aria-label={D.share} title={D.share} className="desk-share" onClick={() => window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(`Copy ${name} on Masayume.\n\nAutomated ${asset} strategy with risk limits enforced on-chain.\nYour balance stays yours. Review the limits before signing.`)}&url=${encodeURIComponent("https://masayume.app/strategies")}`, "_blank", "noopener,noreferrer")}>
               <Share2Icon aria-hidden="true" />

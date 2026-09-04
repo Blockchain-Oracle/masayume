@@ -20,13 +20,15 @@ WORKDIR /app
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY web/package.json ./web/
 COPY scripts/package.json ./scripts/
+COPY packages/brain/package.json ./packages/brain/
 COPY packages/core/package.json ./packages/core/
 COPY packages/db/package.json ./packages/db/
 COPY packages/markets/package.json ./packages/markets/
 COPY services/ops/package.json ./services/ops/
 RUN pnpm install --frozen-lockfile --filter "@masayume/ops..."
 
-# The sources the service actually runs: its own, and the three packages it imports.
+# The sources the service actually runs: its own, and the four packages it imports.
+COPY packages/brain ./packages/brain
 COPY packages/core ./packages/core
 COPY packages/db ./packages/db
 COPY packages/markets ./packages/markets

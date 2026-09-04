@@ -3,7 +3,7 @@
  * the EventVault; this store holds only what the chain cannot say for a browser: the runner's own
  * heartbeats, the receipts of the fills it placed, and creators' plain-text playbooks.
  *
- * Writers (AD-7): `runner_heartbeats` and `strategy_fills` → ops (the runner); `strategy_playbooks` → web.
+ * Writers (AD-7): `runner_heartbeats`, `strategy_fills` and `strategy_decisions` → ops (the runner); `strategy_playbooks` → web.
  */
 export const STRATEGIES_SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS runner_heartbeats (
@@ -48,4 +48,33 @@ CREATE TABLE IF NOT EXISTS strategy_playbooks (
   body          TEXT        NOT NULL CHECK (length(body) <= 4000),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- An agent strategy's memory: one row per Window it read — what the model said, what the gate ruled,
+-- what the runner then sent. The model actually used is recorded here, never in the on-chain spec.
+CREATE TABLE IF NOT EXISTS strategy_decisions (
+  id            BIGSERIAL PRIMARY KEY,
+  strategy_id   TEXT        NOT NULL,
+  -- Lowercased bytes32 market id; with strategy_id, the one read per Window.
+  market_id     TEXT        NOT NULL,
+  -- Lowercased runner key.
+  runner        TEXT        NOT NULL,
+  decided_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  -- provider/model as the provider reported it, e.g. anthropic/claude-opus-5-20260101.
+  model         TEXT        NOT NULL,
+  -- sha256 of the exact prompt bytes the model saw.
+  prompt_hash   TEXT        NOT NULL,
+  verdict_side  TEXT        NOT NULL CHECK (verdict_side IN ('up', 'down', 'hold', 'none')),
+  confidence    REAL,
+  why           TEXT        NOT NULL,
+  gate          TEXT        NOT NULL CHECK (gate IN ('trade', 'held', 'failed')),
+  gate_reason   TEXT        NOT NULL,
+  side          TEXT        CHECK (side IN ('up', 'down')),
+  filled        INTEGER     NOT NULL DEFAULT 0,
+  skipped       INTEGER     NOT NULL DEFAULT 0,
+  dry_run       BOOLEAN     NOT NULL DEFAULT false,
+  UNIQUE (strategy_id, market_id)
+);
+
+CREATE INDEX IF NOT EXISTS strategy_decisions_strategy_idx
+  ON strategy_decisions (strategy_id, decided_at DESC);
 `;

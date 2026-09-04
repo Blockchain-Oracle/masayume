@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ConnectButton } from "@/features/markets/wallet";
 import { notify } from "@/lib/toast";
 import { cn } from "@/lib/utils";
+import { AgentMemory } from "./AgentMemory";
 import { AgentPortrait } from "./AgentPortrait";
 import { STRATEGIES } from "./copy";
 import { capsFor, money, parseAmount } from "./format";
@@ -28,6 +29,8 @@ interface CopyDrawerProps {
   symbol: string;
   asset: string;
   nowMs: number;
+  /** Whether the decision store answered — "no memory yet" and "no store" are different sentences. */
+  decisionsStore: boolean;
   onClose: () => void;
 }
 
@@ -44,11 +47,12 @@ function CapStat({ label, value, unit }: { label: string; value: string; unit?: 
 }
 
 /** The focused subscribe flow (reference `CopyDrawer`): review → size → worked example → confirm; or manage / pause. */
-export function CopyDrawer({ card, sub, writes, availableBase, decimals, symbol, asset, nowMs, onClose }: CopyDrawerProps) {
+export function CopyDrawer({ card, sub, writes, availableBase, decimals, symbol, asset, nowMs, decisionsStore, onClose }: CopyDrawerProps) {
   const [budget, setBudget] = useState("");
   const name = codenameFromAddress(card.strategyId + card.runner);
   const tier = tierOf(card);
   const meta = parseStrategyMetadata(card.metadata);
+  const agent = meta?.spec.preset === "agent" ? card.agent : null;
   const maxPerTrade = BigInt(card.envelope.maxStakePerTradeBase);
   const fee = BigInt(card.feeBase);
   const targetBase = parseAmount(budget, decimals);
@@ -131,10 +135,25 @@ export function CopyDrawer({ card, sub, writes, availableBase, decimals, symbol,
 
         <div className="strat-drawer-rule strat-drawer-rule--quiet">
           <p className="strat-meta mb-1 tracking-[0.2em] text-white/40">{D.how.eyebrow}</p>
-          <p className="strat-drawer-body">
-            {D.how.body(money(maxPerTrade, decimals), asset)} <strong>{D.how.own}</strong>
-            {D.how.tail(money(maxPerTrade, decimals, symbol))}
-          </p>
+          {agent ? (
+            <>
+              <p className="strat-drawer-body">
+                {D.agentHow.body(asset)} <strong>{D.agentHow.own}</strong>
+                {D.agentHow.tail(money(maxPerTrade, decimals, symbol))}
+              </p>
+              <p className="strat-mono-10 mt-1.5 truncate text-white/40">{agent.model ? D.agentHow.model(agent.model) : D.agentHow.noModel}</p>
+              <ul className="strat-mono-10 mt-1.5 space-y-0.5 text-white/40">
+                {STRATEGIES.studio.agent.honesty.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <p className="strat-drawer-body">
+              {D.how.body(money(maxPerTrade, decimals), asset)} <strong>{D.how.own}</strong>
+              {D.how.tail(money(maxPerTrade, decimals, symbol))}
+            </p>
+          )}
         </div>
 
         <div className="mb-2 grid grid-cols-3 gap-3">
@@ -148,6 +167,7 @@ export function CopyDrawer({ card, sub, writes, availableBase, decimals, symbol,
           <CapStat label={D.caps.last} value={card.record.lastActiveSec ? ago(card.record.lastActiveSec * 1000, nowMs) : D.caps.none} />
         </div>
 
+        {agent && <AgentMemory agent={agent} storeConnected={decisionsStore} asset={asset} nowMs={nowMs} />}
         {(card.playbook || meta?.playbook) && (
           <div className="mb-4 border border-vermilion/30 px-4 py-3">
             <p className="strat-meta mb-1.5 tracking-[0.18em] text-vermilion">{D.playbook.eyebrow}</p>

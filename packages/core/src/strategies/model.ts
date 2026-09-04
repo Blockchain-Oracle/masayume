@@ -1,4 +1,4 @@
-import type { Decision, StrategySpec } from "./types";
+import type { Decision, OracleFollowSpec } from "./types";
 
 const BPS = 10_000n;
 
@@ -13,7 +13,7 @@ export function moveBps(fromRaw: bigint, nowRaw: bigint): number {
  * reference the runner reads is that print versus the fresh feed. Past the threshold it follows
  * the move (momentum) or fades it (reversion); inside the threshold it sits out. Pure.
  */
-export function decideOracleFollow(input: { openingRaw: bigint; priceRaw: bigint; spec: StrategySpec }): Decision {
+export function decideOracleFollow(input: { openingRaw: bigint; priceRaw: bigint; spec: OracleFollowSpec }): Decision {
   const { openingRaw, priceRaw, spec } = input;
   const move = moveBps(openingRaw, priceRaw);
   if (openingRaw <= 0n || priceRaw <= 0n) return { side: null, moveBps: 0, thresholdBps: spec.thresholdBps, reason: "no print or no price to read" };
@@ -29,7 +29,7 @@ export function decideOracleFollow(input: { openingRaw: bigint; priceRaw: bigint
  * The reference's preset over a price series: the move across the last `lookback` samples.
  * Used when a Window has no print yet; otherwise the print is the honest reference.
  */
-export function decideFromSeries(input: { pricesRaw: readonly bigint[]; spec: StrategySpec }): Decision {
+export function decideFromSeries(input: { pricesRaw: readonly bigint[]; spec: OracleFollowSpec }): Decision {
   const { pricesRaw, spec } = input;
   const window = pricesRaw.slice(-spec.lookback);
   const first = window[0];

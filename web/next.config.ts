@@ -7,7 +7,7 @@ const OPTIONAL_DEPENDENCY_STUB = "./src/lib/optional-dependency-stub.cjs";
 const NEVER_EXECUTED = ["@coinbase/cdp-sdk"];
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@masayume/core", "@masayume/markets"],
+  transpilePackages: ["@masayume/brain", "@masayume/core", "@masayume/markets"],
   turbopack: {
     resolveAlias: Object.fromEntries(NEVER_EXECUTED.map((specifier) => [specifier, OPTIONAL_DEPENDENCY_STUB])),
   },
