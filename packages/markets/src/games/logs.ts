@@ -1,7 +1,7 @@
 import { arenaRefundReasonOf, arenaStatusOf, pickOf, type ArenaEvent, type ArenaEventLog } from "@masayume/core/games";
 import type { Reading } from "@masayume/core/schemas";
 import { toMarketId, type Address, type Bytes32 } from "@masayume/core/types";
-import { parseEventLogs, type Log, type PublicClient } from "viem";
+import { parseEventLogs, zeroAddress, type Log, type PublicClient } from "viem";
 import { gameArenaAbi } from "../contracts/game-arena.abi";
 import { withReading } from "../provider/reading";
 import { getArenaDeployment, getClient } from "../runtime/read-runtime";
@@ -94,6 +94,15 @@ function toEvent(log: Decoded): ArenaEvent | null {
       return { kind: "refunded", matchId: log.args.matchId, reason: arenaRefundReasonOf(log.args.reason), perPlayerBase: log.args.perPlayerBase };
     case "CreditClaimed":
       return { kind: "claimed", player: lower(log.args.player), amountBase: log.args.amount, by: lower(log.args.by) };
+    case "AgentAuthorized":
+      return {
+        kind: "agent",
+        matchId: log.args.matchId,
+        player: lower(log.args.player),
+        agent: log.args.agent === zeroAddress ? null : lower(log.args.agent),
+        expiresAtSec: Number(log.args.expiresAtSec),
+        budgetBase: log.args.budgetBase,
+      };
     default:
       return null;
   }

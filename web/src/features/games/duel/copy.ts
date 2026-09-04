@@ -58,7 +58,7 @@ export const DUEL = {
     costNoPot: "No side-pot is escrowed.",
     costCards: (cap: string, symbol: string) =>
       `Up to ${cap} ${symbol} per card, spent as a real order on that Window. You keep what those positions pay, win or lose the pot.`,
-    costGas: "One transaction per pick, signed and paid by you. There is no sponsor on this deployment.",
+    costGas: "One signature. Entering names a key this browser holds to place your picks and sends it the gas they need; nothing else is asked of your wallet. There is no sponsor on this deployment, so that gas is yours.",
     /** The chosen stake's own queue, so "nobody is here" is never said about the wrong one. */
     queueHere: (n: number) => (n === 0 ? "Nobody is waiting at this stake" : n === 1 ? "1 player waiting at this stake" : `${n} players waiting at this stake`),
     find: "Find a match",
@@ -118,6 +118,8 @@ export const DUEL = {
     joinCta: "Join the match",
     joinBody: (pot: string, symbol: string) =>
       pot === "0" ? "The match is on chain and waiting for you. Joining escrows nothing and starts the reveal." : `The match is on chain and waiting for you. Joining escrows your ${pot} ${symbol} and starts the reveal.`,
+    /** Said under the entry's own sentence once this browser holds a key: what else the one signature does. */
+    oneSignature: "This is the only signature the match asks of your wallet: it also names the key this browser holds to place your picks, and sends it the gas they need.",
     waitingCreate: "Waiting for the other player to put the match on chain.",
     opening: "Opening…",
     joining: "Joining…",
@@ -165,6 +167,12 @@ export const DUEL = {
     raceNote: "Both players draw on the same book, so a pick can lose a race. Asking again is normal and costs nothing extra.",
     failed: "That card did not fill before the deadline. The pot still settles on the cards that did.",
     opponentDeciding: "Your opponent is on this card",
+    /** The key's own state, while it is the thing placing picks. */
+    keySwipes: "Your key places each pick — no wallet prompt.",
+    keyGasShort: "Your key has run out of gas, so it cannot place this pick. The entry funds it; a duel this long has spent that.",
+    /** Flicky's auto-swipe: at a card's own deadline the favoured side is played rather than the card forfeited. */
+    autoPlayed: "played for you at the deadline",
+    autoNote: (side: string) => `Time ran out on that card, so your key played the favoured side — ${side}.`,
     yourPicks: "Your picks",
     filled: (size: string, cost: string, symbol: string) => `${size} for ${cost} ${symbol}`,
   },

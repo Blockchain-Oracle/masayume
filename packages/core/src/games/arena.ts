@@ -186,7 +186,9 @@ export type ArenaEvent =
   | { kind: "settled"; matchId: Bytes32; player: Address; marketId: MarketId; cardIndex: number; payoutBase: bigint; pnlBase: bigint }
   | { kind: "finalized"; matchId: Bytes32; winner: Address | null; creatorPnlBase: bigint; challengerPnlBase: bigint; potAwardedBase: bigint }
   | { kind: "refunded"; matchId: Bytes32; reason: RefundReason; perPlayerBase: bigint }
-  | { kind: "claimed"; player: Address; amountBase: bigint; by: Address };
+  | { kind: "claimed"; player: Address; amountBase: bigint; by: Address }
+  /** `agent` null is a revocation. */
+  | { kind: "agent"; matchId: Bytes32; player: Address; agent: Address | null; expiresAtSec: number; budgetBase: bigint };
 
 /** One event with the chain identity that orders it — and the identity the database inserts against. */
 export interface ArenaEventLog {
@@ -198,15 +200,40 @@ export interface ArenaEventLog {
 }
 
 /**
+ * The key a seat names at entry: who, for how long, the deck's own ceiling on the stakes it may hand the
+ * arena (`perCardCapBase × deckSize`, booked gross), and the gas the entry transaction sends it — so the
+ * wallet signs once and the key swipes.
+ */
+export interface ArenaAgentGrant {
+  agent: Address;
+  ttlSec: number;
+  budgetBase: bigint;
+  gasWei: bigint;
+}
+
+/** `IGameArena.Agent` as read back: null once revoked or never named. */
+export interface ArenaAgent {
+  agent: Address;
+  expiresAtSec: number;
+  budgetBase: bigint;
+  spentBase: bigint;
+}
+
+/**
  * Everything a duel ever asks the chain to do, as data. The permissionless ones are marked: any caller
  * may crank them, and the money still goes where the arena already recorded it should.
  */
 export type ArenaIntent =
-  | { kind: "arena-create"; matchId: Bytes32; challenger: Address; tier: number; deckHash: Bytes32; deckSize: number; policyVersion: number; potBase: bigint }
-  | { kind: "arena-join"; matchId: Bytes32; potBase: bigint }
+  /** With `agent`, the entry names and funds the seat's key in the same transaction (`createMatchWithAgent`). */
+  | { kind: "arena-create"; matchId: Bytes32; challenger: Address; tier: number; deckHash: Bytes32; deckSize: number; policyVersion: number; potBase: bigint; agent?: ArenaAgentGrant }
+  | { kind: "arena-join"; matchId: Bytes32; potBase: bigint; agent?: ArenaAgentGrant }
+  /** Names, or with `agent: null` revokes, the seat's key after entry. */
+  | { kind: "arena-authorize"; matchId: Bytes32; agent: Address | null; ttlSec: number }
   /** Permissionless: the commitment, not a key, is what proves the deck was fixed first. */
   | { kind: "arena-reveal"; matchId: Bytes32; serverSeed: Bytes32; clientSeeds: readonly Bytes32[]; cards: readonly MarketId[] }
   | { kind: "arena-pick"; matchId: Bytes32; cardIndex: number; pick: Pick; stakeBase: bigint; minQuantityRaw: bigint }
+  /** The same pick, signed by the seat's key: the stake and the refund are `player`'s, the signature is not. */
+  | { kind: "arena-pick-for"; player: Address; matchId: Bytes32; cardIndex: number; pick: Pick; stakeBase: bigint; minQuantityRaw: bigint }
   /** Permissionless once the pick deadline has passed. */
   | { kind: "arena-lock"; matchId: Bytes32 }
   /** Permissionless once the card's Window is resolved or voided. */
@@ -221,9 +248,13 @@ export type ArenaIntent =
   /** Permissionless: the credit only ever goes to the player named. */
   | { kind: "arena-claim"; player: Address };
 
-/** The intents that move a player's own money and therefore need an allowance first. */
+/**
+ * The intents that move the caller's own money and therefore need an allowance first. An entry that names a
+ * key covers the deck's ceiling too, because the wallet will not be asked again before the key's picks draw
+ * on it; a key's pick spends the player's allowance, not the key's, so it needs none.
+ */
 export function arenaIntentSpend(intent: ArenaIntent): bigint {
-  if (intent.kind === "arena-create" || intent.kind === "arena-join") return intent.potBase;
+  if (intent.kind === "arena-create" || intent.kind === "arena-join") return intent.potBase + (intent.agent?.budgetBase ?? 0n);
   if (intent.kind === "arena-pick") return intent.stakeBase;
   return 0n;
 }

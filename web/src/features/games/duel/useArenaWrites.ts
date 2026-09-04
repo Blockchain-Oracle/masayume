@@ -5,6 +5,7 @@ import {
   PICK_ATTEMPT_MAX,
   pickFloorRaw,
   stakeTierIndex,
+  type ArenaAgentGrant,
   type ArenaIntent,
   type Pick,
   type StakeTierId,
@@ -21,6 +22,7 @@ import type { PublicClient } from "viem";
 import { webEnv } from "@/lib/env";
 import { useWalletSession } from "@/lib/wallet-session";
 import { useOwnerWalletClient } from "@/providers/UserSessionProvider";
+import { useGameSession, type GameSession } from "./useGameSession";
 
 /**
  * Every transaction a duel asks of a player: opening the match, joining it, and each pick.
@@ -63,6 +65,7 @@ export interface PickProgress {
 
 export function useArenaWrites() {
   const submitter = useSubmitter();
+  const game = useGameSession();
   const walletClient = useOwnerWalletClient();
   const { address } = useWalletSession();
   const queryClient = useQueryClient();
@@ -116,7 +119,7 @@ export function useArenaWrites() {
 
   /** The creator's transaction: the pot goes in and the sealed deck's hash goes on chain with it. */
   const create = useCallback(
-    (input: { matchId: Bytes32; challenger: Address; tier: StakeTierId; deckHash: Bytes32; deckSize: number; policyVersion: number; potBase: bigint }) =>
+    (input: { matchId: Bytes32; challenger: Address; tier: StakeTierId; deckHash: Bytes32; deckSize: number; policyVersion: number; potBase: bigint; agent?: ArenaAgentGrant }) =>
       send(
         {
           kind: "arena-create",
@@ -127,6 +130,7 @@ export function useArenaWrites() {
           deckSize: input.deckSize,
           policyVersion: input.policyVersion,
           potBase: input.potBase,
+          ...(input.agent ? { agent: input.agent } : {}),
         },
         "create",
       ),
@@ -134,7 +138,7 @@ export function useArenaWrites() {
   );
 
   const join = useCallback(
-    (matchId: Bytes32, potBase: bigint) => send({ kind: "arena-join", matchId, potBase }, "join"),
+    (matchId: Bytes32, potBase: bigint, agent?: ArenaAgentGrant) => send({ kind: "arena-join", matchId, potBase, ...(agent ? { agent } : {}) }, "join"),
     [send],
   );
 
@@ -160,6 +164,10 @@ export function useArenaWrites() {
    *
    * The deadline guard stops attempts a few seconds early rather than at the line: a send already in
    * flight still has to be mined, and a pick that lands after the lock is gas spent on a revert.
+   *
+   * With a game key in hand the pick is `placePickFor`, signed by the key and paid for by the player:
+   * no wallet prompt, and the gas check is the key's own tank. Without one it is the player's own
+   * `placePick`, one signature per card — the shape the first duels shipped with.
    */
   const pick = useCallback(
     async (input: { matchId: Bytes32; cardIndex: number; marketId: MarketId; side: Pick; stakeBase: bigint; deadlineSec: number }): Promise<ArenaPickOutcome> => {
@@ -168,7 +176,8 @@ export function useArenaWrites() {
         return { status: "refused", diagnosis: diagnosis("signer-required", "this browser has no signing session bound") };
       }
 
-      const ctx = { journal: submitter.journal, wallet: address, contracts: c };
+      const keyed = game.session;
+      const ctx = keyed ? { journal: keyed.submitter.journal, wallet: keyed.address, contracts: keyed.contracts } : { journal: submitter.journal, wallet: address, contracts: c };
       setBusy(`pick:${input.cardIndex}`);
       let last: ArenaPickOutcome = { status: "refused", diagnosis: diagnosis("order-expired", "the pick deadline passed before a fill landed") };
 
@@ -180,14 +189,13 @@ export function useArenaWrites() {
           const quote = await quoteArenaPick(input.marketId, input.side, input.stakeBase);
           if (!isOk(quote) || !quote.value) continue;
 
-          last = await submitArenaPick(ctx, {
-            kind: "arena-pick",
-            matchId: input.matchId,
-            cardIndex: input.cardIndex,
-            pick: input.side,
-            stakeBase: input.stakeBase,
-            minQuantityRaw: pickFloorRaw(quote.value.quantityRaw, attempt),
-          });
+          const floor = pickFloorRaw(quote.value.quantityRaw, attempt);
+          last = await submitArenaPick(
+            ctx,
+            keyed
+              ? { kind: "arena-pick-for", player: address, matchId: input.matchId, cardIndex: input.cardIndex, pick: input.side, stakeBase: input.stakeBase, minQuantityRaw: floor }
+              : { kind: "arena-pick", matchId: input.matchId, cardIndex: input.cardIndex, pick: input.side, stakeBase: input.stakeBase, minQuantityRaw: floor },
+          );
           if (last.status === "confirmed" || last.status === "unknown") return last;
         }
         return last;
@@ -197,10 +205,12 @@ export function useArenaWrites() {
         await refresh();
       }
     },
-    [submitter, address, contracts, refresh],
+    [submitter, address, contracts, refresh, game.session],
   );
 
   return {
+    /** The key this browser swipes with, and the grant an entry names for it. */
+    game: game as GameSession,
     create,
     join,
     claim,

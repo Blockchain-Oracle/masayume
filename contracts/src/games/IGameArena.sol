@@ -85,6 +85,15 @@ interface IGameArena {
         uint128 payoutBase;
     }
 
+    /// @dev A match-scoped delegate for one seat: the key the player named, until when, and the deck's own
+    ///      ceiling on what it may hand the arena in stakes (`perCardCapBase × deckSize`, booked gross).
+    struct Agent {
+        address agent;
+        uint64 expiresAtSec;
+        uint128 budgetBase;
+        uint128 spentBase;
+    }
+
     /// @dev A size read off the live book for a stake: what it buys, what that costs, and the limit the
     ///      IOC will carry.
     struct Quote {
@@ -119,6 +128,9 @@ interface IGameArena {
     event MatchFinalized(bytes32 indexed matchId, address winner, int256 creatorPnlBase, int256 challengerPnlBase, uint256 potAwarded);
     event MatchRefunded(bytes32 indexed matchId, RefundReason reason, uint256 perPlayerBase);
     event CreditClaimed(address indexed player, uint256 amount, address by);
+    /// @dev `agent == 0` is a revocation. Emitted by the entry transaction that named the key and by `authorizeAgent`.
+    event AgentAuthorized(bytes32 indexed matchId, address indexed player, address indexed agent, uint64 expiresAtSec, uint128 budgetBase);
+    event AgentFunded(address indexed agent, uint256 amountWei);
 
     error NotAdmin(address caller);
     error ZeroAddress();
@@ -154,4 +166,10 @@ interface IGameArena {
     error CardsOutstanding(bytes32 matchId);
     error NoCredit(address player);
     error Overflow(uint256 value);
+
+    error NotAgent(bytes32 matchId, address player, address caller);
+    error AgentExpired(bytes32 matchId, uint64 expiresAtSec);
+    error AgentOverBudget(bytes32 matchId, uint256 spent, uint256 budget);
+    error BadTtl(uint32 ttlSec);
+    error AgentUnfunded(address agent);
 }

@@ -44,6 +44,12 @@ const ARENA_REVERT_KINDS: Record<string, DiagnosisKind> = {
   CardsOutstanding: "not-settled",
   NoCredit: "contract-revert",
   Overflow: "contract-revert",
+  // The agent lane: a key that is not the seat's, has run out, or would overstep the deck's ceiling.
+  NotAgent: "signer-required",
+  AgentExpired: "signer-required",
+  AgentOverBudget: "contract-revert",
+  BadTtl: "contract-revert",
+  AgentUnfunded: "contract-revert",
   ERC20InsufficientAllowance: "insufficient-allowance",
   ERC20InsufficientBalance: "insufficient-collateral",
 };

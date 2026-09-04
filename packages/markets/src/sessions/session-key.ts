@@ -8,6 +8,7 @@ import type { MarketsEnv } from "../env";
 import { requiredGasWei } from "../submitter/gas";
 import { awaitReceipt } from "../vault/write";
 import type { SponsorTransport } from "../vault/sponsor";
+import type { AuthorityKind } from "./authority";
 import { createSubmitterSession, type SubmitterSession } from "./submitter-session";
 
 /**
@@ -33,6 +34,8 @@ export function generateSessionKey(owner: Address, nowMs: number = Date.now()): 
 export interface SessionKeySessionConfig {
   env: MarketsEnv;
   privateKey: Hex;
+  /** The tap-trade key by default; the duel's per-match key signs under `game-session` so the journal names it. */
+  authority?: Extract<AuthorityKind, "session-key" | "game-session">;
   journal: IntentJournal;
   nowMs?: () => number;
   /** When a relayer pays for the key's taps; without it the key pays from its own STT. */
@@ -43,7 +46,7 @@ export interface SessionKeySessionConfig {
 export function createSessionKeySession(config: SessionKeySessionConfig): Promise<SubmitterSession> {
   return createSubmitterSession({
     env: config.env,
-    authority: "session-key",
+    authority: config.authority ?? "session-key",
     signer: { privateKey: config.privateKey },
     journal: config.journal,
     ...(config.nowMs ? { nowMs: config.nowMs } : {}),

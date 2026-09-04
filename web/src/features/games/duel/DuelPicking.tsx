@@ -1,7 +1,10 @@
 "use client";
 
 import {
+  SEAT_CHALLENGER,
+  SEAT_CREATOR,
   STAKE_TIERS,
+  arenaPickKey,
   cardPlayable,
   pickWindowEndsSec,
   type DeckCard,
@@ -9,17 +12,27 @@ import {
   type Pick,
 } from "@masayume/core/games";
 import { isOk } from "@masayume/core/schemas";
-import type { Bytes32 } from "@masayume/core/types";
+import type { Address, Bytes32 } from "@masayume/core/types";
 import { formatBaseUnits, formatClock } from "@masayume/core/units";
+import { quoteArenaPick } from "@masayume/markets/games";
 import { useArenaState } from "@masayume/markets/react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNowMs } from "@/components/data";
 import { useVenue } from "@/features/markets";
+import { webEnv } from "@/lib/env";
 import { StageFace, StageFact } from "../stage/StageFace";
 import { SwipeDeck } from "../stage/SwipeDeck";
 import { DUEL } from "./copy";
 import { useArenaWrites } from "./useArenaWrites";
 import type { DuelRoom } from "./useDuelRoom";
+
+/**
+ * A card's own cutoff is the earlier of the pick window and the arena's floor on its life; this long
+ * before it, a card nobody has swiped is played by the key on the favoured side — Flicky's auto-swipe
+ * (`active-duel.tsx` L504–549), which fires at the deadline because its transactions are buffered
+ * server-side; ours have no such buffer, so the lead is the buffer.
+ */
+const AUTO_SWIPE_LEAD_SEC = 15;
 
 /**
  * The swipe, with money behind it.
@@ -43,8 +56,12 @@ export function DuelPicking({ state, wallet, room }: { state: Extract<MatchState
   const nowMs = useNowMs();
   const arena = useArenaState();
   const { boot } = useVenue();
-  const { pick, progress, busy, canSign } = useArenaWrites();
+  const { pick, progress, busy, canSign, refusal, game } = useArenaWrites();
   const [failed, setFailed] = useState<number | null>(null);
+  /** Cards the key played at their cutoff, so the list can say so — the chain records a pick, not who chose it. */
+  const [autoPlayed, setAutoPlayed] = useState<readonly number[]>([]);
+  const autoRef = useRef<string | null>(null);
+  const keyed = game.session !== null;
 
   const you = wallet?.toLowerCase() ?? null;
   const params = arena && isOk(arena) ? arena.value?.params : undefined;
@@ -64,6 +81,8 @@ export function DuelPicking({ state, wallet, room }: { state: Extract<MatchState
   const leftSec = Math.max(0, endsSec - nowSec);
   const playable = active !== null && params !== undefined && cardPlayable(active, params, nowSec);
 
+  const seat = you !== null && state.players.creator.toLowerCase() === you ? SEAT_CREATOR : SEAT_CHALLENGER;
+
   const onPick = useCallback(
     (card: DeckCard, side: Pick) => {
       if (stakeBase === null || !canSign) return;
@@ -71,11 +90,45 @@ export function DuelPicking({ state, wallet, room }: { state: Extract<MatchState
       // Advisory only, and without the side: the opponent learns that you are on this card.
       room.send({ type: "pick.pending", matchId: state.matchId, cardIndex: card.index });
       void pick({ matchId: state.matchId as Bytes32, cardIndex: card.index, marketId: card.marketId, side, stakeBase, deadlineSec: endsSec }).then((outcome) => {
-        if (outcome.status !== "confirmed" && outcome.status !== "unknown") setFailed(card.index);
+        if (outcome.status !== "confirmed" && outcome.status !== "unknown") {
+          setFailed(card.index);
+          return;
+        }
+        // The receipt this browser just earned advances the deck now; the projector's copy of the same
+        // pick lands on the same key seconds later and replaces it.
+        if (outcome.status === "confirmed" && you) {
+          room.recordPick({
+            cardIndex: card.index,
+            player: you as Address,
+            pick: side,
+            quantity: outcome.quantity,
+            costBase: outcome.costBase,
+            payoutBase: null,
+            pickKey: arenaPickKey(webEnv.markets.chainId, state.matchId, card.index, seat),
+          });
+        }
       });
     },
-    [pick, room, state.matchId, stakeBase, endsSec, canSign],
+    [pick, room, state.matchId, stakeBase, endsSec, canSign, you, seat],
   );
+
+  // Flicky's auto-swipe, through the key only: a card left unswiped into its last seconds is played on
+  // the side the book prices above even money, once per card, and marked as played for the player.
+  useEffect(() => {
+    if (!active || !params || stakeBase === null || decimals === null || !canSign || !keyed || busy !== null || failed === active.index) return;
+    const cutoffSec = Math.min(endsSec, active.expirySec - params.minCardLifeSec);
+    if (nowSec < cutoffSec - AUTO_SWIPE_LEAD_SEC || nowSec >= cutoffSec) return;
+    const key = `${state.matchId}:${active.index}`;
+    if (autoRef.current === key) return;
+    autoRef.current = key;
+    const card = active;
+    void quoteArenaPick(card.marketId, "up", stakeBase).then((up) => {
+      const one = 10n ** BigInt(decimals);
+      const favoured: Pick = isOk(up) && up.value !== null && up.value.priceRaw * 2n >= one ? "up" : "down";
+      setAutoPlayed((held) => [...held, card.index]);
+      onPick(card, favoured);
+    });
+  }, [active, params, stakeBase, decimals, canSign, keyed, busy, failed, endsSec, nowSec, state.matchId, onPick]);
 
   const money = (base: bigint | null) => (base === null || decimals === null ? "—" : formatBaseUnits(base, decimals, { maxDp: 2, minDp: 0 }));
 
@@ -96,7 +149,8 @@ export function DuelPicking({ state, wallet, room }: { state: Extract<MatchState
     [nowMs, stakeBase, symbol, leftSec, decimals],
   );
 
-  const refusal = !canSign ? DUEL.lobby.noSigner : active && params && !playable ? DUEL.picking.tooLate : null;
+  const held = !canSign ? DUEL.lobby.noSigner : keyed && refusal?.gasShort ? DUEL.picking.keyGasShort : active && params && !playable ? DUEL.picking.tooLate : null;
+  const lastAuto = autoPlayed.length > 0 ? mine.find((r) => r.cardIndex === autoPlayed[autoPlayed.length - 1]) : undefined;
 
   /** The opponent's cue only means anything while it is fresh; a stale one is a lie about presence. */
   const OPPONENT_CUE_MS = 8_000;
@@ -111,11 +165,19 @@ export function DuelPicking({ state, wallet, room }: { state: Extract<MatchState
         playedSide={playedSide}
         onPick={onPick}
         busy={busy !== null}
-        refusal={refusal}
+        refusal={held}
         renderFace={renderFace}
         hint={
           <p className="st-hint">
-            {progress ? DUEL.picking.placing(progress.attempt) : failed !== null ? DUEL.picking.failed : DUEL.picking.raceNote}
+            {progress
+              ? DUEL.picking.placing(progress.attempt)
+              : failed !== null
+                ? DUEL.picking.failed
+                : lastAuto
+                  ? DUEL.picking.autoNote(lastAuto.pick)
+                  : keyed
+                    ? DUEL.picking.keySwipes
+                    : DUEL.picking.raceNote}
           </p>
         }
       />
@@ -141,7 +203,10 @@ export function DuelPicking({ state, wallet, room }: { state: Extract<MatchState
                     <span className={`du-dot du-dot--${receipt.pick}`} aria-hidden />
                     <span className="du-v">{card?.asset ?? "—"}</span>
                     <span className="du-k">{receipt.pick}</span>
-                    <span className="du-foot">{DUEL.picking.filled(receipt.quantity.toString(), money(receipt.costBase), symbol)}</span>
+                    <span className="du-foot">
+                      {DUEL.picking.filled(receipt.quantity.toString(), money(receipt.costBase), symbol)}
+                      {autoPlayed.includes(receipt.cardIndex) ? ` · ${DUEL.picking.autoPlayed}` : ""}
+                    </span>
                   </li>
                 );
               })}

@@ -6,6 +6,7 @@ import {
   serverMessageSchema,
   transition,
   ROOM_PROTOCOL_VERSION,
+  type CardReceipt,
   type ClientMessage,
   type DuelMode,
   type MatchState,
@@ -127,6 +128,12 @@ export interface DuelRoom {
   dismissError: () => void;
   /** The socket, for the slices that send more than the queue does. Silently ignored when closed. */
   send: (message: ClientMessage) => void;
+  /**
+   * A pick this browser just confirmed, folded in from its own receipt rather than waited for from the
+   * projector — the same `pickConfirmed` the room will send seconds later, applied by `pickKey`, so the
+   * second arrival replaces the first instead of stacking.
+   */
+  recordPick: (receipt: CardReceipt) => void;
 }
 
 function freshSeed(): `0x${string}` {
@@ -358,9 +365,12 @@ export function useDuelRoom(region = "default"): DuelRoom {
     if ("matchId" in state) send({ type: "resync", matchId: state.matchId });
   }, [send, state]);
 
+  const recordPick = useCallback((receipt: CardReceipt) => dispatch({ kind: "pickConfirmed", receipt }), []);
+
   return {
     auth,
     authorize,
+    recordPick,
     status,
     state,
     queue,

@@ -7,6 +7,7 @@ export {
   getArenaMatch,
   getArenaState,
   quoteArenaPick,
+  readArenaAgent,
   toArenaMatch,
   toArenaParams,
   type ArenaMatchView,

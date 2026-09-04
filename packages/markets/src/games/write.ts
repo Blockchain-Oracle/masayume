@@ -2,7 +2,7 @@ import { ARENA_NOT_DEPLOYED, arenaIntentSpend, type ArenaIntent } from "@masayum
 import type { IntentJournal, PhaseListener, TxOutcome } from "@masayume/core/ports";
 import { diagnosis, type Address, type Diagnosis, type Hex } from "@masayume/core/types";
 import { formatBaseUnits } from "@masayume/core/units";
-import { erc20Abi, maxUint256, parseEventLogs, type ContractFunctionArgs, type ContractFunctionName } from "viem";
+import { erc20Abi, maxUint256, parseEventLogs, zeroAddress, type ContractFunctionArgs, type ContractFunctionName } from "viem";
 import { SOMNIA_SHANNON } from "../chain";
 import { getCollateral } from "../collateral";
 import { gameArenaAbi } from "../contracts/game-arena.abi";
@@ -11,8 +11,8 @@ import { checkGas, gasLimitFor } from "../submitter/gas";
 import { awaitReceipt, settleVaultFailure, type Sent, type VaultContracts } from "../vault/write";
 import { diagnoseArena } from "./errors";
 
-type ArenaFn = ContractFunctionName<typeof gameArenaAbi, "nonpayable">;
-type Args<F extends ArenaFn> = ContractFunctionArgs<typeof gameArenaAbi, "nonpayable", F>;
+type ArenaFn = ContractFunctionName<typeof gameArenaAbi, "nonpayable" | "payable">;
+type Args<F extends ArenaFn> = ContractFunctionArgs<typeof gameArenaAbi, "nonpayable" | "payable", F>;
 
 export interface ArenaTxContext {
   journal: IntentJournal;
@@ -39,8 +39,11 @@ function account(contracts: VaultContracts): Address {
   return acct.address as Address;
 }
 
-/** Simulate first — where viem decodes the arena's custom errors — then send, then wait for the receipt. */
-export async function writeGameArena<F extends ArenaFn>(contracts: VaultContracts, functionName: F, args: Args<F>, label: string): Promise<Sent> {
+/**
+ * Simulate first — where viem decodes the arena's custom errors — then send, then wait for the receipt.
+ * `value` rides only on the two payable entries, as the gas an entry hands its key.
+ */
+export async function writeGameArena<F extends ArenaFn>(contracts: VaultContracts, functionName: F, args: Args<F>, label: string, value?: bigint): Promise<Sent> {
   const address = arenaAddress();
   const { request } = await contracts.publicClient.simulateContract({
     address,
@@ -49,6 +52,7 @@ export async function writeGameArena<F extends ArenaFn>(contracts: VaultContract
     args,
     account: contracts.walletClient.account,
     chain: SOMNIA_SHANNON,
+    ...(value !== undefined && value > 0n ? { value } : {}),
   } as never);
   const hash = await contracts.walletClient.writeContract({ ...(request as object), gas: gasLimitFor("arena") } as never);
   return { hash, receipt: await awaitReceipt(contracts.publicClient, hash, label) };
@@ -80,14 +84,26 @@ export async function sendArenaIntent(contracts: VaultContracts, intent: ArenaIn
   await ensureArenaAllowance(contracts, arenaIntentSpend(intent));
   switch (intent.kind) {
     case "arena-create":
-      return writeGameArena(
-        contracts,
-        "createMatch",
-        [intent.matchId, intent.challenger, intent.tier, intent.deckHash, intent.deckSize, intent.policyVersion],
-        intent.kind,
-      );
+      return intent.agent
+        ? writeGameArena(
+            contracts,
+            "createMatchWithAgent",
+            [intent.matchId, intent.challenger, intent.tier, intent.deckHash, intent.deckSize, intent.policyVersion, intent.agent.agent, intent.agent.ttlSec],
+            intent.kind,
+            intent.agent.gasWei,
+          )
+        : writeGameArena(
+            contracts,
+            "createMatch",
+            [intent.matchId, intent.challenger, intent.tier, intent.deckHash, intent.deckSize, intent.policyVersion],
+            intent.kind,
+          );
     case "arena-join":
-      return writeGameArena(contracts, "joinMatch", [intent.matchId], intent.kind);
+      return intent.agent
+        ? writeGameArena(contracts, "joinMatchWithAgent", [intent.matchId, intent.agent.agent, intent.agent.ttlSec], intent.kind, intent.agent.gasWei)
+        : writeGameArena(contracts, "joinMatch", [intent.matchId], intent.kind);
+    case "arena-authorize":
+      return writeGameArena(contracts, "authorizeAgent", [intent.matchId, intent.agent ?? zeroAddress, intent.ttlSec], intent.kind);
     case "arena-reveal":
       return writeGameArena(
         contracts,
@@ -100,6 +116,13 @@ export async function sendArenaIntent(contracts: VaultContracts, intent: ArenaIn
         contracts,
         "placePick",
         [intent.matchId, intent.cardIndex, intent.pick === "up" ? 0 : 1, intent.stakeBase, intent.minQuantityRaw],
+        intent.kind,
+      );
+    case "arena-pick-for":
+      return writeGameArena(
+        contracts,
+        "placePickFor",
+        [intent.player, intent.matchId, intent.cardIndex, intent.pick === "up" ? 0 : 1, intent.stakeBase, intent.minQuantityRaw],
         intent.kind,
       );
     case "arena-lock":
@@ -124,13 +147,17 @@ export function summarizeArena(intent: ArenaIntent, decimals: number): string {
   const amount = (base: bigint) => formatBaseUnits(base, decimals);
   switch (intent.kind) {
     case "arena-create":
-      return `open a ${amount(intent.potBase)} duel against ${intent.challenger} over ${intent.deckSize} cards`;
+      return `open a ${amount(intent.potBase)} duel against ${intent.challenger} over ${intent.deckSize} cards${intent.agent ? `, key ${intent.agent.agent} swiping` : ""}`;
     case "arena-join":
-      return `join duel ${intent.matchId} with a ${amount(intent.potBase)} side-pot`;
+      return `join duel ${intent.matchId} with a ${amount(intent.potBase)} side-pot${intent.agent ? `, key ${intent.agent.agent} swiping` : ""}`;
+    case "arena-authorize":
+      return intent.agent ? `name ${intent.agent} to swipe for me in duel ${intent.matchId}` : `revoke my key in duel ${intent.matchId}`;
     case "arena-reveal":
       return `open the deck of ${intent.cards.length} Windows for duel ${intent.matchId}`;
     case "arena-pick":
       return `play card ${intent.cardIndex} ${intent.pick} for at most ${amount(intent.stakeBase)}`;
+    case "arena-pick-for":
+      return `play card ${intent.cardIndex} ${intent.pick} for ${intent.player}, at most ${amount(intent.stakeBase)}`;
     case "arena-lock":
       return `close the pick window on duel ${intent.matchId}`;
     case "arena-settle-card":
@@ -184,7 +211,7 @@ export async function submitArenaTx(ctx: ArenaTxContext, intent: ArenaIntent, on
 /** The pick, with what the swipe stage needs back: the size that filled, not the size that was asked for. */
 export async function submitArenaPick(
   ctx: ArenaTxContext,
-  intent: Extract<ArenaIntent, { kind: "arena-pick" }>,
+  intent: Extract<ArenaIntent, { kind: "arena-pick" | "arena-pick-for" }>,
   onPhase?: PhaseListener,
 ): Promise<ArenaPickOutcome> {
   if (!ctx.contracts || !getArenaDeployment()) return { status: "refused", diagnosis: diagnosis("not-deployed", ARENA_NOT_DEPLOYED) };

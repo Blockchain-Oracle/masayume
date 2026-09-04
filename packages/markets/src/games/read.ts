@@ -2,6 +2,7 @@ import {
   arenaStatusOf,
   cardsInMask,
   pickOf as pickFromIndex,
+  type ArenaAgent,
   type ArenaMatch,
   type ArenaParams,
   type ArenaPick,
@@ -12,7 +13,7 @@ import {
 } from "@masayume/core/games";
 import type { Reading } from "@masayume/core/schemas";
 import { toMarketId, type Address, type Bytes32, type MarketId } from "@masayume/core/types";
-import type { PublicClient } from "viem";
+import { zeroAddress, type PublicClient } from "viem";
 import { MULTICALL3_ADDRESS } from "../chain";
 import { gameArenaAbi } from "../contracts/game-arena.abi";
 import { withReading } from "../provider/reading";
@@ -220,6 +221,17 @@ export async function getArenaCredit(wallet: Address): Promise<Reading<bigint>> 
     const contract = arenaContract();
     if (!contract) return 0n;
     return (await viem().readContract({ ...contract, functionName: "creditOf", args: [wallet] })) as bigint;
+  });
+}
+
+/** The key a seat has named for this match, or null when none is live — read before a pick is routed through one. */
+export async function readArenaAgent(matchId: Bytes32, player: Address): Promise<Reading<ArenaAgent | null>> {
+  return withReading(`arenaAgent:${matchId}:${player}`, async () => {
+    const contract = arenaContract();
+    if (!contract) return null;
+    const a = await viem().readContract({ ...contract, functionName: "agentOf", args: [matchId, player] });
+    if (a.agent === zeroAddress) return null;
+    return { agent: a.agent.toLowerCase() as Address, expiresAtSec: Number(a.expiresAtSec), budgetBase: a.budgetBase, spentBase: a.spentBase };
   });
 }
 

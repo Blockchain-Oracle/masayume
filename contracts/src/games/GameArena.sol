@@ -3,10 +3,9 @@ pragma solidity ^0.8.30;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IBinaryModule, IOutcomeToken6909} from "../interfaces/IDreamDex.sol";
 import {ArenaCommitment} from "./ArenaCommitment.sol";
-import {ArenaGateway} from "./ArenaGateway.sol";
+import {ArenaAgents} from "./ArenaAgents.sol";
 
 /// @title GameArena — a two-player duel over real DreamDEX Windows: each card is one confirmed IOC pick,
 ///        and only the side-pot is the arena's to award.
@@ -21,23 +20,13 @@ import {ArenaGateway} from "./ArenaGateway.sol";
 ///      still holds two players' real positions, so `settleCard` keeps working in every status past the
 ///      reveal — losing a pot must never cost a player the market position they paid for.
 /// @dev Storage and events carry market ids only (AD-10). Credits pay the player, never the caller (AD-5).
-contract GameArena is ArenaGateway, ReentrancyGuard {
+/// @dev The ledger, the refunds and the agent grants live in `ArenaMatches` and `ArenaAgents`; this contract
+///      is the trading half — entry, reveal, picks, lock, settlement, the pot.
+contract GameArena is ArenaAgents {
     using SafeERC20 for IERC20;
 
-    mapping(bytes32 matchId => Match) private _matches;
-    mapping(bytes32 matchId => bytes32[]) private _cards;
-    /// @dev Keyed by `cardIndex * 2 + seat`, so one card's two picks sit beside each other.
-    mapping(bytes32 matchId => mapping(uint16 slot => PickRecord)) private _picks;
-    mapping(bytes32 matchId => int256[2] bySeat) private _pnl;
-
-    mapping(address player => uint256) public creditOf;
-    /// @dev Pots held for undecided matches, and credits owed but unclaimed. The arena's collateral
-    ///      balance is at least their sum after every call; the rest is dust the venue refunded.
-    uint256 public escrowed;
-    uint256 public credited;
-
     constructor(IERC20 collateral_, IBinaryModule module_, IOutcomeToken6909 outcomeToken_, bytes32 venueId_, Params memory params_)
-        ArenaGateway(collateral_, module_, outcomeToken_, venueId_, params_)
+        ArenaAgents(collateral_, module_, outcomeToken_, venueId_, params_)
     {}
 
     // ------------------------------------------------------------------ entry
@@ -51,11 +40,36 @@ contract GameArena is ArenaGateway, ReentrancyGuard {
         external
         nonReentrant
     {
+        _create(matchId, challenger, tier, deckHash, deckSize, policyVersion);
+    }
+
+    /// @notice The same entry, with the seat's agent named and funded in the one transaction — the only
+    ///         signature a duel then asks of the creator's wallet.
+    function createMatchWithAgent(
+        bytes32 matchId,
+        address challenger,
+        uint8 tier,
+        bytes32 deckHash,
+        uint8 deckSize,
+        uint32 policyVersion,
+        address agent,
+        uint32 agentTtlSec
+    ) external payable nonReentrant {
+        if (agent == address(0)) revert ZeroAddress();
+        Match storage m = _create(matchId, challenger, tier, deckHash, deckSize, policyVersion);
+        _authorizeAgent(matchId, m, msg.sender, agent, agentTtlSec);
+        _fundAgent(agent);
+    }
+
+    function _create(bytes32 matchId, address challenger, uint8 tier, bytes32 deckHash, uint8 deckSize, uint32 policyVersion)
+        private
+        returns (Match storage m)
+    {
         if (paused) revert IsPaused();
         if (challenger == address(0)) revert ZeroAddress();
         if (challenger == msg.sender) revert SelfJoin();
         if (deckHash == bytes32(0)) revert DeckMismatch(deckHash, bytes32(0));
-        Match storage m = _matches[matchId];
+        m = _matches[matchId];
         if (m.creator != address(0)) revert MatchExists(matchId);
         Params memory p = params;
         if (deckSize < p.minDeckSize || deckSize > p.maxDeckSize) revert BadDeckSize(deckSize);
@@ -82,8 +96,20 @@ contract GameArena is ArenaGateway, ReentrancyGuard {
 
     /// @notice The named challenger matches the pot. Nothing else can be joined.
     function joinMatch(bytes32 matchId) external nonReentrant {
+        _join(matchId);
+    }
+
+    /// @notice The challenger's one signature: the pot, the seat's agent and its gas together.
+    function joinMatchWithAgent(bytes32 matchId, address agent, uint32 agentTtlSec) external payable nonReentrant {
+        if (agent == address(0)) revert ZeroAddress();
+        Match storage m = _join(matchId);
+        _authorizeAgent(matchId, m, msg.sender, agent, agentTtlSec);
+        _fundAgent(agent);
+    }
+
+    function _join(bytes32 matchId) private returns (Match storage m) {
         if (paused) revert IsPaused();
-        Match storage m = _get(matchId);
+        m = _get(matchId);
         if (m.status != Status.WAITING) revert WrongStatus(matchId, m.status);
         if (msg.sender != m.challenger) revert NotAPlayer(msg.sender);
         uint64 deadline = m.createdAtSec + params.joinWindowSec;
@@ -145,23 +171,44 @@ contract GameArena is ArenaGateway, ReentrancyGuard {
         nonReentrant
         returns (uint256 quantity, uint256 cost)
     {
+        return _pick(msg.sender, matchId, cardIndex, outcomeIdx, stake, minQuantityRaw);
+    }
+
+    /// @notice The same pick, placed by the seat's agent. The stake comes from `player`, the refund goes to
+    ///         `player`, and `PickFilled` names `player` — the key only signs.
+    function placePickFor(address player, bytes32 matchId, uint8 cardIndex, uint8 outcomeIdx, uint256 stake, uint256 minQuantityRaw)
+        external
+        nonReentrant
+        returns (uint256 quantity, uint256 cost)
+    {
+        _requireAgent(matchId, player, stake);
+        return _pick(player, matchId, cardIndex, outcomeIdx, stake, minQuantityRaw);
+    }
+
+    /// @dev The pick itself, for whichever seat `player` holds. The stake is drawn from the player and
+    ///      the unspent part returns to the player, whoever sent the transaction — so an agent's pick
+    ///      and the player's own are the same record with the same money behind it.
+    function _pick(address player, bytes32 matchId, uint8 cardIndex, uint8 outcomeIdx, uint256 stake, uint256 minQuantityRaw)
+        private
+        returns (uint256 quantity, uint256 cost)
+    {
         if (paused) revert IsPaused();
         Match storage m = _get(matchId);
         if (m.status != Status.PICKING) revert WrongStatus(matchId, m.status);
         if (block.timestamp > m.pickDeadlineSec) revert DeadlinePassed(m.pickDeadlineSec);
-        uint8 seat = _seatOf(m, msg.sender);
+        uint8 seat = _seatOf(m, player);
         if (cardIndex >= m.deckSize) revert BadCard(cardIndex);
         if (stake == 0) revert ZeroAmount();
         if (stake > m.perCardCapBase) revert StakeAboveCap(stake, m.perCardCapBase);
         PickRecord storage rec = _picks[matchId][_slot(cardIndex, seat)];
-        if (rec.placed) revert AlreadyPicked(matchId, cardIndex, msg.sender);
+        if (rec.placed) revert AlreadyPicked(matchId, cardIndex, player);
 
         bytes32 marketId = _cards[matchId][cardIndex];
         MarketRef memory ref = _resolve(marketId);
         Quote memory q = _sizeEntry(ref, marketId, outcomeIdx, stake);
         if (q.quantityRaw < minQuantityRaw) revert BelowMinQuantity(q.quantityRaw, minQuantityRaw);
 
-        collateral.safeTransferFrom(msg.sender, address(this), stake);
+        collateral.safeTransferFrom(player, address(this), stake);
         (cost, quantity) = _buyIoc(ref, outcomeIdx, q.limitYesRaw, q.quantityRaw);
         _collect(ref.pool);
         if (quantity == 0 || quantity < minQuantityRaw) revert BelowMinQuantity(quantity, minQuantityRaw);
@@ -178,8 +225,8 @@ contract GameArena is ArenaGateway, ReentrancyGuard {
         else m.pickedMask1 |= bit;
 
         uint256 refund = stake - cost;
-        if (refund != 0) collateral.safeTransfer(msg.sender, refund);
-        emit PickFilled(matchId, msg.sender, marketId, cardIndex, outcomeIdx, quantity, cost, refund);
+        if (refund != 0) collateral.safeTransfer(player, refund);
+        emit PickFilled(matchId, player, marketId, cardIndex, outcomeIdx, quantity, cost, refund);
 
         // The last pick locks the match itself, so a complete deck never waits on a crank.
         uint8 full = _fullMask(m.deckSize);
@@ -277,108 +324,5 @@ contract GameArena is ArenaGateway, ReentrancyGuard {
             }
         }
         emit MatchFinalized(matchId, winner, creatorPnl, challengerPnl, pot);
-    }
-
-    // ------------------------------------------------------------------ the ways out
-
-    /// @notice The creator withdraws a match nobody has joined.
-    function cancelMatch(bytes32 matchId) external nonReentrant {
-        Match storage m = _get(matchId);
-        if (m.status != Status.WAITING) revert WrongStatus(matchId, m.status);
-        if (msg.sender != m.creator) revert NotAPlayer(msg.sender);
-        _refundCreator(matchId, m, RefundReason.CREATOR_CANCELLED);
-    }
-
-    /// @notice Anyone may return an unjoined pot once the join window has closed.
-    function refundUnjoined(bytes32 matchId) external nonReentrant {
-        Match storage m = _get(matchId);
-        if (m.status != Status.WAITING) revert WrongStatus(matchId, m.status);
-        uint64 deadline = m.createdAtSec + params.joinWindowSec;
-        if (block.timestamp <= deadline) revert DeadlineNotPassed(deadline);
-        _refundCreator(matchId, m, RefundReason.JOIN_TIMEOUT);
-    }
-
-    /// @notice Anyone may return both pots when the deck was never opened. Losing the reveal material is
-    ///         an operator failure, so it refunds rather than punishing a player.
-    function refundUnrevealed(bytes32 matchId) external nonReentrant {
-        Match storage m = _get(matchId);
-        if (m.status != Status.ACTIVE_UNREVEALED) revert WrongStatus(matchId, m.status);
-        uint64 deadline = m.joinedAtSec + params.revealWindowSec;
-        if (block.timestamp <= deadline) revert DeadlineNotPassed(deadline);
-        _refundBoth(matchId, m, RefundReason.REVEAL_UNAVAILABLE);
-    }
-
-    /// @notice Takes a player's credits — pot and payouts alike. Pays the player, never the caller, so a
-    ///         relayer or a friend can crank it without becoming the beneficiary.
-    function claimCredit(address player) external nonReentrant returns (uint256 amount) {
-        amount = creditOf[player];
-        if (amount == 0) revert NoCredit(player);
-        creditOf[player] = 0;
-        credited -= amount;
-        collateral.safeTransfer(player, amount);
-        emit CreditClaimed(player, amount, msg.sender);
-    }
-
-    // ------------------------------------------------------------------ views
-
-    function matchOf(bytes32 matchId) external view returns (Match memory) {
-        return _matches[matchId];
-    }
-
-    function deckOf(bytes32 matchId) external view returns (bytes32[] memory) {
-        return _cards[matchId];
-    }
-
-    function pickOf(bytes32 matchId, uint8 cardIndex, uint8 seat) external view returns (PickRecord memory) {
-        return _picks[matchId][_slot(cardIndex, seat)];
-    }
-
-    /// @dev `payout - cost` summed over settled cards, per seat. Negative until a card pays.
-    function pnlOf(bytes32 matchId) external view returns (int256 creatorPnl, int256 challengerPnl) {
-        return (_pnl[matchId][0], _pnl[matchId][1]);
-    }
-
-    // ------------------------------------------------------------------ internals
-
-    function _get(bytes32 matchId) private view returns (Match storage m) {
-        m = _matches[matchId];
-        if (m.creator == address(0)) revert NoSuchMatch(matchId);
-    }
-
-    function _seatOf(Match storage m, address who) private view returns (uint8) {
-        if (who == m.creator) return 0;
-        if (who == m.challenger) return 1;
-        revert NotAPlayer(who);
-    }
-
-    function _slot(uint8 cardIndex, uint8 seat) private pure returns (uint16) {
-        return uint16(cardIndex) * 2 + seat;
-    }
-
-    function _fullMask(uint8 deckSize) private pure returns (uint8) {
-        return uint8((uint16(1) << deckSize) - 1);
-    }
-
-    function _refundCreator(bytes32 matchId, Match storage m, RefundReason reason) private {
-        uint256 per = m.potBase;
-        m.status = Status.REFUNDED;
-        if (per != 0) {
-            escrowed -= per;
-            credited += per;
-            creditOf[m.creator] += per;
-        }
-        emit MatchRefunded(matchId, reason, per);
-    }
-
-    function _refundBoth(bytes32 matchId, Match storage m, RefundReason reason) private {
-        uint256 per = m.potBase;
-        m.status = Status.REFUNDED;
-        if (per != 0) {
-            escrowed -= per * 2;
-            credited += per * 2;
-            creditOf[m.creator] += per;
-            creditOf[m.challenger] += per;
-        }
-        emit MatchRefunded(matchId, reason, per);
     }
 }
