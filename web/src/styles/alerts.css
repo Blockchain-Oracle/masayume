@@ -346,3 +346,35 @@
     display: none;
   }
 }
+
+
+/* In the hero foot the trigger takes the foot's own grammar — the Room's (`inline-flex items-center gap-1.5
+   font-mono text-[9px] uppercase tracking-[0.16em] text-white/45 hover:text-white`). The bordered pill above
+   is the reference's Share/Copy/Alert row, which the foot never had; a pill inside a 10px mono strip reads
+   as a second control bar and wraps the ramp at phone widths. Armed stays vermilion, as text. */
+.mh-foot-actions .alerts-button {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  gap: 6px;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+.mh-foot-actions .alerts-button:hover {
+  color: var(--white);
+}
+.mh-foot-actions .alerts-button.armed {
+  background: transparent;
+  color: var(--vermilion);
+}
+[data-theme="light"] .mh-foot-actions .alerts-button {
+  background: transparent;
+  color: rgba(20, 18, 16, 0.62);
+}
+[data-theme="light"] .mh-foot-actions .alerts-button:hover {
+  color: #141210;
+}

@@ -32,6 +32,7 @@ import { SideSegments } from "./SideSegments";
 import { deriveBlocker, deriveBoostBlocker, type TicketBlockerInput } from "./ticket-guards";
 import { TicketCta } from "./TicketCta";
 import { TicketHeader } from "./TicketHeader";
+import { TicketMiniChart } from "./TicketMiniChart";
 import type { TicketSelection } from "./types";
 import { useFundingCheck } from "./useFunding";
 import { usePlaceBet } from "./usePlaceBet";
@@ -255,6 +256,7 @@ export function Ticket({ selection, drawer }: TicketProps) {
           <div className="tk-drawer-head">
             <TicketHeader market={market} phase={phase} nowMs={t.nowMs} />
           </div>
+          <TicketMiniChart market={market} />
         </>
       )}
       {booked ? (
