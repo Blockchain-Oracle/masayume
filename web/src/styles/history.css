@@ -2,18 +2,88 @@
  * Values are the reference's own (Portfolio624Section rows, EquitySparkline, BadgeDisplay);
  * anything that sat on white-at-alpha is given its light-mode twin from part-14's ladder. */
 
-/* ── rows (reference L486–512) ── */
-.history-row {
+/* ── Your bets: the plate, the tabs, the rows, the pager ──
+   The reference's `.plate-rows` box (`Portfolio624Section` L383: border-white/[0.08] rounded, divide-y
+   rows at px-5 py-3 with a hover) with the two tabs its own portfolio spec asked for (§Section 4) and
+   the pager the owner asked for (2026-09-04) in place of an endless scroll. */
+.bets-plate {
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-1);
+  overflow: hidden;
+}
+/* Whatever the reading boundary shows in place of the list keeps the rows' inset. */
+.bets-plate > * { padding: 16px 20px; }
+.bets-plate > ul, .bets-plate > nav, .bets-plate > .bets-fill, .bets-plate > .bets-sublist { padding: 0; }
+.bets-fill { display: flex; flex-direction: column; }
+.bets-fill > p { padding: 10px 20px 0; }
+.bets-sublist { display: flex; flex-direction: column; border-top: 1px solid var(--color-hairline); }
+.bets-sublist > span { padding: 10px 20px 0; }
+.bets-list { display: flex; flex-direction: column; }
+.bets-list > li:first-child { border-top: 0; }
+.bets-sublist .bets-list > li:first-child { border-top: 1px solid var(--color-hairline); }
+
+.bets-tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--color-hairline);
+  border-radius: 999px;
+}
+.bets-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+  transition: color 180ms var(--ease), background-color 180ms var(--ease);
+}
+.bets-tab:hover { color: var(--color-ink); }
+.bets-tab--on { background: var(--color-surface-2); color: var(--color-ink); }
+.bets-tab-count { font-variant-numeric: tabular-nums; color: var(--gray-500); }
+
+/* One row: the reference's flex-wrap px-5 py-3 hover:bg-white/[0.02]. On a phone the money and the
+   action wrap to a second line under the call (`.bets-break`), so a row is two readable lines rather
+   than a ragged wrap. */
+.bets-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 16px;
-  padding: 12px 0;
+  padding: 12px 20px;
   border-top: 1px solid var(--color-hairline);
   transition: background-color 180ms var(--ease);
 }
-.history-row:hover { background: rgba(255, 255, 255, 0.02); }
-[data-theme="light"] .history-row:hover { background: rgba(20, 18, 16, 0.03); }
+.bets-row:hover { background: rgba(255, 255, 255, 0.02); }
+[data-theme="light"] .bets-row:hover { background: rgba(20, 18, 16, 0.03); }
+.bets-break { flex-basis: 100%; height: 0; }
+@media (min-width: 640px) {
+  .bets-break { display: none; }
+}
+
+/* Prev · 1–8 of 23 · Next */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 20px;
+  border-top: 1px solid var(--color-hairline);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+}
+.pager-button { color: var(--vermilion); transition: color 180ms var(--ease); }
+.pager-button:hover:not(:disabled) { color: var(--color-ink); }
+.pager-button:disabled { opacity: 0.35; cursor: not-allowed; }
+.pager-range { font-variant-numeric: tabular-nums; }
 
 .history-receipt-button {
   background: transparent;

@@ -65,7 +65,7 @@ export function LeverageBetRow(p: LeverageBetRowProps) {
   const settlingNow = busy === `settle:${position.positionId}`;
 
   return (
-    <li className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-hairline py-3">
+    <li className="bets-row">
       <span className={cn("type-label-micro shrink-0", live && !settling ? "text-ink-secondary" : "text-ink")}>
         {!live ? (
           settledLabel(position)
@@ -90,6 +90,7 @@ export function LeverageBetRow(p: LeverageBetRowProps) {
           <Countdown expirySec={position.expirySec} intervalSec={market.intervalSec} nowMs={nowMs} /> {PORTFOLIO.left}
         </span>
       )}
+      <span className="bets-break" aria-hidden />
       <span className="flex-1" />
       <span className="type-caption text-ink-secondary">
         {bets.staked} <Money value={position.stakeBase} decimals={decimals} symbol={symbol} />

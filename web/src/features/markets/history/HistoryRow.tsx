@@ -43,7 +43,7 @@ export function HistoryRow({ round, symbol, nowMs, onReceipt, onCrank, cranking 
   const vault = round.source === "vault";
 
   return (
-    <li className="history-row">
+    <li className="bets-row history-row">
       <span className={cn("type-label-micro shrink-0", round.outcome === "win" ? "text-ink" : "text-ink-secondary")}>{HISTORY.outcome[round.outcome]}</span>
 
       <Link href={marketDeepLink({ marketId: round.marketId })} data-cursor="hover" className="type-body-strong text-ink">
@@ -70,6 +70,7 @@ export function HistoryRow({ round, symbol, nowMs, onReceipt, onCrank, cranking 
       )}
       {round.shortCount > 0 && <span className="type-caption text-ink-muted">{HISTORY.shorted}</span>}
 
+      <span className="bets-break" aria-hidden />
       <span className="flex-1" />
 
       {nowMs > 0 && <span className="type-caption text-ink-muted numbers">{timeAgo(settledAtMs, nowMs)}</span>}

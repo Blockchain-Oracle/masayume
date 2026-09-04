@@ -37,7 +37,7 @@ export function BetRow({ position, symbol, nowMs }: BetRowProps) {
   const settling = state?.settling ?? false;
 
   return (
-    <li className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-hairline py-3">
+    <li className="bets-row">
       <span className={cn("type-label-micro shrink-0", settling ? "text-ink" : "text-ink-secondary")}>
         {settling ? (
           PORTFOLIO.settling
@@ -62,6 +62,7 @@ export function BetRow({ position, symbol, nowMs }: BetRowProps) {
         </span>
       )}
 
+      <span className="bets-break" aria-hidden />
       <span className="flex-1" />
 
       <span className="type-caption text-ink-secondary">

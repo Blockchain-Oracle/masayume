@@ -5,14 +5,19 @@ import { isOk } from "@masayume/core/schemas";
 import { formatBaseUnits, shortHex } from "@masayume/core/units";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Pager } from "@/components/chrome";
 import { useNowMs } from "@/components/data";
 import { useVenue } from "@/features/markets";
 import { timeAgo } from "@/features/markets/history/time-ago";
+import { usePager } from "@/lib/use-pager";
 import { useWalletSession } from "@/lib/wallet-session";
 import { GAMES } from "../copy";
 
 /** Flicky polls its history every eight seconds; a compact list needs no socket. */
 const POLL_MS = 8_000;
+/** Eight duels a page, the portfolio's own page size, with a pager beneath (owner, 2026-09-04). */
+const PAGE_SIZE = 8;
+const NO_ROWS: readonly DuelHistoryRow[] = [];
 
 type Feed = { configured: boolean; rows: DuelHistoryRow[] } | null;
 
@@ -51,6 +56,7 @@ export function DuelHistory() {
     };
   }, [address]);
 
+  const pager = usePager(feed?.rows ?? NO_ROWS, PAGE_SIZE);
   const you = address?.toLowerCase() ?? null;
   const money = (base: string | null) => (base === null || decimals === null ? "—" : formatBaseUnits(BigInt(base), decimals, { maxDp: 2, minDp: 2 }));
 
@@ -72,8 +78,9 @@ export function DuelHistory() {
       ) : feed.rows.length === 0 ? (
         <p className="du-body">{words.empty}</p>
       ) : (
+        <>
         <ul className="du-history">
-          {feed.rows.map((row) => {
+          {pager.slice.map((row) => {
             const creator = row.creator.toLowerCase() === you;
             const opponent = creator ? row.challenger : row.creator;
             const pnl = creator ? row.creatorPnlBase : row.challengerPnlBase;
@@ -98,6 +105,8 @@ export function DuelHistory() {
             );
           })}
         </ul>
+        <Pager pager={pager} className="du-pager" />
+        </>
       )}
     </div>
   );

@@ -317,3 +317,6 @@
 .du-prize-chip[data-eligible] { border-color: color-mix(in srgb, var(--vermilion) 45%, transparent); background: color-mix(in srgb, var(--vermilion) 14%, transparent); color: var(--vermilion); }
 .du-prize-locked { color: var(--gray-500); }
 .du-center { text-align: center; margin-top: 12px; }
+
+/* The history list turns pages of eight like the portfolio; the pager sits under the rows without the plate rule. */
+.du-pager { border-top: 0; padding-inline: 0; margin-top: 8px; }

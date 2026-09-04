@@ -7,6 +7,6 @@ export { invalidateVaultOpenBets, listVaultOpenBets, useVaultOpenBets, type Vaul
 export { useVaultWrite, type VaultWriteKind, type VaultWriteState } from "./useVaultWrite";
 export { deriveVaultBlocker } from "./vault-blocker";
 export { VaultBetRow } from "./VaultBetRow";
-export { VaultBetRows } from "./VaultBetRows";
+export { useVaultBetItems } from "./VaultBetRows";
 export { VaultCreditRows } from "./VaultCreditRows";
 export { VaultRow } from "./VaultRow";

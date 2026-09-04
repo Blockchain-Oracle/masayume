@@ -3,13 +3,13 @@
 import type { LeveragePosition } from "@masayume/core/leverage";
 import { isOk } from "@masayume/core/schemas";
 import { useLeverageMark, useLeverageReserve, useMarket, useMyLeveragePositions } from "@masayume/markets/react";
+import type { ListItem } from "@/lib/use-pager";
 import { useWalletSession } from "@/lib/wallet-session";
 import { useChainNowMs } from "../markets/useChainNow";
-import { LEVERAGE } from "./copy";
 import { LeverageBetRow } from "./LeverageBetRow";
 import { useLeverageWrites } from "./useLeverageWrites";
 
-const SETTLED_SHOWN = 5;
+const NONE: readonly ListItem[] = [];
 
 interface RowProps {
   position: LeveragePosition;
@@ -41,39 +41,25 @@ function Row({ position, symbol, decimals, nowMs, writes }: RowProps) {
 }
 
 /**
- * The wallet's boosts, listed under its own open bets: live ones with their mark, then the last few that
- * settled, knocked out or cashed out. Renders nothing without a reserve or without positions — the
- * wallet's panel already carries the empty state.
+ * The wallet's boosts as rows for the portfolio's two tabs: the live ones (with their mark) belong
+ * with the open bets, the ones that settled, knocked out or cashed out with the history. The tabs
+ * own the lists and their pages, so this returns items rather than sections. Empty without a
+ * reserve or without positions — the wallet's panel already carries the empty state.
  */
-export function LeverageBetRows({ symbol }: { symbol: string | undefined }) {
+export function useLeverageBetItems(symbol: string | undefined): { live: readonly ListItem[]; done: readonly ListItem[] } {
   const { address } = useWalletSession();
   const reserve = useLeverageReserve();
   const decimals = reserve && isOk(reserve) && reserve.value ? reserve.value.decimals : 6;
   const nowMs = useChainNowMs();
   const reading = useMyLeveragePositions(address);
   const writes = useLeverageWrites();
-  if (!reading || !isOk(reading) || reading.value.length === 0) return null;
-  const live = reading.value.filter((p) => p.status === "live");
-  const done = reading.value.filter((p) => p.status !== "live").slice(0, SETTLED_SHOWN);
-  return (
-    <>
-      {live.length > 0 && (
-        <ul className="flex flex-col">
-          {live.map((p) => (
-            <Row key={p.positionId.toString()} position={p} symbol={symbol} decimals={decimals} nowMs={nowMs} writes={writes} />
-          ))}
-        </ul>
-      )}
-      {done.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <span className="type-label-micro text-ink-muted">{LEVERAGE.bets.history}</span>
-          <ul className="flex flex-col">
-            {done.map((p) => (
-              <Row key={p.positionId.toString()} position={p} symbol={symbol} decimals={decimals} nowMs={nowMs} writes={writes} />
-            ))}
-          </ul>
-        </div>
-      )}
-    </>
-  );
+  if (!reading || !isOk(reading) || reading.value.length === 0) return { live: NONE, done: NONE };
+  const item = (p: LeveragePosition): ListItem => ({
+    key: `boost:${p.positionId.toString()}`,
+    node: <Row position={p} symbol={symbol} decimals={decimals} nowMs={nowMs} writes={writes} />,
+  });
+  return {
+    live: reading.value.filter((p) => p.status === "live").map(item),
+    done: reading.value.filter((p) => p.status !== "live").map(item),
+  };
 }
