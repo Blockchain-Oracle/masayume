@@ -34,6 +34,7 @@ async function main(): Promise<void> {
     minCardLifeSec: Number(process.env.MIN_CARD_LIFE_SEC ?? state.value.params.minCardLifeSec),
     joinWindowSec: Number(process.env.JOIN_WINDOW_SEC ?? state.value.params.joinWindowSec),
     revealWindowSec: Number(process.env.REVEAL_WINDOW_SEC ?? state.value.params.revealWindowSec),
+    pickWindowSec: Number(process.env.PICK_WINDOW_SEC ?? state.value.params.pickWindowSec),
   };
   const headroomSec = dealHeadroomSec(params);
 

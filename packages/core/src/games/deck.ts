@@ -45,10 +45,10 @@ export const INTERVAL_5M_SEC = 300;
 /**
  * A card must still have this long to run when the deck is dealt.
  *
- * A default, not the rule: the real figure is the arena's own `minCardLifeSec` plus its join and reveal
- * windows, because the contract checks card life at REVEAL and a reveal may legally land after both of
- * those have elapsed. The deckmaster computes it from the deployed parameters; this constant is only
- * what a caller gets for not saying.
+ * A default, not the rule: the real figure is the arena's own `minCardLifeSec` plus its join, reveal and
+ * pick windows, because the contract checks card life at REVEAL and again at every PICK, and a reveal may
+ * legally land after the join and reveal windows have elapsed. The deckmaster computes it from the
+ * deployed parameters; this constant is only what a caller gets for not saying.
  */
 export const MIN_HEADROOM_SEC = 600;
 

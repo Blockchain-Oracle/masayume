@@ -25,7 +25,8 @@ import { DECK_KEY_ENV, deckKey, journal, seal, type RevealMaterial } from "./sea
  * cards, every eligible Window taken rather than one cadence preferred, and headroom sized against the
  * arena's own deadlines instead of a guessed margin.
  */
-export const DECK_POLICY_VERSION = 3;
+/** 4 since 2026-09-04: the headroom holds the arena's card-life floor for the whole pick window (rule D). */
+export const DECK_POLICY_VERSION = 4;
 
 /** A duel should finish inside an hour: every card must settle within it, or the match outlives its players. */
 const HORIZON_SEC = Number(process.env.GAME_DECK_HORIZON_SEC ?? 60 * 60);
@@ -124,8 +125,8 @@ export interface DealInput {
   chainId: number;
   arena: Address;
   clientSeeds: readonly Bytes32[];
-  /** The arena's own deadlines. Headroom is derived from all three, never from `minCardLifeSec` alone. */
-  params: Pick<ArenaParams, "minCardLifeSec" | "joinWindowSec" | "revealWindowSec">;
+  /** The arena's own deadlines. Headroom is derived from all four, never from `minCardLifeSec` alone. */
+  params: Pick<ArenaParams, "minCardLifeSec" | "joinWindowSec" | "revealWindowSec" | "pickWindowSec">;
 }
 
 /**
@@ -137,9 +138,15 @@ export interface DealInput {
  * open it — `revealDeck` reverts, nobody can open the deck, and the match refunds at its reveal
  * deadline. That is a silent bug in the happy path, because two players who sign in seconds never see
  * it; it appears exactly when one of them is slow, which is what those windows exist for.
+ *
+ * And the pick window is counted too (rule D, context/54 §5; the owner's decision of 2026-09-04): the
+ * arena's floor is checked again at every pick, so a card revealed at exactly the floor is `TooLate`
+ * long before a slow player's clock runs out. Holding the floor for the whole pick window costs deck
+ * supply — measured 89.2% → 84.2% dealable on the live venue — and buys a rule that is true for every
+ * second a player is allowed to swipe.
  */
 export function dealHeadroomSec(params: DealInput["params"]): number {
-  return params.minCardLifeSec + params.joinWindowSec + params.revealWindowSec + CREATE_LATENCY_SEC;
+  return params.minCardLifeSec + params.joinWindowSec + params.revealWindowSec + params.pickWindowSec + CREATE_LATENCY_SEC;
 }
 
 /**
