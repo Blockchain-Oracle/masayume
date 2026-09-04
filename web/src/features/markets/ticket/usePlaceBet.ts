@@ -8,6 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useRef, useState } from "react";
 import { TICKET } from "@/lib/copy";
 import { notify } from "@/lib/toast";
+import { recordBet } from "@/features/room/record-bet";
 import { SIDE_WORD } from "../side-styles";
 
 export interface PlaceBetState {
@@ -73,6 +74,8 @@ export function usePlaceBet(signer?: PlaceBetSigner) {
         setState({ phase: phaseOf(outcome), outcome, txHash: txHashOf(outcome) });
         if (outcome.status === "confirmed") {
           const { booked } = outcome;
+          // The bet records the bettor, as the reference's does (`bet_registry::record` inside the bet PTB).
+          recordBet(request.market.marketId, user.address ?? address, booked.txHash, request.route?.kind === "wallet" ? "wallet" : "vault");
           notify.neutral(TICKET.booked(formatBaseUnits(booked.contractsRaw, request.market.decimals, { minDp: 0 }), SIDE_WORD[booked.side], booked.avgPriceBps));
         }
       } finally {

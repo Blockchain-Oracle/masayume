@@ -1,5 +1,6 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import type { Address } from "@masayume/core/types";
+import { hasBet } from "@masayume/db";
 import { ensureMarkets, marketsProvider, parseMarketsEnv } from "@masayume/markets";
 import { verifyMessage } from "viem";
 import { ROOM_TOKEN_TTL_MS, roomJoinMessage } from "./protocol";
@@ -60,18 +61,19 @@ export async function verifyJoinSignature(marketId: string, address: string, iss
 }
 
 /**
- * Does this wallet hold a position on this market?
+ * Has this wallet bet on this Window?
  *
- * The reference's on-chain rule is `bet_registry::has_bet` — ever bet. The closest
- * honest read here is holding the outcome tokens, which a bettor keeps from the
- * fill until they redeem, so it covers the Window's life and the settled-unclaimed
- * period after it. A wallet that has already redeemed a settled Window loses access
- * to that Room, which the reference's rule would not do. Recorded rather than
- * papered over: inventing a wider gate than the chain can prove is the wrong way
- * round.
+ * The reference's rule is `bet_registry::has_bet` — ever bet, written by the bet itself. Ours is the
+ * `bettors` registry the fill lanes report to and the server verifies from the receipt (`/api/room/bet`),
+ * which answers for every route: a 2× boost, a private bet and a Trading Balance bet all count, none of
+ * which ever put outcome tokens in the wallet. Holding the tokens is the fallback for a fill the registry
+ * never heard about, and it still lags the indexer — the registry does not.
  */
 export async function holdsPosition(address: string, marketId: string): Promise<boolean> {
-  ensureMarkets(parseMarketsEnv());
+  const env = parseMarketsEnv();
+  const seat = await hasBet(env.chainId, marketId, address);
+  if (seat) return true;
+  ensureMarkets(env);
   const reading = await marketsProvider.listOpenPositions(address as Address);
   if (!reading.ok) throw new Error(reading.error.kind);
   return reading.value.some((position) => position.marketId === marketId);

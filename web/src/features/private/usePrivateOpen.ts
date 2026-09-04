@@ -11,6 +11,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useSignMessage } from "wagmi";
 import { diagnosisCopy } from "@/lib/copy";
 import { useWalletSession } from "@/lib/wallet-session";
+import { recordBet } from "@/features/room/record-bet";
 import { upsertPrivateTicket } from "./claims-store";
 
 /**
@@ -99,7 +100,11 @@ export function usePrivateOpen() {
         } else {
           writePending(owner, null);
           setPending(null);
-          if (result.status === "opened") upsertPrivateTicket(result.ticket);
+          if (result.status === "opened") {
+            upsertPrivateTicket(result.ticket);
+            // The desk holds the position, so the wallet never shows one: the registry is how the Room learns of it.
+            recordBet(entry.request.marketId, owner, result.ticket.txs.mint, "private");
+          }
           await invalidateAfterWrite(queryClient, { wallet: owner as Address, marketId: entry.request.marketId as EventMarket["marketId"] });
         }
         return result;

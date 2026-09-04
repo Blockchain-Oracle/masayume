@@ -50,6 +50,24 @@ export function useRoom(marketId: MarketId | null, open: boolean): Room {
   // an affordance, never the gate: the authority is the server's own check.
   const positions = usePositions(open ? address : null);
   const [configured, setConfigured] = useState<boolean | null>(null);
+  // The registry's answer — the same one the server gives at join, and the one a boost, a private bet or a
+  // Trading Balance bet can only ever get, since none of them leave tokens in the wallet.
+  const [seat, setSeat] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!open || !address || !marketId) return;
+    let alive = true;
+    void fetch(`/api/room/bet?marketId=${encodeURIComponent(marketId)}&address=${encodeURIComponent(address)}`)
+      .then((response) => response.json() as Promise<{ hasBet?: boolean | null }>)
+      .then((body) => {
+        if (alive) setSeat(body.hasBet ?? null);
+      })
+      .catch(() => {
+        if (alive) setSeat(null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [open, address, marketId]);
 
   const [gate, setGate] = useState<RoomGate>("connect");
   const [comments, setComments] = useState<RoomComment[]>([]);
@@ -96,8 +114,8 @@ export function useRoom(marketId: MarketId | null, open: boolean): Room {
     // A position reading that has not landed is not an absence of position; hold
     // `joinable` until it says otherwise rather than flashing "you need a bet".
     const holds = positions && isOk(positions) ? positions.value.some((position) => position.marketId === marketId) : true;
-    setGate(holds ? "joinable" : "locked");
-  }, [configured, address, positions, marketId, joined, gate]);
+    setGate(seat === true || holds ? "joinable" : "locked");
+  }, [configured, address, positions, marketId, joined, gate, seat]);
 
   const load = useCallback(async () => {
     if (!marketId || !tokenRef.current) return;

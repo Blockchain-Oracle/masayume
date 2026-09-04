@@ -73,4 +73,28 @@ CREATE INDEX IF NOT EXISTS takes_created_idx
   ON takes (created_at DESC);
 `;
 
-export const SCHEMA_SQL = `${ROOM_SCHEMA_SQL}\n${TAKES_SCHEMA_SQL}\n${STRATEGIES_SCHEMA_SQL}\n${X_SCHEMA_SQL}\n${GAMES_SCHEMA_SQL}`;
+/**
+ * Who has ever bet on a Window — the Room's gate, as the reference keeps it.
+ *
+ * Yosuku writes `bet_registry::record` into the bet transaction itself (`lib/sui/comments.ts` L77–84), so the
+ * Room's "bettors only" is answered by a registry the bet wrote, one block later, forever. Reading the wallet's
+ * open positions instead — what this app did — could never unlock the Room for a 2× boost (the reserve holds
+ * the contracts), a private bet (the desk does) or a Trading Balance bet (the vault does), and lagged the
+ * indexer for a plain one. This table is that registry: one row per (chain, Window, wallet), written by the
+ * server after it has read the fill's own receipt, never on a client's say-so.
+ */
+export const BETTORS_SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS bettors (
+  chain_id     INTEGER     NOT NULL,
+  market_id    TEXT        NOT NULL,
+  -- Lowercased 0x address, taken from the receipt the server read.
+  wallet       TEXT        NOT NULL,
+  -- The fill that earned the seat; the first one, kept.
+  tx_hash      TEXT        NOT NULL,
+  route        TEXT        NOT NULL CHECK (route IN ('wallet', 'vault', 'leverage', 'private')),
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (chain_id, market_id, wallet)
+);
+`;
+
+export const SCHEMA_SQL = `${BETTORS_SCHEMA_SQL}\n${ROOM_SCHEMA_SQL}\n${TAKES_SCHEMA_SQL}\n${STRATEGIES_SCHEMA_SQL}\n${X_SCHEMA_SQL}\n${GAMES_SCHEMA_SQL}`;

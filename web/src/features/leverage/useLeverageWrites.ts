@@ -7,6 +7,7 @@ import { invalidateAfterWrite, useSubmitter } from "@masayume/markets/react";
 import { getClient } from "@masayume/markets/runtime";
 import { resolveVaultDeployment, type VaultContracts } from "@masayume/markets/vault";
 import { useQueryClient } from "@tanstack/react-query";
+import { recordBet } from "@/features/room/record-bet";
 import { useCallback, useState } from "react";
 import type { PublicClient } from "viem";
 import { diagnosisCopy } from "@/lib/copy";
@@ -59,7 +60,10 @@ export function useLeverageWrites() {
       if (!c) return null;
       setBusy("open");
       try {
-        return await submitLeverageOpen({ journal: submitter.journal, wallet: address, contracts: c }, { kind: "leverage-open", ...input }, maintenanceBps);
+        const outcome = await submitLeverageOpen({ journal: submitter.journal, wallet: address, contracts: c }, { kind: "leverage-open", ...input }, maintenanceBps);
+        // The reserve holds the contracts, so the wallet never shows a position: the registry is the Room's only way to know.
+        if (outcome.status === "confirmed") recordBet(input.marketId, address, outcome.txHash, "leverage");
+        return outcome;
       } finally {
         setBusy(null);
         await refresh(input.marketId);
