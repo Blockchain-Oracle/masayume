@@ -9,6 +9,8 @@ import { officialTransport } from "./transport";
 
 const HEARTBEAT_MS = 60_000;
 const CURSOR_KEY = "mentions.since_id";
+/** The cursor after a first poll that found nothing: every real id is above it, so the next mention counts. */
+const STARTED_CURSOR = "0";
 
 /**
  * The X mention relay (doc 03 §X prediction rail): bounded polling of the account's mentions,
@@ -53,12 +55,14 @@ export async function startXRelay(log: (why: string) => void): Promise<void> {
     try {
       const sinceId = await xRelayStateGet(CURSOR_KEY);
       const mentions = await transport.fetchMentions(sinceId);
-      if (sinceId === null && mentions.length > 0) {
-        // First run: nothing before now is an instruction. The cursor starts at the newest mention and
-        // none of the earlier ones is executed — a tweet written before the relay existed was not written to it.
-        const newest = mentions[mentions.length - 1]!.id;
+      if (sinceId === null) {
+        // The very first poll — and only that one — draws the line: nothing before now is an instruction.
+        // With mentions already there, the cursor starts at the newest and none is executed (a tweet written
+        // before the relay existed was not written to it); with none, the cursor is written as "started"
+        // so the first mention that arrives later is executed rather than mistaken for history.
+        const newest = mentions.length > 0 ? mentions[mentions.length - 1]!.id : STARTED_CURSOR;
         await xRelayStateSet(CURSOR_KEY, newest);
-        log(`first run: the cursor starts at ${newest}; ${mentions.length} earlier mention(s) left alone`);
+        log(mentions.length > 0 ? `first run: the cursor starts at ${newest}; ${mentions.length} earlier mention(s) left alone` : "first run: nothing before now; watching from here");
         return;
       }
       if (mentions.length === 0) log(`scanned mentions since ${sinceId ?? "the start"}: none new`);

@@ -26,7 +26,8 @@ export function officialTransport(bearerToken: string, accountId: string, postin
   return {
     kind: "official",
     describe: () => `X API v2 · account ${accountId}`,
-    fetchMentions: (sinceId) => fetchMentions(bearerToken, accountId, sinceId),
+    // "0" is the relay's own "started" cursor; X's since_id wants a real id or nothing.
+    fetchMentions: (sinceId) => fetchMentions(bearerToken, accountId, sinceId === "0" ? null : sinceId),
     reply: posting ? (mentionId, text) => replyTo(posting, mentionId, text) : null,
   };
 }
