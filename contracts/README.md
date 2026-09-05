@@ -1,91 +1,92 @@
-# contracts
+# Masayume contracts
 
-Foundry workspace for Masayume's own contracts around DreamDEX Event Contracts.
+Foundry workspace for Masayume’s Solidity contracts around DreamDEX Event Contracts on Somnia. Start with the [contract guide](https://docs.masayume.app/builders/contracts) for the user-facing explanation and authority model.
 
-| Contract | Status | Role |
-|---|---|---|
-| `EventVault` (`src/vault/`) | **Live on Shannon** `0x84Ec…CD7A` | Trading Balance + typed grants (`SESSION` / `EXECUTOR` / `STRATEGY`), owner-only withdrawal, delegated IOC execution on the venue, permissionless `crankSettle` |
-| `ERC2771Forwarder` (OpenZeppelin) | **Live** `0x82bb…50d3` | The sponsored-transaction rail: a relayer submits what the owner signed; the vault sees the signer |
-| `StrategyRegistry` (`src/strategy/`) | **Live** `0xAd5f…5FB4` | Who may copy-trade whom, under which caps envelope, for what fee; consent is a live vault grant |
-| `ParlayReserve` (`src/parlay/`) | **Live on Shannon** `0x50Ce…C151`, supplied 5,000 tUSDC | One ticket over many Windows: legs priced off the venue's book in-transaction, the whole payout escrowed at open, settled leg by leg on the venue's resolution, claim and void pay the owner only |
-| `RangeReserve` (`src/range/`) | **Built, fork-verified** (context/43); deploy waits on the owner's go | A band on one Window's closing print, inside or outside: the opening print and the asset proven through the OracleHub's key, the centre off the Window's book, the odds from the house's measured volatility, the whole payout escrowed at open, settled permissionlessly on the hub's answer |
-| `MarketMakerVault` (`src/maker/`) | **Built, fork-verified** (context/44); deploy waits on the owner's go | The Earn vault as the venue's maker: a post-only YES bid and YES ask per quote under on-chain bounds, complete sets merged back for the spread, inventory settled on the venue's verdict, shares over `liquid + deployed`, withdrawals from idle capital once every closed Window is settled |
-| `GameArena` | pending (Stage 6) | — |
+## Shannon deployment snapshot
 
-`src/interfaces/IDreamDex.sol` declares only the venue functions the vault calls, copied from the
-pinned SDK's ABIs (`@somnia-chain/markets-sdk` 0.28.1).
-`src/interfaces/IOracleHub.sol` declares the slice of Somnia's OracleHub a price-basis consumer reads
-(`pullNumericAnswer`, the definition structs, `questionKeyOf` / `questionIdByKey`, the scheduling quote),
-checked against Shannon in context/43.
+The [deployment record](deployments/50312.json) and [generated application manifest](../packages/markets/src/addresses.masayume.json) agree for **Somnia Shannon testnet, chain 50312**. All ten Masayume contract addresses below returned nonempty code in a read-only RPC check on **5 September 2026 at block 480,250,668**. The collateral returned **Test USDC (`tUSDC`), 6 decimals**; network fees use **STT**.
 
-## Rules the code keeps
+See the [main README’s contract table](../README.md) for full addresses and explorer links. Code presence does not establish source-bytecode equivalence, current permissions, reserve balances or running services.
 
-- **No-divert (AD-5).** Nothing takes a payout destination. `withdraw` / `withdrawPrivate` pay
-  `_msgSender()`; a delegate's fills and sale proceeds land on the owner. Named test:
-  `test_AD5_no_divert`.
-- **Market identity (AD-10).** Storage and events carry the venue's `bytes32` market id only. The
-  pool, outcome ids and settlement route are resolved from `BinaryMarketsModule.markets(id)`
-  inside the transaction. Named test: `test_AD10_no_pool_address_in_storage` (unit and fork).
-- **Attribution by delta.** The vault is the venue's trader. What a call moved — collateral in or
-  out, outcome tokens in or out — is measured before and after the venue call and booked to the
-  owner, fees included. Delegated orders are IOC only, so the vault never rests an order and
-  cannot self-match.
-- **Capital intake is never sponsored (NFR-7).** `deposit` and `depositAndGrant` refuse the
-  forwarder; everything else may be relayed.
-- **A parlay leg is priced by the book, not the opener.** `ParlayReserve.openParlay` reads each
-  Window's resting book (`getBookLevels`) inside the call, prices the chosen side over the depth the
-  ticket would need to hedge, recomputes the combined probability (with the same-instant correlation
-  floor), and charges the floored stake. The reference took opener-supplied probabilities and named
-  that its gap. `previewOpen` is the same arithmetic as a view, so a client shows the number the
-  chain will charge. Golden vectors in `packages/core/src/parlay/pricing.vectors.json` are asserted
-  by forge (`ParlayVectors.t.sol`) and vitest alike.
-- **The maker only buys complete sets at a discount.** `MarketMakerVault.quote` rests a post-only YES bid and
-  YES ask at least `minSpreadRaw` apart, inside the price band, capped per quote, per Window, in aggregate and
-  in open Windows; it never takes, never sells and never quotes one side alone. The venue's `price` is the YES
-  price for every kind (a `BUY_NO` at p is a YES ask at p). Named tests: `MarketMakerVault.quoting.t.sol`,
-  the fork run in context/44.
-- **A range round's basis is the hub's own print.** A Window's closing price is `pullNumericAnswer` on the
-  question `BinaryMarketsModule.markets(id)` names — in cents, pending under one selector (`0x25cd016c`)
-  until two seconds after expiry, readable for good after that. Its opening price is the same read on the
-  (asset, `tradingStart`) question, found through the hub's content-addressed key; the same key proves the
-  asset. Nothing of ours is scheduled. Named test: `OracleHub.fork.t.sol` (context/43).
+| Contract | Purpose |
+| --- | --- |
+| [EventVault](src/vault/EventVault.sol) | Trading Balance, typed `SESSION` / `EXECUTOR` / `STRATEGY` grants and owner withdrawals |
+| ERC2771Forwarder (OpenZeppelin) | Relays calls signed by the user; EventVault sees the original signer |
+| [StrategyRegistry](src/strategy/StrategyRegistry.sol) | Strategies, runner identity, subscription consent and creator fees |
+| [ParlayReserve](src/parlay/ParlayReserve.sol) | Multi-Window tickets with the whole payout reserved at opening |
+| [RangeReserve](src/range/RangeReserve.sol) | Inside/Outside tickets on a Window’s closing price |
+| [MarketMakerVault](src/maker/MarketMakerVault.sol) | Supplier shares and bounded market-making inventory |
+| [LeverageReserve](src/leverage/LeverageReserve.sol) | Financed venue positions, cash-out, settlement and knock-outs |
+| [PrivateDesk](src/private/PrivateDesk.sol) | Private-mode balances, trade slots and desk-controlled pool operations |
+| [GameArena](src/games/GameArena.sol) | Duel commitments, real market picks, side pots and player credits |
+| [SeasonPrizePool](src/games/SeasonPrizePool.sol) | Admin-controlled season prize escrow and payout |
 
-## Commands
+Upstream addresses are pinned separately in [addresses.pinned.json](../packages/markets/src/addresses.pinned.json) for Somnia Markets SDK **0.28.1**. They matched the installed SDK during the same review. [IDreamDex.sol](src/interfaces/IDreamDex.sol) declares the venue interfaces these contracts use; [IOracleHub.sol](src/interfaces/IOracleHub.sol) declares the oracle reads needed for price-based settlement.
+
+## Build and test
+
+Run these commands from the **repository root**. Install Foundry for Solidity work. The [Foundry configuration](foundry.toml) selects Solidity 0.8.30, optimizer, via-IR and Cancun.
+
+Initialize the contract dependencies if they are missing from a fresh clone:
 
 ```sh
-forge build
-forge test --no-match-contract Fork         # 72 unit tests on mock venues
-SHANNON_FORK_URL=<rpc> forge test --match-contract Fork -vv   # against Shannon's real contracts
+git submodule update --init --recursive
 ```
 
-`forge test --no-match-contract Fork` runs 118 unit tests: the range reserve adds `RangeMath` (the table, its
-inverse, the band probability), `RangeVectors` (the shared golden rows), and the pricing and lifecycle suites over
-`MockOracleHub` + `MockWindows`; the maker vault adds its quoting and lifecycle suites over `MockMakerVenue`
-(per-Window pools with resting post-only orders and a taker `fill` knob).
-
-The fork tests need Windows that are `Trading` at the fork block; pass `FORK_MARKET_ID=<decimal id>`
-to pin one and skip the scan (context/41 for the vault run, context/42 for the parlay run, context/43 for
-the hub run, which also takes `FORK_RESOLVED_MARKET_ID` and `SETTLED_QUESTION_ID`; the range run takes
-`FORK_MARKET_ID` + `FORK_ASSET` and seeds a thin book itself; the maker run, context/44, prices its pair off the
-live book).
-
-## Deploy (owner-authorized)
+Build and run the non-fork suites:
 
 ```sh
-# contracts/.env holds DEPLOYER_PRIVATE_KEY (gitignored; the same key as ~/.config/masayume/deployer.env)
-set -a; source .env; set +a                  # fund DEPLOYER_ADDRESS with STT from https://testnet.somnia.network/ first
-forge script script/DeployEventVault.s.sol --rpc-url shannon --broadcast --private-key $DEPLOYER_PRIVATE_KEY
-forge script script/DeployStrategyRegistry.s.sol --rpc-url shannon --broadcast --private-key $DEPLOYER_PRIVATE_KEY
-forge script script/DeployParlayReserve.s.sol --rpc-url shannon --broadcast --private-key $DEPLOYER_PRIVATE_KEY   # then supply it
-pnpm contracts:export                        # regenerates packages/markets/src/contracts/* and addresses.masayume.json
+forge build --root contracts
+pnpm contracts:test
 ```
 
-Somnia charges ~20× the EVM for a creation, and forge's local simulation cannot see that: the three creations
-that failed in the vault session all show `gasUsed == gas limit`. The recipe that landed the parlay reserve
-(2026-09-02) takes the limit from Somnia's own `eth_estimateGas` instead —
-`--skip-simulation --legacy --with-gas-price 6000000000 --gas-estimate-multiplier 105` — and keeps
-`gas × price` inside the deployer's balance (the node refuses the envelope otherwise). Somnia estimated 55.4M
-and the creation used 36.9M (context/42 §Live on Shannon).
+`contracts:test` runs `forge test --root contracts --no-match-contract Fork`. These suites cover contract rules with local fixtures and mock venues. Shared pricing and caps vectors also live in [packages/core](../packages/core/src) and are checked by Vitest. Use the test output for current totals.
 
-Deploy order is lockstep (AD-10): deploy → commit the regenerated module → deploy ops and web
-from that commit. `deployments/<chainId>.json` is the only hand-off between the two.
+### Fork checks
+
+Fork suites read Shannon state into Foundry’s local execution environment. They do not broadcast transactions, but they require a working RPC and market state that fits the selected scenario. Without `SHANNON_FORK_URL`, the fork test bodies return early; a green result alone does not prove that a live integration was exercised.
+
+For example, run the EventVault fork suite:
+
+```sh
+SHANNON_FORK_URL='https://dream-rpc.somnia.network' \
+  forge test --root contracts --match-contract EventVaultForkTest -vv
+```
+
+Read the selected test’s setup before running another suite:
+
+| Suite | Market inputs |
+| --- | --- |
+| [EventVault](test/EventVault.fork.t.sol) | Optional `FORK_MARKET_ID` pins a Trading Window instead of scanning |
+| [ParlayReserve](test/ParlayReserve.fork.t.sol) | Optional `FORK_MARKET_IDS` pins two comma-separated decimal ids |
+| [RangeReserve](test/RangeReserve.fork.t.sol) | Required `FORK_MARKET_ID`; `FORK_ASSET` must match the Window, defaults to BTC |
+| [MarketMakerVault](test/MarketMakerVault.fork.t.sol), [LeverageReserve](test/LeverageReserve.fork.t.sol), [PrivateDesk](test/PrivateDesk.fork.t.sol) | Required `FORK_MARKET_ID` for a suitable Trading Window |
+| [GameArena](test/GameArena.fork.t.sol) | `FORK_MARKET_IDS` containing at least three Trading Windows |
+| [OracleHub](test/OracleHub.fork.t.sol) | `FORK_MARKET_ID`, `FORK_RESOLVED_MARKET_ID` and `SETTLED_QUESTION_ID` select the relevant cases |
+
+Market ids are decimal strings in these environment variables. Remaining time, liquidity, venue and oracle readiness matter; some suites create liquidity only inside the local fork. A passing fork test does not prove that the public app can fill the same trade now.
+
+## Contract rules to preserve
+
+- **Owner payouts and bounded grants.** EventVault withdrawals pay the owner, and delegated fills remain the owner’s positions. Grant caps, actor and expiry are enforced on-chain. See `test_AD5_no_divert` in [EventVault.trading.t.sol](test/EventVault.trading.t.sol).
+- **Market identity.** Persist the venue’s `bytes32` market id and resolve pools and settlement routes from the venue. See `test_AD10_no_pool_address_in_storage` in the same suite.
+- **Measured execution.** EventVault and GameArena account for collateral and outcome tokens by before/after deltas. Delegated EventVault orders are immediate-or-cancel (IOC); they cannot leave resting orders.
+- **Direct funding.** EventVault capital intake uses `_directSender()` and rejects the trusted forwarder, including deposits and credited balances. Sponsorship is not a way around token funding approval.
+- **Payout backing.** Parlay and Range reserve the full ticket payout at opening. Parlay prices legs from the book; Range settles on the OracleHub’s closing answer for the Window, with the hub’s opening answer and asset identity used to establish the band’s basis.
+- **Maker and leverage accounting.** Maker shares track idle plus deployed capital. Leverage fronts capital into actual venue positions and repays the reserve from their proceeds. Withdrawal availability and losses depend on those positions; neither mechanism promises a fixed return.
+- **Explicit operator authority.** PrivateDesk’s operator can credit pooled funds and sees the relationship between an owner and a slot; this is not anonymity. SeasonPrizePool’s admin chooses recipients and payout timing, and may recover the remainder. Its `endsAtSec` does not automatically distribute prizes.
+
+## ABI and address maintenance
+
+The application consumes generated ABIs and the per-chain address manifest, not Foundry’s `out/` directory directly. After an intentional contract or deployment-record change:
+
+```sh
+forge build --root contracts
+pnpm contracts:export
+```
+
+[export.mjs](export.mjs) reads Forge artifacts and [deployments](deployments), then regenerates `packages/markets/src/contracts/*.abi.ts` and `addresses.masayume.json`. This changes files; it does not deploy a contract. Review the generated diff alongside the Solidity and deployment record. Optional artifacts are skipped when absent, so confirm that the intended contract’s artifact was built.
+
+Deployment scripts live in [script](script). A deployment is a separate operator action: review constructor parameters and roles, estimate gas against the selected network, preserve the resulting deployment record, export matching artifacts, then release web and ops from the same source revision. An address change does not update an already deployed bundle or worker.
+
+Historical fork and deployment observations remain in [the research record](../context/README.md), including [the EventVault run](../context/41-eventvault-fork-verification-2026-09-02.md), [ParlayReserve run](../context/42-parlayreserve-fork-verification-2026-09-02.md), [OracleHub/Range investigation](../context/43-oraclehub-range-basis-spike-2026-09-02.md) and [maker run](../context/44-marketmakervault-fork-verification-2026-09-02.md). Their funding amounts and gas estimates are dated evidence, not current operating values.

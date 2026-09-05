@@ -1,0 +1,126 @@
+{
+  "generatedBy": "node scripts/generate-repo-assets.mjs",
+  "sourceOverview": {
+    "path": "public/diagrams/overview.svg",
+    "sha256": "362301e41593789f66605310beaf7c27d846380d7b0da0834daa00dc08669ccf",
+    "nodes": 11,
+    "edges": 14,
+    "transformation": "Known palette replacement only; original geometry and content preserved."
+  },
+  "fonts": {
+    "sourceRevision": "5e35378e6bda803962ee6fd257e444a7d459660d",
+    "sora": "600",
+    "inter": "400, opsz 14"
+  },
+  "videoStatus": "Artwork only; full video demo coming soon. No YouTube URL has been supplied.",
+  "files": [
+    {
+      "file": "mark-light.svg",
+      "width": 266,
+      "height": 322,
+      "sha256": "39ceb983e6f4f4cb50189a79a934f0d84f08846f415d6cfd66ade05b5aa08da5"
+    },
+    {
+      "file": "hero-light.svg",
+      "width": 1200,
+      "height": 560,
+      "sha256": "eff65a5a29138c42e3077c62b1bce5768cc97425ff615d9e644824c4de04bf4d"
+    },
+    {
+      "file": "hero-light.png",
+      "width": 1200,
+      "height": 560,
+      "sha256": "f2c75e66af4caa031aa86d1d732aeb7c8a54630d1cd4c76028940c4b27014b8b"
+    },
+    {
+      "file": "docs-banner-light.svg",
+      "width": 1200,
+      "height": 400,
+      "sha256": "8a13e5fc52df762a8f0811d6bf1bc3e00e7c000461c48b3dd6d503ae5ac83b92"
+    },
+    {
+      "file": "docs-banner-light.png",
+      "width": 1200,
+      "height": 400,
+      "sha256": "cd82af6af9679ba6b4b5c2d32b2492717601564f8155a76b5d6cf511213723e8"
+    },
+    {
+      "file": "video-cover-light.svg",
+      "width": 1200,
+      "height": 675,
+      "sha256": "f60a85489bc85c7ea380340e6c06995221fad4e1c647cda37266b625fa4eed3c"
+    },
+    {
+      "file": "video-cover-light.png",
+      "width": 1200,
+      "height": 675,
+      "sha256": "e6ab7cab8d2878d5472000ba18ba99b56ca728b2860078523ea9c9b858b7cddc"
+    },
+    {
+      "file": "architecture-light.svg",
+      "width": 1200,
+      "height": 1060,
+      "sha256": "740a41620627c94c0939740608657bf02764a6670412536c98e4574ad1bec32d"
+    },
+    {
+      "file": "architecture-light.png",
+      "width": 1200,
+      "height": 1060,
+      "sha256": "15a79a98b57674e234bfa5515a25a915a80512a0030d3eae2b9add18d3eab21a"
+    },
+    {
+      "file": "mark-dark.svg",
+      "width": 266,
+      "height": 322,
+      "sha256": "355e4b7253d183cf023fedc94166079efb9aa99003d21d22445cb85decdd7213"
+    },
+    {
+      "file": "hero-dark.svg",
+      "width": 1200,
+      "height": 560,
+      "sha256": "b9b185d563406d3fdbc0cea554d0c6307e95fb4bd1446913641812a8833a7ab5"
+    },
+    {
+      "file": "hero-dark.png",
+      "width": 1200,
+      "height": 560,
+      "sha256": "6694cd856b03e69b909430d806208ef10ef67a072df79b5448700b98340954ce"
+    },
+    {
+      "file": "docs-banner-dark.svg",
+      "width": 1200,
+      "height": 400,
+      "sha256": "aa791d27b0d196b289c6087e068b25df31740aa30f5a94a9c0fb142ace2d3ffc"
+    },
+    {
+      "file": "docs-banner-dark.png",
+      "width": 1200,
+      "height": 400,
+      "sha256": "9c95aa56da6be2452530b1f35ad9d7bdcea829f96c447bcbd300cdc0694acbeb"
+    },
+    {
+      "file": "video-cover-dark.svg",
+      "width": 1200,
+      "height": 675,
+      "sha256": "3a1405ad7694b3c7a9610c5f350494aeca2cbd99f38a85819330315ec393bb7c"
+    },
+    {
+      "file": "video-cover-dark.png",
+      "width": 1200,
+      "height": 675,
+      "sha256": "b21dbcf0e75c2a06ad3f7d4d879a9f4c7f9746d02b3bf3491eee6aa9b69b7e3b"
+    },
+    {
+      "file": "architecture-dark.svg",
+      "width": 1200,
+      "height": 1060,
+      "sha256": "0fa5ee786eb4f060a78a489502656f219e63a920de197d3ba2be716af14580e9"
+    },
+    {
+      "file": "architecture-dark.png",
+      "width": 1200,
+      "height": 1060,
+      "sha256": "772e6c25c23ec1b0e86529e051655265e00f179251d731229ef3907c3895cf05"
+    }
+  ]
+}
