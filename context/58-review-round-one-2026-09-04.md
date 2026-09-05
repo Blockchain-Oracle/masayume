@@ -263,3 +263,53 @@ Still pending live: a posted arcade score, a Moonshot round, an agent trade (no 
   in `web/.env.local`, and `846ad24` makes the runner **discover its strategies from the registry** — every
   active strategy naming its key, re-read each cycle — so a creator's launch runs without anyone editing a
   secret. The static list remains as an override.
+
+## 8. Round two of the owner's feedback — the theme leaks, the faces and the favicon (2026-09-05)
+
+The owner walked the hosted app again on the morning of 2026-09-05 and gave the next round in words: the
+agents page showed dark-mode text in light mode; the studio's preset cards, its "Who runs it" cards and the
+preview card stayed dark in light mode; the portfolio's ledger plate stayed cream in dark mode and the
+X-Predict wallet card on it was unreadable there; the favicon was still Next's scaffold default; and the
+agents should have "their own animations or characters" instead of a letter. One commit, `d1cfc5f`,
+gate-green (typecheck, invariants, the full test run), deployed to production.
+
+- **Why the desk leaked.** The strategies screens and their two stylesheets were written in dark-mode
+  literals: some 170 Tailwind classes such as `text-white/40` and `text-gray-500`, about 75
+  `rgba(255, 255, 255, a)` / `#fff` values, and panels sitting on `--color-bg`, which part-01 pins to
+  `#050505` in both themes. Light mode therefore drew white-on-cream text and black slabs. The sweep maps
+  every class to the ink ladder (`text-ink`, `text-ink/NN`, `text-ink-secondary`, `text-ink-muted`,
+  `text-ink-disabled`, `border-hairline`, `bg-ink/NN`), every literal to
+  `color-mix(in srgb, var(--white) N%, transparent)` (`--white` is the theme's foreground and flips to
+  `#141210` in light), the hex grays to the `--gray-*` ladder, and the panels to `--bg`. The dozen
+  `[data-theme="light"]` overrides that patched single rules are gone; the tokens flip on their own.
+- **The plate follows the theme now.** The reference draws `.ledger-plate` as a cream slab in both themes
+  with fixed inks (`#1A1612`, `#6B6353`, `#C9BFA6` lines) and we ported it that way. The owner's ruling: in
+  dark mode it is dark. `ledger-plate.css` gives the plate five tokens — `--lp-paper`, `--lp-paper-raised`,
+  `--lp-ink`, `--lp-mute`, `--lp-line` — the reference's exact cream and inks under `[data-theme="light"]`,
+  the theme's `--ms-surface-1/2`, `--white`, `--gray-400` and `--ms-hairline` otherwise. The pool rows, the
+  `.plate-rows` frame (its `.text-white` remaps in part-07 are light-only now), the X card (`x-card.css`
+  reads `--lp-*`, the old cream as fallback) and the docs disclosure all read them. An approved deviation;
+  ledger row below.
+- **Faces.** `AgentPortrait` draws the reference's persona — DiceBear notionists on the `f4eee1` paper
+  tile, radius 12, the reference's own image URL parameters — from `@dicebear/core` + `@dicebear/notionists`
+  (MIT, 9.4.x) at render time, cached per seed, inline SVG. The reference fetched it from
+  `api.dicebear.com`, which our CSP does not allow, and that was why the mark had been a letter. Same seed,
+  same face, everywhere the agent appears: strategy cards, the studio preview, the agents ranking, the live
+  desk. Motion: a 3.6 s breathing bob with two degrees of tilt, phased per agent from its seed so a grid
+  never moves in unison, and a nod when its card is hovered; none under `prefers-reduced-motion`. The
+  letter glyph, `.agents-glyph` and `.desk-sigil` are deleted (the no-legacy rule); the leaderboard's letters
+  are the leaderboard's own and stay.
+- **Favicon.** `web/src/app/favicon.ico` was Next's scaffold default (a black disc with a white triangle).
+  It is now the Masayume mark rendered from `public/icons/icon-512.png` at 16, 32 and 48 px.
+- **Verified** with chrome-devtools (`/agents`, both themes, 1280) and the scripted-wallet driver connected
+  as the demo user (`/strategies` with the studio open on the AI agent preset; `/portfolio` with the
+  "X replies" disclosure open; both themes; 390 and 1280): light mode reads cream and ink throughout; dark
+  mode is unchanged where it was right, and the plate and the X card are now dark with white ink.
+- **"Launching an agent"** in the owner's message was the same theme fault on the studio's cards ("the
+  launch agent too is also requiring that same thing, like dark mode and light mode"), not a broken flow.
+  The studio renders only for a connected wallet, which is why it looked removed on production until they
+  connected.
+- **Not changed:** `/trade-from-x` is a deliberate dark island (approved 2026-09-04); the owner saw it
+  "showing like dark mode" before connecting X. It is the reference's page and flips on request.
+- **Branches.** The owner asked for `main` and `master`, locally and on GitHub. There was no `master`; it now
+  exists at the same commit as `main` and is pushed. Nothing is merged between them — they are one history.

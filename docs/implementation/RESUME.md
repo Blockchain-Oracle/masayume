@@ -920,3 +920,11 @@ those as well as the product routes — a disconnected page hides the components
   browser automation and said they will flag UI problems themselves — so those went in verified by
   typecheck, invariants, tests and build. Inspect the browser when they *do* flag something: this
   bug was invisible to all four gates.
+
+**Round two of the owner's review is in** (2026-09-05, twenty-second session; `d1cfc5f`, context/58 §8): the
+strategies desk and the agents page now read the theme tokens (they were dark-mode literals and leaked in
+light mode), the ledger plate and the X-Predict wallet card follow the theme (cream in light, the theme's
+surface in dark — an approved deviation from the reference's fixed cream slab), agents carry the reference's
+DiceBear persona drawn locally with an idle breath and a hover nod, and the favicon is the Masayume mark. A
+`master` branch now mirrors `main` on GitHub at the owner's request. Still unverified live: a posted arcade
+score, a Moonshot round, an agent trade (no agent strategy is published yet).
