@@ -11,7 +11,8 @@ import { STRATEGIES } from "./copy";
 import { DeskJoin } from "./DeskJoin";
 import { AddPanel, CapsPanel, DeskNotice, DeskPulse, ManageChip, WithdrawPanel } from "./DeskStates";
 import { capsFor, joinFloorBase, money, parseAmount, type RiskMode } from "./format";
-import { codenameFromAddress, glyphFromAddress } from "./names";
+import { codenameFromAddress } from "./names";
+import { AgentPortrait } from "./AgentPortrait";
 import type { StrategiesPayload } from "./protocol";
 import { RecordCard } from "./RecordCard";
 import type { DeskModel } from "./useDesk";
@@ -121,13 +122,13 @@ export function LiveDesk({ payload, desk }: LiveDeskProps) {
       <div className="desk">
         <div className="desk-body">
           <div className="flex items-start gap-4">
-            <div className="desk-sigil">{glyphFromAddress(featured.runner)}</div>
+            <AgentPortrait seed={featured.runner} name={name} />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                <h3 className="desk-name text-white">{name}</h3>
+                <h3 className="desk-name text-ink">{name}</h3>
                 <span className="desk-chip-autopilot">{D.autopilot}</span>
               </div>
-              <p className="desk-what text-white/70">{isAgent ? D.whatAgent(asset) : D.what(asset)}</p>
+              <p className="desk-what text-ink/70">{isAgent ? D.whatAgent(asset) : D.what(asset)}</p>
             </div>
             <button type="button" aria-label={D.share} title={D.share} className="desk-share" onClick={() => window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(`Copy ${name} on Masayume.\n\nAutomated ${asset} strategy with risk limits enforced on-chain.\nYour balance stays yours. Review the limits before signing.`)}&url=${encodeURIComponent("https://masayume.app/strategies")}`, "_blank", "noopener,noreferrer")}>
               <Share2Icon aria-hidden="true" />
@@ -141,34 +142,34 @@ export function LiveDesk({ payload, desk }: LiveDeskProps) {
           {!writes.address ? (
             <div className="mt-5">
               <ConnectButton />
-              <p className="desk-note mt-3 text-white/30">{D.disconnectedNote}</p>
+              <p className="desk-note mt-3 text-ink/30">{D.disconnectedNote}</p>
             </div>
           ) : copying ? (
             <div className="space-y-4 pt-5">
               {joinedTx && (
                 <div className="desk-notice">
-                  <button type="button" onClick={() => setJoinedTx(null)} aria-label="Dismiss" className="strat-mono-11 absolute top-2 right-2 px-1.5 text-white/40 hover:text-white">
+                  <button type="button" onClick={() => setJoinedTx(null)} aria-label="Dismiss" className="strat-mono-11 absolute top-2 right-2 px-1.5 text-ink/40 hover:text-ink">
                     ×
                   </button>
                   <p className="desk-status mb-1 text-vermilion">{D.joined.eyebrow}</p>
-                  <p className="desk-copy desk-copy--lg pr-6 text-white/80">{D.joined.body(name)}</p>
+                  <p className="desk-copy desk-copy--lg pr-6 text-ink/80">{D.joined.body(name)}</p>
                 </div>
               )}
               <DeskPulse live={deskLive} label={status} />
               <div className="desk-numbers">
                 <div>
-                  <div className="desk-eyebrow mb-1 text-white/40">{D.yourBalance}</div>
-                  <div className="desk-figure text-white">{money(ledgerBase, decimals)}</div>
-                  <div className="desk-fine mt-1 text-white/30">{D.onlyYou}</div>
+                  <div className="desk-eyebrow mb-1 text-ink/40">{D.yourBalance}</div>
+                  <div className="desk-figure text-ink">{money(ledgerBase, decimals)}</div>
+                  <div className="desk-fine mt-1 text-ink/30">{D.onlyYou}</div>
                 </div>
                 <div>
-                  <div className="desk-eyebrow mb-1 text-white/40">{D.yourLimits}</div>
-                  <div className="desk-limits text-white">≤ {money(perTrade, decimals)} {D.perTrade}</div>
-                  <div className="desk-fine mt-1 text-white/30">{grant ? D.open(grant.openPositions, grant.caps.maxOpenPositions) : "—"} · {D.enforced}</div>
+                  <div className="desk-eyebrow mb-1 text-ink/40">{D.yourLimits}</div>
+                  <div className="desk-limits text-ink">≤ {money(perTrade, decimals)} {D.perTrade}</div>
+                  <div className="desk-fine mt-1 text-ink/30">{grant ? D.open(grant.openPositions, grant.caps.maxOpenPositions) : "—"} · {D.enforced}</div>
                 </div>
               </div>
               {grant && (
-                <div className="desk-fine flex max-w-md flex-wrap gap-x-4 gap-y-1 uppercase tracking-[0.12em] text-white/35">
+                <div className="desk-fine flex max-w-md flex-wrap gap-x-4 gap-y-1 uppercase tracking-[0.12em] text-ink/35">
                   <span>{D.usedToday(money(grant.spentTodayBase, decimals), money(grant.caps.maxDailySpendBase, decimals))}</span>
                   <span>{D.resets}</span>
                   <span>{D.enforced}</span>
@@ -192,9 +193,9 @@ export function LiveDesk({ payload, desk }: LiveDeskProps) {
             </div>
           ) : paused ? (
             <div className="space-y-4 pt-5">
-              <div className="desk-pulse border-white/20">
-                <span className="desk-status text-white/60">{D.paused.title}</span>
-                <p className="desk-note mt-1 leading-relaxed text-white/40">{D.paused.body(money(availableBase, decimals, symbol))}</p>
+              <div className="desk-pulse border-ink/20">
+                <span className="desk-status text-ink/60">{D.paused.title}</span>
+                <p className="desk-note mt-1 leading-relaxed text-ink/40">{D.paused.body(money(availableBase, decimals, symbol))}</p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <button type="button" onClick={() => setManage("caps")} className={cn("desk-btn-primary")}>

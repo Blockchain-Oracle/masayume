@@ -107,21 +107,21 @@ export function CopyDrawer({ card, sub, writes, availableBase, decimals, symbol,
           <AgentPortrait seed={card.strategyId + card.runner} name={name} />
           <div className="min-w-0">
             <h2 className="strat-drawer-name">{name}</h2>
-            <a href={addressUrl(card.runner as `0x${string}`)} target="_blank" rel="noreferrer" className="strat-meta uppercase tracking-[0.12em] text-gray-500 hover:text-gray-300">
+            <a href={addressUrl(card.runner as `0x${string}`)} target="_blank" rel="noreferrer" className="strat-meta uppercase tracking-[0.12em] text-ink-muted hover:text-ink-secondary">
               {D.record}
             </a>
           </div>
           <span className="strat-meta ml-auto shrink-0 tracking-[0.2em]">
             {tier.key === "settled" ? (
-              <span className="text-white">
+              <span className="text-ink">
                 <span className="text-vermilion">⊙</span> Settled
               </span>
             ) : tier.key === "active" ? (
-              <span className="text-white/70">
+              <span className="text-ink/70">
                 <span className="text-vermilion">●</span> Active
               </span>
             ) : (
-              <span className="text-white/40">New</span>
+              <span className="text-ink/40">New</span>
             )}
           </span>
         </div>
@@ -134,15 +134,15 @@ export function CopyDrawer({ card, sub, writes, availableBase, decimals, symbol,
         </div>
 
         <div className="strat-drawer-rule strat-drawer-rule--quiet">
-          <p className="strat-meta mb-1 tracking-[0.2em] text-white/40">{D.how.eyebrow}</p>
+          <p className="strat-meta mb-1 tracking-[0.2em] text-ink/40">{D.how.eyebrow}</p>
           {agent ? (
             <>
               <p className="strat-drawer-body">
                 {D.agentHow.body(asset)} <strong>{D.agentHow.own}</strong>
                 {D.agentHow.tail(money(maxPerTrade, decimals, symbol))}
               </p>
-              <p className="strat-mono-10 mt-1.5 truncate text-white/40">{agent.model ? D.agentHow.model(agent.model) : D.agentHow.noModel}</p>
-              <ul className="strat-mono-10 mt-1.5 space-y-0.5 text-white/40">
+              <p className="strat-mono-10 mt-1.5 truncate text-ink/40">{agent.model ? D.agentHow.model(agent.model) : D.agentHow.noModel}</p>
+              <ul className="strat-mono-10 mt-1.5 space-y-0.5 text-ink/40">
                 {STRATEGIES.studio.agent.honesty.map((line) => (
                   <li key={line}>{line}</li>
                 ))}
@@ -161,7 +161,7 @@ export function CopyDrawer({ card, sub, writes, availableBase, decimals, symbol,
           <CapStat label={D.caps.daily} value={money(BigInt(card.envelope.maxDailySpendBase), decimals)} unit={symbol} />
           <CapStat label={D.caps.fee} value={fee === 0n ? D.caps.free : money(fee, decimals)} unit={fee === 0n ? undefined : symbol} />
         </div>
-        <div className="mb-4 grid grid-cols-3 gap-3 border-b border-white/[0.06] pb-4">
+        <div className="mb-4 grid grid-cols-3 gap-3 border-b border-hairline pb-4">
           <CapStat label={D.caps.copiers} value={card.subscribers > 0 ? String(card.subscribers) : "—"} />
           <CapStat label={D.caps.trades} value={String(card.record.fills)} />
           <CapStat label={D.caps.last} value={card.record.lastActiveSec ? ago(card.record.lastActiveSec * 1000, nowMs) : D.caps.none} />
@@ -172,10 +172,10 @@ export function CopyDrawer({ card, sub, writes, availableBase, decimals, symbol,
           <div className="mb-4 border border-vermilion/30 px-4 py-3">
             <p className="strat-meta mb-1.5 tracking-[0.18em] text-vermilion">{D.playbook.eyebrow}</p>
             <p className="strat-drawer-body">{D.playbook.body}</p>
-            <pre className="strat-mono-11 mt-2 whitespace-pre-wrap break-words rounded border border-white/10 bg-black/30 p-3 leading-relaxed text-gray-300">{card.playbook ?? meta?.playbook}</pre>
+            <pre className="strat-mono-11 mt-2 whitespace-pre-wrap break-words rounded border border-hairline bg-black/30 p-3 leading-relaxed text-ink-secondary">{card.playbook ?? meta?.playbook}</pre>
           </div>
         )}
-        {tier.key === "new" && <p className="strat-mono-11 mb-4 text-gray-500">{D.young}</p>}
+        {tier.key === "new" && <p className="strat-mono-11 mb-4 text-ink-muted">{D.young}</p>}
 
         {sub ? (
           <div>
@@ -186,7 +186,7 @@ export function CopyDrawer({ card, sub, writes, availableBase, decimals, symbol,
               </p>
               <p className="strat-drawer-body leading-relaxed">{D.copying.body(money(maxPerTrade, decimals, symbol))}</p>
             </div>
-            <p className="mb-4 text-xs leading-relaxed text-gray-500">{D.copying.pauseNote}</p>
+            <p className="mb-4 text-xs leading-relaxed text-ink-muted">{D.copying.pauseNote}</p>
             <button type="button" onClick={pause} disabled={writes.busy === "pause"} className="strat-pause">
               {writes.busy === "pause" ? D.copying.pausing : D.copying.pause}
             </button>
@@ -198,17 +198,17 @@ export function CopyDrawer({ card, sub, writes, availableBase, decimals, symbol,
         ) : (
           <div>
             <div className="mb-1 flex items-center justify-between">
-              <span className="strat-meta font-bold tracking-[0.2em] text-gray-400">{D.budget.label}</span>
-              <span className="strat-mono-10 text-gray-600">{D.budget.inVault(money(availableBase, decimals, symbol))}</span>
+              <span className="strat-meta font-bold tracking-[0.2em] text-ink-secondary">{D.budget.label}</span>
+              <span className="strat-mono-10 text-ink-disabled">{D.budget.inVault(money(availableBase, decimals, symbol))}</span>
             </div>
-            <p className="strat-mono-10 mb-2 leading-relaxed text-gray-600">{D.budget.note}</p>
+            <p className="strat-mono-10 mb-2 leading-relaxed text-ink-disabled">{D.budget.note}</p>
             <div className="strat-budget">
               <div className="flex items-center justify-between">
                 <input autoFocus inputMode="decimal" placeholder="0.00" value={budget} onChange={(e) => setBudget(e.target.value.replace(/[^0-9.]/g, ""))} className="strat-budget-input" aria-label={D.budget.label} />
-                <span className="strat-mono-12 shrink-0 font-semibold text-gray-300">{symbol}</span>
+                <span className="strat-mono-12 shrink-0 font-semibold text-ink-secondary">{symbol}</span>
               </div>
               <div className="mt-2 flex items-center justify-between">
-                <span className="strat-mono-10 text-gray-500">{D.budget.limit}</span>
+                <span className="strat-mono-10 text-ink-muted">{D.budget.limit}</span>
                 <div className="flex gap-1.5">
                   {[1, 5, 25].map((n) => (
                     <button key={n} type="button" onClick={() => add(n)} className="strat-budget-chip">
@@ -218,10 +218,10 @@ export function CopyDrawer({ card, sub, writes, availableBase, decimals, symbol,
                 </div>
               </div>
             </div>
-            <p className="mt-3 text-xs leading-relaxed text-gray-400">
+            <p className="mt-3 text-xs leading-relaxed text-ink-secondary">
               {valid ? (
                 <>
-                  You set a <strong className="font-semibold text-white">{money(targetBase, decimals, symbol)}</strong> {D.example.valid} <strong className="font-semibold text-white">{money(cap, decimals, symbol)}</strong> {D.example.validTail}
+                  You set a <strong className="font-semibold text-ink">{money(targetBase, decimals, symbol)}</strong> {D.example.valid} <strong className="font-semibold text-ink">{money(cap, decimals, symbol)}</strong> {D.example.validTail}
                 </>
               ) : (
                 D.example.invalid(money(maxPerTrade, decimals, symbol))
@@ -233,14 +233,14 @@ export function CopyDrawer({ card, sub, writes, availableBase, decimals, symbol,
                 <CapStat label={D.example.walletNeeded} value={money(topUp + fee, decimals)} unit={symbol} />
               </div>
             )}
-            <p className="strat-mono-11 mt-4 leading-relaxed text-gray-500">{D.risk}</p>
+            <p className="strat-mono-11 mt-4 leading-relaxed text-ink-muted">{D.risk}</p>
             <button type="button" onClick={confirm} disabled={writes.busy === "join" || !valid} className={cn("strat-confirm", writes.busy === "join" || !valid ? "strat-confirm--dead" : "strat-confirm--live")}>
               {writes.busy === "join" ? D.cta.starting : !valid ? D.cta.enter : topUp > 0n ? D.cta.add(money(topUp, decimals, symbol)) : D.cta.current}
             </button>
           </div>
         )}
 
-        <button type="button" onClick={share} className="strat-mono-11 mt-5 inline-flex items-center gap-1.5 text-gray-600 transition-colors hover:text-vermilion">
+        <button type="button" onClick={share} className="strat-mono-11 mt-5 inline-flex items-center gap-1.5 text-ink-disabled transition-colors hover:text-vermilion">
           <Share2Icon className="size-3.5" aria-hidden="true" /> {D.share}
         </button>
       </div>

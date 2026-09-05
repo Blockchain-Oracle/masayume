@@ -1,5 +1,4 @@
-/** Deterministic identity marks from an address, ported from `lib/sui/strategyClient.ts` — texture, not a label. */
-const GLYPH_POOL = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+/** Deterministic identity marks from an address, ported from `lib/sui/strategyClient.ts` — texture, not a label. The face itself is drawn in AgentPortrait.tsx. */
 const NAME_FIRST = ["Kai", "Mara", "Devin", "Yuki", "Rosa", "Theo", "Nadia", "Owen", "Lena", "Arun", "Mika", "Cole", "Sana", "Bruno", "Ivy", "Rey", "Hana", "Milo", "Zara", "Finn", "Noor", "Dario", "Elle", "Kenji"];
 const NAME_LAST = ["Ryder", "Vance", "Okafor", "Tanaka", "Mercer", "Duval", "Sato", "Brooks", "Novak", "Reyes", "Holt", "Ansari", "Frost", "Kang", "Beck", "Costa", "Wray", "Ito", "Nash", "Ozturk", "Vega", "Lund", "Hale", "Mori"];
 /** Eight curated accents live in `strategies.css` as `.strat-accent-N`; the index is the only thing computed here. */
@@ -9,10 +8,6 @@ function hashOf(seed: string): number {
   let h = 0;
   for (let i = 0; i < seed.length; i += 1) h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
   return h;
-}
-
-export function glyphFromAddress(seed: string): string {
-  return GLYPH_POOL[Math.abs(hashOf(seed)) % GLYPH_POOL.length] as string;
 }
 
 /** A person to remember instead of a bare 0x… address; stable per seed. */

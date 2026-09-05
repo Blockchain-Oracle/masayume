@@ -1,9 +1,10 @@
 /* The X-Predict wallet card (reference components/XWalletCard.tsx) and the claim page
- * (app/claim/page.tsx). The card sits on the cream `.ledger-plate` with its own fixed ink, as the
- * reference's does; the claim page follows the theme through the reference's own tokens. */
+ * (app/claim/page.tsx). The card sits on the `.ledger-plate` and reads the plate's tokens (ledger-plate.css:
+ * cream ink in light, the theme's ink in dark — the owner's ruling, 2026-09-05); the claim page follows the
+ * theme through the reference's own tokens. */
 
-/* ---- XWalletCard: fixed cream ink ------------------------------------------------------- */
-.xw { --xw-ink: #1a1612; --xw-mute: #6b6353; --xw-line: rgba(201, 191, 166, 0.6); --xw-paper: #fffdf8; --xw-v: #e04d26; --xw-loss: #b53d30; --xw-mint: #34d399; }
+/* ---- XWalletCard: the plate's ink ------------------------------------------------------- */
+.xw { --xw-ink: var(--lp-ink, #1a1612); --xw-mute: var(--lp-mute, #6b6353); --xw-line: var(--lp-line, rgba(201, 191, 166, 0.6)); --xw-paper: var(--lp-paper-raised, #fffdf8); --xw-v: #e04d26; --xw-loss: #b53d30; --xw-mint: #34d399; }
 /* mb-3 flex items-center gap-2 */
 .xw-head { margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
 .xw-head-icon { width: 16px; height: 16px; color: var(--xw-v); }
@@ -33,13 +34,13 @@
 .xw-icon--s { width: 14px; height: 14px; }
 /* the connected row: w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 */
 .xw-conn { position: relative; margin-bottom: 16px; }
-.xw-conn-row { display: flex; width: 100%; flex-wrap: wrap; align-items: center; column-gap: 8px; row-gap: 2px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.03); padding: 8px 12px; text-align: left; cursor: pointer; }
+.xw-conn-row { display: flex; width: 100%; flex-wrap: wrap; align-items: center; column-gap: 8px; row-gap: 2px; border-radius: 8px; border: 1px solid var(--xw-line); background: color-mix(in srgb, var(--xw-ink) 3%, transparent); padding: 8px 12px; text-align: left; cursor: pointer; }
 /* font-display text-sm font-[700] text-[#1A1612] */
 .xw-conn-handle { font-family: var(--font-display); font-size: 14px; font-weight: 700; color: var(--xw-ink); }
 .xw-conn-chevron { margin-left: auto; width: 14px; height: 14px; color: var(--xw-mute); transition: transform 0.2s; }
 .xw-conn-chevron--open { transform: rotate(180deg); }
 /* mt-2 grid gap-2 rounded-lg border border-[#C9BFA6]/50 bg-[#FFFDF8] p-2 sm:grid-cols-2 */
-.xw-manage { margin-top: 8px; display: grid; gap: 8px; border-radius: 8px; border: 1px solid rgba(201, 191, 166, 0.5); background: var(--xw-paper); padding: 8px; }
+.xw-manage { margin-top: 8px; display: grid; gap: 8px; border-radius: 8px; border: 1px solid var(--xw-line); background: var(--xw-paper); padding: 8px; }
 @media (min-width: 640px) { .xw-manage { grid-template-columns: 1fr 1fr; } }
 /* rounded-lg px-3 py-2 text-[12px] font-bold text-[#B53D30] hover:bg-[#B53D30]/[0.06] */
 .xw-btn-loss { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 8px; padding: 8px 12px; font-size: 12px; font-weight: 700; color: var(--xw-loss); background: transparent; border: 0; cursor: pointer; }
@@ -56,12 +57,12 @@
 /* text-sm ml-2 */
 .xw-balance-unit { font-size: 14px; margin-left: 8px; color: var(--xw-mute); }
 /* rounded-lg px-5 py-2 font-display text-[12px] font-bold uppercase tracking-[0.1em]; outline: border rgba(201,191,166,0.7) */
-.xw-btn-out { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border-radius: 8px; padding: 8px 20px; font-family: var(--font-display); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; background: transparent; border: 1px solid rgba(201, 191, 166, 0.7); color: var(--xw-ink); cursor: pointer; }
+.xw-btn-out { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border-radius: 8px; padding: 8px 20px; font-family: var(--font-display); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; background: transparent; border: 1px solid var(--xw-line); color: var(--xw-ink); cursor: pointer; }
 .xw-btn-out:disabled, .xw-btn-fill:disabled { opacity: 0.4; }
 /* filled: background #1A1612 color #FBF7EE */
-.xw-btn-fill { display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; border-radius: 8px; padding: 8px 20px; font-family: var(--font-display); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; background: var(--xw-ink); color: #fbf7ee; border: 0; cursor: pointer; }
+.xw-btn-fill { display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; border-radius: 8px; padding: 8px 20px; font-family: var(--font-display); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; background: var(--xw-ink); color: var(--lp-paper, #fbf7ee); border: 0; cursor: pointer; }
 /* mt-6 pt-5 flex flex-col gap-2.5 sm:flex-row sm:items-center; border-top rgba(201,191,166,0.3) */
-.xw-fund { margin-top: 24px; padding-top: 20px; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid rgba(201, 191, 166, 0.3); }
+.xw-fund { margin-top: 24px; padding-top: 20px; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--xw-line); }
 @media (min-width: 640px) { .xw-fund { flex-direction: row; align-items: center; } }
 .xw-quick { display: flex; align-items: center; gap: 6px; }
 /* rounded-lg px-3 py-2 font-mono text-xs */
@@ -78,7 +79,7 @@
 .xw-err { margin-top: 8px; font-size: 12px; color: var(--xw-v); }
 .xw-ok { margin-top: 8px; font-size: 12px; color: #34d399; }
 /* mt-3 border-t border-white/[0.06] pt-3 text-[12px] text-[#6B6353] */
-.xw-foot { margin-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 12px; font-size: 12px; color: var(--xw-mute); }
+.xw-foot { margin-top: 12px; border-top: 1px solid var(--xw-line); padding-top: 12px; font-size: 12px; color: var(--xw-mute); }
 
 /* ---- the claim page (theme-aware, the reference's own tokens) --------------------------- */
 .xc { position: relative; overflow: hidden; min-height: 100vh; background: var(--bg); color: var(--white); font-family: var(--font-sora), ui-sans-serif, system-ui; }

@@ -10,7 +10,8 @@ import { useChainNowMs } from "@/features/markets/useChainNow";
 import { cn } from "@/lib/utils";
 import { AGENTS, STRATEGIES } from "./copy";
 import { money } from "./format";
-import { ago, glyphFromAddress, shortAddress } from "./names";
+import { ago, shortAddress } from "./names";
+import { AgentPortrait } from "./AgentPortrait";
 import type { StrategiesPayload } from "./protocol";
 import { useRefreshStrategies, useStrategies } from "./useStrategies";
 import "./strategies.css";
@@ -18,9 +19,9 @@ import "./strategies.css";
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className="agents-stat">
-      <div className="strat-meta mb-2 tracking-[0.2em] text-gray-500">{label}</div>
+      <div className="strat-meta mb-2 tracking-[0.2em] text-ink-muted">{label}</div>
       <div className="agents-stat-value">{value}</div>
-      {sub && <div className="strat-mono-11 mt-1 text-gray-600">{sub}</div>}
+      {sub && <div className="strat-mono-11 mt-1 text-ink-disabled">{sub}</div>}
     </div>
   );
 }
@@ -48,15 +49,15 @@ export function AgentsScreen() {
   const nowMs = useChainNowMs();
   return (
     <div className="container pt-7 pb-12">
-      <div className="strat-mono-11 mb-7 flex items-center gap-3 tracking-[0.18em] uppercase text-gray-500">
+      <div className="strat-mono-11 mb-7 flex items-center gap-3 tracking-[0.18em] uppercase text-ink-muted">
         <Link href="/" className="transition-colors hover:text-ink">
           {AGENTS.crumb.root}
         </Link>
-        <span className="text-gray-700">/</span>
+        <span className="text-ink-disabled">/</span>
         <span className="text-ink">{AGENTS.crumb.here}</span>
       </div>
       <h1 className="agents-h1">{AGENTS.headline}</h1>
-      <p className="mb-10 max-w-2xl text-sm leading-relaxed text-gray-400">{AGENTS.intro}</p>
+      <p className="mb-10 max-w-2xl text-sm leading-relaxed text-ink-secondary">{AGENTS.intro}</p>
       <ReadingBoundary reading={reading} shape="plate" retry={refresh}>
         {(payload) => (payload.deployed ? <Board payload={payload} nowMs={nowMs} /> : <CapabilityPending eyebrow={AGENTS.title} title={AGENTS.title} dependency={AGENTS.notDeployed.dependency}><p>{STRATEGIES.notDeployed.body}</p></CapabilityPending>)}
       </ReadingBoundary>
@@ -93,12 +94,12 @@ function Board({ payload, nowMs }: { payload: StrategiesPayload; nowMs: number }
         <div className="mb-4 flex items-center gap-3 border-b border-hairline pb-2">
           <span className="strat-mono-11 text-vermilion">{AGENTS.desk.index}</span>
           <h2 className="strat-h2">{AGENTS.desk.title}</h2>
-          <span className="strat-meta ml-auto text-gray-500">{AGENTS.desk.meta(rows.length)}</span>
+          <span className="strat-meta ml-auto text-ink-muted">{AGENTS.desk.meta(rows.length)}</span>
         </div>
         {rows.length === 0 ? (
           <div className="agents-panel p-16 text-center">
             <h2 className="strat-h2 mb-2">{AGENTS.empty.title}</h2>
-            <p className="mx-auto max-w-sm text-sm text-gray-500">{AGENTS.empty.body}</p>
+            <p className="mx-auto max-w-sm text-sm text-ink-muted">{AGENTS.empty.body}</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -110,7 +111,7 @@ function Board({ payload, nowMs }: { payload: StrategiesPayload; nowMs: number }
                   <div className="flex flex-col gap-4 md:flex-row md:items-center">
                     <div className="agents-rank">{String(rank).padStart(2, "0")}</div>
                     <div className="flex min-w-0 flex-1 items-center gap-4">
-                      <div className="agents-glyph">{glyphFromAddress(row.runner)}</div>
+                      <AgentPortrait seed={row.runner} name={shortAddress(row.runner)} size="row" />
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <a href={addressUrl(row.runner)} target="_blank" rel="noreferrer" className="strat-mono-12 truncate text-ink transition-colors hover:text-vermilion">
@@ -118,7 +119,7 @@ function Board({ payload, nowMs }: { payload: StrategiesPayload; nowMs: number }
                           </a>
                           {top && <span className="agents-top-badge">{AGENTS.desk.top}</span>}
                         </div>
-                        <div className="strat-mono-11 mt-1 truncate text-gray-600">
+                        <div className="strat-mono-11 mt-1 truncate text-ink-disabled">
                           {AGENTS.desk.strategies(row.strategies)} · {AGENTS.desk.subscribers(row.subscribers)}
                         </div>
                       </div>
@@ -128,7 +129,7 @@ function Board({ payload, nowMs }: { payload: StrategiesPayload; nowMs: number }
                         <div className="agents-label">{AGENTS.desk.entrusted}</div>
                         <div className="agents-figure agents-figure--v">
                           {money(row.capitalEntrustedBase, decimals)}
-                          <span className="strat-mono-11 ml-1 text-gray-500">{symbol}</span>
+                          <span className="strat-mono-11 ml-1 text-ink-muted">{symbol}</span>
                         </div>
                       </div>
                       <div className="md:text-right">
@@ -141,7 +142,7 @@ function Board({ payload, nowMs }: { payload: StrategiesPayload; nowMs: number }
                       </div>
                       <div className="md:text-right">
                         <div className="agents-label">{AGENTS.desk.lastActive}</div>
-                        <div className="strat-mono-12 text-gray-400">{ago(row.lastActiveSec * 1000, nowMs)}</div>
+                        <div className="strat-mono-12 text-ink-secondary">{ago(row.lastActiveSec * 1000, nowMs)}</div>
                       </div>
                     </div>
                   </div>
@@ -158,7 +159,7 @@ function Board({ payload, nowMs }: { payload: StrategiesPayload; nowMs: number }
           <h2 className="strat-h2">{AGENTS.how.title}</h2>
         </div>
         <div className="agents-panel">
-          <ul className="space-y-3 text-sm leading-relaxed text-gray-400">
+          <ul className="space-y-3 text-sm leading-relaxed text-ink-secondary">
             {AGENTS.how.rules.map((rule, i) => (
               <li key={rule.join("")} className="flex gap-3">
                 <span className="strat-mono-11 mt-0.5 shrink-0 text-vermilion">{String(i + 1).padStart(2, "0")}</span>

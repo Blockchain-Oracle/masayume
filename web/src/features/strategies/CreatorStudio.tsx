@@ -62,7 +62,7 @@ export function CreatorStudio({ writes, decimals, symbol, asset, houseRunner }: 
 
   return (
     <section className="mt-14">
-      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-white/[0.08] pb-4">
+      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-hairline pb-4">
         <div className="min-w-0">
           <div className="strat-meta mb-1.5 tracking-[0.2em] text-vermilion">{S.eyebrow}</div>
           <div className="flex items-center gap-2.5">
@@ -88,26 +88,26 @@ export function CreatorStudio({ writes, decimals, symbol, asset, houseRunner }: 
           <aside className="space-y-4 lg:sticky lg:top-24">
             <div className="strat-preview group">
               <div className="flex items-center justify-between">
-                <div className="strat-micro text-white/40">{S.preview}</div>
+                <div className="strat-micro text-ink/40">{S.preview}</div>
                 {form.hosting === "house" && <span className="strat-pill-v">{STRATEGIES.desk.autopilot}</span>}
               </div>
               <div className="mt-3 flex items-center gap-3">
                 {validRunner ? <AgentPortrait seed={previewSeed} name={previewName} size="small" /> : <span className="text-2xl leading-none">—</span>}
                 <div className="min-w-0">
-                  <div className="strat-choice-title truncate text-white">{previewName}</div>
-                  <div className="strat-mono-10 text-white/40">
+                  <div className="strat-choice-title truncate text-ink">{previewName}</div>
+                  <div className="strat-mono-10 text-ink/40">
                     {PRESETS[form.preset].name} · {S.cap(`${form.maxPerTrade || "0"} ${symbol}`)}
                   </div>
                 </div>
               </div>
-              <div className="mt-4 grid grid-cols-2 border-t border-white/[0.08]">
+              <div className="mt-4 grid grid-cols-2 border-t border-hairline">
                 <div className="strat-ledger-stat">
-                  <div className="strat-micro mb-1 text-white/40">{S.perTrade}</div>
-                  <div className="strat-ledger-value text-white">{form.maxPerTrade || "0"}</div>
+                  <div className="strat-micro mb-1 text-ink/40">{S.perTrade}</div>
+                  <div className="strat-ledger-value text-ink">{form.maxPerTrade || "0"}</div>
                 </div>
                 <div className="strat-ledger-stat">
-                  <div className="strat-micro mb-1 text-white/40">{S.subFee}</div>
-                  <div className="strat-ledger-value text-white">{form.subFee || "0"}</div>
+                  <div className="strat-micro mb-1 text-ink/40">{S.subFee}</div>
+                  <div className="strat-ledger-value text-ink">{form.subFee || "0"}</div>
                 </div>
               </div>
               <p className="strat-choice-body mt-4">{describeSpec(draftSpec(form), asset)}</p>
@@ -115,7 +115,7 @@ export function CreatorStudio({ writes, decimals, symbol, asset, houseRunner }: 
             <button type="button" onClick={publish} disabled={writes.busy === "publish" || !writes.canSign} className="strat-publish">
               {writes.busy === "publish" ? S.launching : form.hosting === "house" ? S.launch : S.publish}
             </button>
-            <p className="strat-mono-10 leading-relaxed text-gray-600">{S.note}</p>
+            <p className="strat-mono-10 leading-relaxed text-ink-disabled">{S.note}</p>
           </aside>
         </div>
       )}

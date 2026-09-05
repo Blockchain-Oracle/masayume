@@ -59,11 +59,11 @@ export function StrategyCard({ card, sub, decimals, symbol, asset, onOpen }: Str
       <div className="flex items-start gap-3.5">
         <AgentPortrait seed={card.strategyId + card.runner} name={name} />
         <div className="min-w-0 flex-1 pt-0.5">
-          <h3 className="strat-card-name text-white">{name}</h3>
+          <h3 className="strat-card-name text-ink">{name}</h3>
           <p className="strat-card-instinct">{instinct}</p>
         </div>
         <span className="strat-card-cap">
-          {money(BigInt(card.envelope.maxStakePerTradeBase), decimals)} <span className="text-white/40">{STRATEGIES.archive.max}</span>
+          {money(BigInt(card.envelope.maxStakePerTradeBase), decimals)} <span className="text-ink/40">{STRATEGIES.archive.max}</span>
         </span>
       </div>
 
@@ -75,18 +75,18 @@ export function StrategyCard({ card, sub, decimals, symbol, asset, onOpen }: Str
                 {net >= 0n ? "+" : "−"}
                 {money(net < 0n ? -net : net, decimals)}
               </span>
-              <span className="strat-meta text-white/40">
+              <span className="strat-meta text-ink/40">
                 {symbol} {STRATEGIES.archive.netMeta(card.record.settled)}
               </span>
             </div>
             {card.record.curve.length >= 2 && (
-              <div className="-mx-1 mt-3 text-white">
+              <div className="-mx-1 mt-3 text-ink">
                 <EquitySparkline points={points} decimals={decimals} className="w-full" />
               </div>
             )}
           </>
         ) : (
-          <div className="strat-mono-11 pt-2.5 uppercase tracking-[0.14em] text-white/40">{tierOf(card).label}</div>
+          <div className="strat-mono-11 pt-2.5 uppercase tracking-[0.14em] text-ink/40">{tierOf(card).label}</div>
         )}
       </div>
 
@@ -99,8 +99,8 @@ export function StrategyCard({ card, sub, decimals, symbol, asset, onOpen }: Str
       </div>
 
       <div className="mt-auto flex items-center justify-between gap-3 pt-6">
-        <span className="strat-mono-10 truncate text-white/40">{STRATEGIES.archive.foot(money(BigInt(card.envelope.maxStakePerTradeBase), decimals), fee === 0n ? STRATEGIES.archive.free : `${money(fee, decimals)} fee`, copiers)}</span>
-        <span className={cn("strat-mono-11 inline-flex shrink-0 items-center gap-1.5 uppercase tracking-[0.12em] transition-colors", sub ? "text-vermilion" : "text-white/55 group-hover:text-white")}>
+        <span className="strat-mono-10 truncate text-ink/40">{STRATEGIES.archive.foot(money(BigInt(card.envelope.maxStakePerTradeBase), decimals), fee === 0n ? STRATEGIES.archive.free : `${money(fee, decimals)} fee`, copiers)}</span>
+        <span className={cn("strat-mono-11 inline-flex shrink-0 items-center gap-1.5 uppercase tracking-[0.12em] transition-colors", sub ? "text-vermilion" : "text-ink/55 group-hover:text-ink")}>
           {sub ? (
             <>
               <span className="strat-live-dot" /> {STRATEGIES.archive.yourPosition}

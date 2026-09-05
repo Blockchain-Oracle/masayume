@@ -41,10 +41,10 @@ export function StrategyGrid({ strategies, subscriptionOf, decimals, symbol, ass
   const count = (k: TabKey) => filterSort(strategies, k).length;
   return (
     <>
-      <div className="mt-12 flex items-center justify-between gap-4 border-t border-white/10 pt-6">
+      <div className="mt-12 flex items-center justify-between gap-4 border-t border-hairline pt-6">
         <div>
           <h2 className="strat-h2">{STRATEGIES.archive.title}</h2>
-          <p className="strat-meta mt-1 text-white/35">{STRATEGIES.archive.editions(strategies.length)}</p>
+          <p className="strat-meta mt-1 text-ink/35">{STRATEGIES.archive.editions(strategies.length)}</p>
         </div>
         <button type="button" onClick={() => setShow((v) => !v)} aria-expanded={show} className="strat-toggle">
           {show ? STRATEGIES.archive.hide : STRATEGIES.archive.show(strategies.length)}
@@ -52,12 +52,12 @@ export function StrategyGrid({ strategies, subscriptionOf, decimals, symbol, ass
       </div>
 
       {show && (
-        <div className="sticky top-16 z-20 mt-5 -mx-4 mb-7 border-b border-white/[0.06] bg-bg/85 px-4 py-3 backdrop-blur-md">
+        <div className="sticky top-16 z-20 mt-5 -mx-4 mb-7 border-b border-hairline bg-bg/85 px-4 py-3 backdrop-blur-md">
           <div className="no-scrollbar flex items-center gap-5 overflow-x-auto">
             {TABS.filter((k) => k === "all" || count(k) > 0).map((k) => (
               <button key={k} type="button" onClick={() => setTab(k)} className={cn("strat-tab", tab === k && "strat-tab--on")}>
                 {STRATEGIES.tabs[k]}
-                <span className={cn("ml-1.5 tabular-nums", tab === k ? "text-white/30" : "text-white/20")}>{count(k)}</span>
+                <span className={cn("ml-1.5 tabular-nums", tab === k ? "text-ink/30" : "text-ink/20")}>{count(k)}</span>
               </button>
             ))}
           </div>
@@ -67,11 +67,11 @@ export function StrategyGrid({ strategies, subscriptionOf, decimals, symbol, ass
       {show &&
         (visible.length === 0 ? (
           <div className="strat-empty">
-            <div className="strat-rail-title mb-4 text-white/40">
+            <div className="strat-rail-title mb-4 text-ink/40">
               <span className="text-vermilion">⊙</span> {STRATEGIES.archive.ledger}
             </div>
             <h2 className="strat-h2 mb-2">{strategies.length === 0 ? STRATEGIES.archive.noneTitle : STRATEGIES.archive.noTab(STRATEGIES.tabs[tab])}</h2>
-            <p className="mx-auto max-w-md text-sm leading-relaxed text-white/40">{loadError ? STRATEGIES.archive.unreachable : strategies.length === 0 ? STRATEGIES.archive.noneBody : STRATEGIES.archive.noMatch}</p>
+            <p className="mx-auto max-w-md text-sm leading-relaxed text-ink/40">{loadError ? STRATEGIES.archive.unreachable : strategies.length === 0 ? STRATEGIES.archive.noneBody : STRATEGIES.archive.noMatch}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 xl:grid-cols-3">

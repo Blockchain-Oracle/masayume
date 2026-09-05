@@ -72,21 +72,21 @@ export function DeskJoin({ featured, payload, desk, writes, onJoined }: DeskJoin
     <div className="mt-5 space-y-4">
       <div>
         <div className="mb-2 flex items-baseline justify-between">
-          <span className="desk-question text-white">{D.question}</span>
-          <button type="button" onClick={() => setOpen(false)} className="desk-note uppercase tracking-[0.12em] text-white/35 hover:text-white">
+          <span className="desk-question text-ink">{D.question}</span>
+          <button type="button" onClick={() => setOpen(false)} className="desk-note uppercase tracking-[0.12em] text-ink/35 hover:text-ink">
             {D.back}
           </button>
         </div>
         <AmountRow value={depositStr} onChange={setDepositStr} symbol={symbol} hint={<span>{STRATEGIES.desk.addHint(walletText)}</span>} chips={[1, 5]} onChip={(n) => setDepositStr(String(Math.max(0, (parseFloat(depositStr || "0") || 0) + n)))} />
-        {desk.availableBase > 0n && <p className="desk-note mt-2 text-white/40">{D.already(money(desk.availableBase, decimals))}</p>}
-        {typicalCost > 0n && depositBase > 0n && depositBase < typicalCost && <p className="desk-note mt-2 text-white/40">{D.belowCost(money(typicalCost, decimals))}</p>}
+        {desk.availableBase > 0n && <p className="desk-note mt-2 text-ink/40">{D.already(money(desk.availableBase, decimals))}</p>}
+        {typicalCost > 0n && depositBase > 0n && depositBase < typicalCost && <p className="desk-note mt-2 text-ink/40">{D.belowCost(money(typicalCost, decimals))}</p>}
       </div>
 
       <div className="max-w-md">
         <RiskModePicker value={mode} onChange={setMode} />
-        <div className="desk-copy mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-white/55">
-          <span className="font-semibold text-white/80">{D.maxPerTrade(money(caps.maxStakePerTradeBase, decimals))}</span>
-          <button type="button" onClick={() => setShowCaps((v) => !v)} className="desk-note uppercase tracking-[0.12em] text-white/40 underline decoration-white/20 underline-offset-2 hover:text-vermilion">
+        <div className="desk-copy mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-ink/55">
+          <span className="font-semibold text-ink/80">{D.maxPerTrade(money(caps.maxStakePerTradeBase, decimals))}</span>
+          <button type="button" onClick={() => setShowCaps((v) => !v)} className="desk-note uppercase tracking-[0.12em] text-ink/40 underline decoration-white/20 underline-offset-2 hover:text-vermilion">
             {showCaps ? D.done : D.change}
           </button>
           {showCaps && (
@@ -101,7 +101,7 @@ export function DeskJoin({ featured, payload, desk, writes, onJoined }: DeskJoin
         <button type="button" onClick={join} disabled={writes.busy === "join" || belowFloor || !writes.canSign} className="desk-btn-primary desk-btn-primary--wide w-full sm:w-auto">
           {writes.busy === "join" ? D.busy : belowFloor ? D.floor(money(floor, decimals)) : depositBase > 0n ? D.put(money(depositBase, decimals)) : D.withBalance(money(desk.availableBase, decimals))}
         </button>
-        <p className="desk-note mt-2 text-white/40">{belowFloor ? D.floorNote(money(floor, decimals, symbol)) : D.twoSignatures}</p>
+        <p className="desk-note mt-2 text-ink/40">{belowFloor ? D.floorNote(money(floor, decimals, symbol)) : D.twoSignatures}</p>
       </div>
     </div>
   );

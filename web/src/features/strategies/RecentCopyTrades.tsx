@@ -44,9 +44,9 @@ export function RecentCopyTrades({ fills, strategies, storeConnected, decimals, 
   return (
     <section className="mt-14">
       <div className="mb-4 flex items-center gap-3">
-        <h2 className="strat-rail-title text-white/40">{STRATEGIES.recent.title}</h2>
-        <div className="h-px flex-1 bg-white/10" />
-        <span className="strat-mono-11 tabular-nums text-white/30">{fills.length}</span>
+        <h2 className="strat-rail-title text-ink/40">{STRATEGIES.recent.title}</h2>
+        <div className="h-px flex-1 bg-ink/10" />
+        <span className="strat-mono-11 tabular-nums text-ink/30">{fills.length}</span>
       </div>
       <div className="strat-rows">
         {!storeConnected ? (
@@ -60,12 +60,12 @@ export function RecentCopyTrades({ fills, strategies, storeConnected, decimals, 
             return (
               <a key={`${t.strategyId}:${t.owner}`} href={txUrl(t.txHash as `0x${string}`)} target="_blank" rel="noreferrer" className="strat-row block">
                 <AgentPortrait seed={seed} name={name} size="small" />
-                <span className="strat-row-name text-white">{name}</span>
-                <span className="strat-mono-12 hidden text-white/40 sm:inline">{shortAddress(t.owner)}</span>
-                {t.count > 1 && <span className="strat-mono-10 hidden shrink-0 tabular-nums text-white/35 sm:inline">{STRATEGIES.recent.copied(t.count)}</span>}
+                <span className="strat-row-name text-ink">{name}</span>
+                <span className="strat-mono-12 hidden text-ink/40 sm:inline">{shortAddress(t.owner)}</span>
+                {t.count > 1 && <span className="strat-mono-10 hidden shrink-0 tabular-nums text-ink/35 sm:inline">{STRATEGIES.recent.copied(t.count)}</span>}
                 <span className="flex-1" />
-                <span className="strat-mono-12 shrink-0 whitespace-nowrap tabular-nums text-white/70">{money(t.totalBase, decimals, symbol)}</span>
-                <span className="strat-mono-11 w-14 shrink-0 text-right text-white/30">{ago(t.atSec * 1000, nowMs)}</span>
+                <span className="strat-mono-12 shrink-0 whitespace-nowrap tabular-nums text-ink/70">{money(t.totalBase, decimals, symbol)}</span>
+                <span className="strat-mono-11 w-14 shrink-0 text-right text-ink/30">{ago(t.atSec * 1000, nowMs)}</span>
                 <span className="strat-mono-11 w-4 shrink-0 text-right text-vermilion">↗</span>
               </a>
             );

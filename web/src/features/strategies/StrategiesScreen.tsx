@@ -87,7 +87,7 @@ function Catalogue({ payload, houseRunner }: { payload: StrategiesPayload; house
 
       <CreatorStudio writes={writes} decimals={decimals} symbol={symbol} asset={asset} houseRunner={houseRunner} />
 
-      <p className="strat-mono-10 mt-10 max-w-2xl leading-relaxed text-gray-600">{STRATEGIES.disclosure(asset)}</p>
+      <p className="strat-mono-10 mt-10 max-w-2xl leading-relaxed text-ink-disabled">{STRATEGIES.disclosure(asset)}</p>
 
       {drawer && <CopyDrawer card={drawer} sub={desk.subscriptionOf(drawer.strategyId)} writes={writes} availableBase={available} decimals={decimals} symbol={symbol} asset={asset} nowMs={nowMs} decisionsStore={payload.stores.decisions} onClose={() => setDrawer(null)} />}
     </>

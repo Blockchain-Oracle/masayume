@@ -44,13 +44,13 @@ export function MaxChip({ onClick }: { onClick: () => void }) {
 export function RiskModePicker({ value, onChange }: { value: RiskMode; onChange: (mode: RiskMode) => void }) {
   return (
     <div>
-      <div className="desk-eyebrow mb-1.5 text-white/35">{STRATEGIES.desk.risk.title}</div>
+      <div className="desk-eyebrow mb-1.5 text-ink/35">{STRATEGIES.desk.risk.title}</div>
       <div className="desk-modes" role="radiogroup" aria-label="Copy trading risk mode">
         {RISK_MODES.map((mode) => {
           const selected = mode.id === value;
           return (
             <button key={mode.id} type="button" role="radio" aria-checked={selected} onClick={() => onChange(mode.id)} className={cn("desk-mode", selected && "desk-mode--on")}>
-              <span className={cn("desk-mode-label", selected ? "text-white" : "text-white/60")}>{mode.label}</span>
+              <span className={cn("desk-mode-label", selected ? "text-ink" : "text-ink/60")}>{mode.label}</span>
               <span className="desk-mode-detail">{mode.detail}</span>
             </button>
           );
@@ -67,7 +67,7 @@ export function CapsEditor({ capStr, setCapStr, suggested, symbol }: { capStr: s
       <span className="desk-field-label">{STRATEGIES.desk.capsLabel}</span>
       <div className="desk-caps">
         <input inputMode="decimal" placeholder={STRATEGIES.desk.suggested(suggested)} value={capStr} onChange={(e) => setCapStr(e.target.value.replace(/[^0-9.]/g, ""))} className="desk-caps-input" />
-        <span className="desk-fine ml-1 shrink-0 text-gray-500">{symbol}</span>
+        <span className="desk-fine ml-1 shrink-0 text-ink-muted">{symbol}</span>
       </div>
     </label>
   );
@@ -75,10 +75,10 @@ export function CapsEditor({ capStr, setCapStr, suggested, symbol }: { capStr: s
 
 /** One cell of the record trio under the sparkline. A loss reads in muted white — a fact, not a scare. */
 export function RecordStat({ label, value, accent }: { label: string; value: string; accent?: "up" | "down" }) {
-  const tone = accent === "up" ? "text-vermilion" : accent === "down" ? "text-white/80" : "text-white";
+  const tone = accent === "up" ? "text-vermilion" : accent === "down" ? "text-ink/80" : "text-ink";
   return (
     <div>
-      <div className="desk-eyebrow mb-1.5 whitespace-normal text-white/40">{label}</div>
+      <div className="desk-eyebrow mb-1.5 whitespace-normal text-ink/40">{label}</div>
       <div className={cn("desk-trio-value", tone)}>{value}</div>
     </div>
   );

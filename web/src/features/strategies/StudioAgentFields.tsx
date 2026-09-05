@@ -46,17 +46,17 @@ export function StudioAgentFields({ form, setForm, asset, decimals }: StudioAgen
       <div>
         <div className="mb-2 flex items-baseline justify-between">
           <span className="desk-field-label mb-0">{A.persona}</span>
-          <span className={cn("strat-mono-10 tabular-nums", persona.length >= AGENT_PERSONA_MAX_CHARS ? "text-vermilion" : "text-white/40")}>{A.personaCount(persona.length, AGENT_PERSONA_MAX_CHARS)}</span>
+          <span className={cn("strat-mono-10 tabular-nums", persona.length >= AGENT_PERSONA_MAX_CHARS ? "text-vermilion" : "text-ink/40")}>{A.personaCount(persona.length, AGENT_PERSONA_MAX_CHARS)}</span>
         </div>
         <textarea
           value={persona}
           onChange={(e) => setForm((f) => ({ ...f, persona: e.target.value.slice(0, AGENT_PERSONA_MAX_CHARS) }))}
           placeholder={A.personaPlaceholder}
           maxLength={AGENT_PERSONA_MAX_CHARS}
-          className="strat-input strat-textarea text-white"
+          className="strat-input strat-textarea text-ink"
           aria-label={A.persona}
         />
-        <div className="strat-mono-10 mt-1.5 text-white/30">{A.personaHint}</div>
+        <div className="strat-mono-10 mt-1.5 text-ink/30">{A.personaHint}</div>
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
@@ -68,13 +68,13 @@ export function StudioAgentFields({ form, setForm, asset, decimals }: StudioAgen
               const on = form.posture === p;
               return (
                 <button key={p} type="button" role="radio" aria-checked={on} onClick={() => setForm((f) => ({ ...f, posture: p }))} className={cn("desk-mode", on && "desk-mode--on")}>
-                  <span className={cn("desk-mode-label", on ? "text-white" : "text-white/60")}>{RISK[p][0]}</span>
+                  <span className={cn("desk-mode-label", on ? "text-ink" : "text-ink/60")}>{RISK[p][0]}</span>
                   <span className="desk-mode-detail">{A.postureDetail(Math.round(rules.minConfidence * 100), rules.maxPriceCents, rules.breakerLosses)}</span>
                 </button>
               );
             })}
           </div>
-          <div className="strat-mono-10 mt-1.5 text-white/30">{A.postureHint}</div>
+          <div className="strat-mono-10 mt-1.5 text-ink/30">{A.postureHint}</div>
         </div>
         <div>
           <div className="desk-field-label">{A.cadences}</div>
@@ -85,14 +85,14 @@ export function StudioAgentFields({ form, setForm, asset, decimals }: StudioAgen
               </button>
             ))}
           </div>
-          <div className="strat-mono-10 mt-1.5 text-white/30">{A.cadencesHint}</div>
+          <div className="strat-mono-10 mt-1.5 text-ink/30">{A.cadencesHint}</div>
         </div>
       </div>
 
-      <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] px-4 py-3">
+      <div className="rounded-lg border border-hairline bg-ink/[0.02] px-4 py-3">
         <div className="strat-micro mb-1.5 text-vermilion">{S.plain}</div>
-        <p className="text-sm leading-snug text-gray-200">{describeSpec(draftSpec(form), asset)}</p>
-        <ul className="strat-mono-10 mt-2 space-y-0.5 text-white/40">
+        <p className="text-sm leading-snug text-ink-secondary">{describeSpec(draftSpec(form), asset)}</p>
+        <ul className="strat-mono-10 mt-2 space-y-0.5 text-ink/40">
           {A.honesty.map((line) => (
             <li key={line}>{line}</li>
           ))}
@@ -104,7 +104,7 @@ export function StudioAgentFields({ form, setForm, asset, decimals }: StudioAgen
           <button type="button" onClick={runDryRead} disabled={!ready || dry.state.status === "reading"} className="strat-sensei disabled:cursor-not-allowed disabled:opacity-50">
             {dry.state.status === "reading" ? A.dry.reading : A.dry.cta}
           </button>
-          <span className="strat-mono-10 text-white/30">{A.dry.note}</span>
+          <span className="strat-mono-10 text-ink/30">{A.dry.note}</span>
         </div>
         <DryReadPanel state={dry.state} />
       </div>

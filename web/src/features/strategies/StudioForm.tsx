@@ -38,8 +38,8 @@ function StudioStep({ step, children }: { step: readonly [string, string, string
     <div>
       <div className="mb-3 flex items-baseline gap-3">
         <span className="strat-mono-11 tabular-nums text-vermilion">{step[0]}</span>
-        <h3 className="strat-choice-title text-white">{step[1]}</h3>
-        {step[2] ? <span className="strat-mono-10 hidden text-white/30 sm:block">· {step[2]}</span> : null}
+        <h3 className="strat-choice-title text-ink">{step[1]}</h3>
+        {step[2] ? <span className="strat-mono-10 hidden text-ink/30 sm:block">· {step[2]}</span> : null}
       </div>
       {children}
     </div>
@@ -51,8 +51,8 @@ function HostingOption({ active, onClick, option }: { active: boolean; onClick: 
     <button type="button" onClick={onClick} className={cn("strat-choice group", active && "strat-choice--on")}>
       <Crosshairs />
       <div className="mb-1.5 flex items-center justify-between gap-2">
-        <span className="strat-choice-title text-white">{option[1]}</span>
-        <span className={cn("strat-micro", active ? "text-vermilion" : "text-white/30")}>{option[0]}</span>
+        <span className="strat-choice-title text-ink">{option[1]}</span>
+        <span className={cn("strat-micro", active ? "text-vermilion" : "text-ink/30")}>{option[0]}</span>
       </div>
       <p className="strat-choice-body">{option[2]}</p>
     </button>
@@ -67,18 +67,18 @@ function TuneFields({ form, setForm, asset }: { form: StudioDraft; setForm: Stud
         <div>
           <div className="mb-2 flex items-baseline justify-between">
             <span className="desk-field-label mb-0">{S.lookback}</span>
-            <span className="strat-mono-12 tabular-nums text-white">
+            <span className="strat-mono-12 tabular-nums text-ink">
               {form.lookback}
-              <span className="text-white/40"> {S.rounds}</span>
+              <span className="text-ink/40"> {S.rounds}</span>
             </span>
           </div>
           <input type="range" min={LOOKBACK_MIN} max={LOOKBACK_MAX} step={1} value={form.lookback} onChange={(e) => setForm((f) => ({ ...f, lookback: Number(e.target.value) }))} className="w-full accent-vermilion" aria-label={S.lookback} />
-          <div className="strat-mono-10 mt-1 text-white/30">{S.lookbackHint}</div>
+          <div className="strat-mono-10 mt-1 text-ink/30">{S.lookbackHint}</div>
         </div>
         <div>
           <div className="mb-2 flex items-baseline justify-between">
             <span className="desk-field-label mb-0">{S.threshold}</span>
-            <span className="strat-mono-12 tabular-nums text-white">{form.thresholdPct || "0"}%</span>
+            <span className="strat-mono-12 tabular-nums text-ink">{form.thresholdPct || "0"}%</span>
           </div>
           <div className="flex gap-1.5">
             {["0.1", "0.2", "0.5", "1"].map((v) => (
@@ -87,12 +87,12 @@ function TuneFields({ form, setForm, asset }: { form: StudioDraft; setForm: Stud
               </button>
             ))}
           </div>
-          <div className="strat-mono-10 mt-1.5 text-white/30">{S.thresholdHint}</div>
+          <div className="strat-mono-10 mt-1.5 text-ink/30">{S.thresholdHint}</div>
         </div>
       </div>
-      <div className="mt-4 rounded-lg border border-white/[0.08] bg-white/[0.02] px-4 py-3">
+      <div className="mt-4 rounded-lg border border-hairline bg-ink/[0.02] px-4 py-3">
         <div className="strat-micro mb-1.5 text-vermilion">{S.plain}</div>
-        <p className="text-sm leading-snug text-gray-200">{describeSpec(draftSpec(form), asset)}</p>
+        <p className="text-sm leading-snug text-ink-secondary">{describeSpec(draftSpec(form), asset)}</p>
       </div>
     </>
   );
@@ -122,11 +122,11 @@ export function StudioForm({ form, setForm, symbol, asset, decimals, houseRunner
               <button key={k} type="button" aria-disabled={comingSoon} onClick={() => !comingSoon && setForm((f) => ({ ...f, preset: k }))} className={cn("strat-choice group", comingSoon ? "strat-choice--off" : active && "strat-choice--on")}>
                 <Crosshairs />
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="strat-choice-title text-white">{p.name}</span>
-                  <span className={cn("strat-micro", active ? "text-vermilion" : "text-white/30")}>{active ? S.selected : p.tagline}</span>
+                  <span className="strat-choice-title text-ink">{p.name}</span>
+                  <span className={cn("strat-micro", active ? "text-vermilion" : "text-ink/30")}>{active ? S.selected : p.tagline}</span>
                 </div>
                 <p className="strat-choice-body">{p.how}</p>
-                {comingSoon && <div className="strat-micro mt-2 text-white/30">{S.soonMomentum}</div>}
+                {comingSoon && <div className="strat-micro mt-2 text-ink/30">{S.soonMomentum}</div>}
               </button>
             );
           })}
@@ -146,13 +146,13 @@ export function StudioForm({ form, setForm, symbol, asset, decimals, houseRunner
       <StudioStep step={S.steps.caps}>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Field label={`${S.perTrade} (${symbol})`}>
-            <input inputMode="decimal" value={form.maxPerTrade} onChange={(e) => setForm((f) => ({ ...f, maxPerTrade: e.target.value }))} className="strat-input text-white" />
+            <input inputMode="decimal" value={form.maxPerTrade} onChange={(e) => setForm((f) => ({ ...f, maxPerTrade: e.target.value }))} className="strat-input text-ink" />
           </Field>
           <Field label={`${S.daily} (${symbol})`}>
-            <input inputMode="decimal" value={form.maxDaily} onChange={(e) => setForm((f) => ({ ...f, maxDaily: e.target.value }))} className="strat-input text-white" />
+            <input inputMode="decimal" value={form.maxDaily} onChange={(e) => setForm((f) => ({ ...f, maxDaily: e.target.value }))} className="strat-input text-ink" />
           </Field>
           <Field label={`${S.feeLabel} (${symbol})`}>
-            <input inputMode="decimal" value={form.subFee} onChange={(e) => setForm((f) => ({ ...f, subFee: e.target.value }))} className="strat-input text-white" />
+            <input inputMode="decimal" value={form.subFee} onChange={(e) => setForm((f) => ({ ...f, subFee: e.target.value }))} className="strat-input text-ink" />
           </Field>
         </div>
       </StudioStep>
@@ -162,18 +162,18 @@ export function StudioForm({ form, setForm, symbol, asset, decimals, houseRunner
           <HostingOption active={form.hosting === "house"} onClick={() => setForm((f) => ({ ...f, hosting: "house" }))} option={S.hosting.house} />
           <HostingOption active={form.hosting === "self"} onClick={() => setForm((f) => ({ ...f, hosting: "self" }))} option={S.hosting.self} />
         </div>
-        {form.hosting === "house" && !houseRunner && <p className="strat-mono-10 mt-2 text-white/40">{S.houseRunnerMissing}</p>}
+        {form.hosting === "house" && !houseRunner && <p className="strat-mono-10 mt-2 text-ink/40">{S.houseRunnerMissing}</p>}
         {form.hosting === "self" && (
           <div className="mt-3 max-w-sm">
             <Field label={S.agentWallet}>
-              <input value={form.agent} onChange={(e) => setForm((f) => ({ ...f, agent: e.target.value }))} placeholder={S.agentPlaceholder} className="strat-input text-white" />
+              <input value={form.agent} onChange={(e) => setForm((f) => ({ ...f, agent: e.target.value }))} placeholder={S.agentPlaceholder} className="strat-input text-ink" />
             </Field>
-            {isAgent && <p className="strat-mono-10 mt-2 leading-relaxed text-white/40">{S.hostingSelfAgent}</p>}
+            {isAgent && <p className="strat-mono-10 mt-2 leading-relaxed text-ink/40">{S.hostingSelfAgent}</p>}
           </div>
         )}
         <div className="mt-4 max-w-xl">
           <Field label={`${S.playbook} · ${S.playbookHint}`}>
-            <textarea value={form.playbook} onChange={(e) => setForm((f) => ({ ...f, playbook: e.target.value }))} className="strat-input strat-textarea text-white" maxLength={4000} />
+            <textarea value={form.playbook} onChange={(e) => setForm((f) => ({ ...f, playbook: e.target.value }))} className="strat-input strat-textarea text-ink" maxLength={4000} />
           </Field>
         </div>
       </StudioStep>

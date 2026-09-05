@@ -22,12 +22,12 @@ export function RecordCard({ record, decimals, symbol }: { record: StrategyWire[
   return (
     <div className="desk-record">
       <div className="flex items-center justify-between px-4 pt-3">
-        <span className="desk-eyebrow text-white/40">{STRATEGIES.desk.record.title}</span>
-        <span className="desk-fine uppercase tracking-[0.16em] text-white/30">{STRATEGIES.desk.record.meta(record.settled)}</span>
+        <span className="desk-eyebrow text-ink/40">{STRATEGIES.desk.record.title}</span>
+        <span className="desk-fine uppercase tracking-[0.16em] text-ink/30">{STRATEGIES.desk.record.meta(record.settled)}</span>
       </div>
       <div className="flex items-baseline gap-2.5 px-4 pt-2.5">
-        <span className="desk-winrate text-white">{winRate}%</span>
-        <span className="desk-note uppercase tracking-[0.16em] text-white/45">{STRATEGIES.desk.record.winRate}</span>
+        <span className="desk-winrate text-ink">{winRate}%</span>
+        <span className="desk-note uppercase tracking-[0.16em] text-ink/45">{STRATEGIES.desk.record.winRate}</span>
       </div>
       <div className="px-4 pt-2 pb-2">
         <EquitySparkline points={points} decimals={decimals} className="w-full" />
