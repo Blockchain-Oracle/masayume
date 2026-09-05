@@ -1,9 +1,11 @@
 import { createMemoryJournal, createSubmitterSession, ensureMarkets, getCollateral, loadCollateral, parseMarketsEnv, syncClock } from "@masayume/markets";
-import { xReceiptByMention, xRelayStateGet, xRelayStateSet } from "@masayume/db";
+import { xAcquireReplyDelivery, xBeginReplyPost, xClaimMention, xFinishReplyPost, xMarkInterruptedReplyPosts, xReceiptByMention, xRelayStateGet, xRelayStateSet, xStopReplyDelivery } from "@masayume/db";
 import type { Bytes32 } from "@masayume/core/types";
 import { readRelayEnv, RELAY_ENV } from "./env";
-import { executeMention, replyText, resolveVenue, xReceiptUpsert } from "./execute";
+import { executeMention, resolveVenue, xReceiptUpsert } from "./execute";
 import { rettiwtTransport } from "./rettiwt";
+import { startReplyDelivery } from "./reply-delivery";
+import { renderReplyCardPng } from "./reply-card";
 
 const HEARTBEAT_MS = 60_000;
 const CURSOR_KEY = "mentions.since_id";
@@ -40,7 +42,14 @@ export async function startXRelay(log: (why: string) => void): Promise<void> {
   // The way to X: the account's own session. Replies go out as the account only when asked for.
   const transport = rettiwtTransport(relay.rettiwtApiKey, relay.handle);
   if (!relay.postingEnabled) transport.reply = null;
+  const delivery = {
+    store: { acquire: xAcquireReplyDelivery, receipt: xReceiptByMention, beginPost: xBeginReplyPost, sent: xFinishReplyPost, stop: xStopReplyDelivery, markInterrupted: xMarkInterruptedReplyPosts },
+    transport, decimals: getCollateral().decimals, symbol: getCollateral().symbol,
+    imagesEnabled: relay.replyImagesEnabled, render: renderReplyCardPng, log,
+  };
   log(`executor ${session.address} on venue ${venueId}; via ${transport.describe()}; posting ${transport.reply ? "on (as the account)" : `off (set ${RELAY_ENV.posting}=1)`}`);
+  // Delivery has its own busy gate and error boundary; it never schedules financial execution.
+  startReplyDelivery(delivery);
 
   let busy = false;
   const cycle = async () => {
@@ -61,17 +70,13 @@ export async function startXRelay(log: (why: string) => void): Promise<void> {
       }
       if (mentions.length === 0) log(`scanned mentions since ${sinceId ?? "the start"}: none new`);
       for (const mention of mentions) {
-        if (await xReceiptByMention(mention.id)) continue;
-        await xReceiptUpsert({ mentionId: mention.id, authorId: mention.authorId, handle: mention.handle, wallet: null, grantId: null, marketId: null, side: null, stakeBase: null, status: "submitted", reason: null, txHash: null, instruction: mention.text, atMs: mention.createdAtMs });
+        const claimed = await xClaimMention({ mentionId: mention.id, authorId: mention.authorId, handle: mention.handle, wallet: null, grantId: null, marketId: null, side: null, stakeBase: null, status: "submitted", reason: null, txHash: null, instruction: mention.text, atMs: mention.createdAtMs }, Boolean(transport.reply));
+        if (!claimed) {
+          await xRelayStateSet(CURSOR_KEY, mention.id);
+          continue;
+        }
         const receipt = await executeMention({ session, venueId, log }, mention);
         await xReceiptUpsert(receipt);
-        if (transport.reply) {
-          try {
-            await transport.reply(mention.id, replyText(receipt, getCollateral().decimals));
-          } catch (error) {
-            log(`reply to ${mention.id} failed: ${error instanceof Error ? error.message : String(error)}`);
-          }
-        }
         await xRelayStateSet(CURSOR_KEY, mention.id);
       }
     } catch (error) {

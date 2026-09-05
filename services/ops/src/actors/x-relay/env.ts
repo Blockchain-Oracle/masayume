@@ -7,6 +7,8 @@ export interface RelayEnv {
   executorPrivateKey: `0x${string}`;
   /** Replies are posted as the account only when asked for. */
   postingEnabled: boolean;
+  /** Branded images accompany receipts by default; set X_REPLY_IMAGES_ENABLED=0 for text only. */
+  replyImagesEnabled: boolean;
   pollMs: number;
   databaseUrl: string;
 }
@@ -16,6 +18,7 @@ export const RELAY_ENV = {
   handle: "X_HANDLE",
   executor: "X_EXECUTOR_PRIVATE_KEY",
   posting: "X_POSTING_ENABLED",
+  images: "X_REPLY_IMAGES_ENABLED",
   poll: "X_POLL_MS",
   db: "DATABASE_URL",
 } as const;
@@ -43,6 +46,7 @@ export function readRelayEnv(): RelayEnvReading {
       handle,
       executorPrivateKey: executorPrivateKey as `0x${string}`,
       postingEnabled: process.env.X_POSTING_ENABLED === "1" || process.env.X_POSTING_ENABLED === "true",
+      replyImagesEnabled: process.env.X_REPLY_IMAGES_ENABLED !== "0" && process.env.X_REPLY_IMAGES_ENABLED !== "false",
       pollMs: Number.isFinite(pollMs) && pollMs >= 5_000 ? pollMs : DEFAULT_POLL_MS,
       databaseUrl,
     },

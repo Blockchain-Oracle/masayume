@@ -1,5 +1,6 @@
 import { getDb } from "./client";
 import { ensureSchema } from "./migrate";
+import { z } from "zod";
 
 export interface XLinkRecord {
   authorId: string;
@@ -12,7 +13,24 @@ export interface XLinkRecord {
 
 export type XReceiptStatusRow = "refused" | "submitted" | "filled" | "nothing-filled" | "reverted" | "unknown";
 
-export interface XReceiptRecord {
+const baseUnits = z.string().regex(/^(0|[1-9]\d{0,77})$/);
+const receiptDetailsSchema = z.object({
+  bookedCostBase: baseUnits.nullish(),
+  bookedContractsRaw: baseUnits.nullish(),
+  avgPriceBps: z.number().int().nonnegative().nullish(),
+  asset: z.string().max(32).nullish(),
+  intervalSec: z.number().int().positive().nullish(),
+  expirySec: z.number().int().nonnegative().nullish(),
+  refusalCode: z.enum([
+    "account-not-linked", "instruction-invalid", "balance-unavailable", "not-deployed",
+    "grant-missing", "grant-mismatch", "grant-expired", "no-window", "quote-unavailable",
+    "no-liquidity", "price-moved", "permission-denied", "insufficient-funds", "execution-unavailable", "unconfirmed",
+  ]).nullish(),
+});
+
+export type XReceiptDetailsRecord = z.infer<typeof receiptDetailsSchema>;
+
+export interface XReceiptRecord extends XReceiptDetailsRecord {
   mentionId: string;
   authorId: string;
   handle: string | null;
@@ -20,6 +38,7 @@ export interface XReceiptRecord {
   grantId: string | null;
   marketId: string | null;
   side: "up" | "down" | null;
+  /** Requested stake; never overwritten with the actual booked amount. */
   stakeBase: string | null;
   status: XReceiptStatusRow;
   reason: string | null;
@@ -46,6 +65,7 @@ interface ReceiptRow {
   market_id: string | null;
   side: "up" | "down" | null;
   stake_base: string | null;
+  details?: unknown;
   status: XReceiptStatusRow;
   reason: string | null;
   tx_hash: string | null;
@@ -54,7 +74,12 @@ interface ReceiptRow {
 }
 
 const LINK_COLUMNS = "author_id, handle, wallet, signature, issued_at_ms, created_at";
-const RECEIPT_COLUMNS = "mention_id, author_id, handle, wallet, grant_id, market_id, side, stake_base, status, reason, tx_hash, instruction, at_ms";
+const RECEIPT_COLUMNS = "mention_id, author_id, handle, wallet, grant_id, market_id, side, stake_base, details, status, reason, tx_hash, instruction, at_ms";
+
+function readReceiptDetails(value: unknown): XReceiptDetailsRecord {
+  const parsed = receiptDetailsSchema.safeParse(value);
+  return parsed.success ? parsed.data : {};
+}
 
 const toLink = (row: LinkRow): XLinkRecord => ({
   authorId: row.author_id,
@@ -66,6 +91,7 @@ const toLink = (row: LinkRow): XLinkRecord => ({
 });
 
 const toReceipt = (row: ReceiptRow): XReceiptRecord => ({
+  ...readReceiptDetails(row.details),
   mentionId: row.mention_id,
   authorId: row.author_id,
   handle: row.handle,
@@ -140,15 +166,19 @@ export async function xReceiptUpsert(receipt: XReceiptRecord): Promise<void> {
   const db = getDb();
   if (!db) return;
   await ensureSchema();
+  // postgres.js serializes json parameters itself; stringifying first stores a JSON string.
+  const details = readReceiptDetails(receipt);
   await db`
-    INSERT INTO x_receipts (mention_id, author_id, handle, wallet, grant_id, market_id, side, stake_base, status, reason, tx_hash, instruction, at_ms)
+    INSERT INTO x_receipts (mention_id, author_id, handle, wallet, grant_id, market_id, side, stake_base, details, status, reason, tx_hash, instruction, at_ms)
     VALUES (
       ${receipt.mentionId}, ${receipt.authorId}, ${receipt.handle}, ${receipt.wallet}, ${receipt.grantId}, ${receipt.marketId},
-      ${receipt.side}, ${receipt.stakeBase}, ${receipt.status}, ${receipt.reason}, ${receipt.txHash}, ${receipt.instruction}, ${receipt.atMs}
+      ${receipt.side}, ${receipt.stakeBase}, ${db.json(details)}::jsonb, ${receipt.status}, ${receipt.reason}, ${receipt.txHash}, ${receipt.instruction}, ${receipt.atMs}
     )
     ON CONFLICT (mention_id) DO UPDATE SET
       wallet = EXCLUDED.wallet, grant_id = EXCLUDED.grant_id, market_id = EXCLUDED.market_id, side = EXCLUDED.side,
-      stake_base = EXCLUDED.stake_base, status = EXCLUDED.status, reason = EXCLUDED.reason, tx_hash = EXCLUDED.tx_hash, updated_at = now()
+      stake_base = EXCLUDED.stake_base,
+      details = (CASE WHEN jsonb_typeof(x_receipts.details) = 'object' THEN x_receipts.details ELSE '{}'::jsonb END) || EXCLUDED.details,
+      status = EXCLUDED.status, reason = EXCLUDED.reason, tx_hash = EXCLUDED.tx_hash, updated_at = now()
   `;
 }
 

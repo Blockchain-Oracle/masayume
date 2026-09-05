@@ -1,5 +1,5 @@
 import type { BookedOrder, OrderOutcome, OrderRequest, OrderRoute, PhaseListener } from "@masayume/core/ports";
-import { diagnosis, type Diagnosis, type MarketId, type Quote, type Side } from "@masayume/core/types";
+import { diagnosis, type Diagnosis, type Hex, type MarketId, type Quote, type Side } from "@masayume/core/types";
 import { simulateCaps, VAULT_NOT_DEPLOYED, type CapRefusal, type VaultGrant } from "@masayume/core/vault";
 import { formatBaseUnits, msToSec, oneUnit, ownTermsPriceRaw, priceRawToBps } from "@masayume/core/units";
 import { formatCadence } from "@masayume/core/copy";
@@ -131,14 +131,18 @@ export async function submitVaultOrder(ctx: OrderLaneContext & { contracts: Vaul
 
     const record = await ctx.journal.record({ kind: "order", wallet, summary: summarize(req), pool: market.poolAddress, marketId: market.marketId });
     onPhase?.("submitted");
+    let broadcastHash: Hex | undefined;
     try {
+      const onBroadcast = async (hash: Hex) => {
+        broadcastHash = hash;
+        await ctx.journal.markSent(record.id, hash);
+      };
       const outcomeIdx = outcomeIdxOf(side);
       const args = [market.marketId, outcomeIdx, true, quote.limitPriceRaw, quote.contractsRaw, expireNs] as const;
       const sent =
         route.kind === "vault"
-          ? await writeVault(contracts, "place", args, "order")
-          : await writeVault(contracts, "placeFor", [route.grantId, ...args], "order");
-      await ctx.journal.markSent(record.id, sent.hash);
+          ? await writeVault(contracts, "place", args, "order", onBroadcast)
+          : await writeVault(contracts, "placeFor", [route.grantId, ...args], "order", onBroadcast);
       const booked = bookVaultFill(sent, market.marketId, side, market.decimals);
       await ctx.journal.markConfirmed(record.id);
       await ctx.stopGate.reconcile(reservationId, booked?.costBase ?? 0n);
@@ -146,11 +150,11 @@ export async function submitVaultOrder(ctx: OrderLaneContext & { contracts: Vaul
       onPhase?.("confirmed", { txHash: sent.hash });
       return booked ? { status: "confirmed", booked } : { status: "nothingFilled", txHash: sent.hash };
     } catch (error) {
-      const failure = await settleVaultFailure(ctx.journal, record.id, error, onPhase);
+      const failure = await settleVaultFailure(ctx.journal, record.id, error, onPhase, undefined, broadcastHash);
       if (failure.status === "unknown") {
         // An unknown send may still land, so its reservation stays until the journal is reconciled (AD-9).
         reservationId = null;
-        return { status: "unknown", diagnosis: failure.diagnosis };
+        return { status: "unknown", diagnosis: failure.diagnosis, ...(failure.txHash ? { txHash: failure.txHash } : {}) };
       }
       if (failure.status === "reverted" && failure.txHash) return { status: "reverted", diagnosis: failure.diagnosis, txHash: failure.txHash };
       return refused(failure.status === "confirmed" ? diagnosis("unknown", "a failed send reported success") : failure.diagnosis);

@@ -42,4 +42,9 @@ describe("parseInstruction", () => {
   it("refuses a stake finer than the collateral", () => {
     expect(refused("btc up 0.0000001 15m")).toBe("bad-stake");
   });
+  it.each(["constructor", "__proto__", "toString", "hasOwnProperty"])("never treats inherited dictionary key %s as an asset or side", (token) => {
+    expect(refused(`${token} btc 5 15m`)).toBe("no-side");
+    expect(refused(`${token} up 5 15m`)).toBe("no-asset");
+    expect(ok(`${token} btc up 5 15m`)).toMatchObject({ side: "up", asset: "BTC" });
+  });
 });

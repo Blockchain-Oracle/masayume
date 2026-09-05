@@ -200,13 +200,19 @@
 .xt-trust-note { margin-top: 4px; font-family: var(--font-mono); font-size: 10.5px; color: #525252; }
 
 /* receipts list (additive) */
-.xt-receipts { margin-top: 32px; display: flex; flex-direction: column; gap: 8px; }
-.xt-receipt { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: baseline; border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 12px; padding: 10px 14px; font-family: var(--font-mono); font-size: 12px; color: #a3a3a3; }
+.xt-receipts { min-width: 0; margin-top: 32px; display: flex; flex-direction: column; gap: 8px; }
+.xt-receipt { min-width: 0; display: grid; grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) minmax(0, 1.5fr); gap: 12px; align-items: baseline; border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 12px; padding: 10px 14px; font-family: var(--font-mono); font-size: 12px; line-height: 1.5; color: #a3a3a3; }
+.xt-receipt > * { min-width: 0; overflow-wrap: anywhere; }
 .xt-receipt-status { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; }
 .xt-receipt-status--filled { color: var(--xt-m); }
 .xt-receipt-status--refused, .xt-receipt-status--reverted { color: #fda4af; }
 .xt-receipt-status--unknown, .xt-receipt-status--submitted { color: #fbbf24; }
 .xt-receipt-status--nothing-filled { color: #737373; }
 .xt-receipt-words { color: #e5e5e5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.xt-receipt-reason { grid-column: 2; color: #737373; font-size: 11px; }
+.xt-receipt-reason { grid-column: 2 / -1; color: #737373; font-size: 11px; }
 .xt-receipt-link { color: var(--xt-v); }
+@media (max-width: 639px) {
+  .xt-receipt { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .xt-receipt-words { white-space: normal; overflow: visible; text-overflow: clip; }
+  .xt-receipt-reason { grid-column: 1 / -1; }
+}

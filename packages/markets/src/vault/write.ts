@@ -68,6 +68,17 @@ export interface Sent {
   receipt: TransactionReceipt;
 }
 
+/** Persist the known hash before waiting for a receipt; this never submits another transaction. */
+export type VaultBroadcastListener = (hash: Hex) => void | Promise<void>;
+
+/** A local failure after broadcast is uncertain, not evidence that the call was refused. */
+export class VaultBroadcastError extends Error {
+  constructor(readonly txHash: Hex, cause: unknown) {
+    super(`vault transaction ${txHash} was broadcast, but its outcome could not be recorded`, { cause });
+    this.name = "VaultBroadcastError";
+  }
+}
+
 function account(contracts: VaultContracts): Address {
   const acct = contracts.walletClient.account;
   if (!acct) throw new Error("the session's wallet client has no account bound");
@@ -85,7 +96,7 @@ export async function checkVaultGas(contracts: VaultContracts | undefined, walle
  * the receipt. With a sponsor bound, the signer signs an ERC-2771 request and the relayer sends; a
  * refusal falls back to the signer's own transaction, so a sponsor that is down never blocks a write.
  */
-export async function writeVault<F extends VaultFn>(contracts: VaultContracts, functionName: F, args: Args<F>, label: string): Promise<Sent> {
+export async function writeVault<F extends VaultFn>(contracts: VaultContracts, functionName: F, args: Args<F>, label: string, onBroadcast?: VaultBroadcastListener): Promise<Sent> {
   const deployment = contracts.deployment;
   if (!deployment) throw new Error(VAULT_NOT_DEPLOYED);
   const { request } = await contracts.publicClient.simulateContract({
@@ -103,7 +114,13 @@ export async function writeVault<F extends VaultFn>(contracts: VaultContracts, f
     hash = await contracts.sponsor.send({ functionName, to: deployment.eventVault, data, gas });
   }
   if (!hash) hash = await contracts.walletClient.writeContract({ ...(request as object), gas } as never);
-  return { hash, receipt: await awaitReceipt(contracts.publicClient, hash, label) };
+  try {
+    await onBroadcast?.(hash);
+    return { hash, receipt: await awaitReceipt(contracts.publicClient, hash, label) };
+  } catch (error) {
+    if (error instanceof TxRevertedError) throw error;
+    throw new VaultBroadcastError(hash, error);
+  }
 }
 
 /** The vault's first ERC-20 allowance is absorbed into the deposit that needs it (Approvals convention). */
@@ -133,34 +150,34 @@ function capsTuple(terms: { caps: { maxStakePerTradeBase: bigint; maxDailySpendB
 }
 
 /** One intent, one contract call. Deposits absorb their allowance first. */
-export async function sendVaultIntent(contracts: VaultContracts, intent: VaultIntent): Promise<Sent> {
+export async function sendVaultIntent(contracts: VaultContracts, intent: VaultIntent, onBroadcast?: VaultBroadcastListener): Promise<Sent> {
   switch (intent.kind) {
     case "vault-deposit":
       await ensureVaultAllowance(contracts, intent.amountBase);
-      return writeVault(contracts, "deposit", [intent.amountBase], intent.kind);
+      return writeVault(contracts, "deposit", [intent.amountBase], intent.kind, onBroadcast);
     case "vault-withdraw":
-      return writeVault(contracts, "withdraw", [intent.amountBase], intent.kind);
+      return writeVault(contracts, "withdraw", [intent.amountBase], intent.kind, onBroadcast);
     case "vault-move-private":
-      return writeVault(contracts, "moveToPrivate", [intent.amountBase], intent.kind);
+      return writeVault(contracts, "moveToPrivate", [intent.amountBase], intent.kind, onBroadcast);
     case "vault-withdraw-private":
-      return writeVault(contracts, "withdrawPrivate", [intent.amountBase], intent.kind);
+      return writeVault(contracts, "withdrawPrivate", [intent.amountBase], intent.kind, onBroadcast);
     case "vault-grant": {
       const t = intent.terms;
-      return writeVault(contracts, "grant", [GRANT_KIND_INDEX[t.kind], t.actor, capsTuple(t), BigInt(t.expiresAtSec), t.budgetBase], intent.kind);
+      return writeVault(contracts, "grant", [GRANT_KIND_INDEX[t.kind], t.actor, capsTuple(t), BigInt(t.expiresAtSec), t.budgetBase], intent.kind, onBroadcast);
     }
     case "vault-deposit-and-grant": {
       const t = intent.terms;
       await ensureVaultAllowance(contracts, intent.amountBase);
-      return writeVault(contracts, "depositAndGrant", [intent.amountBase, GRANT_KIND_INDEX[t.kind], t.actor, capsTuple(t), BigInt(t.expiresAtSec), t.budgetBase], intent.kind);
+      return writeVault(contracts, "depositAndGrant", [intent.amountBase, GRANT_KIND_INDEX[t.kind], t.actor, capsTuple(t), BigInt(t.expiresAtSec), t.budgetBase], intent.kind, onBroadcast);
     }
     case "vault-fund-grant":
-      return writeVault(contracts, "fundGrant", [intent.grantId, intent.amountBase], intent.kind);
+      return writeVault(contracts, "fundGrant", [intent.grantId, intent.amountBase], intent.kind, onBroadcast);
     case "vault-revoke":
-      return writeVault(contracts, "revoke", [intent.grantId], intent.kind);
+      return writeVault(contracts, "revoke", [intent.grantId], intent.kind, onBroadcast);
     case "vault-crank-settle":
-      return writeVault(contracts, "crankSettle", [intent.owner, intent.marketId], intent.kind);
+      return writeVault(contracts, "crankSettle", [intent.owner, intent.marketId], intent.kind, onBroadcast);
     case "vault-sweep":
-      return writeVault(contracts, "sweep", [intent.pool], intent.kind);
+      return writeVault(contracts, "sweep", [intent.pool], intent.kind, onBroadcast);
   }
 }
 
@@ -220,22 +237,46 @@ function refused(diag: Diagnosis): TxOutcome {
   return { status: "refused", diagnosis: diag };
 }
 
-export async function settleVaultFailure(journal: IntentJournal, id: string, error: unknown, onPhase?: PhaseListener, diagnoseFn: (error: unknown) => Diagnosis = diagnoseVault): Promise<TxOutcome> {
-  const diag = diagnoseFn(error);
+export async function settleVaultFailure(journal: IntentJournal, id: string, error: unknown, onPhase?: PhaseListener, diagnoseFn: (error: unknown) => Diagnosis = diagnoseVault, knownHash?: Hex): Promise<TxOutcome> {
+  const cause = error instanceof VaultBroadcastError ? error.cause : error;
+  const txHash = error instanceof VaultBroadcastError || error instanceof TxRevertedError ? error.txHash : knownHash;
+  const diag = diagnoseFn(cause);
   if (error instanceof TxRevertedError) {
-    await journal.markSent(id, error.txHash);
-    await journal.markFailed(id, diag.technical);
+    const recorded = await settleBroadcastJournal(journal, id, error.txHash, diag.technical);
     onPhase?.("reverted", { txHash: error.txHash });
-    return { status: "reverted", diagnosis: diag, txHash: error.txHash };
+    return { status: "reverted", diagnosis: recorded ? diag : { ...diag, technical: `${diag.technical}. The intent journal could not be fully updated.` }, txHash: error.txHash };
   }
-  if (isTimeoutError(error)) {
-    await journal.markUnknown(id);
-    onPhase?.("unknown");
-    return { status: "unknown", diagnosis: diagnosis("send-unknown", diag.technical) };
+  if (txHash || isTimeoutError(cause)) {
+    const recorded = await settleBroadcastJournal(journal, id, txHash);
+    onPhase?.("unknown", txHash ? { txHash } : undefined);
+    return {
+      status: "unknown",
+      diagnosis: diagnosis("send-unknown", recorded ? diag.technical : `${diag.technical}. The intent journal could not be fully updated.`, txHash ? { txHash } : {}),
+      ...(txHash ? { txHash } : {}),
+    };
   }
   await journal.markFailed(id, diag.technical);
   onPhase?.("composing");
   return refused(diag);
+}
+
+/** Storage failure cannot undo a broadcast or turn an uncertain send into permission to retry. */
+async function settleBroadcastJournal(journal: IntentJournal, id: string, txHash?: Hex, failureReason?: string): Promise<boolean> {
+  let recorded = true;
+  if (txHash) {
+    try {
+      await journal.markSent(id, txHash);
+    } catch {
+      recorded = false;
+    }
+  }
+  try {
+    if (failureReason !== undefined) await journal.markFailed(id, failureReason);
+    else await journal.markUnknown(id);
+  } catch {
+    recorded = false;
+  }
+  return recorded;
 }
 
 /** AD-3's second lane for the vault: journal → gas → (allowance) → simulate → send → receipt → book. */
@@ -249,13 +290,16 @@ export async function submitVaultTx(ctx: VaultTxContext, intent: VaultIntent, on
     return refused(gas.diagnosis);
   }
   onPhase?.("submitted");
+  let broadcastHash: Hex | undefined;
   try {
-    const { hash } = await sendVaultIntent(contracts, intent);
-    await ctx.journal.markSent(record.id, hash);
+    const { hash } = await sendVaultIntent(contracts, intent, async (hash) => {
+      broadcastHash = hash;
+      await ctx.journal.markSent(record.id, hash);
+    });
     await ctx.journal.markConfirmed(record.id);
     onPhase?.("confirmed", { txHash: hash });
     return { status: "confirmed", txHash: hash };
   } catch (error) {
-    return settleVaultFailure(ctx.journal, record.id, error, onPhase);
+    return settleVaultFailure(ctx.journal, record.id, error, onPhase, undefined, broadcastHash);
   }
 }

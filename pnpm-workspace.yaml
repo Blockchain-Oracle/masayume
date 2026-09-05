@@ -8,6 +8,7 @@ allowBuilds:
   bufferutil: false
   esbuild: true
   keccak: false
+  sharp: false
   utf-8-validate: false
 
 catalog:

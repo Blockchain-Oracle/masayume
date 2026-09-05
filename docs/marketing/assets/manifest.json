@@ -1,0 +1,25 @@
+{
+  "date": "2026-09-05",
+  "generation": "OpenAI image generation using the existing Masayume README artwork as brand reference. Original generated pixels retained; no screenshot or transaction data synthesized.",
+  "reference": "/Users/abu/dev/hackathon/masayume-docs/public/repo-assets/hero-dark.png",
+  "files": [
+    {
+      "file": "x-profile-banner.png",
+      "width": 2172,
+      "height": 724,
+      "bytes": 1170856,
+      "sha256": "f082e373b8339ae1a1ef7b88bc289b9f12921defa800efc8b29f39c4cff16e0a",
+      "note": "Approved visual direction. 3:1 header artwork; X can fit this higher-resolution PNG to its 1500x500 recommended header display.",
+      "source": "/Users/abu/.codex/generated_images/01a0703e-44a7-72a2-9bfc-aede750df452/exec-7b922403-5ccf-49d2-a1d4-af7fa59d1151.png"
+    },
+    {
+      "file": "x-reply-filled-concept.png",
+      "width": 1774,
+      "height": 887,
+      "bytes": 1278980,
+      "sha256": "d09ce773491287acb078faeaa46770ffe32e5488743b84f62f416d4845b9c32d",
+      "note": "Concept only, explicitly labelled DEMO / NOT A REAL TRADE. Not connected to transaction records or the bot.",
+      "source": "/Users/abu/.codex/generated_images/01a0703e-44a7-72a2-9bfc-aede750df452/exec-8c378e13-26b3-4eaa-816c-786bfad86eef.png"
+    }
+  ]
+}

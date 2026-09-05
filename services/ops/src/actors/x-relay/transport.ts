@@ -8,18 +8,17 @@ export interface Mention {
 }
 
 /**
- * How the relay reaches X. One way since 2026-09-05: the account's own session through `rettiwt-api`
- * (cookies encoded as an API key), which talks to X the way the website does — a search for the handle's
- * mentions and a reply as the account. The X API v2 transport that preceded it is gone: X's deprecated
- * Free plan serves none of its endpoints and pay-per-use wants credits; the session costs nothing.
- * The contract stays so the way to X can change again without touching the parse, the execution under
- * the grant, the receipts or the reply words.
+ * The current deployment uses its existing account-session transport. Keep posting and uploading
+ * separate so an upload failure can fall back to text before any reply is sent. The operator must
+ * review X's current transport/automation requirements; this interface makes no policy or price claim.
  */
 export interface XTransport {
   /** One line for the boot log: which way, and as whom. */
   describe(): string;
   /** Mentions newer than `sinceId`, oldest first. */
   fetchMentions(sinceId: string | null): Promise<Mention[]>;
-  /** A reply under the mention, or null when replies are switched off. */
-  reply: ((mentionId: string, text: string) => Promise<string | null>) | null;
+  /** Upload only; this must never post or execute an instruction. */
+  uploadImage?: (png: Uint8Array) => Promise<string>;
+  /** One POST attempt under the mention; no hidden retries after ambiguous responses. */
+  reply: ((mentionId: string, text: string, mediaId?: string) => Promise<string | null>) | null;
 }

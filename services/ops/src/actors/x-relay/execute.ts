@@ -1,12 +1,10 @@
-import { diagnosisCopy } from "@masayume/core/copy";
 import { phase } from "@masayume/core/lifecycle";
-import type { OrderOutcome } from "@masayume/core/ports";
-import { formatBaseUnits } from "@masayume/core/units";
 import { describeRefusal, parseInstruction, type XInstruction } from "@masayume/core/x";
 import { xLinkByAuthor, xReceiptUpsert, type XReceiptRecord } from "@masayume/db";
 import { getCollateral, getVaultSnapshot, marketsProvider, resolveVenueId, type SubmitterSession } from "@masayume/markets";
 import type { Bytes32, EventMarket } from "@masayume/core/types";
 import type { Mention } from "./transport";
+import { outcomeToReceipt } from "./receipt-outcome";
 
 export interface ExecutorContext {
   session: SubmitterSession;
@@ -47,23 +45,6 @@ async function liveWindow(venueId: Bytes32, instruction: XInstruction): Promise<
   );
 }
 
-function outcomeToReceipt(outcome: OrderOutcome): Pick<XReceiptRecord, "status" | "reason" | "txHash"> {
-  switch (outcome.status) {
-    case "confirmed":
-      return { status: "filled", reason: null, txHash: outcome.booked.txHash };
-    case "nothingFilled":
-      return { status: "nothing-filled", reason: "the book moved before the order landed; nothing was taken", txHash: outcome.txHash };
-    case "requote":
-      return { status: "refused", reason: "the price moved past the confirmed cost", txHash: null };
-    case "refused":
-      return { status: "refused", reason: `${diagnosisCopy(outcome.diagnosis.kind).headline}: ${outcome.diagnosis.technical}`, txHash: null };
-    case "reverted":
-      return { status: "reverted", reason: outcome.diagnosis.technical, txHash: outcome.txHash };
-    case "unknown":
-      return { status: "unknown", reason: outcome.diagnosis.technical, txHash: outcome.txHash ?? null };
-  }
-}
-
 /**
  * One mention → one receipt. Authenticate the author by their live link, parse deterministically,
  * resolve the Window, check the EXECUTOR grant is live and names this executor, quote, and send
@@ -73,29 +54,29 @@ function outcomeToReceipt(outcome: OrderOutcome): Pick<XReceiptRecord, "status" 
 export async function executeMention(ctx: ExecutorContext, mention: Mention): Promise<XReceiptRecord> {
   const { decimals } = getCollateral();
   const link = await xLinkByAuthor(mention.authorId);
-  if (!link) return receiptFor(mention, { reason: "this X account is not linked to a wallet — link it on masayume.app/trade-from-x" });
+  if (!link) return receiptFor(mention, { refusalCode: "account-not-linked", reason: "Link this X account to a wallet in the app." });
 
   const parsed = parseInstruction(mention.text, { decimals });
-  if (!parsed.ok) return receiptFor(mention, { wallet: link.wallet, reason: describeRefusal(parsed.reason, parsed.token) });
+  if (!parsed.ok) return receiptFor(mention, { wallet: link.wallet, refusalCode: "instruction-invalid", reason: describeRefusal(parsed.reason) });
   const { instruction } = parsed;
   const base = { wallet: link.wallet, side: instruction.side, stakeBase: instruction.stakeBase.toString() };
 
   const snapshot = await getVaultSnapshot(link.wallet as `0x${string}`);
-  if (!snapshot.ok) return receiptFor(mention, { ...base, reason: "could not read the Trading Balance right now" });
-  if (!snapshot.value) return receiptFor(mention, { ...base, reason: "the Trading Balance contract is not deployed on this network" });
+  if (!snapshot.ok) return receiptFor(mention, { ...base, refusalCode: "balance-unavailable", reason: "could not read the Trading Balance right now" });
+  if (!snapshot.value) return receiptFor(mention, { ...base, refusalCode: "not-deployed", reason: "the Trading Balance contract is not deployed on this network" });
   const grant = snapshot.value.grants.executor;
-  if (!grant) return receiptFor(mention, { ...base, reason: "no live X grant for this wallet — fund and authorize on /trade-from-x" });
-  if (grant.actor !== ctx.session.address.toLowerCase()) return receiptFor(mention, { ...base, grantId: grant.grantId.toString(), reason: "the wallet's X grant names a different executor" });
-  if (grant.expiresAtSec * 1000 <= Date.now()) return receiptFor(mention, { ...base, grantId: grant.grantId.toString(), reason: "the X grant has expired — renew it on /trade-from-x" });
+  if (!grant) return receiptFor(mention, { ...base, refusalCode: "grant-missing", reason: "no live X grant for this wallet — fund and authorize on /trade-from-x" });
+  if (grant.actor !== ctx.session.address.toLowerCase()) return receiptFor(mention, { ...base, refusalCode: "grant-mismatch", grantId: grant.grantId.toString(), reason: "the wallet's X grant names a different executor" });
+  if (grant.expiresAtSec * 1000 <= Date.now()) return receiptFor(mention, { ...base, refusalCode: "grant-expired", grantId: grant.grantId.toString(), reason: "the X grant has expired — renew it on /trade-from-x" });
 
   const market = await liveWindow(ctx.venueId, instruction);
-  if (!market) return receiptFor(mention, { ...base, grantId: grant.grantId.toString(), reason: `no ${instruction.asset} ${instruction.cadence} Window is open right now` });
+  if (!market) return receiptFor(mention, { ...base, refusalCode: "no-window", grantId: grant.grantId.toString(), reason: `no ${instruction.asset} ${instruction.cadence} Window is open right now` });
 
   const target = { marketId: market.marketId, poolAddress: market.poolAddress, decimals: market.decimals, intervalSec: market.intervalSec };
   const quote = await marketsProvider.freshQuoteStake(target, instruction.side, instruction.stakeBase);
-  const withMarket = { ...base, grantId: grant.grantId.toString(), marketId: market.marketId };
-  if (!quote.ok) return receiptFor(mention, { ...withMarket, reason: `could not quote the book: ${quote.error.technical}` });
-  if (!quote.value) return receiptFor(mention, { ...withMarket, reason: `nothing fillable for ${formatBaseUnits(instruction.stakeBase, decimals)} on the ${instruction.side} side` });
+  const withMarket = { ...base, grantId: grant.grantId.toString(), marketId: market.marketId, asset: market.asset, intervalSec: market.intervalSec, expirySec: market.expirySec };
+  if (!quote.ok) return receiptFor(mention, { ...withMarket, refusalCode: "quote-unavailable", reason: "A current quote could not be confirmed." });
+  if (!quote.value) return receiptFor(mention, { ...withMarket, refusalCode: "no-liquidity", reason: "No fillable quote was available for this instruction." });
 
   const outcome = await ctx.session.submitter.submitOrder({
     market,
@@ -114,26 +95,5 @@ export async function resolveVenue(configured: Bytes32): Promise<Bytes32 | null>
   return venue.ok ? venue.value.venueId : null;
 }
 
-/** The reply under a mention: the receipt in one line, never a number that was not booked. */
-export function replyText(receipt: XReceiptRecord, decimals: number): string {
-  const stake = receipt.stakeBase ? `${formatBaseUnits(BigInt(receipt.stakeBase), decimals)} staked` : "";
-  const side = receipt.side ? receipt.side.toUpperCase() : "";
-  switch (receipt.status) {
-    // The reply names the transaction and the page, never a link: the receipt page is one tap from the
-    // app, and a plain reply is the least an account's own session can be flagged for.
-    case "filled":
-      return `Filled: ${side}, ${stake}. Your receipt is on the app's Trade-from-X page · tx ${receipt.txHash ?? ""}`;
-    case "nothing-filled":
-      return `Nothing filled: ${receipt.reason ?? "the book moved"}. Nothing was taken.`;
-    case "reverted":
-      return `The order reverted on-chain; nothing was taken. tx ${receipt.txHash ?? ""}`;
-    case "unknown":
-      return `Sent, but the chain has not answered yet. We will reconcile it on the app's Trade-from-X page.`;
-    case "submitted":
-      return `Submitted — waiting for the chain.`;
-    case "refused":
-      return `Not placed: ${receipt.reason ?? "refused"}.`;
-  }
-}
-
+export { replyText } from "./reply-format";
 export { xReceiptUpsert };

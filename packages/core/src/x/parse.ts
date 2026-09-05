@@ -72,13 +72,13 @@ export function parseInstruction(text: string, options: { decimals: number }): X
 
   for (const token of tokens) {
     if (UNITS.has(token)) continue;
-    const sideWord = SIDES[token];
+    const sideWord = Object.hasOwn(SIDES, token) ? SIDES[token] : undefined;
     if (sideWord) {
       if (side) return { ok: false, reason: "two-sides", token };
       side = sideWord;
       continue;
     }
-    const assetWord = ASSETS[token];
+    const assetWord = Object.hasOwn(ASSETS, token) ? ASSETS[token] : undefined;
     if (assetWord) {
       if (asset) return { ok: false, reason: "two-assets", token };
       asset = assetWord;
@@ -86,7 +86,7 @@ export function parseInstruction(text: string, options: { decimals: number }): X
     }
     const cadenceMatch = CADENCE_RE.exec(token);
     if (cadenceMatch) {
-      if (!(token in X_CADENCES)) return { ok: false, reason: "cadence-not-listed", token };
+      if (!Object.hasOwn(X_CADENCES, token)) return { ok: false, reason: "cadence-not-listed", token };
       if (cadence) return { ok: false, reason: "two-cadences", token };
       cadence = token as XCadence;
       continue;

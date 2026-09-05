@@ -1,0 +1,20 @@
+{
+  "date": "2026-09-05",
+  "account": "@masayume_app",
+  "recommended": 0,
+  "website": "https://masayume.app",
+  "bios": [
+    {
+      "text": "Price markets, games and trading agents. Powered by dreamDEX. Built on Somnia. Live on testnet.",
+      "characters": 95
+    },
+    {
+      "text": "Price markets, games and trading agents. Powered by DreamDEX, built on Somnia. Try Masayume on testnet.",
+      "characters": 103
+    },
+    {
+      "text": "Markets. Games. Agents. One app. Powered by DreamDEX on Somnia. Start with a no-stake Practice round.",
+      "characters": 101
+    }
+  ]
+}

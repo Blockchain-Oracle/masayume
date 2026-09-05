@@ -12,6 +12,8 @@ const PAGE = 20;
 export function rettiwtTransport(apiKey: string, handle: string): XTransport {
   const user = handle.replace(/^@/, "");
   const client = new Rettiwt({ apiKey, timeout: 30_000, maxRetries: 2 });
+  // A network retry after an accepted POST can create a duplicate public reply.
+  const writer = new Rettiwt({ apiKey, timeout: 30_000, maxRetries: 0 });
   return {
     describe: () => `rettiwt (the account's session) · mentions of @${user}`,
     async fetchMentions(sinceId) {
@@ -27,8 +29,15 @@ export function rettiwtTransport(apiKey: string, handle: string): XTransport {
         .filter((m) => m.authorId !== "" && (sinceId === null || BigInt(m.id) > BigInt(sinceId)))
         .sort((a, b) => (BigInt(a.id) < BigInt(b.id) ? -1 : 1));
     },
-    reply: async (mentionId, text) => {
-      const id = await client.tweet.post({ text, replyTo: mentionId });
+    uploadImage: async (png) => {
+      const id = await writer.tweet.upload(Uint8Array.from(png).buffer);
+      if (!/^\d+$/.test(id)) throw new Error("X image upload did not return a media id");
+      return id;
+    },
+    reply: async (mentionId, text, mediaId) => {
+      if (!/^\d+$/.test(mentionId) || (mediaId && !/^\d+$/.test(mediaId))) throw new Error("Invalid reply identifier");
+      if (text.length > 280 || /[^\x20-\x7E\n]/.test(text)) throw new Error("Reply text exceeded its verified ASCII budget");
+      const id = await writer.tweet.post({ text, replyTo: mentionId, ...(mediaId ? { media: [{ id: mediaId }] } : {}) });
       return typeof id === "string" && id ? id : null;
     },
   };

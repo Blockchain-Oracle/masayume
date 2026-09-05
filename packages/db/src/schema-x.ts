@@ -36,8 +36,9 @@ CREATE TABLE IF NOT EXISTS x_receipts (
   grant_id      TEXT,
   market_id     TEXT,
   side          TEXT        CHECK (side IN ('up', 'down')),
-  -- Collateral base units as a decimal string; never a float.
+  -- Requested collateral base units; actual booked values are separate in details.
   stake_base    TEXT,
+  details       JSONB,
   status        TEXT        NOT NULL CHECK (status IN ('refused', 'submitted', 'filled', 'nothing-filled', 'reverted', 'unknown')),
   reason        TEXT,
   tx_hash       TEXT,
@@ -46,6 +47,9 @@ CREATE TABLE IF NOT EXISTS x_receipts (
   at_ms         BIGINT      NOT NULL,
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Additive upgrade: old receipts keep NULL details; no historical fill amounts are invented.
+ALTER TABLE x_receipts ADD COLUMN IF NOT EXISTS details JSONB;
 
 CREATE INDEX IF NOT EXISTS x_receipts_wallet_idx
   ON x_receipts (wallet, at_ms DESC);

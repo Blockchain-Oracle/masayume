@@ -4,8 +4,26 @@ import type { Side } from "../types/market";
 export const X_RECEIPT_STATUSES = ["refused", "submitted", "filled", "nothing-filled", "reverted", "unknown"] as const;
 export type XReceiptStatus = (typeof X_RECEIPT_STATUSES)[number];
 
+/** Stable public categories. Provider diagnostics stay out of replies and reply images. */
+export type XRefusalCode =
+  | "account-not-linked" | "instruction-invalid" | "balance-unavailable" | "not-deployed"
+  | "grant-missing" | "grant-mismatch" | "grant-expired" | "no-window"
+  | "quote-unavailable" | "no-liquidity" | "price-moved" | "permission-denied"
+  | "insufficient-funds" | "execution-unavailable" | "unconfirmed";
+
+/** Optional for receipts written before booked amounts and resolved market details were retained. */
+export interface XReceiptDetails {
+  bookedCostBase?: string | null;
+  bookedContractsRaw?: string | null;
+  avgPriceBps?: number | null;
+  asset?: string | null;
+  intervalSec?: number | null;
+  expirySec?: number | null;
+  refusalCode?: XRefusalCode | null;
+}
+
 /** A receipt links the instruction to the grant, the Window, the transaction and the beneficiary. */
-export interface XReceipt {
+export interface XReceipt extends XReceiptDetails {
   mentionId: string;
   authorId: string;
   handle: string | null;
@@ -13,6 +31,7 @@ export interface XReceipt {
   grantId: string | null;
   marketId: string | null;
   side: Side | null;
+  /** Requested stake, preserved independently of actual bookedCostBase. */
   stakeBase: string | null;
   status: XReceiptStatus;
   reason: string | null;

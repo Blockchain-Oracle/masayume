@@ -18,5 +18,6 @@ export * from "./migrate";
 export * from "./schema";
 export * from "./takes";
 export * from "./x";
+export * from "./x-reply-delivery";
 export * from "./strategies";
 export * from "./strategy-decisions";
