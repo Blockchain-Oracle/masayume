@@ -1,6 +1,6 @@
 "use client";
 
-import { formatBaseUnits } from "@masayume/core/units";
+import { formatBaseUnits, shortHex } from "@masayume/core/units";
 import { capResetsAtSec, dailyHeadroomBase } from "@masayume/core/vault";
 import { requiredGasWei, sessionGasTopUpWei } from "@masayume/markets";
 import { Hash, UtcTime } from "@/components/data";
@@ -10,6 +10,8 @@ import { priceCapText } from "./caps";
 import { SESSION } from "./copy";
 import { useSessionKey } from "./SessionKeyProvider";
 import { SessionModalShell } from "./SessionModal";
+import { SessionDetail } from "./SessionDetail";
+import styles from "./SessionDetails.module.css";
 import type { SessionKeyActions, SessionBusy, SessionKeyView } from "./view";
 
 interface SessionManagerProps {
@@ -21,19 +23,10 @@ interface SessionManagerProps {
 
 const NATIVE_DECIMALS = 18;
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="contents">
-      <dt className="text-ink-secondary">{label}</dt>
-      <dd className="text-ink">{children}</dd>
-    </div>
-  );
-}
-
 function gasLine(view: SessionKeyView): string {
   const m = SESSION.manager;
   if (view.sponsor?.configured && view.sponsor.sponsor) {
-    return view.sponsorRefusal ? m.gasSponsorDeclined(view.sponsorRefusal) : m.gasSponsor(view.sponsor.sponsor.slice(0, 10));
+    return view.sponsorRefusal ? m.gasSponsorDeclined(view.sponsorRefusal) : m.gasSponsor(shortHex(view.sponsor.sponsor, 8, 6));
   }
   if (view.keyGasWei === null || view.keyGasWei === 0n) return m.gasKeyEmpty;
   const perTap = requiredGasWei("vault-order");
@@ -44,7 +37,12 @@ function gasLine(view: SessionKeyView): string {
 export function SessionManagerBody({ view, actions, busy, symbol, onArmNew }: { view: SessionKeyView; actions: SessionKeyActions; busy: SessionBusy; symbol: string; onArmNew: () => void }) {
   const m = SESSION.manager;
   const { grant, decimals } = view;
-  const money = (base: bigint) => `${formatBaseUnits(base, decimals)} ${symbol}`;
+  const money = (base: bigint) => (
+    <span className={styles.money}>
+      <span>{formatBaseUnits(base, decimals)}</span>
+      <span className={styles.unit}>{symbol}</span>
+    </span>
+  );
   const revoke = async () => {
     const outcome = await actions.revoke();
     if (outcome.status === "confirmed") notify.neutral(m.revoke, m.revokeNote);
@@ -81,35 +79,67 @@ export function SessionManagerBody({ view, actions, busy, symbol, onArmNew }: { 
   const lowGas = keyPays && (view.keyGasWei ?? 0n) < requiredGasWei("vault-order");
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className={styles.manager}>
       {needsKey && (
         <div className="flex flex-col gap-1 rounded-md border border-hairline bg-surface-2 p-3">
           <p className="type-body-strong text-ink">{m.needsKeyTitle}</p>
           <p className="type-caption text-ink-secondary">{m.needsKeyBody}</p>
         </div>
       )}
-      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 type-caption">
-        <Row label={m.key}>
-          <Hash value={grant.actor} lead={8} tail={6} />
-        </Row>
-        <Row label={m.scope}>{SESSION.sheet.receipt.scopeValue}</Row>
-        <Row label={m.caps}>{m.capsValue(money(grant.caps.maxStakePerTradeBase), money(grant.caps.maxDailySpendBase), grant.caps.maxOpenPositions, priceCapText(grant, decimals))}</Row>
-        <Row label={m.spentToday}>{money(spentToday)}</Row>
-        <Row label={m.headroom}>
-          {money(dailyHeadroomBase(grant, view.nowSec))} · {m.resets} (<UtcTime ms={capResetsAtSec(view.nowSec) * 1000} withSeconds={false} />)
-        </Row>
-        <Row label={m.budget}>{money(grant.budgetBase)}</Row>
-        <Row label={m.expires}>
-          <UtcTime ms={grant.expiresAtSec * 1000} withDate withSeconds={false} />
-        </Row>
-        <Row label={m.gas}>{gasLine(view)}</Row>
+      <dl className={styles.scope}>
+        <dt className={styles.label}>{m.scope}</dt>
+        <dd className={styles.value}>{SESSION.sheet.receipt.scopeValue}</dd>
       </dl>
+      <section>
+        <h3 className={styles.heading}>{m.caps}</h3>
+        <dl className={styles.limits}>
+          <div className={styles.limit}>
+            <dt className={styles.label}>{m.perTap}</dt>
+            <dd className={styles.value}>{money(grant.caps.maxStakePerTradeBase)}</dd>
+          </div>
+          <div className={styles.limit}>
+            <dt className={styles.label}>{m.perDay}</dt>
+            <dd className={styles.value}>{money(grant.caps.maxDailySpendBase)}</dd>
+          </div>
+          <div className={styles.limit}>
+            <dt className={styles.label}>{m.positions}</dt>
+            <dd className={`${styles.value} numbers`}>{grant.caps.maxOpenPositions}</dd>
+          </div>
+          <div className={styles.limit}>
+            <dt className={styles.label}>{m.price}</dt>
+            <dd className={`${styles.value} numbers`}>{priceCapText(grant, decimals) ?? m.noPriceCap}</dd>
+          </div>
+        </dl>
+      </section>
+      <section>
+        <h3 className={styles.heading}>{m.usage}</h3>
+        <dl className={styles.details}>
+          <SessionDetail label={m.spentToday}>{money(spentToday)}</SessionDetail>
+          <SessionDetail label={m.headroom}>
+            {money(dailyHeadroomBase(grant, view.nowSec))}
+            <span className={styles.note}>{m.resets} <UtcTime ms={capResetsAtSec(view.nowSec) * 1000} withSeconds={false} /></span>
+          </SessionDetail>
+          <SessionDetail label={m.budget}>{money(grant.budgetBase)}</SessionDetail>
+        </dl>
+      </section>
+      <section className={styles.section}>
+        <h3 className={styles.heading}>{m.details}</h3>
+        <dl className={styles.details}>
+          <SessionDetail label={m.key}>
+            <Hash value={grant.actor} lead={8} tail={6} />
+          </SessionDetail>
+          <SessionDetail label={m.expires}>
+            <UtcTime ms={grant.expiresAtSec * 1000} withDate withSeconds={false} />
+          </SessionDetail>
+          <SessionDetail label={m.gas}>{gasLine(view)}</SessionDetail>
+        </dl>
+      </section>
       {lowGas && !needsKey && (
         <Button variant="secondary" size="sm" disabled={busy !== null} onClick={() => void actions.topUp()}>
           {m.topUp(formatBaseUnits(sessionGasTopUpWei(), NATIVE_DECIMALS, { maxDp: 3, minDp: 0 }))}
         </Button>
       )}
-      <div className="flex flex-col gap-2">
+      <div className={`${styles.section} flex flex-col gap-3`}>
         {needsKey && (
           <Button size="lg" className="w-full" disabled={busy !== null} onClick={() => void rekey()}>
             {busy === "rekeying" ? m.rekeying : m.rekey}
@@ -132,7 +162,7 @@ export function SessionManagerBody({ view, actions, busy, symbol, onArmNew }: { 
 export function SessionManager({ open, onOpenChange, onArmNew, symbol }: SessionManagerProps) {
   const { view, actions, busy } = useSessionKey();
   return (
-    <SessionModalShell open={open} onClose={() => onOpenChange(false)} title={SESSION.manager.title} description={SESSION.chip.titleOn} labelId="session-manager-title">
+    <SessionModalShell open={open} onClose={() => onOpenChange(false)} title={SESSION.manager.title} description={SESSION.manager.description} labelId="session-manager-title">
       <SessionManagerBody view={view} actions={actions} busy={busy} symbol={symbol} onArmNew={onArmNew} />
     </SessionModalShell>
   );

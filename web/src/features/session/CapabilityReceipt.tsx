@@ -4,6 +4,8 @@ import type { Address } from "@masayume/core/types";
 import { formatBaseUnits } from "@masayume/core/units";
 import { Hash, UtcTime } from "@/components/data";
 import { SESSION } from "./copy";
+import { SessionDetail } from "./SessionDetail";
+import styles from "./SessionDetails.module.css";
 
 interface CapabilityReceiptProps {
   keyAddress: Address | null;
@@ -23,23 +25,17 @@ export function CapabilityReceipt({ keyAddress, expiresAtSec, sponsorConfigured,
   const base = firstTime ? r.sigsTwo : r.sigsOne;
   const gasText = sponsorConfigured ? r.gasSponsor : r.gasKey(formatBaseUnits(topUpWei, NATIVE_DECIMALS, { maxDp: 3, minDp: 0 }));
   return (
-    <div className="flex flex-col gap-2 rounded-md border border-hairline bg-surface-2 p-3">
+    <div className={styles.receipt}>
       <span className="tk-control-label">{SESSION.sheet.receiptTitle}</span>
-      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 type-caption">
-        <dt className="text-ink-secondary">{r.scope}</dt>
-        <dd className="text-ink">{r.scopeValue}</dd>
-        <dt className="text-ink-secondary">{r.cannot}</dt>
-        <dd className="text-ink">{r.cannotValue}</dd>
-        <dt className="text-ink-secondary">{r.key}</dt>
-        <dd className="text-ink">{keyAddress ? <Hash value={keyAddress} lead={8} tail={6} /> : "—"}</dd>
-        <dt className="text-ink-secondary">{r.expiresAt}</dt>
-        <dd className="text-ink">
+      <dl className={styles.details}>
+        <SessionDetail label={r.scope}>{r.scopeValue}</SessionDetail>
+        <SessionDetail label={r.cannot}>{r.cannotValue}</SessionDetail>
+        <SessionDetail label={r.key}>{keyAddress ? <Hash value={keyAddress} lead={8} tail={6} /> : "—"}</SessionDetail>
+        <SessionDetail label={r.expiresAt}>
           <UtcTime ms={expiresAtSec * 1000} withDate withSeconds={false} />
-        </dd>
-        <dt className="text-ink-secondary">{r.gas}</dt>
-        <dd className="text-ink">{gasText}</dd>
-        <dt className="text-ink-secondary">{r.signatures}</dt>
-        <dd className="text-ink">{sponsorConfigured ? base : r.sigsTopUp(base)}</dd>
+        </SessionDetail>
+        <SessionDetail label={r.gas}>{gasText}</SessionDetail>
+        <SessionDetail label={r.signatures}>{sponsorConfigured ? base : r.sigsTopUp(base)}</SessionDetail>
       </dl>
     </div>
   );

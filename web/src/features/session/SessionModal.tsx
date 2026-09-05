@@ -4,7 +4,8 @@ import type { Diagnosis } from "@masayume/core/types";
 import { sessionGasTopUpWei } from "@masayume/markets";
 import { useBalanceSheet } from "@masayume/markets/react";
 import { Loader2, Sparkles, X } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { ErrorState } from "@/components/states";
 import { Button } from "@/components/ui/button";
 import { notify } from "@/lib/toast";
@@ -13,6 +14,7 @@ import { CapsEditor } from "./CapsEditor";
 import { CAPS_DEFAULTS, termsFromForm, workedExample, type CapsForm } from "./caps";
 import { SESSION } from "./copy";
 import { useSessionKey } from "./SessionKeyProvider";
+import styles from "./SessionDetails.module.css";
 
 interface ShellProps {
   open: boolean;
@@ -31,6 +33,32 @@ interface ShellProps {
  * the panel and a submit button that scrolled off a phone. Yosuku has no bottom sheets at all.
  */
 export function SessionModalShell({ open, onClose, title, description, children, footer, labelId }: ShellProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open || !panelRef.current) return;
+    const panel = panelRef.current;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusable = () => Array.from(panel.querySelectorAll<HTMLElement>("a[href], button, input, select, textarea, summary, [tabindex]"))
+      .filter((element) => element.tabIndex >= 0 && !element.matches(":disabled") && element.getClientRects().length > 0);
+    (focusable()[0] ?? panel).focus({ preventScroll: true });
+    const keepFocusInPanel = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+      const elements = focusable();
+      const first = elements[0] ?? panel;
+      const last = elements.at(-1) ?? panel;
+      const active = document.activeElement;
+      if (!panel.contains(active) || active === panel || (event.shiftKey ? active === first : active === last)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      }
+    };
+    document.addEventListener("keydown", keepFocusInPanel);
+    return () => {
+      document.removeEventListener("keydown", keepFocusInPanel);
+      if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
+    };
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -44,11 +72,11 @@ export function SessionModalShell({ open, onClose, title, description, children,
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [open, onClose]);
-  if (!open) return null;
-  return (
-    <div className="modal-root" onClick={onClose}>
+  if (!open || typeof document === "undefined") return null;
+  return createPortal(
+    <div className={`modal-root ${styles.overlay}`} onClick={onClose}>
       <div className="modal-scrim" />
-      <div className="modal" role="dialog" aria-modal="true" aria-labelledby={labelId} onClick={(event) => event.stopPropagation()}>
+      <div ref={panelRef} className="modal" role="dialog" aria-modal="true" aria-labelledby={labelId} aria-describedby={`${labelId}-description`} tabIndex={-1} onClick={(event) => event.stopPropagation()}>
         <button type="button" onClick={onClose} aria-label={SESSION.modal.close} className="modal-close" data-cursor="hover">
           <X className="h-4 w-4" />
         </button>
@@ -60,12 +88,13 @@ export function SessionModalShell({ open, onClose, title, description, children,
           <h2 id={labelId} className="modal-title">
             {title}
           </h2>
-          <p className="modal-desc">{description}</p>
+          <p id={`${labelId}-description`} className="modal-desc">{description}</p>
         </div>
         <div className="modal-body">{children}</div>
         {footer && <div className="modal-foot">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

@@ -6,6 +6,8 @@ import type { VaultGrant } from "@masayume/core/vault";
 import { useState } from "react";
 import { SectionHeader } from "@/components/chrome";
 import { RouteControl, SESSION, SessionChip, SessionControl, SessionManagerBody, type FundingSource, type SessionKeyView, type SessionStatus } from "@/features/session";
+import { SessionModalShell } from "@/features/session/SessionModal";
+import { CapabilityReceipt } from "@/features/session/CapabilityReceipt";
 
 const ONE = 1_000_000n;
 const OWNER = "0xd357019E2c55375477802A047dB7bC1A77819358" as Address;
@@ -67,9 +69,38 @@ const VIEWS: Array<{ label: string; view: SessionKeyView }> = [
     view: view("armed", { grant: grant(KEY, NOW_SEC + 6 * 3600), sponsor: { configured: true, sponsor: VAULT, balanceWei: 5n * 10n ** 18n, forwarder: VAULT, allowlist: ["placeFor"] }, keyGasWei: 0n }),
   },
   { label: "armed · key empty", view: view("armed", { grant: grant(KEY, NOW_SEC + 6 * 3600), keyGasWei: 0n }) },
+  {
+    label: "armed · sponsor declined",
+    view: view("armed", {
+      grant: grant(KEY, NOW_SEC + 6 * 3600),
+      sponsor: { configured: true, sponsor: VAULT, balanceWei: 0n, forwarder: VAULT, allowlist: ["placeFor"] },
+      sponsorRefusal: "The sponsorship allowance for this transaction has been exhausted. The browser key must cover the network fee.",
+    }),
+  },
+  {
+    label: "armed · no price cap",
+    view: view("armed", { grant: { ...grant(KEY, NOW_SEC + 6 * 3600), caps: { ...grant(KEY, NOW_SEC).caps, maxPriceRaw: 0n } } }),
+  },
   { label: "grant without key", view: view("grant-without-key", { grant: grant(OTHER_KEY, NOW_SEC + 6 * 3600), key: null }) },
   { label: "expired", view: view("expired", { grant: grant(KEY, NOW_SEC - 60) }) },
 ];
+
+function ManagerFixture({ label, view: current }: { label: string; view: SessionKeyView }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border border-hairline bg-surface-1 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <span className="type-caption text-ink-secondary">{label}</span>
+        <button type="button" className="type-caption underline underline-offset-4" onClick={() => setOpen(true)}>Preview {label}</button>
+      </div>
+      <SessionChip status={current.status} onClick={() => setOpen(true)} />
+      <SessionManagerBody view={current} actions={noop} busy={null} symbol={SYMBOL} onArmNew={() => undefined} />
+      <SessionModalShell open={open} onClose={() => setOpen(false)} title={SESSION.manager.title} description={SESSION.manager.description} labelId={`session-fixture-${current.status}-${label.replaceAll(" ", "-")}`}>
+        <SessionManagerBody view={current} actions={noop} busy={null} symbol={SYMBOL} onArmNew={() => undefined} />
+      </SessionModalShell>
+    </div>
+  );
+}
 
 function RouteFixture({ label, armed, deployed, vault }: { label: string; armed: boolean; deployed: boolean; vault: bigint | null }) {
   const [source, setSource] = useState<FundingSource>("wallet");
@@ -89,15 +120,8 @@ export function SessionFixtures() {
 
       <section className="flex flex-col gap-4">
         <SectionHeader index="01" title={SESSION.dev.states} />
-        {VIEWS.map(({ label, view: v }) => (
-          <div key={label} className="flex flex-col gap-3 rounded-lg border border-hairline bg-surface-1 p-4">
-            <div className="flex items-center justify-between gap-3">
-              <span className="type-caption text-ink-secondary">{label}</span>
-              <SessionChip status={v.status} onClick={() => undefined} />
-            </div>
-            <SessionManagerBody view={v} actions={noop} busy={null} symbol={SYMBOL} onArmNew={() => undefined} />
-          </div>
-        ))}
+        {VIEWS.map(({ label, view: v }) => <ManagerFixture key={label} label={label} view={v} />)}
+        <CapabilityReceipt keyAddress={KEY} expiresAtSec={NOW_SEC + 6 * 3600} sponsorConfigured topUpWei={0n} firstTime />
       </section>
 
       <section className="flex flex-col gap-4">
