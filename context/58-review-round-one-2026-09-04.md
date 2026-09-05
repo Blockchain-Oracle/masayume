@@ -229,6 +229,29 @@ Still pending live: a posted arcade score, a Moonshot round, an agent trade (no 
   open guest-token issues), `agent-twitter-client` (dead since December 2024), `twikit` (Python). Unofficial
   means the account can be restricted (rettiwt has an open "Account Suspensions" thread), so the account
   should be one made for the purpose; that is the owner's call.
+- **The X rail works, end to end, for free (2026-09-05, ~05:43 UTC).** The owner's own X account is
+  `@masayume_app` (id `1971264227093643264`); its browser session cookies (`auth_token`, `ct0`, `kdt`,
+  `twid`), base64-encoded as `name=value;` pairs, are the rettiwt key on Fly. The scripted demo wallet on
+  the live site: **Sign in with X** through OAuth 1.0a (the consent page as @masayume_app, back at
+  `?x=1`), **link** (one `personal_sign`), **fund + authorize** (two transactions: 5 tUSDC into the vault
+  and the EXECUTOR grant). Then `@masayume_app eth up 1 1h go`, posted through the same session: the relay
+  read it within a minute, executed it from the executor key under the grant — **filled, UP, 1 tUSDC,
+  market `0x…13ea3`, tx `0x4bcbc318…c484`** — wrote the receipt the site shows, and replied on X as the
+  account. Two things it caught on the way: the first instruction was refused "Out of STT gas" because the
+  executor key was unfunded (2 STT from the deployer fixed it, and the refusal itself was replied on X —
+  the honesty rule holding); and the relay's first-poll guard (`87c19f8`) had cursored past the very
+  first mention because an empty first poll wrote no cursor. X refuses a repeated tweet text, so every
+  test instruction must differ. rettiwt's search answered one transient 404 among the polls.
+- **The OAuth 2.0 sign-in is gone (`7283967`).** Its code exchange worked but `GET /2/users/me` is a v2
+  endpoint the Free plan refuses (`?x=err&x_reason=profile`); the three-legged OAuth 1.0a flow is what
+  that plan keeps, and its access-token step answers with `user_id` and `screen_name` itself. The web reads
+  the app's consumer key pair (`X_API_KEY`, `X_API_KEY_SECRET`); `X_CLIENT_ID`/`X_CLIENT_SECRET` are removed
+  from Vercel.
+- **The old path is gone, per the owner's rule (2026-09-05: no legacy code).** With the rail proven, the
+  X API v2 transport, its OAuth 1.0a reply signing, `X_TRANSPORT` and the six official-API secrets left
+  ops; the relay is one transport (`transport.ts` keeps the contract and the `Mention` type,
+  `rettiwt.ts` the way in, `env.ts` five variables). Vercel lost `X_CLIENT_ID`/`X_CLIENT_SECRET`. The
+  first-poll guard, the URL-free reply and the honesty of a refused instruction stay.
 - **OpenAI is the AI provider.** The owner asked for OpenAI and to look in the local env: `~/.openai/credentials`
   held a revoked project key (401 "Incorrect API key"); the one in `~/dev/hackathon/keeperhub-copilot/.env.local`
   answers 200 and lists `gpt-5.4`. It is `OPENAI_API_KEY` + `AI_MODEL=openai/gpt-5.4` on Vercel (Sensei now

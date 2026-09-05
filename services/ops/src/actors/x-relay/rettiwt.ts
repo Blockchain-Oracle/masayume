@@ -1,6 +1,5 @@
 import { Rettiwt } from "rettiwt-api";
-import type { Mention } from "./client";
-import type { XTransport } from "./transport";
+import type { Mention, XTransport } from "./transport";
 
 /** One page of the account's latest mentions per poll; the cursor keeps the relay from re-reading old ones. */
 const PAGE = 20;
@@ -14,7 +13,6 @@ export function rettiwtTransport(apiKey: string, handle: string): XTransport {
   const user = handle.replace(/^@/, "");
   const client = new Rettiwt({ apiKey, timeout: 30_000, maxRetries: 2 });
   return {
-    kind: "rettiwt",
     describe: () => `rettiwt (the account's session) · mentions of @${user}`,
     async fetchMentions(sinceId) {
       const page = await client.tweet.search({ mentions: [user] }, PAGE);

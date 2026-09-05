@@ -6,7 +6,7 @@ import { describeRefusal, parseInstruction, type XInstruction } from "@masayume/
 import { xLinkByAuthor, xReceiptUpsert, type XReceiptRecord } from "@masayume/db";
 import { getCollateral, getVaultSnapshot, marketsProvider, resolveVenueId, type SubmitterSession } from "@masayume/markets";
 import type { Bytes32, EventMarket } from "@masayume/core/types";
-import type { Mention } from "./client";
+import type { Mention } from "./transport";
 
 export interface ExecutorContext {
   session: SubmitterSession;
@@ -119,8 +119,8 @@ export function replyText(receipt: XReceiptRecord, decimals: number): string {
   const stake = receipt.stakeBase ? `${formatBaseUnits(BigInt(receipt.stakeBase), decimals)} staked` : "";
   const side = receipt.side ? receipt.side.toUpperCase() : "";
   switch (receipt.status) {
-    // No URL in a reply on purpose: X's pay-per-use bills a post with a link at ~13× a plain one
-    // ($0.20 against $0.015, 2026-09-04), and the receipt page is one tap from the app anyway.
+    // The reply names the transaction and the page, never a link: the receipt page is one tap from the
+    // app, and a plain reply is the least an account's own session can be flagged for.
     case "filled":
       return `Filled: ${side}, ${stake}. Your receipt is on the app's Trade-from-X page · tx ${receipt.txHash ?? ""}`;
     case "nothing-filled":

@@ -1,11 +1,9 @@
 import { createMemoryJournal, createSubmitterSession, ensureMarkets, getCollateral, loadCollateral, parseMarketsEnv, syncClock } from "@masayume/markets";
 import { xReceiptByMention, xRelayStateGet, xRelayStateSet } from "@masayume/db";
 import type { Bytes32 } from "@masayume/core/types";
-import type { PostingAuth } from "./client";
-import { readOAuth1, readRelayEnv, RELAY_ENV } from "./env";
+import { readRelayEnv, RELAY_ENV } from "./env";
 import { executeMention, replyText, resolveVenue, xReceiptUpsert } from "./execute";
 import { rettiwtTransport } from "./rettiwt";
-import { officialTransport } from "./transport";
 
 const HEARTBEAT_MS = 60_000;
 const CURSOR_KEY = "mentions.since_id";
@@ -15,8 +13,9 @@ const STARTED_CURSOR = "0";
 /**
  * The X mention relay (doc 03 §X prediction rail): bounded polling of the account's mentions,
  * one receipt per mention, idempotent by tweet id, executing from an isolated x-executor
- * session under the owner's EXECUTOR grant. Without credentials it heartbeats what is missing
- * and never crashes; without a user-context token it executes but does not reply.
+ * session under the owner's EXECUTOR grant, through the account's own session (`rettiwt.ts`). Without
+ * its key it heartbeats what is missing and never crashes; without `X_POSTING_ENABLED` it executes but
+ * does not reply.
  */
 export async function startXRelay(log: (why: string) => void): Promise<void> {
   const reading = readRelayEnv();
@@ -38,15 +37,10 @@ export async function startXRelay(log: (why: string) => void): Promise<void> {
     return;
   }
   const session = await createSubmitterSession({ env: marketsEnv, authority: "x-executor", signer: { privateKey: relay.executorPrivateKey }, journal: createMemoryJournal() });
-  // Replies need a user context: the OAuth 2.0 token if one was minted, else the portal's OAuth 1.0a set.
-  const posting: PostingAuth | null = !relay.postingEnabled ? null : relay.userAccessToken ? { kind: "oauth2", userAccessToken: relay.userAccessToken } : relay.oauth1 ? { kind: "oauth1", credentials: relay.oauth1 } : null;
-  const partial = readOAuth1().partial;
-  const postingWhy = posting ? `on (${posting.kind})` : !relay.postingEnabled ? "off" : partial.length > 0 ? `off (set ${partial.join(", ")})` : `off (set ${RELAY_ENV.userToken}, or ${RELAY_ENV.apiKey} + ${RELAY_ENV.apiKeySecret} + ${RELAY_ENV.accessToken} + ${RELAY_ENV.accessTokenSecret})`;
-  // The way to X: the account's own session through rettiwt when its key is set, else the paid v2 API.
-  const transport = relay.transport === "rettiwt" ? rettiwtTransport(relay.rettiwtApiKey!, relay.handle!) : officialTransport(relay.bearerToken, relay.accountId, posting);
+  // The way to X: the account's own session. Replies go out as the account only when asked for.
+  const transport = rettiwtTransport(relay.rettiwtApiKey, relay.handle);
   if (!relay.postingEnabled) transport.reply = null;
-  const replyWhy = transport.kind === "rettiwt" ? (transport.reply ? "on (as the account)" : `off (set ${RELAY_ENV.posting}=1)`) : postingWhy;
-  log(`executor ${session.address} on venue ${venueId}; via ${transport.describe()}; posting ${replyWhy}`);
+  log(`executor ${session.address} on venue ${venueId}; via ${transport.describe()}; posting ${transport.reply ? "on (as the account)" : `off (set ${RELAY_ENV.posting}=1)`}`);
 
   let busy = false;
   const cycle = async () => {
