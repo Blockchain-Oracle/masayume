@@ -39,7 +39,7 @@ const BINDING = { authorId: "1234567890", handle: "abu_builds", wallet: WALLET.t
 const SESSION = { authorId: "1234567890", handle: "abu_builds" };
 
 const CASES: Array<{ title: string; address: string | null; link: XLink; grant: XGrantState }> = [
-  { title: "Not configured (no X app on this deployment)", address: WALLET, link: link({ status: status({ configured: false, missing: ["X_CLIENT_ID", "X_SESSION_SECRET"], executor: null }) }), grant: grant({}) },
+  { title: "Not configured (no X app on this deployment)", address: WALLET, link: link({ status: status({ configured: false, missing: ["X_API_KEY", "X_API_KEY_SECRET", "X_SESSION_SECRET"], executor: null }) }), grant: grant({}) },
   { title: "Connected wallet, X not signed in", address: WALLET, link: link({ status: status({}) }), grant: grant({}) },
   { title: "Signed in, one more step to link", address: WALLET, link: link({ status: status({ signedIn: true, session: SESSION }), needsLink: true }), grant: grant({}) },
   { title: "Linked and funded (the executor grant holds the balance)", address: WALLET, link: link({ status: status({ signedIn: true, session: SESSION, binding: BINDING }), sessionMatchesBinding: true }), grant: grant({ grant: GRANT, balanceBase: GRANT.budgetBase }) },

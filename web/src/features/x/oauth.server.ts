@@ -1,56 +1,63 @@
+import { type OAuth1Consumer, oauth1Header } from "./oauth1.server";
+
 /**
- * The token exchange and profile read against X's API — a port of the reference's callback
- * helpers. A confidential client authenticates with Basic auth; a public PKCE client puts its
- * client_id in the body; the two request shapes are kept distinct, and a stale secret on a
- * public app falls back to the public shape before asking the user to start over.
+ * "Sign in with X" as the three-legged OAuth 1.0a flow — the one X still serves a deprecated
+ * Free-plan app (2026-09-05). Its last step answers with `user_id` and `screen_name` itself, so no
+ * profile read follows; the OAuth 2.0 flow the reference used needed `GET /2/users/me`, a v2 endpoint
+ * that plan refuses, and X's own `oauth/authenticate` page is the same consent screen either way.
  */
-export const X_AUTHORIZE_URL = "https://x.com/i/oauth2/authorize";
-const TOKEN_URL = "https://api.x.com/2/oauth2/token";
-const ME_URL = "https://api.x.com/2/users/me";
-export const X_SCOPES = "users.read tweet.read";
+const REQUEST_TOKEN_URL = "https://api.x.com/oauth/request_token";
+const ACCESS_TOKEN_URL = "https://api.x.com/oauth/access_token";
+const AUTHENTICATE_URL = "https://api.x.com/oauth/authenticate";
 
-export interface TokenResult {
-  ok: boolean;
-  status: number;
-  accessToken: string | null;
-  error: string | null;
-  mode: "confidential" | "public";
+export interface RequestToken {
+  oauthToken: string;
+  oauthTokenSecret: string;
 }
 
-export async function exchangeCode(input: { clientId: string; clientSecret: string | null; code: string; redirectUri: string; verifier: string }): Promise<TokenResult> {
-  const request = async (mode: TokenResult["mode"]): Promise<TokenResult> => {
-    const confidential = mode === "confidential";
-    const body = new URLSearchParams({ grant_type: "authorization_code", code: input.code, redirect_uri: input.redirectUri, code_verifier: input.verifier });
-    if (!confidential) body.set("client_id", input.clientId);
-    const response = await fetch(TOKEN_URL, {
-      method: "POST",
-      headers: {
-        "content-type": "application/x-www-form-urlencoded",
-        ...(confidential ? { authorization: `Basic ${Buffer.from(`${input.clientId}:${input.clientSecret}`).toString("base64")}` } : {}),
-      },
-      body,
-      cache: "no-store",
-    });
-    const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;
-    return {
-      ok: response.ok && typeof payload.access_token === "string",
-      status: response.status,
-      accessToken: typeof payload.access_token === "string" ? payload.access_token : null,
-      error: typeof payload.error === "string" ? payload.error : null,
-      mode,
-    };
-  };
-
-  if (!input.clientSecret) return request("public");
-  const confidential = await request("confidential");
-  if (confidential.ok) return confidential;
-  if (confidential.status === 401 || confidential.error === "invalid_client" || confidential.error === "unauthorized_client") return request("public");
-  return confidential;
+/** Step one: a temporary token bound to our callback. `oauth_callback_confirmed` must come back true. */
+export async function requestToken(consumer: OAuth1Consumer, callbackUrl: string): Promise<RequestToken | { error: string; status: number }> {
+  const response = await fetch(REQUEST_TOKEN_URL, {
+    method: "POST",
+    headers: { authorization: oauth1Header(consumer, "POST", REQUEST_TOKEN_URL, { oauth_callback: callbackUrl }) },
+    cache: "no-store",
+  });
+  const text = await response.text();
+  if (!response.ok) return { error: text.slice(0, 120), status: response.status };
+  const params = new URLSearchParams(text);
+  const oauthToken = params.get("oauth_token");
+  const oauthTokenSecret = params.get("oauth_token_secret");
+  if (!oauthToken || !oauthTokenSecret || params.get("oauth_callback_confirmed") !== "true") return { error: "callback not confirmed", status: response.status };
+  return { oauthToken, oauthTokenSecret };
 }
 
-export async function fetchMe(accessToken: string): Promise<{ id: string; username: string | null } | null> {
-  const response = await fetch(ME_URL, { headers: { authorization: `Bearer ${accessToken}` }, cache: "no-store" });
-  const me = (await response.json().catch(() => ({}))) as { data?: { id?: string; username?: string } };
-  if (!response.ok || !me.data?.id) return null;
-  return { id: String(me.data.id), username: me.data.username ?? null };
+/** Step two: where the browser goes to approve. `authenticate` (not `authorize`) skips re-asking a user who already approved. */
+export function authenticateUrl(oauthToken: string): string {
+  const url = new URL(AUTHENTICATE_URL);
+  url.searchParams.set("oauth_token", oauthToken);
+  return url.toString();
+}
+
+export interface XIdentity {
+  id: string;
+  username: string | null;
+}
+
+/** Step three: the verifier X sent back becomes the account's identity. The access token itself is not kept — the site never acts as the user. */
+export async function accessToken(consumer: OAuth1Consumer, token: RequestToken, verifier: string): Promise<XIdentity | { error: string; status: number }> {
+  const response = await fetch(ACCESS_TOKEN_URL, {
+    method: "POST",
+    headers: {
+      authorization: oauth1Header(consumer, "POST", ACCESS_TOKEN_URL, { oauth_token: token.oauthToken, oauth_verifier: verifier }, token.oauthTokenSecret),
+      "content-type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({ oauth_verifier: verifier }),
+    cache: "no-store",
+  });
+  const text = await response.text();
+  if (!response.ok) return { error: text.slice(0, 120), status: response.status };
+  const params = new URLSearchParams(text);
+  const id = params.get("user_id");
+  if (!id) return { error: "no user_id in the access token answer", status: response.status };
+  return { id, username: params.get("screen_name") };
 }

@@ -1,4 +1,4 @@
-import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 /**
  * The "Sign in with X" session — a port of the reference's `lib/claimOAuth.ts`.
@@ -10,15 +10,12 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypt
  */
 const b64url = (b: Buffer) => b.toString("base64url");
 
-export const genVerifier = () => b64url(randomBytes(32));
-export const codeChallenge = (verifier: string) => b64url(createHash("sha256").update(verifier).digest());
-export const genState = () => b64url(randomBytes(16));
-
 /** 30 days, as the reference settled on: a one-shot claim tolerates 30 minutes, a portfolio card does not. */
 export const X_SESSION_TTL_MS = 30 * 24 * 60 * 60_000;
 export const X_SESSION_COOKIE = "x_sess";
-export const X_PKCE_COOKIES = { verifier: "x_v", state: "x_s", ret: "x_ret" } as const;
-export const X_PKCE_TTL_SEC = 600;
+/** The OAuth 1.0a request token and its secret live in httpOnly cookies between the start and the callback. */
+export const X_OAUTH_COOKIES = { token: "x_rt", secret: "x_rs", ret: "x_ret" } as const;
+export const X_OAUTH_TTL_SEC = 600;
 
 export interface XSession {
   authorId: string;

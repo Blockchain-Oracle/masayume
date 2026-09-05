@@ -19,7 +19,7 @@ export function LinkStep({ link, returnTo, enabled }: { link: XLink; returnTo: s
   const session = link.status?.session ?? null;
   const binding = link.status?.binding ?? null;
   if (!link.status?.configured) {
-    return <p className="xt-step-lede">{`Sign in with X is not configured here — set ${link.status?.missing.join(", ") || "X_CLIENT_ID, X_SESSION_SECRET"}.`}</p>;
+    return <p className="xt-step-lede">{`Sign in with X is not configured here — set ${link.status?.missing.join(", ") || "X_API_KEY, X_API_KEY_SECRET, X_SESSION_SECRET"}.`}</p>;
   }
   if (binding && !link.needsLink && !link.walletMismatch) {
     return (
