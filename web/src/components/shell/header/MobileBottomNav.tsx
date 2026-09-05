@@ -55,8 +55,9 @@ export function MobileBottomNav() {
                 {section.items.map((item) => {
                   const Icon = item.icon;
                   const active = isActiveNavItem(pathname, item);
+                  const Destination = item.external ? "a" : Link;
                   return (
-                    <Link
+                    <Destination
                       key={item.id}
                       href={item.href}
                       className={`mobile-nav-link ${active ? "active" : ""}`}
@@ -68,7 +69,7 @@ export function MobileBottomNav() {
                         <strong>{item.name}{item.beta && <sup>beta</sup>}</strong>
                         <small>{item.description}</small>
                       </span>
-                    </Link>
+                    </Destination>
                   );
                 })}
               </div>

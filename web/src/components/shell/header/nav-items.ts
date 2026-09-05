@@ -4,6 +4,7 @@ import {
   Layers3, MessageSquare, Mountain, Newspaper, Presentation, Rocket, ScanSearch,
   Trophy, WalletCards, X as XLogo, type LucideIcon,
 } from "lucide-react";
+import { DOCS_URL } from "../../../lib/docs-url";
 
 export type NavItem = {
   id: string;
@@ -11,6 +12,7 @@ export type NavItem = {
   href: string;
   description: string;
   icon: LucideIcon;
+  external?: boolean;
   beta?: boolean;
   match?: { paths: readonly string[]; exact?: boolean };
 };
@@ -180,7 +182,7 @@ export const NAV_ITEMS = {
     description: "Understand the product from end to end.",
     icon: CircleHelp,
   },
-  docs: { id: "docs", name: "Docs", href: "/docs", description: "Read technical and product documentation.", icon: BookOpen },
+  docs: { id: "docs", name: "Docs", href: DOCS_URL, external: true, description: "Read step-by-step guides and product documentation.", icon: BookOpen },
   status: {
     id: "status",
     name: "Status",
@@ -303,7 +305,7 @@ export const MOBILE_OVERFLOW: readonly NavItem[] = MOBILE_DRAWER_SECTIONS.flatMa
 
 /** Every real, user-facing page that must retain an explicit navigation home. */
 export const NAVIGABLE_ROUTE_PATHS = [
-  "/agents", "/claim", "/demo", "/docs",
+  "/agents", "/claim", "/demo",
   "/download", "/earn", "/games", "/games/candle-hop", "/games/duel", "/games/line-rider",
   "/games/lucky", "/games/moonshot", "/games/practice", "/games/range", "/how-it-works", "/leaderboard",
   "/markets", "/news", "/parlay", "/pitch", "/portfolio", "/portfolio/edge", "/reels", "/stats",
@@ -321,7 +323,7 @@ export const ISLAND_NAV: readonly NavItem[] = [
 ];
 
 export function isActiveNavItem(pathname: string | null, item: NavItem): boolean {
-  if (!pathname) return false;
+  if (!pathname || item.external) return false;
   const fallbackPath = item.href.split("?")[0] ?? item.href;
   const match = item.match ?? { paths: [fallbackPath] };
   return match.paths.some((path) => pathname === path || (!match.exact && pathname.startsWith(`${path}/`)));

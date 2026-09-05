@@ -9,6 +9,7 @@ import { ConnectButton } from "@/features/markets/wallet";
 import { useVenue } from "@/features/markets/useVenue";
 import { useWalletSession } from "@/lib/wallet-session";
 import { MARKETS_PATH } from "@/lib/routes";
+import { docsUrl } from "@/lib/docs-url";
 import { ISLAND_NAV } from "@/components/shell/header/nav-items";
 import { CapabilityReceipt } from "./CapabilityReceipt";
 import { TRADE_FROM_X, X_HANDLE } from "./copy";
@@ -144,8 +145,8 @@ export function TradeFromXScreen() {
 
         <div className="xt-trust">
           <div className="xt-meta" style={{ marginTop: 0 }}><Dot v /> {TRADE_FROM_X.noWithdraw}</div>
-          <ProofLink href="/docs">{TRADE_FROM_X.proofs.contract}</ProofLink>
-          <ProofLink href="/docs">{TRADE_FROM_X.proofs.caps}</ProofLink>
+          <ProofLink href={docsUrl("builders/contracts")}>{TRADE_FROM_X.proofs.contract}</ProofLink>
+          <ProofLink href={docsUrl("architecture/x")}>{TRADE_FROM_X.proofs.caps}</ProofLink>
           <p className="xt-trust-note">{TRADE_FROM_X.testnetNote}</p>
         </div>
 

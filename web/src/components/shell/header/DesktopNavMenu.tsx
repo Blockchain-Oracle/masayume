@@ -46,7 +46,7 @@ export function DesktopNavMenu({ group, pathname, open, onOpenChange }: DesktopN
                       return (
                         <Menu.LinkItem
                           key={item.id}
-                          render={<Link href={item.href} />}
+                          render={item.external ? <a href={item.href} /> : <Link href={item.href} />}
                           closeOnClick
                           className={`nav-menu-link ${itemActive ? "active" : ""}`}
                           aria-current={itemActive ? "page" : undefined}

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { DOCS_URL } from "../../../lib/docs-url";
 import {
   DESKTOP_NAV,
   isActiveNavItem,
@@ -6,6 +7,7 @@ import {
   MOBILE_NAV,
   NAVIGABLE_ROUTE_PATHS,
   NAV_ITEMS,
+  type NavItem,
 } from "./nav-items";
 
 describe("navigation registry", () => {
@@ -48,7 +50,12 @@ describe("navigation registry", () => {
     expect(isActiveNavItem("/markets/example", NAV_ITEMS.markets)).toBe(true);
   });
 
-  it("uses internal application URLs throughout the registry", () => {
-    expect(Object.values(NAV_ITEMS).every((item) => item.href.startsWith("/"))).toBe(true);
+  it("keeps documentation external and every application destination internal", () => {
+    const items: NavItem[] = Object.values(NAV_ITEMS);
+    expect(items.filter((item) => item.external).map((item) => item.id)).toEqual(["docs"]);
+    expect(NAV_ITEMS.docs.href).toBe(DOCS_URL);
+    expect(items.filter((item) => !item.external).every((item) => item.href.startsWith("/"))).toBe(true);
+    expect(NAVIGABLE_ROUTE_PATHS).not.toContain("/docs");
+    expect(isActiveNavItem("/docs", NAV_ITEMS.docs)).toBe(false);
   });
 });

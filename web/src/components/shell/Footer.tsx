@@ -1,13 +1,13 @@
-import Link from "next/link";
+import { DOCS_URL } from "@/lib/docs-url";
 
 export default function Footer() {
   return (
     <footer className="footer">
       <div className="container">
         <div className="footer-row">
-          <Link href="/docs" data-cursor="hover">
+          <a href={DOCS_URL} data-cursor="hover">
             Docs
-          </Link>
+          </a>
         </div>
       </div>
     </footer>
