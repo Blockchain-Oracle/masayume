@@ -99,15 +99,6 @@ export function PrivateClaims({ claims, pinnedDesk, contract, chainId, owner, de
     [onChanged],
   );
 
-  if (claims.length === 0) {
-    return (
-      <div className="pc-empty">
-        <p className="pc-empty-title">{PRIVATE.claims.emptyTitle}</p>
-        <p className="pc-empty-sub">{PRIVATE.claims.emptySub}</p>
-      </div>
-    );
-  }
-
   return (
     <div className="pc">
       <div className="pc-head">
@@ -116,7 +107,7 @@ export function PrivateClaims({ claims, pinnedDesk, contract, chainId, owner, de
           <p className="pc-sub">{PRIVATE.claims.sub}</p>
         </div>
         <div className="pc-actions">
-          <button type="button" onClick={backUp} className="pc-btn" data-cursor="hover">
+          <button type="button" onClick={backUp} disabled={claims.length === 0} className="pc-btn disabled:cursor-not-allowed disabled:opacity-40" data-cursor="hover">
             <Download className="pc-icon" aria-hidden />
             {PRIVATE.claims.backUp}
           </button>
@@ -128,6 +119,7 @@ export function PrivateClaims({ claims, pinnedDesk, contract, chainId, owner, de
             ref={fileRef}
             type="file"
             accept="application/json"
+            aria-label="Restore private positions from a backup"
             className="sr-only"
             onChange={(e) => {
               const f = e.target.files?.[0];
@@ -144,6 +136,13 @@ export function PrivateClaims({ claims, pinnedDesk, contract, chainId, owner, de
         </p>
       )}
       {claims.some((c) => verified[c.claim.slotId] === false) && <p className="pc-warn">{PRIVATE.claims.warn}</p>}
+
+      {claims.length === 0 && (
+        <div className="pc-empty">
+          <p className="pc-empty-title">{PRIVATE.claims.emptyTitle}</p>
+          <p className="pc-empty-sub">{PRIVATE.claims.emptySub}</p>
+        </div>
+      )}
 
       <ul className="pc-list">
         {claims.map((c) => {

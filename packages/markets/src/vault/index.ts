@@ -2,7 +2,8 @@ export { resolveVaultDeployment } from "./deployment";
 export { diagnoseNamedRevert, diagnoseVault } from "./errors";
 export { listVaultTallies, tallyToLedger, vaultRound, VAULT_TX_SENTINEL, type VaultTallies, type VaultTally } from "./history";
 export { bookVaultFill, submitVaultOrder } from "./order";
-export { getVaultHoldings, getVaultSnapshot } from "./read";
+export { getVaultGrant, getVaultHoldings, getVaultSnapshot } from "./read";
+export { recoverVaultExecution, type RecoveredVaultExecution } from "./recovery";
 export {
   createSponsorTransport,
   executeSponsored,

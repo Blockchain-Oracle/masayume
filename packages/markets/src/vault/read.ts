@@ -46,6 +46,14 @@ export function toVaultGrant(grantId: bigint, g: GrantTuple): VaultGrant {
   };
 }
 
+/** Historical grants remain readable after replacement/revocation for position attribution. */
+export async function getVaultGrant(grantId: bigint): Promise<VaultGrant> {
+  const deployment = getVaultDeployment();
+  if (!deployment) throw new Error("EventVault is not deployed");
+  const grant = await viem().readContract({ address: deployment.eventVault, abi: eventVaultAbi, functionName: "grantOf", args: [grantId] });
+  return toVaultGrant(grantId, grant);
+}
+
 /** The Trading Balance and the live grant per kind, in two batched reads; null where no vault is deployed. */
 export async function getVaultSnapshot(wallet: Address): Promise<Reading<VaultSnapshot | null>> {
   return withReading(`vault:${wallet}`, async () => {

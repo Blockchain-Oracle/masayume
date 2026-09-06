@@ -127,7 +127,7 @@ export async function recordStrategyFill(fill: StrategyFillRecord): Promise<bool
 }
 
 /** Newest first; all strategies when `strategyId` is null. Dry-run rows are excluded: they are not trades. */
-export async function listStrategyFills(strategyId: string | null, limit: number): Promise<StrategyFillRecord[] | null> {
+export async function listStrategyFills(strategyId: string | null, limit: number | null): Promise<StrategyFillRecord[] | null> {
   const db = getDb();
   if (!db) return null;
   await ensureSchema();

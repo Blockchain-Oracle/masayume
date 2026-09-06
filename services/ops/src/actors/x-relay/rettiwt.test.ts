@@ -12,6 +12,29 @@ import { rettiwtTransport } from "./rettiwt";
 describe("X media transport", () => {
   beforeEach(() => { mocks.configs.length = 0; vi.clearAllMocks(); });
 
+  const tweet = (id: string) => ({ id, tweetBy: { id: "55", userName: "caller" }, fullText: "BTC UP 5 5m" });
+  it("drains multiple pages beyond twenty, deduplicates, and processes oldest first", async () => {
+    mocks.search.mockResolvedValueOnce({ list: Array.from({ length: 20 }, (_, i) => tweet(String(40 - i))), next: "page2" })
+      .mockResolvedValueOnce({ list: [tweet("21"), ...Array.from({ length: 20 }, (_, i) => tweet(String(20 - i)))], next: "page3" })
+      .mockResolvedValueOnce({ list: [], next: null });
+    const result = await rettiwtTransport("fixture", "bot").fetchMentions("0");
+    expect(result.map(m => m.id)).toEqual(Array.from({ length: 40 }, (_, i) => String(i + 1)));
+    expect(mocks.search.mock.calls[1]).toEqual([{ mentions: ["bot"], sinceId: "0" }, 20, "page2"]);
+  });
+
+  it("fails the entire drain on a later page error or repeated cursor", async () => {
+    mocks.search.mockResolvedValueOnce({ list: [tweet("30")], next: "next" }).mockRejectedValueOnce(new Error("provider unavailable"));
+    await expect(rettiwtTransport("fixture", "bot").fetchMentions("0")).rejects.toThrow("provider unavailable");
+    mocks.search.mockResolvedValue({ list: [tweet("30")], next: "same" });
+    await expect(rettiwtTransport("fixture", "bot").fetchMentions("0")).rejects.toThrow("repeated a cursor");
+  });
+
+  it("reads only the newest page when establishing a first-start baseline", async () => {
+    mocks.search.mockResolvedValue({ list: [tweet("30")], next: "history" });
+    await expect(rettiwtTransport("fixture", "bot").fetchMentions(null)).resolves.toMatchObject([{ id: "30" }]);
+    expect(mocks.search).toHaveBeenCalledOnce();
+  });
+
   it("uploads image bytes and attaches its id while retaining the reply target", async () => {
     mocks.upload.mockResolvedValue("456");
     mocks.post.mockResolvedValue("789");

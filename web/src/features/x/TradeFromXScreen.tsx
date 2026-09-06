@@ -18,6 +18,7 @@ import { LinkStep } from "./LinkStep";
 import { Dot, IdentityChip, ProofLink, Step, Tick } from "./StepSpine";
 import { useXGrant } from "./useXGrant";
 import { XReceiptsList } from "./XReceiptsList";
+import { XRelayStatus } from "./XRelayStatus";
 import { useXReceipts } from "./useXReceipts";
 import { useXStatus } from "./useXStatus";
 
@@ -141,6 +142,7 @@ export function TradeFromXScreen() {
             <span key={ex} className="xt-boot xt-example-text" style={{ animationDuration: ".5s" }}>{`${X_HANDLE} ${X_EXAMPLES[ex]}`}</span>
           </div>
           <p className="xt-composer-note">{TRADE_FROM_X.opensFrom}</p>
+          <XRelayStatus health={link.status?.relay} />
         </div>
 
         <div className="xt-trust">

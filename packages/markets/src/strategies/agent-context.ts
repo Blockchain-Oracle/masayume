@@ -22,7 +22,7 @@ export function downsample(points: readonly PricePoint[], max = MAX_SAMPLES): Ag
 async function sideCents(market: EventMarket, side: Side, stakeBase: bigint): Promise<number | null> {
   const target = { marketId: market.marketId, poolAddress: market.poolAddress, decimals: market.decimals, intervalSec: market.intervalSec };
   const quote = await marketsProvider.freshQuoteStake(target, side, stakeBase);
-  return isOk(quote) && quote.value ? quote.value.oddsCents : null;
+  return isOk(quote) && !quote.stale && quote.value ? quote.value.oddsCents : null;
 }
 
 /**
@@ -41,9 +41,13 @@ export async function readAgentContext(market: EventMarket, stakeBase: bigint, n
     sideCents(market, "down", stakeBase),
   ]);
   if (!isOk(opening)) return opening;
+  if (opening.stale) return err(diagnosis("indexer-down", "opening print refresh failed; holding"));
   if (opening.value === null) return err(diagnosis("market-not-trading", `${market.asset}/${market.intervalSec}s has no opening print yet`));
   if (!isOk(price)) return price;
+  if (price.stale) return err(diagnosis("indexer-down", `${market.asset} price is stale; holding`));
   if (price.value === null) return err(diagnosis("indexer-down", `no fresh ${market.asset} price`));
+  if (!isOk(history)) return history;
+  if (history.stale) return err(diagnosis("indexer-down", `${market.asset} price history is stale; holding`));
   return ok(
     {
       asset: market.asset,
@@ -53,7 +57,7 @@ export async function readAgentContext(market: EventMarket, stakeBase: bigint, n
       emaRaw: price.value.emaRaw,
       spotRaw: price.value.priceRaw,
       feedDecimals: price.value.decimals,
-      samples: downsample(isOk(history) ? history.value : []),
+      samples: downsample(history.value),
       upCents,
       downCents,
       stakeBase,

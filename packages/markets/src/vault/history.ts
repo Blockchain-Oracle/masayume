@@ -52,13 +52,13 @@ function toTally(marketId: MarketId, t: Tally): VaultTally {
 }
 
 /** Every Window the wallet traded through the vault, with its tally — the vault's own record, no events replayed. */
-export async function listVaultTallies(wallet: Address): Promise<VaultTallies> {
+export async function listVaultTallies(wallet: Address, options: { complete?: boolean } = {}): Promise<VaultTallies> {
   const deployment = getVaultDeployment();
   if (!deployment) return { tallies: [], complete: true };
   const client = getClient().getViemClient() as PublicClient;
   const contract = { address: deployment.eventVault, abi: eventVaultAbi } as const;
   const count = Number(await client.readContract({ ...contract, functionName: "marketCountOf", args: [wallet] }));
-  const wanted = Math.min(count, MAX_MARKETS);
+  const wanted = options.complete ? count : Math.min(count, MAX_MARKETS);
   const ids: MarketId[] = [];
   for (let offset = 0; offset < wanted; offset += PAGE) {
     const page = await client.readContract({ ...contract, functionName: "marketsOf", args: [wallet, BigInt(offset), BigInt(Math.min(PAGE, wanted - offset))] });
@@ -74,7 +74,7 @@ export async function listVaultTallies(wallet: Address): Promise<VaultTallies> {
     });
     rows.forEach((row, j) => tallies.push(toTally(chunk[j] as MarketId, row as Tally)));
   }
-  return { tallies, complete: count <= MAX_MARKETS };
+  return { tallies, complete: wanted === count };
 }
 
 /** The vault never shorts (a sale needs inventory), so held is simply bought minus sold per side. */

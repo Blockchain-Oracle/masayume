@@ -1,8 +1,8 @@
 import { Rettiwt } from "rettiwt-api";
 import type { Mention, XTransport } from "./transport";
 
-/** One page of the account's latest mentions per poll; the cursor keeps the relay from re-reading old ones. */
 const PAGE = 20;
+const MAX_PAGES = 50;
 
 /**
  * The relay over the account's own session (`rettiwt-api`): X's search for `@handle`, newest first, and a
@@ -17,17 +17,32 @@ export function rettiwtTransport(apiKey: string, handle: string): XTransport {
   return {
     describe: () => `rettiwt (the account's session) · mentions of @${user}`,
     async fetchMentions(sinceId) {
-      const page = await client.tweet.search({ mentions: [user] }, PAGE);
-      return page.list
-        .map<Mention>((t) => ({
+      const mentions = new Map<string, Mention>();
+      const cursors = new Set<string>();
+      let cursor: string | undefined;
+      for (let i = 0; i < MAX_PAGES; i++) {
+        const page = await client.tweet.search({ mentions: [user], ...(sinceId !== null ? { sinceId } : {}) }, PAGE, cursor);
+        for (const t of page.list) {
+          if (!/^\d+$/.test(t.id)) throw new Error("Invalid mention id from X");
+          if (!t.tweetBy?.id || (sinceId !== null && BigInt(t.id) <= BigInt(sinceId))) continue;
+          mentions.set(t.id, {
           id: t.id,
-          authorId: t.tweetBy?.id ?? "",
+          authorId: t.tweetBy.id,
           handle: t.tweetBy?.userName ?? null,
           text: t.fullText,
           createdAtMs: t.createdAt ? Date.parse(t.createdAt) || Date.now() : Date.now(),
-        }))
-        .filter((m) => m.authorId !== "" && (sinceId === null || BigInt(m.id) > BigInt(sinceId)))
-        .sort((a, b) => (BigInt(a.id) < BigInt(b.id) ? -1 : 1));
+          });
+        }
+        // First startup only establishes the newest cursor; never walk historical instructions.
+        if (sinceId === null || page.list.length === 0 || !page.next || page.list.every(t => BigInt(t.id) <= BigInt(sinceId))) {
+          return [...mentions.values()].sort((a, b) => (BigInt(a.id) < BigInt(b.id) ? -1 : 1));
+        }
+        if (cursors.has(page.next)) throw new Error("X mention pagination repeated a cursor");
+        cursors.add(page.next);
+        cursor = page.next;
+      }
+      // A partial search must not advance since_id beyond unseen instructions.
+      throw new Error("X mention backlog exceeds the bounded drain; cursor retained");
     },
     uploadImage: async (png) => {
       const id = await writer.tweet.upload(Uint8Array.from(png).buffer);

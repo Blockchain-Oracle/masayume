@@ -20,6 +20,14 @@ export interface XReceiptDetails {
   intervalSec?: number | null;
   expirySec?: number | null;
   refusalCode?: XRefusalCode | null;
+  /** Durable execution context, captured before the order lane can broadcast. */
+  executionActor?: string | null;
+  poolAddress?: string | null;
+  collateralDecimals?: number | null;
+  intentRecordedAtMs?: number | null;
+  journalState?: "recorded" | "sent" | "confirmed" | "failed" | "unknown" | null;
+  recoveryFromBlock?: string | null;
+  expectedNonce?: number | null;
 }
 
 /** A receipt links the instruction to the grant, the Window, the transaction and the beneficiary. */

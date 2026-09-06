@@ -18,7 +18,7 @@ function MemoryRow({ d, asset, nowMs }: { d: DecisionWire; asset: string; nowMs:
       <div className="strat-mono-10 flex items-baseline justify-between gap-2 text-ink/40">
         <span className="truncate">
           {ago(d.decidedAtMs, nowMs)}
-          {d.intervalSec !== null && ` · ${asset} ${formatCadence(d.intervalSec)}`}
+          {d.intervalSec !== null && ` · ${d.asset ?? "Window"} ${formatCadence(d.intervalSec)}`}
         </span>
         {d.outcome && <span className={cn("shrink-0 uppercase tracking-[0.12em]", d.outcome === "won" ? "text-vermilion" : d.outcome === "lost" ? "text-ink/60" : "text-ink/30")}>{M.outcome[d.outcome]}</span>}
       </div>

@@ -18,18 +18,18 @@ export interface Scan {
  */
 export async function scanVenue(venueId: Bytes32, spec: OracleFollowSpec, nowMs: number): Promise<Scan> {
   const lanes = await marketsProvider.listLiveLanes(venueId);
-  if (!isOk(lanes)) return { candidates: [], scanned: 0, closestBps: null, why: `lanes unreadable: ${lanes.error.technical}` };
+  if (!isOk(lanes) || lanes.stale) return { candidates: [], scanned: 0, closestBps: null, why: `lanes unreadable: ${isOk(lanes) ? "stale state" : lanes.error.technical}` };
   const markets = lanes.value.lanes.flatMap((lane) => lane.markets).filter((m) => phase(m, nowMs) === "trading");
   const candidates: Scan["candidates"] = [];
   let closest: number | null = null;
   const skipped: string[] = [];
   for (const market of markets) {
     const [opening, price] = await Promise.all([marketsProvider.getOpeningPrice(market.marketId), marketsProvider.getAssetPrice(market.asset)]);
-    if (!isOk(opening) || opening.value === null) {
+    if (!isOk(opening) || opening.stale || opening.value === null) {
       skipped.push(`${market.asset}/${market.intervalSec}s: no print yet`);
       continue;
     }
-    if (!isOk(price) || price.value === null) {
+    if (!isOk(price) || price.stale || price.value === null) {
       skipped.push(`${market.asset}/${market.intervalSec}s: no fresh price`);
       continue;
     }

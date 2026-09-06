@@ -12,7 +12,7 @@ const DECISION_LIMIT = 200;
 const DECISIONS_PER_CARD = 8;
 const RECENT_WHY = 12;
 const CONCURRENCY = 6;
-const ASSET = "BTC";
+const ASSET = "all live venue assets";
 
 let cache: { payload: StrategiesPayload; atMs: number } | null = null;
 let inFlight: Promise<StrategiesPayload> | null = null;
@@ -40,6 +40,7 @@ interface WindowFacts {
   settlement: FillSettlement;
   feeBps: number;
   intervalSec: number | null;
+  asset: string | null;
 }
 
 /** Settlement facts per Window, read once per market rather than once per fill or decision. */
@@ -48,9 +49,9 @@ async function settlementsFor(marketIds: readonly MarketId[]): Promise<Map<Marke
     const [market, fee] = await Promise.all([marketsProvider.getMarket(marketId), marketsProvider.settlementFeeBps(marketId)]);
     const m = isOk(market) ? market.value : null;
     const settled = m ? m.status === "Resolved" || m.status === "Voided" || m.status === "Finalized" : false;
-    return { marketId, settlement: { settled, voided: m?.voided ?? false, winningOutcome: m?.winningOutcome ?? null }, feeBps: isOk(fee) ? fee.value : 0, intervalSec: m?.intervalSec ?? null };
+    return { marketId, settlement: { settled, voided: m?.voided ?? false, winningOutcome: m?.winningOutcome ?? null }, feeBps: isOk(fee) ? fee.value : 0, intervalSec: m?.intervalSec ?? null, asset: m?.asset ?? null };
   });
-  return new Map(rows.map((r) => [r.marketId, { settlement: r.settlement, feeBps: r.feeBps, intervalSec: r.intervalSec }]));
+  return new Map(rows.map((r) => [r.marketId, { settlement: r.settlement, feeBps: r.feeBps, intervalSec: r.intervalSec, asset: r.asset }]));
 }
 
 function outcomeOf(side: "up" | "down" | null, settlement: FillSettlement | undefined): AgentWindowOutcome | null {
@@ -73,6 +74,7 @@ function toDecisionWire(row: StrategyDecisionRecord, facts: WindowFacts | undefi
     filled: row.filled,
     model: row.model,
     intervalSec: facts?.intervalSec ?? null,
+    asset: facts?.asset ?? null,
     outcome: outcomeOf(row.side, facts?.settlement),
   };
 }

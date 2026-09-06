@@ -2,12 +2,9 @@
 
 import { formatCadence } from "@masayume/core/copy";
 import { AGENT_CADENCES_SEC, AGENT_PERSONA_MAX_CHARS, AGENT_POSTURES, describeSpec, POSTURES, type AgentPosture } from "@masayume/core/strategies";
-import { parseDecimalToBaseUnits } from "@masayume/core/units";
 import { cn } from "@/lib/utils";
 import { STRATEGIES } from "./copy";
-import { DryReadPanel } from "./DryReadPanel";
 import { draftSpec, type StudioDraft } from "./studio-draft";
-import { useDryRead } from "./useDryRead";
 import "./desk.css";
 import "./strategies.css";
 
@@ -28,18 +25,10 @@ function toggleCadence(list: number[], cadence: number): number[] {
 }
 
 /**
- * Step 02 for an agent: the brief it reads with, the posture the gate enforces, the Windows it may
- * read — and a dry read, one real model call on a live Window with this brief, nothing sent.
+ * Step 02 for an agent: the brief, gate posture and eligible Window cadences.
  */
-export function StudioAgentFields({ form, setForm, asset, decimals }: StudioAgentFieldsProps) {
-  const dry = useDryRead();
+export function StudioAgentFields({ form, setForm, asset }: StudioAgentFieldsProps) {
   const persona = form.persona;
-  const ready = persona.trim().length > 0 && form.cadences.length > 0;
-  const stakeBase = parseDecimalToBaseUnits(form.maxPerTrade || "0", decimals) ?? 0n;
-  const runDryRead = () => {
-    if (!ready || dry.state.status === "reading") return;
-    void dry.read({ persona: persona.trim(), posture: form.posture, cadences: [...form.cadences].sort((a, b) => a - b), stakeBase: (stakeBase > 0n ? stakeBase : 1n).toString() });
-  };
 
   return (
     <div className="space-y-5">
@@ -99,15 +88,6 @@ export function StudioAgentFields({ form, setForm, asset, decimals }: StudioAgen
         </ul>
       </div>
 
-      <div>
-        <div className="flex flex-wrap items-center gap-3">
-          <button type="button" onClick={runDryRead} disabled={!ready || dry.state.status === "reading"} className="strat-sensei disabled:cursor-not-allowed disabled:opacity-50">
-            {dry.state.status === "reading" ? A.dry.reading : A.dry.cta}
-          </button>
-          <span className="strat-mono-10 text-ink/30">{A.dry.note}</span>
-        </div>
-        <DryReadPanel state={dry.state} />
-      </div>
     </div>
   );
 }

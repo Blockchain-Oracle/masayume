@@ -18,6 +18,7 @@ export const decisionWireSchema = z.object({
   model: z.string(),
   /** The Window's cadence, read off the market; null when the Window could not be read. */
   intervalSec: z.number().nullable(),
+  asset: z.string().nullable().optional(),
   outcome: z.enum(["won", "lost", "void", "open"]).nullable(),
 });
 

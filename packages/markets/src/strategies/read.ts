@@ -12,6 +12,20 @@ const PAGE = 100;
 const MAX_STRATEGIES = 500;
 const MAX_SUBSCRIBERS = 1_000;
 
+/** Settlement cleanup must include every former subscriber, even after consent or grant ends. */
+export async function listStrategySubscribers(strategyId: bigint): Promise<Address[]> {
+  const contract = registryContract();
+  if (!contract) return [];
+  const client = viem();
+  const total = Number(await client.readContract({ ...contract, functionName: "subscriberCountOf", args: [strategyId] }));
+  const owners: Address[] = [];
+  for (let offset = 0; offset < total; offset += PAGE) {
+    const page = await client.readContract({ ...contract, functionName: "subscribersOf", args: [strategyId, BigInt(offset), BigInt(Math.min(PAGE, total - offset))] });
+    owners.push(...page.map((owner) => owner.toLowerCase() as Address));
+  }
+  return owners;
+}
+
 type StrategyTuple = {
   creator: Address;
   runner: Address;

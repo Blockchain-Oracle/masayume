@@ -11,7 +11,9 @@ export function money(base: bigint, decimals: number, symbol?: string): string {
 }
 
 export function parseAmount(text: string, decimals: number): bigint {
-  return parseDecimalToBaseUnits(text.replace(",", ".").replace(/[^0-9.]/g, ""), decimals) ?? 0n;
+  const clean = text.trim().replace(",", ".");
+  if (!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(clean)) return 0n;
+  return parseDecimalToBaseUnits(clean, decimals) ?? 0n;
 }
 
 export const RISK_MODES: Array<{ id: RiskMode; label: string; detail: string }> = [

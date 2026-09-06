@@ -17,13 +17,13 @@ export function gasEnvelopeWei(lane: GasLane): bigint {
   return GAS_CEILING[lane] * SDK_MAX_FEE_PER_GAS_WEI;
 }
 
-export function requiredGasWei(lane: GasLane): bigint {
-  return mulBpsCeil(gasEnvelopeWei(lane), GAS_SAFETY_BPS);
+export function requiredGasWei(lane: GasLane, gasLimit = GAS_CEILING[lane]): bigint {
+  return mulBpsCeil(gasLimit * SDK_MAX_FEE_PER_GAS_WEI, GAS_SAFETY_BPS);
 }
 
 /** Sufficiency is balance ≥ envelope × safety factor — never merely nonzero — and it is checked before any signing (FR-2). */
-export async function checkGas(wallet: Address, lane: GasLane): Promise<GasCheck> {
-  const requiredWei = requiredGasWei(lane);
+export async function checkGas(wallet: Address, lane: GasLane, gasLimit?: bigint): Promise<GasCheck> {
+  const requiredWei = requiredGasWei(lane, gasLimit);
   let balanceWei: bigint;
   try {
     balanceWei = await getClient().getNativeBalance(wallet);

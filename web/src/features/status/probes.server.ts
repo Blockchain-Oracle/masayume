@@ -4,6 +4,7 @@ import { getDb, isDbConfigured } from "@masayume/db";
 import { marketsProvider, resolveVenueId, syncClock, type MarketsEnv } from "@masayume/markets";
 import { missingCredentialHint, resolveModel } from "@/features/sensei/model.server";
 import { STATUS } from "./copy";
+import { createDiagnosticRunner, DiagnosticFailure } from "./diagnostic-runner";
 import type { StatusPipeline } from "./protocol";
 
 /**
@@ -15,40 +16,29 @@ import type { StatusPipeline } from "./protocol";
  * on a status page that is exactly the wrong thing to show as green, so a stale
  * reading counts as a failed probe here and says which reading it is holding.
  */
-const PROBE_TIMEOUT_MS = 10_000;
 const PRICE_ASSETS_CAP = 4;
+// Indexer stages share 10s; dependent price checks get another 10s. RPC/store
+// run alongside them, keeping the route below its 30s platform allowance.
+const diagnose = createDiagnosticRunner(10_000);
 
-async function withTimeout<T>(work: Promise<T>, ms = PROBE_TIMEOUT_MS): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(STATUS.detail.timedOut(ms / 1000))), ms);
-  });
-  try {
-    return await Promise.race([work, timeout]);
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-type Fresh<T> = { value: T } | { failure: string };
-
-function fresh<T>(reading: Reading<T>): Fresh<T> {
-  if (!reading.ok) return { failure: reading.error.technical || reading.error.kind };
-  if (reading.stale) return { failure: STATUS.detail.stale(formatUtc(reading.asOfMs)) };
-  return { value: reading.value };
+function fresh<T>(reading: Reading<T>): T {
+  if (!reading.ok) throw new Error(reading.error.technical || reading.error.kind);
+  if (reading.stale) throw new Error(STATUS.detail.stale(formatUtc(reading.asOfMs)));
+  return reading.value;
 }
 
 const message = (error: unknown): string => (error instanceof Error ? error.message : String(error)).slice(0, 200);
 
-function down(id: string, label: string, detail: string, optional = false, configured = true): StatusPipeline {
-  return { id, label, ok: false, lagSec: null, latencyMs: null, detail, optional, configured };
+function down(id: string, label: string, detail: string, optional = false, configured = true, latencyMs: number | null = null): StatusPipeline {
+  return { id, label, ok: false, lagSec: null, latencyMs, detail, optional, configured };
 }
+
+const elapsed = (error: unknown) => error instanceof DiagnosticFailure ? error.elapsedMs : null;
 
 export async function probeRpc(): Promise<{ pipeline: StatusPipeline; blockNumber: number | null }> {
   const label = STATUS.pipelines.rpc;
   try {
-    const clock = fresh(await withTimeout(syncClock()));
-    if ("failure" in clock) return { pipeline: down("rpc", label, clock.failure), blockNumber: null };
+    const clock = await diagnose("rpc", ({ step }) => step("RPC chain head", async () => fresh(await syncClock())));
     const { blockNumber, rttMs, offsetMs } = clock.value;
     // Block timestamps are whole seconds, so a head a second "behind" is normal; one minutes
     // behind is a chain that stopped, not a slow socket.
@@ -59,30 +49,30 @@ export async function probeRpc(): Promise<{ pipeline: StatusPipeline; blockNumbe
       blockNumber,
     };
   } catch (error) {
-    return { pipeline: down("rpc", label, message(error)), blockNumber: null };
+    return { pipeline: down("rpc", label, message(error), false, true, elapsed(error)), blockNumber: null };
   }
 }
 
 export async function probeIndexer(env: MarketsEnv): Promise<{ pipeline: StatusPipeline; assets: string[] }> {
   const label = STATUS.pipelines.indexer;
-  const startedMs = Date.now();
   try {
-    const venue = fresh(await withTimeout(resolveVenueId(env.venueId)));
-    if ("failure" in venue) return { pipeline: down("indexer", label, venue.failure), assets: [] };
-    if (venue.value.venueId === null) return { pipeline: down("indexer", label, STATUS.detail.noVenue), assets: [] };
-
-    const lanes = fresh(await withTimeout(marketsProvider.listLiveLanes(venue.value.venueId)));
-    if ("failure" in lanes) return { pipeline: down("indexer", label, lanes.failure), assets: [] };
-
-    const windows = lanes.value.lanes.reduce((n, lane) => n + lane.markets.length, 0);
-    const assets = [...new Set(lanes.value.lanes.flatMap((lane) => lane.markets.map((market) => market.asset)))].sort().slice(0, PRICE_ASSETS_CAP);
-    const source = STATUS.detail.venueSource[venue.value.source];
+    const result = await diagnose(`indexer:${env.indexerUrl}:${env.venueId}`, async ({ step }) => {
+      const venue = await step("Venue discovery", async () => fresh(await resolveVenueId(env.venueId)));
+      if (venue.venueId === null) throw new Error(STATUS.detail.noVenue);
+      const venueId = venue.venueId;
+      const lanes = await step("Live Windows and opening prices", async () => fresh(await marketsProvider.listLiveLanes(venueId)));
+      return { venue, lanes };
+    });
+    const { venue, lanes } = result.value;
+    const windows = lanes.lanes.reduce((n, lane) => n + lane.markets.length, 0);
+    const assets = [...new Set(lanes.lanes.flatMap((lane) => lane.markets.map((market) => market.asset)))].sort().slice(0, PRICE_ASSETS_CAP);
+    const source = STATUS.detail.venueSource[venue.source];
     return {
-      pipeline: { id: "indexer", label, ok: true, lagSec: null, latencyMs: Date.now() - startedMs, detail: STATUS.detail.indexer(lanes.value.lanes.length, windows, source), optional: false, configured: true },
+      pipeline: { id: "indexer", label, ok: true, lagSec: null, latencyMs: result.elapsedMs, detail: STATUS.detail.indexer(lanes.lanes.length, windows, source), optional: false, configured: true },
       assets,
     };
   } catch (error) {
-    return { pipeline: down("indexer", label, message(error)), assets: [] };
+    return { pipeline: down("indexer", label, message(error), false, true, elapsed(error)), assets: [] };
   }
 }
 
@@ -90,31 +80,29 @@ export async function probeIndexer(env: MarketsEnv): Promise<{ pipeline: StatusP
 export async function probePrice(asset: string, nowMs: number): Promise<StatusPipeline> {
   const id = `price:${asset}`;
   const label = STATUS.pipelines.price(asset);
-  const startedMs = Date.now();
   try {
-    const price = fresh(await withTimeout(marketsProvider.getAssetPrice(asset)));
-    if ("failure" in price) return down(id, label, price.failure);
-    if (price.value === null) return down(id, label, STATUS.detail.noPrint);
-    const printedMs = secToMs(price.value.blockTimestampSec);
+    const result = await diagnose(id, ({ step }) => step(`${asset} latest price`, async () => fresh(await marketsProvider.getAssetPrice(asset))));
+    const price = result.value;
+    if (price === null) return down(id, label, STATUS.detail.noPrint, false, true, result.elapsedMs);
+    const printedMs = secToMs(price.blockTimestampSec);
     const lagSec = Math.max(0, Math.round((nowMs - printedMs) / 1000));
-    const priceText = `$${formatBaseUnits(price.value.priceRaw, price.value.decimals)}`;
-    return { id, label, ok: true, lagSec, latencyMs: Date.now() - startedMs, detail: STATUS.detail.price(priceText, formatUtc(printedMs)), optional: false, configured: true };
+    const priceText = `$${formatBaseUnits(price.priceRaw, price.decimals)}`;
+    return { id, label, ok: true, lagSec, latencyMs: result.elapsedMs, detail: STATUS.detail.price(priceText, formatUtc(printedMs)), optional: false, configured: true };
   } catch (error) {
-    return down(id, label, message(error));
+    return down(id, label, message(error), false, true, elapsed(error));
   }
 }
 
 export async function probeStore(): Promise<StatusPipeline> {
   const label = STATUS.pipelines.store;
   if (!isDbConfigured()) return down("store", label, STATUS.detail.storeOff, true, false);
-  const startedMs = Date.now();
   try {
     const db = getDb();
     if (!db) return down("store", label, STATUS.detail.storeOff, true, false);
-    await withTimeout(db`select 1`);
-    return { id: "store", label, ok: true, lagSec: null, latencyMs: Date.now() - startedMs, detail: STATUS.detail.storeOk, optional: true, configured: true };
+    const result = await diagnose("store", ({ step }) => step("Database read", async () => db`select 1`));
+    return { id: "store", label, ok: true, lagSec: null, latencyMs: result.elapsedMs, detail: STATUS.detail.storeOk, optional: true, configured: true };
   } catch (error) {
-    return down("store", label, STATUS.detail.storeDown(message(error)), true, true);
+    return down("store", label, STATUS.detail.storeDown(message(error)), true, true, elapsed(error));
   }
 }
 

@@ -1,4 +1,4 @@
-import { isDbConfigured } from "@masayume/db";
+import { isDbConfigured, xGetRelayHealth } from "@masayume/db";
 import { NextResponse, type NextRequest } from "next/server";
 import { X_HANDLE } from "@/features/x/copy";
 import { executorAddress } from "@/features/x/config.server";
@@ -15,7 +15,8 @@ export async function GET(req: NextRequest) {
   const wallet = req.nextUrl.searchParams.get("wallet");
   const gate = await readXGate(req.nextUrl.origin);
   const storeConfigured = isDbConfigured();
-  const base = { storeConfigured, executor: executorAddress(), handle: X_HANDLE };
+  const relay = storeConfigured ? await xGetRelayHealth().catch(() => null) : null;
+  const base = { storeConfigured, executor: executorAddress(), handle: X_HANDLE, relay };
   if (!gate.configured) {
     const binding = storeConfigured ? await findBinding(null, wallet) : null;
     return NextResponse.json({ ...base, configured: false, missing: gate.missing, signedIn: false, session: null, binding } satisfies XStatus);

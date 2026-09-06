@@ -2,13 +2,14 @@ import { isOk } from "@masayume/core/schemas";
 import { parseStrategyMetadata, type StrategyRecord } from "@masayume/core/strategies";
 import type { Bytes32 } from "@masayume/core/types";
 import { msToSec } from "@masayume/core/units";
-import { isDbConfigured, markDecisionExecution, recordHeartbeat, recordStrategyFill } from "@masayume/db";
+import { interruptStrategyDecisions, isDbConfigured, listAttemptedStrategyIds, markDecisionExecution, recordHeartbeat } from "@masayume/db";
 import { createMemoryJournal, createSubmitterSession, ensureMarkets, marketsProvider, parseMarketsEnv, resolveVenueId, type SubmitterSession } from "@masayume/markets";
 import { getStrategy, listLiveSubscribers, listStrategies, resolveRegistryDeployment } from "@masayume/markets/strategies";
 import { agentBootLine, createAgentState, scanVenueWithAgent, warmAgentState, type AgentState } from "./agent";
 import { scanVenue, type Scan } from "./decide";
 import { readRunnerEnv, type RunnerEnv } from "./env";
 import { executeForSubscriber } from "./execute";
+import { reconcileRunnerAttempts, serialCycle, settleStrategyPositions } from "./lifecycle";
 
 type Log = (why: string) => void;
 
@@ -18,6 +19,7 @@ interface Runner {
   venueId: Bytes32;
   agent: AgentState;
   log: Log;
+  unresolved: Set<string>;
 }
 
 /** Durability only (AD-7): the log line is the truth, the row is what the surface reads later. */
@@ -41,13 +43,16 @@ async function heartbeat(runner: Runner, strategyId: bigint, why: string, scanne
 /** The house model or the agent, by the spec's preset; the execution loop below never knows which. */
 function scan(runner: Runner, strategy: StrategyRecord, spec: NonNullable<ReturnType<typeof parseStrategyMetadata>>["spec"], nowMs: number): Promise<Scan> {
   if (spec.preset !== "agent") return scanVenue(runner.venueId, spec, nowMs);
-  return scanVenueWithAgent({ env: runner.env, venueId: runner.venueId, runnerKey: runner.session?.address ?? "unconfigured", agent: runner.agent, log: runner.log }, strategy, spec, nowMs);
+  return scanVenueWithAgent({ env: runner.env, venueId: runner.venueId, runnerKey: runner.session?.address ?? "unconfigured", agent: runner.agent, log: runner.log, onReading: (why) => heartbeat(runner, strategy.strategyId, why, 0, null) }, strategy, spec, nowMs);
 }
 
 async function cycle(runner: Runner, strategyId: bigint, nowMs: number): Promise<void> {
   const reading = await getStrategy(strategyId);
-  if (!isOk(reading) || !reading.value) return heartbeat(runner, strategyId, `strategy unreadable: ${isOk(reading) ? "not on this registry" : reading.error.technical}`, 0, null);
+  if (!isOk(reading) || reading.stale || !reading.value) return heartbeat(runner, strategyId, `strategy unreadable: ${isOk(reading) ? reading.stale ? "stale registry state; holding" : "not on this registry" : reading.error.technical}`, 0, null);
   const strategy: StrategyRecord = reading.value;
+  if (!isDbConfigured()) return heartbeat(runner, strategyId, "strategy execution and risk stores unavailable; holding", 0, null);
+  if (runner.unresolved.size > 0) return heartbeat(runner, strategyId, "confirmation unknown for this runner's previous attempt; holding all new submissions and not resending", 0, null);
+  if (runner.session) await settleStrategyPositions(runner.session, strategyId, runner.env.dryRun, runner.log);
   if (!strategy.active) return heartbeat(runner, strategyId, "strategy deactivated by its creator; idle", 0, null);
   if (runner.session && strategy.runner !== runner.session.address.toLowerCase()) {
     return heartbeat(runner, strategyId, `this key is ${runner.session.address}, the strategy names ${strategy.runner}; not trading it`, 0, null);
@@ -55,10 +60,11 @@ async function cycle(runner: Runner, strategyId: bigint, nowMs: number): Promise
   const meta = parseStrategyMetadata(strategy.metadata);
   if (!meta) return heartbeat(runner, strategyId, "metadata carries no readable spec; idle", 0, null);
   const isAgent = meta.spec.preset === "agent";
-
-  const scanned = await scan(runner, strategy, meta.spec, nowMs);
   const subscribers = await listLiveSubscribers(strategyId);
-  const live = isOk(subscribers) ? subscribers.value : [];
+  if (!isOk(subscribers) || subscribers.stale) return heartbeat(runner, strategyId, `subscriptions unreadable: ${isOk(subscribers) ? "stale consent state" : subscribers.error.technical}; holding`, 0, null);
+  const live = subscribers.value;
+  if (live.length === 0) return heartbeat(runner, strategyId, "published; waiting for a funded live subscriber", 0, null);
+  const scanned = await scan(runner, strategy, meta.spec, nowMs);
   if (scanned.candidates.length === 0 || live.length === 0) {
     return heartbeat(runner, strategyId, `${scanned.why}; ${live.length} live subscriber${live.length === 1 ? "" : "s"}`, scanned.scanned, scanned.closestBps);
   }
@@ -74,27 +80,19 @@ async function cycle(runner: Runner, strategyId: bigint, nowMs: number): Promise
       if (result.status === "filled") {
         filledHere += 1;
         const { fill } = result;
-        await recordStrategyFill({
-          txHash: fill.txHash,
-          strategyId: fill.strategyId.toString(),
-          grantId: fill.grantId.toString(),
-          owner: fill.owner,
-          marketId: fill.marketId,
-          side: fill.side,
-          cashDelta: fill.cashDeltaBase.toString(),
-          tokenDelta: fill.tokenDeltaRaw.toString(),
-          atSec: fill.atSec,
-          dryRun: false,
-        }).catch(() => false);
         runner.log(`#${strategyId}: filled ${fill.side} on ${market.asset}/${market.intervalSec}s for ${fill.owner} — ${fill.txHash}`);
       } else {
         skippedHere += 1;
         runner.log(`#${strategyId}: ${sub.subscriber} ${result.status}${"reason" in result ? ` — ${result.reason}` : ` — would stake ${result.stakeBase}`}`);
+        if (result.status === "unknown") {
+          runner.unresolved.add(strategyId.toString());
+          return heartbeat(runner, strategyId, `confirmation unknown: ${result.reason}; holding new entries`, scanned.scanned, scanned.closestBps);
+        }
       }
     }
     filled += filledHere;
     skipped += skippedHere;
-    if (isAgent) await markDecisionExecution(strategyId.toString(), market.marketId, filledHere, skippedHere).catch(() => false);
+    if (isAgent) await markDecisionExecution(strategyId.toString(), market.marketId, filledHere, skippedHere, runner.env.dryRun);
   }
   await heartbeat(runner, strategyId, `${scanned.why}; ${filled} filled, ${skipped} skipped${runner.env.dryRun ? " (dry run)" : ""}`, scanned.scanned, scanned.closestBps);
 }
@@ -123,7 +121,7 @@ export async function startStrategyRunner(log: Log): Promise<void> {
   } else {
     log("RUNNER_PRIVATE_KEY is not set: scanning and reporting only, nothing can be sent");
   }
-  if (!isDbConfigured()) log("DATABASE_URL is not set: heartbeats, fills and decisions are logged here only");
+  if (!isDbConfigured()) log("DATABASE_URL is not set: execution and risk memory unavailable; new trades held");
 
   const agent = createAgentState();
   log(agentBootLine(agent));
@@ -132,18 +130,19 @@ export async function startStrategyRunner(log: Log): Promise<void> {
     log(`agent memory: ${warmed} Windows already read; budget ${env.agentMaxCallsPerHour} calls/h, ${env.agentTimeoutMs} ms per read`);
   }
 
-  const runner: Runner = { env, session, venueId: venue.value.venueId, agent, log };
+  const runner: Runner = { env, session, venueId: venue.value.venueId, agent, log, unresolved: new Set() };
   const discover = env.strategyIds.length === 0;
   if (discover) log(`no STRATEGY_IDS: running every active strategy on the registry that names ${session!.address}`);
   let lastDiscovered = "";
   const strategiesToRun = async (): Promise<bigint[]> => {
     if (!discover) return env.strategyIds;
     const listed = await listStrategies();
-    if (!isOk(listed) || !listed.value) {
-      log(`registry unreadable: ${isOk(listed) ? "no strategies" : listed.error.technical}; nothing to run this cycle`);
+    if (!isOk(listed) || listed.stale || !listed.value) {
+      log(`registry unreadable: ${isOk(listed) ? listed.stale ? "stale state" : "no strategies" : listed.error.technical}; nothing to run this cycle`);
       return [];
     }
-    const mine = listed.value.filter((s) => s.active && s.runner === session!.address.toLowerCase()).map((s) => s.strategyId);
+    const historical = await listAttemptedStrategyIds(session!.address);
+    const mine = [...new Set([...listed.value.filter((s) => s.runner === session!.address.toLowerCase()).map((s) => s.strategyId), ...historical.map(BigInt)])];
     const summary = mine.map((id) => `#${id}`).join(", ") || "none";
     if (summary !== lastDiscovered) {
       lastDiscovered = summary;
@@ -151,12 +150,28 @@ export async function startStrategyRunner(log: Log): Promise<void> {
     }
     return mine;
   };
-  const tick = async () => {
-    await marketsProvider.syncClock();
-    for (const id of await strategiesToRun()) {
-      await cycle(runner, id, marketsProvider.nowMs()).catch((error: unknown) => log(`#${id}: cycle failed — ${error instanceof Error ? error.message : String(error)}`));
+  const bootAtMs = Date.now();
+  let recoveredReads = false;
+  const tick = serialCycle(async () => {
+    const clock = await marketsProvider.syncClock();
+    if (!isOk(clock) || clock.stale) throw new Error("chain clock unavailable; holding");
+    if (session && isDbConfigured()) {
+      if (!recoveredReads) {
+        await interruptStrategyDecisions(session.address, bootAtMs);
+        // Interrupted provider calls still consume the sliding-hour budget after restart.
+        if (agent.brain) await warmAgentState(agent, msToSec(Date.now()));
+        recoveredReads = true;
+      }
+      runner.unresolved = await reconcileRunnerAttempts(session, log);
     }
-  };
+    for (const id of await strategiesToRun()) {
+      await cycle(runner, id, marketsProvider.nowMs()).catch(async (error: unknown) => {
+        // Refresh reservations before another strategy can consume a potentially reserved nonce.
+        if (session) runner.unresolved = await reconcileRunnerAttempts(session, log);
+        await heartbeat(runner, id, `holding: ${error instanceof Error ? error.message : String(error)}`, 0, null);
+      });
+    }
+  }, (error) => log(`runner unavailable; holding: ${error instanceof Error ? error.message : String(error)}`));
   await tick();
   setInterval(() => void tick(), env.intervalMs);
 }

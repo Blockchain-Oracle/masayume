@@ -2,123 +2,99 @@
 
 import { describeSpec, isSpec, PRESETS } from "@masayume/core/strategies";
 import { parseDecimalToBaseUnits } from "@masayume/core/units";
-import Link from "next/link";
+import { txUrl } from "@masayume/core/urls";
 import { useEffect, useState } from "react";
+import { ConnectButton } from "@/features/markets/wallet";
 import { notify } from "@/lib/toast";
+import { cn } from "@/lib/utils";
 import { AgentPortrait } from "./AgentPortrait";
-import { STRATEGIES } from "./copy";
+import { DryReadPanel } from "./DryReadPanel";
 import { codenameFromAddress } from "./names";
-import { draftSpec, type StudioDraft } from "./studio-draft";
+import { draftSpec, initialStudioDraft, studioReadKey } from "./studio-draft";
 import { StudioForm } from "./StudioForm";
-import type { useDeskWrites } from "./useDeskWrites";
-import "./strategies.css";
+import { useDryRead } from "./useDryRead";
+import type { DeskWriteResult, useDeskWrites } from "./useDeskWrites";
+import "./builder.css";
 
-const S = STRATEGIES.studio;
-const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
-
+const STEPS = ["Identity & approach", "Behavior & limits", "Test read", "Publish"];
 interface CreatorStudioProps {
   writes: ReturnType<typeof useDeskWrites>;
   decimals: number;
   symbol: string;
   asset: string;
-  /** The house runner's key on this deployment, or null when none is configured. */
   houseRunner: string | null;
+  onPublished?: () => void;
 }
 
-/**
- * Creator studio (reference section "Launch an agent"). The reference wears a "Coming soon" badge
- * and never opens its builder; here the same builder opens and publishes to the registry, because
- * the house runner honours the momentum spec and the agent spec today. The persona rides inside
- * the spec in the metadata and is hashed with it; no model name is published on-chain.
- */
-export function CreatorStudio({ writes, decimals, symbol, asset, houseRunner }: CreatorStudioProps) {
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<StudioDraft>({ preset: "momentum", lookback: 6, thresholdPct: "0.2", persona: "", posture: "balanced", cadences: [900, 3600], hosting: houseRunner ? "house" : "self", agent: "", name: "", maxPerTrade: "5", maxDaily: "50", subFee: "0", playbook: "" });
+/** Drafting is public; only publishing needs the creator's connected wallet. */
+export function CreatorStudio({ writes, decimals, symbol, asset, houseRunner, onPublished }: CreatorStudioProps) {
+  const [form, setForm] = useState(() => initialStudioDraft(houseRunner));
+  const [step, setStep] = useState(1);
+  const [published, setPublished] = useState<DeskWriteResult | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+  const dry = useDryRead(studioReadKey(form));
+  const successfulRead = dry.state.status === "ok" && dry.state.result.verdict !== null;
   useEffect(() => {
-    if (writes.address && !form.agent) setForm((f) => ({ ...f, agent: writes.address as string }));
-  }, [writes.address, form.agent]);
-
+    setForm((f) => f.portraitSeed === "masayume-new-agent" ? { ...f, portraitSeed: crypto.randomUUID() } : f);
+  }, []);
   const runner = form.hosting === "house" ? houseRunner : form.agent.trim();
-  const validRunner = Boolean(runner && ADDRESS.test(runner));
-  const previewSeed = `${runner ?? ""}:${form.preset}:${form.preset === "agent" ? form.posture : `${form.lookback}:${form.thresholdPct}`}`;
-  const previewName = validRunner ? codenameFromAddress(previewSeed) : S.yourAgent;
-
+  const name = form.name.trim() || codenameFromAddress(form.portraitSeed);
+  const spec = draftSpec(form);
+  const perTrade = parseDecimalToBaseUnits(form.maxPerTrade, decimals);
+  const daily = parseDecimalToBaseUnits(form.maxDaily, decimals);
+  const fee = parseDecimalToBaseUnits(form.subFee, decimals);
+  const behaviorValid = isSpec(spec) && perTrade !== null && perTrade > 0n && daily !== null && daily >= perTrade;
+  const runnerValid = Boolean(runner && /^0x[0-9a-fA-F]{40}$/.test(runner));
+  const summary = spec.preset === "agent" ? describeSpec(spec, asset) : `Follows the EMA move from each Window’s opening print when it reaches ${form.thresholdPct}%. Considers all live venue assets.`;
+  const canPublish = behaviorValid && runnerValid && fee !== null && fee >= 0n;
+  const advance = () => {
+    if (step === 2 && !behaviorValid) { setProblem("Complete the brief and choose positive limits. The daily limit must cover one trade."); return; }
+    setProblem(null); setStep((value) => Math.min(4, value + 1));
+  };
+  const testRead = () => {
+    if (spec.preset !== "agent" || !behaviorValid || !perTrade) return;
+    void dry.read({ persona: spec.persona, posture: spec.posture, cadences: spec.cadences, stakeBase: perTrade.toString() });
+  };
   const publish = async () => {
-    const perTrade = parseDecimalToBaseUnits(form.maxPerTrade || "0", decimals) ?? 0n;
-    const daily = parseDecimalToBaseUnits(form.maxDaily || "0", decimals) ?? 0n;
-    const fee = parseDecimalToBaseUnits(form.subFee || "0", decimals) ?? 0n;
-    if (!runner || !validRunner) return notify.warning("Agent wallet must be a 0x… address");
-    if (perTrade <= 0n) return notify.warning("Most per trade must be greater than 0");
-    if (daily < perTrade) return notify.warning("Most per day must be at least the per-trade cap");
-    const spec = draftSpec(form);
-    if (!isSpec(spec)) return notify.warning(S.agent.dry.badRequest);
-    const metadata = { name: form.name.trim() || codenameFromAddress(previewSeed), description: describeSpec(spec, asset), spec, ...(form.playbook.trim() ? { playbook: form.playbook.trim() } : {}) };
+    if (!canPublish || !runner || perTrade === null || daily === null || fee === null || published) return;
+    const metadata = { name, portraitSeed: form.portraitSeed, description: summary, spec, ...(form.playbook.trim() ? { playbook: form.playbook.trim() } : {}) };
     const result = await writes.publish({ kind: "strategy-publish", runner: runner as `0x${string}`, spec, metadata, envelope: { maxStakePerTradeBase: perTrade, maxDailySpendBase: daily, maxOpenPositions: 2, maxPriceRaw: 0n }, feeBase: fee });
-    if (result.ok) {
-      notify.neutral(form.hosting === "house" ? "Agent listed on Somnia. It starts trading once the runner picks it up." : "Strategy published. Users can now copy it.");
-      setOpen(false);
-    } else notify.warning(result.reason ?? "Publish failed.");
+    if (result.ok || result.unknown) setPublished(result);
+    else setProblem(result.reason ?? "Publishing did not complete. Your draft is still here.");
+    if (result.ok) notify.neutral("Strategy published. Set up a funded copy to enable trading.");
   };
 
-  return (
-    <section className="mt-14">
-      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-hairline pb-4">
-        <div className="min-w-0">
-          <div className="strat-meta mb-1.5 tracking-[0.2em] text-vermilion">{S.eyebrow}</div>
-          <div className="flex items-center gap-2.5">
-            <h2 className="strat-h2">{S.title}</h2>
-            {!writes.address ? <span className="strat-pill-v">{S.soon}</span> : null}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {writes.address && !open && (
-            <button type="button" onClick={() => setOpen(true)} className="strat-sensei">
-              {S.launch}
-            </button>
-          )}
-          <Link href="/markets?sensei=1" className="strat-sensei">
-            {S.sensei}
-          </Link>
-        </div>
-      </div>
+  if (published) return (
+    <section className="agent-builder agent-published" aria-live="polite">
+      <AgentPortrait seed={form.portraitSeed} name={name} />
+      <div><p className="strat-micro text-vermilion">{published.ok ? "Published on Somnia" : "Publication needs checking"}</p><h2 className="strat-h2 mt-2 text-ink">{name}</h2></div>
+      <p className="strat-choice-body">{published.ok ? "Your strategy is registered. Publishing has not deposited money or enabled trades from your wallet." : "The transaction result is uncertain. Check the receipt and Your strategies before publishing again."}</p>
+      {published.txHash && <a className="strat-sensei" href={txUrl(published.txHash)} target="_blank" rel="noopener noreferrer">View publication transaction ↗</a>}
+      <ol className="agent-next-steps"><li>Open Your strategies and select this agent.</li><li>Choose a copy budget, review the fee and approve its bounded permission.</li><li>Wait for the runner’s first real decision. A held call is a valid result; a fill has its own transaction.</li></ol>
+      <button type="button" className="strat-confirm strat-confirm--live" onClick={onPublished}>View your strategies →</button>
+      {published.ok && <button type="button" className="strat-sensei" onClick={() => { setForm({ ...initialStudioDraft(houseRunner), portraitSeed: crypto.randomUUID() }); setPublished(null); setProblem(null); setStep(1); dry.reset(); }}>Create another agent →</button>}
+    </section>
+  );
 
-      {writes.address && open && (
-        <div className="mt-7 grid items-start gap-7 lg:grid-cols-[1fr_20rem]">
-          <StudioForm form={form} setForm={(update) => setForm(update)} symbol={symbol} asset={asset} decimals={decimals} houseRunner={houseRunner} />
-          <aside className="space-y-4 lg:sticky lg:top-24">
-            <div className="strat-preview group">
-              <div className="flex items-center justify-between">
-                <div className="strat-micro text-ink/40">{S.preview}</div>
-                {form.hosting === "house" && <span className="strat-pill-v">{STRATEGIES.desk.autopilot}</span>}
-              </div>
-              <div className="mt-3 flex items-center gap-3">
-                {validRunner ? <AgentPortrait seed={previewSeed} name={previewName} size="small" /> : <span className="text-2xl leading-none">—</span>}
-                <div className="min-w-0">
-                  <div className="strat-choice-title truncate text-ink">{previewName}</div>
-                  <div className="strat-mono-10 text-ink/40">
-                    {PRESETS[form.preset].name} · {S.cap(`${form.maxPerTrade || "0"} ${symbol}`)}
-                  </div>
-                </div>
-              </div>
-              <div className="mt-4 grid grid-cols-2 border-t border-hairline">
-                <div className="strat-ledger-stat">
-                  <div className="strat-micro mb-1 text-ink/40">{S.perTrade}</div>
-                  <div className="strat-ledger-value text-ink">{form.maxPerTrade || "0"}</div>
-                </div>
-                <div className="strat-ledger-stat">
-                  <div className="strat-micro mb-1 text-ink/40">{S.subFee}</div>
-                  <div className="strat-ledger-value text-ink">{form.subFee || "0"}</div>
-                </div>
-              </div>
-              <p className="strat-choice-body mt-4">{describeSpec(draftSpec(form), asset)}</p>
-            </div>
-            <button type="button" onClick={publish} disabled={writes.busy === "publish" || !writes.canSign} className="strat-publish">
-              {writes.busy === "publish" ? S.launching : form.hosting === "house" ? S.launch : S.publish}
-            </button>
-            <p className="strat-mono-10 leading-relaxed text-ink-disabled">{S.note}</p>
-          </aside>
+  return (
+    <section className="agent-builder" aria-label="Create an agent">
+      <div className="agent-builder-heading"><div><p className="strat-micro text-vermilion">Creator studio</p><h2 className="strat-h2 mt-2 text-ink">Give your agent a way to think.</h2></div><p className="strat-choice-body">Build your brief, try a read, then publish. Connect your wallet when you are ready to sign.</p></div>
+      <ol className="agent-steps" aria-label="Creation progress">{STEPS.map((label, index) => <li key={label} aria-current={step === index + 1 ? "step" : undefined}><button type="button" onClick={() => { if (index + 1 < step) { setProblem(null); setStep(index + 1); } }} disabled={index + 1 >= step}><span>{String(index + 1).padStart(2, "0")}</span>{label}</button></li>)}</ol>
+      <div className="agent-builder-grid">
+        <div className="agent-builder-panel">
+          <h3 className="strat-choice-title mb-5 text-ink">{STEPS[step - 1]}</h3>
+          {step === 3 ? <div className="space-y-5">
+            {form.preset === "agent" ? <><p className="strat-choice-body">Make one real model read using this brief and per-trade cap. Nothing is signed or traded. Changing the behavior or limits clears this result.</p><button type="button" onClick={testRead} disabled={dry.state.status === "reading" || !behaviorValid} className="strat-sensei">{dry.state.status === "reading" ? "Reading a live Window…" : "Run test read →"}</button><DryReadPanel state={dry.state} />{!successfulRead && <p className="strat-mono-11 text-ink-muted">You can publish without a successful test. The runner will still need readable markets and a working model.</p>}</> : <><p className="strat-micro text-vermilion">Rule preview · no live market read</p><p className="strat-choice-body">{summary}</p><div className="agent-rule-preview"><span>Move ≥ +{form.thresholdPct}% → UP</span><span>Move ≤ −{form.thresholdPct}% → DOWN</span><span>Smaller move → HOLD</span></div><p className="strat-choice-body">This checks the configured rule, not today’s market or a fill. The live runner still checks time, book depth and your permission.</p></>}
+          </div> : <StudioForm step={step} form={form} setForm={setForm} decimals={decimals} symbol={symbol} asset={asset} houseRunner={houseRunner} />}
+          {problem && <p className="agent-form-error" role="alert">{problem}</p>}
+          <div className="agent-builder-actions">
+            {step > 1 && <button type="button" onClick={() => { setStep((value) => value - 1); setProblem(null); }} className="strat-sensei">← Back</button>}
+            {step < 4 ? <button type="button" onClick={advance} className="strat-confirm strat-confirm--live">{step === 3 && form.preset === "agent" && !successfulRead ? "Continue without a test result →" : "Continue →"}</button> : writes.address ? <button type="button" onClick={publish} disabled={!canPublish || Boolean(writes.busy) || !writes.canSign} className={cn("strat-confirm", canPublish ? "strat-confirm--live" : "strat-confirm--dead")}>{writes.busy === "publish" ? "Confirming publication…" : "Publish agent →"}</button> : <ConnectButton />}
+          </div>
+          {step === 4 && <p className="strat-mono-11 mt-4 text-ink-muted">One publication transaction. Funding and copy permission are separate steps. Test collateral only.</p>}
         </div>
-      )}
+        <aside className="strat-preview agent-builder-preview"><p className="strat-micro text-ink-muted">Your agent</p><div className="mt-4 flex items-center gap-3"><AgentPortrait seed={form.portraitSeed} name={name} /><div className="min-w-0"><h3 className="strat-choice-title break-words text-ink">{name}</h3><p className="strat-mono-11 mt-1 text-ink-muted">{PRESETS[form.preset].name}</p></div></div><dl className="agent-preview-facts"><div><dt>Most per trade</dt><dd>{form.maxPerTrade || "—"} {symbol}</dd></div><div><dt>Most per day</dt><dd>{form.maxDaily || "—"} {symbol}</dd></div><div><dt>Market scope</dt><dd>All live venue assets</dd></div><div><dt>Test read</dt><dd>{form.preset === "momentum" ? "Rule preview" : successfulRead ? "Completed for this draft" : dry.state.status === "reading" ? "Reading…" : "Not verified"}</dd></div></dl><p className="strat-choice-body">Your name and portrait stay with the published strategy across the desk, cards and copy settings.</p></aside>
+      </div>
     </section>
   );
 }

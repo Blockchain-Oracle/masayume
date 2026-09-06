@@ -1,13 +1,16 @@
 import type { IntentJournal, PhaseListener, TxOutcome } from "@masayume/core/ports";
+import { GAS_SAFETY_BPS } from "@masayume/core/constants";
 import { encodeSpec, REGISTRY_NOT_DEPLOYED, type StrategyIntent } from "@masayume/core/strategies";
 import { diagnosis, type Address, type Hex } from "@masayume/core/types";
-import { formatBaseUnits } from "@masayume/core/units";
-import { erc20Abi, keccak256, maxUint256, toBytes, type ContractFunctionArgs, type ContractFunctionName } from "viem";
+import { formatBaseUnits, mulBpsCeil } from "@masayume/core/units";
+import { erc20Abi, keccak256, toBytes, type ContractFunctionArgs, type ContractFunctionName } from "viem";
 import { SOMNIA_SHANNON } from "../chain";
 import { getCollateral } from "../collateral";
 import { strategyRegistryAbi } from "../contracts/strategy-registry.abi";
-import { checkGas, gasLimitFor } from "../submitter/gas";
-import { awaitReceipt, settleVaultFailure, type Sent, type VaultContracts } from "../vault/write";
+import { ReadingError } from "../errors/reading-error";
+import { checkGas } from "../submitter/gas";
+import { TxRevertedError } from "../submitter/steps/assert-tx-ok";
+import { awaitReceipt, settleVaultFailure, VaultBroadcastError, type Sent, type VaultBroadcastListener, type VaultContracts } from "../vault/write";
 import { resolveRegistryDeployment } from "./deployment";
 
 type RegistryFn = ContractFunctionName<typeof strategyRegistryAbi, "nonpayable">;
@@ -28,8 +31,20 @@ function capsTuple(caps: { maxStakePerTradeBase: bigint; maxDailySpendBase: bigi
   return { maxStakePerTrade: caps.maxStakePerTradeBase, maxDailySpend: caps.maxDailySpendBase, maxOpenPositions: caps.maxOpenPositions, maxPriceRaw: caps.maxPriceRaw };
 }
 
-/** Simulate first — where viem decodes the registry's custom errors — then sign, then wait. */
-export async function writeRegistry<F extends RegistryFn>(contracts: VaultContracts, functionName: F, args: Args<F>, label: string): Promise<Sent> {
+/** Registry metadata has variable storage cost. Estimate the exact call with the shared 20% headroom. */
+async function estimatedGas(contracts: VaultContracts, request: object): Promise<bigint> {
+  const owner = contracts.walletClient.account?.address as Address | undefined;
+  if (!owner) throw new Error("the session's wallet client has no account bound");
+  const estimate = await contracts.publicClient.estimateContractGas(request as never);
+  if (estimate <= 0n) throw new Error("The registry gas estimate is unavailable; nothing was sent.");
+  const gas = mulBpsCeil(estimate, GAS_SAFETY_BPS);
+  const balance = await checkGas(owner, "vault", gas);
+  if (!balance.ok) throw new ReadingError(balance.diagnosis);
+  return gas;
+}
+
+/** Simulate first — where viem decodes the registry's custom errors — then estimate, sign and wait. */
+export async function writeRegistry<F extends RegistryFn>(contracts: VaultContracts, functionName: F, args: Args<F>, label: string, onBroadcast?: VaultBroadcastListener): Promise<Sent> {
   const deployment = resolveRegistryDeployment();
   if (!deployment) throw new Error(REGISTRY_NOT_DEPLOYED);
   const { request } = await contracts.publicClient.simulateContract({
@@ -40,45 +55,62 @@ export async function writeRegistry<F extends RegistryFn>(contracts: VaultContra
     account: contracts.walletClient.account,
     chain: SOMNIA_SHANNON,
   } as never);
-  const hash = await contracts.walletClient.writeContract({ ...(request as object), gas: gasLimitFor("vault") } as never);
-  const receipt = await awaitReceipt(contracts.publicClient, hash, label);
-  return { hash, receipt };
+  const gas = await estimatedGas(contracts, request as object);
+  const hash = await contracts.walletClient.writeContract({ ...(request as object), gas } as never);
+  try {
+    await onBroadcast?.(hash);
+    return { hash, receipt: await awaitReceipt(contracts.publicClient, hash, label) };
+  } catch (error) {
+    if (error instanceof TxRevertedError) throw error;
+    throw new VaultBroadcastError(hash, error);
+  }
 }
 
-/** The creator's fee is pulled by the registry; its allowance is absorbed into the subscribe (Approvals convention). */
+/** Bound the registry to the reviewed fee, including zero. A fee increase during signing must revert. */
 async function ensureFeeAllowance(contracts: VaultContracts, feeBase: bigint): Promise<void> {
-  if (feeBase === 0n) return;
   const deployment = resolveRegistryDeployment();
   const owner = contracts.walletClient.account?.address as Address | undefined;
   if (!deployment || !owner) throw new Error(REGISTRY_NOT_DEPLOYED);
   const token = getCollateral().address;
   const allowance = await contracts.publicClient.readContract({ address: token, abi: erc20Abi, functionName: "allowance", args: [owner, deployment.strategyRegistry] });
-  if (allowance >= feeBase) return;
-  const hash = await contracts.walletClient.writeContract({
+  if (allowance === feeBase) return;
+  const request = {
     address: token,
     abi: erc20Abi,
     functionName: "approve",
-    args: [deployment.strategyRegistry, maxUint256],
+    args: [deployment.strategyRegistry, feeBase],
     account: contracts.walletClient.account ?? owner,
     chain: SOMNIA_SHANNON,
-    gas: gasLimitFor("approve"),
-  });
+  } as const;
+  const gas = await estimatedGas(contracts, request);
+  const hash = await contracts.walletClient.writeContract({ ...request, gas });
   await awaitReceipt(contracts.publicClient, hash, "approve");
+  const updated = await contracts.publicClient.readContract({ address: token, abi: erc20Abi, functionName: "allowance", args: [owner, deployment.strategyRegistry] });
+  if (updated !== feeBase) throw new Error("The registry allowance no longer matches the reviewed subscription fee. Check it before continuing.");
 }
 
-export async function sendStrategyIntent(contracts: VaultContracts, intent: StrategyIntent): Promise<Sent> {
+async function assertReviewedFee(contracts: VaultContracts, strategyId: bigint, feeBase: bigint): Promise<void> {
+  const deployment = resolveRegistryDeployment();
+  if (!deployment) throw new Error(REGISTRY_NOT_DEPLOYED);
+  const strategy = await contracts.publicClient.readContract({ address: deployment.strategyRegistry, abi: strategyRegistryAbi, functionName: "strategyOf", args: [strategyId] });
+  if (!strategy.active || strategy.subscriptionFee !== feeBase) throw new Error("The subscription fee or strategy status changed. Review it before another signature.");
+}
+
+export async function sendStrategyIntent(contracts: VaultContracts, intent: StrategyIntent, onBroadcast?: VaultBroadcastListener): Promise<Sent> {
   switch (intent.kind) {
     case "strategy-publish":
-      return writeRegistry(contracts, "publish", [intent.runner, specHashOf(intent.spec), JSON.stringify(intent.metadata), capsTuple(intent.envelope), intent.feeBase], intent.kind);
+      return writeRegistry(contracts, "publish", [intent.runner, specHashOf(intent.spec), JSON.stringify(intent.metadata), capsTuple(intent.envelope), intent.feeBase], intent.kind, onBroadcast);
     case "strategy-update":
-      return writeRegistry(contracts, "update", [intent.strategyId, specHashOf(intent.spec), JSON.stringify(intent.metadata), intent.feeBase], intent.kind);
+      return writeRegistry(contracts, "update", [intent.strategyId, specHashOf(intent.spec), JSON.stringify(intent.metadata), intent.feeBase], intent.kind, onBroadcast);
     case "strategy-subscribe":
+      await assertReviewedFee(contracts, intent.strategyId, intent.feeBase);
       await ensureFeeAllowance(contracts, intent.feeBase);
-      return writeRegistry(contracts, "subscribe", [intent.strategyId, intent.grantId], intent.kind);
+      await assertReviewedFee(contracts, intent.strategyId, intent.feeBase);
+      return writeRegistry(contracts, "subscribe", [intent.strategyId, intent.grantId], intent.kind, onBroadcast);
     case "strategy-unsubscribe":
-      return writeRegistry(contracts, "unsubscribe", [intent.strategyId], intent.kind);
+      return writeRegistry(contracts, "unsubscribe", [intent.strategyId], intent.kind, onBroadcast);
     case "strategy-deactivate":
-      return writeRegistry(contracts, "deactivate", [intent.strategyId], intent.kind);
+      return writeRegistry(contracts, "deactivate", [intent.strategyId], intent.kind, onBroadcast);
   }
 }
 
@@ -106,19 +138,17 @@ export async function submitStrategyTx(ctx: StrategyTxContext, intent: StrategyI
   const { wallet, contracts } = ctx;
   if (!contracts || !resolveRegistryDeployment()) return { status: "refused", diagnosis: diagnosis("not-deployed", REGISTRY_NOT_DEPLOYED) };
   const record = await ctx.journal.record({ kind: intent.kind, wallet, summary: summarizeStrategy(intent, getCollateral().decimals) });
-  const gas = await checkGas(wallet, "vault");
-  if (!gas.ok) {
-    await ctx.journal.markFailed(record.id, gas.diagnosis.technical);
-    return { status: "refused", diagnosis: gas.diagnosis };
-  }
   onPhase?.("submitted");
+  let broadcastHash: Hex | undefined;
   try {
-    const { hash } = await sendStrategyIntent(contracts, intent);
-    await ctx.journal.markSent(record.id, hash);
+    const { hash } = await sendStrategyIntent(contracts, intent, async (hash) => {
+      broadcastHash = hash;
+      await ctx.journal.markSent(record.id, hash);
+    });
     await ctx.journal.markConfirmed(record.id);
     onPhase?.("confirmed", { txHash: hash });
     return { status: "confirmed", txHash: hash };
   } catch (error) {
-    return settleVaultFailure(ctx.journal, record.id, error, onPhase);
+    return settleVaultFailure(ctx.journal, record.id, error, onPhase, undefined, broadcastHash);
   }
 }

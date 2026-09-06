@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Fixture, FixtureGrid } from "@/app/dev/states/_sections/Fixture";
 import { SectionHeader } from "@/components/chrome";
 import { PRIVATE, PrivateBalancePanel, PrivateClaims } from "@/features/private";
+import { usePrivateTickets } from "@/features/private/claims-store";
 import { RouteControl } from "@/features/session";
 import { CHAIN_ID, CONTRACT, FIXTURE_DESK, FIXTURE_SYMBOL, OWNER, signedTickets } from "./fixtures";
 
@@ -15,6 +16,7 @@ const ROUTE = { onChange: noop, vaultAvailableBase: 12_000_000n, decimals: 6, sy
 /** `/dev/private` — the route control's private states and the claims list on real signatures, then the live panel. Scaffolding: never linked from the app. */
 export function PrivateFixtures() {
   const [tickets, setTickets] = useState<PrivateTicket[] | null>(null);
+  const restored = usePrivateTickets(OWNER);
   useEffect(() => {
     void signedTickets().then(setTickets);
   }, []);
@@ -44,8 +46,8 @@ export function PrivateFixtures() {
         <Fixture label="Claims — open (verified), restored and edited (unverified), won, lost">
           {tickets ? <PrivateClaims {...claims} claims={tickets} /> : <p className="type-caption text-ink-muted">signing…</p>}
         </Fixture>
-        <Fixture label="Claims — none yet">
-          <PrivateClaims {...claims} claims={[]} />
+        <Fixture label="Claims — restore into this browser">
+          <PrivateClaims {...claims} claims={restored.tickets} onChanged={restored.refresh} />
         </Fixture>
         <Fixture label="Claims — cashing out the first">
           {tickets ? <PrivateClaims {...claims} claims={tickets.slice(0, 1)} busySlot={tickets[0]?.claim.slotId ?? null} /> : null}

@@ -12,9 +12,11 @@ import { AGENTS, STRATEGIES } from "./copy";
 import { money } from "./format";
 import { ago, shortAddress } from "./names";
 import { AgentPortrait } from "./AgentPortrait";
+import { strategyIdentity } from "./identity";
 import type { StrategiesPayload } from "./protocol";
 import { useRefreshStrategies, useStrategies } from "./useStrategies";
 import "./strategies.css";
+import "./builder.css";
 
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
@@ -58,6 +60,7 @@ export function AgentsScreen() {
       </div>
       <h1 className="agents-h1">{AGENTS.headline}</h1>
       <p className="mb-10 max-w-2xl text-sm leading-relaxed text-ink-secondary">{AGENTS.intro}</p>
+      <nav className="agent-entry" aria-label="Agent actions"><Link className="desk-pill" href="/strategies">Create an agent →</Link><Link className="desk-pill" href="/strategies?view=copy">Copy a strategy →</Link><Link className="desk-pill" href="/strategies?view=yours">Your strategies →</Link></nav>
       <ReadingBoundary reading={reading} shape="plate" retry={refresh}>
         {(payload) => (payload.deployed ? <Board payload={payload} nowMs={nowMs} /> : <CapabilityPending eyebrow={AGENTS.title} title={AGENTS.title} dependency={AGENTS.notDeployed.dependency}><p>{STRATEGIES.notDeployed.body}</p></CapabilityPending>)}
       </ReadingBoundary>
@@ -106,22 +109,25 @@ function Board({ payload, nowMs }: { payload: StrategiesPayload; nowMs: number }
             {rows.map((row, i) => {
               const rank = i + 1;
               const top = rank === 1;
+              const editions = strategies.filter((card) => card.runner.toLowerCase() === row.runner.toLowerCase());
+              const identity = editions.length === 1 ? strategyIdentity(editions[0]!) : { name: `Runner ${shortAddress(row.runner)}`, seed: `runner:${row.runner}` };
               return (
                 <div key={row.runner} className={cn("agents-row", top && "agents-row--top")}>
                   <div className="flex flex-col gap-4 md:flex-row md:items-center">
                     <div className="agents-rank">{String(rank).padStart(2, "0")}</div>
                     <div className="flex min-w-0 flex-1 items-center gap-4">
-                      <AgentPortrait seed={row.runner} name={shortAddress(row.runner)} size="row" />
+                      <AgentPortrait seed={identity.seed} name={identity.name} size="row" />
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <a href={addressUrl(row.runner)} target="_blank" rel="noreferrer" className="strat-mono-12 truncate text-ink transition-colors hover:text-vermilion">
-                            {shortAddress(row.runner)}
+                            {identity.name}
                           </a>
                           {top && <span className="agents-top-badge">{AGENTS.desk.top}</span>}
                         </div>
                         <div className="strat-mono-11 mt-1 truncate text-ink-disabled">
                           {AGENTS.desk.strategies(row.strategies)} · {AGENTS.desk.subscribers(row.subscribers)}
                         </div>
+                        <div className="mt-2 flex flex-wrap gap-3">{editions.map((card) => <Link key={card.strategyId} href={`/strategies?view=copy&strategy=${card.strategyId}`} className="strat-mono-11 text-vermilion">{strategyIdentity(card).name} →</Link>)}</div>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4 md:flex md:shrink-0 md:items-center md:gap-8">

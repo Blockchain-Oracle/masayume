@@ -1,27 +1,26 @@
 import { isOk } from "@masayume/core/schemas";
-import { EMPTY_AGENT_RECORD, type AgentPastWindow, type AgentRecordSummary, type AgentWindowOutcome, type FillSettlement } from "@masayume/core/strategies";
+import { type AgentPastWindow, type AgentRecordSummary, type AgentWindowOutcome, type FillSettlement } from "@masayume/core/strategies";
 import { SIDE_TO_OUTCOME, toMarketId, type MarketId, type Side } from "@masayume/core/types";
 import { utcDayOf } from "@masayume/core/vault";
 import { listStrategyDecisions, listStrategyFills } from "@masayume/db";
 import { marketsProvider } from "@masayume/markets";
 
 const RECENT_WINDOWS = 5;
-const DECISION_LOOKBACK = 12;
-const FILL_LOOKBACK = 200;
 
 /** Settlement facts per Window, read once per cycle rather than once per row. */
-export type SettlementReader = (marketId: MarketId) => Promise<FillSettlement | null>;
+export type RiskSettlement = FillSettlement & { resolvedAtSec: number | null };
+export type SettlementReader = (marketId: MarketId) => Promise<RiskSettlement | null>;
 
 export function settlementReader(): SettlementReader {
-  const cache = new Map<MarketId, Promise<FillSettlement | null>>();
+  const cache = new Map<MarketId, Promise<RiskSettlement | null>>();
   return (marketId) => {
     let pending = cache.get(marketId);
     if (!pending) {
       pending = marketsProvider.getMarket(marketId).then((reading) => {
-        const m = isOk(reading) ? reading.value : null;
+        const m = isOk(reading) && !reading.stale ? reading.value : null;
         if (!m) return null;
         const settled = m.status === "Resolved" || m.status === "Voided" || m.status === "Finalized";
-        return { settled, voided: m.voided, winningOutcome: m.winningOutcome };
+        return { settled, voided: m.voided, winningOutcome: m.winningOutcome, resolvedAtSec: m.resolvedAtMs === null ? null : Math.floor(m.resolvedAtMs / 1000) };
       });
       cache.set(marketId, pending);
     }
@@ -44,16 +43,26 @@ function outcomeOf(side: Side, settlement: FillSettlement | null): AgentWindowOu
  */
 export async function readAgentRecord(strategyId: bigint, nowSec: number, includeDryRun: boolean, settlementOf: SettlementReader): Promise<AgentRecordSummary> {
   const id = strategyId.toString();
-  const [decisions, fills] = await Promise.all([listStrategyDecisions(id, DECISION_LOOKBACK, includeDryRun).catch(() => null), listStrategyFills(id, FILL_LOOKBACK).catch(() => null)]);
-  if (!decisions) return EMPTY_AGENT_RECORD;
+  const [decisions, fills] = await Promise.all([listStrategyDecisions(id, null, includeDryRun), listStrategyFills(id, null)]);
+  if (!decisions || !fills) throw new Error("risk memory unavailable: decisions or fills could not be read");
+
+  const requiredSettlement = async (marketId: string) => {
+    const facts = await settlementOf(toMarketId(marketId));
+    if (!facts || (facts.settled && ((!facts.voided && facts.winningOutcome === null) || facts.resolvedAtSec === null))) throw new Error(`risk memory unavailable: settlement facts missing for ${marketId}`);
+    return facts;
+  };
 
   const decided = decisions.filter((d): d is typeof d & { side: Side } => d.side !== null);
-  const scored = await Promise.all(decided.map(async (d) => ({ side: d.side, why: d.why, atSec: Math.floor(d.decidedAtMs / 1000), outcome: outcomeOf(d.side, await settlementOf(toMarketId(d.marketId))) })));
+  const scored = await Promise.all(decided.map(async (d) => {
+    const facts = await requiredSettlement(d.marketId);
+    return { side: d.side, why: d.why, marketId: d.marketId, atSec: facts.resolvedAtSec, outcome: outcomeOf(d.side, facts) };
+  }));
   const recent: AgentPastWindow[] = scored.slice(0, RECENT_WINDOWS).map(({ side, outcome, why }) => ({ side, outcome, why }));
 
   let consecutiveLosses = 0;
   let lastLossAtSec: number | null = null;
-  for (const w of scored) {
+  const executed = scored.filter((d) => fills.some((f) => f.marketId === d.marketId && f.side === d.side)).sort((a, b) => (b.atSec ?? 0) - (a.atSec ?? 0));
+  for (const w of executed) {
     if (w.outcome === "open" || w.outcome === "void") continue;
     if (w.outcome === "won") break;
     consecutiveLosses += 1;
@@ -62,9 +71,10 @@ export async function readAgentRecord(strategyId: bigint, nowSec: number, includ
 
   const today = utcDayOf(nowSec);
   const lostByOwner = new Map<string, bigint>();
-  for (const f of fills ?? []) {
-    if (utcDayOf(f.atSec) !== today) continue;
-    if (outcomeOf(f.side, await settlementOf(toMarketId(f.marketId))) !== "lost") continue;
+  for (const f of fills) {
+    const facts = await requiredSettlement(f.marketId);
+    if (facts.resolvedAtSec === null || utcDayOf(facts.resolvedAtSec) !== today) continue;
+    if (outcomeOf(f.side, facts) !== "lost") continue;
     lostByOwner.set(f.owner, (lostByOwner.get(f.owner) ?? 0n) + BigInt(f.cashDelta));
   }
   const lostTodayBase = [...lostByOwner.values()].reduce((max, v) => (v > max ? v : max), 0n);

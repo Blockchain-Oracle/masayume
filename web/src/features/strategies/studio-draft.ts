@@ -11,10 +11,19 @@ export interface StudioDraft {
   hosting: "house" | "self";
   agent: string;
   name: string;
+  portraitSeed: string;
   maxPerTrade: string;
   maxDaily: string;
   subFee: string;
   playbook: string;
+}
+
+export function initialStudioDraft(houseRunner: string | null): StudioDraft {
+  return { preset: "agent", lookback: 6, thresholdPct: "0.2", persona: "", posture: "balanced", cadences: [900, 3600], hosting: houseRunner ? "house" : "self", agent: "", name: "", portraitSeed: "masayume-new-agent", maxPerTrade: "1", maxDaily: "5", subFee: "0", playbook: "" };
+}
+
+export function studioReadKey(form: StudioDraft): string {
+  return JSON.stringify({ spec: draftSpec(form), maxPerTrade: form.maxPerTrade, maxDaily: form.maxDaily, runner: form.hosting === "house" ? "house" : form.agent, hosting: form.hosting });
 }
 
 /** The spec the draft would publish — the only thing hashed on-chain. */

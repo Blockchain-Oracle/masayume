@@ -34,6 +34,41 @@ beforeEach(() => {
 });
 
 describe("mention execution receipt integration", () => {
+  it("durably captures sender routing, target, block and nonce before the submitter is allowed to send", async () => {
+    const order: string[] = [];
+    const checkpoint = vi.fn(async () => { order.push("checkpoint"); });
+    dependencies.submit.mockImplementation(async () => { order.push("submit"); return { status: "nothingFilled", txHash: HASH }; });
+    const durableContext = { ...context, checkpoint, session: { ...context.session, contracts: { publicClient: {
+      getBlockNumber: vi.fn(async () => 1234n), getTransactionCount: vi.fn(async () => 9),
+    } } } } as unknown as ExecutorContext;
+    await executeMention(durableContext, mention);
+    expect(order).toEqual(["checkpoint", "checkpoint", "submit"]);
+    expect(checkpoint.mock.calls[1]).toEqual([expect.objectContaining({ wallet: ADDRESS, marketId: MARKET_ID, grantId: "7",
+      executionActor: ADDRESS, collateralDecimals: 6, recoveryFromBlock: "1234", expectedNonce: 9, handle: "example" })]);
+  });
+
+  it("fails closed before submit if the durable snapshot cannot be stored", async () => {
+    const checkpoint = vi.fn(async () => { throw new Error("database unavailable"); });
+    await expect(executeMention({ ...context, checkpoint }, mention)).rejects.toThrow("database unavailable");
+    expect(dependencies.submit).not.toHaveBeenCalled();
+  });
+
+  it.each(["missing", "mismatched", "expired"])("refuses a %s grant before sending", async kind => {
+    dependencies.snapshot.mockResolvedValue({ ok: true, value: { grants: { executor: kind === "missing" ? null : {
+      grantId: 7n, actor: kind === "mismatched" ? `0x${"33".repeat(20)}` : ADDRESS,
+      expiresAtSec: kind === "expired" ? 1 : Math.floor(Date.now() / 1000) + 3600,
+    } } } });
+    const result = await executeMention(context, mention);
+    expect(result.status).toBe("refused"); expect(result.refusalCode).toMatch(/^grant-/);
+    expect(dependencies.submit).not.toHaveBeenCalled();
+  });
+
+  it.each(["snapshot", "lanes", "quote"] as const)("refuses last-good stale %s data after a refresh failure", async dependency => {
+    const value = await dependencies[dependency]();
+    dependencies[dependency].mockResolvedValue({ ...value, stale: true, staleReason: "refresh-failed" });
+    expect((await executeMention(context, mention)).status).toBe("refused");
+    expect(dependencies.submit).not.toHaveBeenCalled();
+  });
   it("passes the requested budget to the grant and records independently booked amounts plus the resolved Window", async () => {
     const result = await executeMention(context, mention);
     expect(dependencies.submit).toHaveBeenCalledWith(expect.objectContaining({ stakeBase: 100_000_000n, route: { kind: "vault-grant", grantId: 7n } }));

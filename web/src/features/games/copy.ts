@@ -85,14 +85,14 @@ export const GAMES = {
     streak: "Streak",
     /** Shown in place of a number when nothing has ever written that number. */
     unrecorded: "—",
-    pending: "The ladder, the record and the streak are written by the arena and its projector. Neither exists yet, so there is nothing to show — not a zero.",
+    pending: "Rating, record and streak are not connected to this profile yet. Your recorded duels and the season ladder are available below.",
   },
 
   achievements: {
     title: "Achievements",
     pending:
-      "Achievements unlock from evidence — a settled match, a verified score, a claimed credit. Until the arena writes those receipts there is nothing to unlock.",
-    dependency: "GameArena's settlement events and the arcade score API",
+      "Achievements are planned. Settled duels and verified arcade scores are recorded, but do not unlock badges yet.",
+    dependency: "achievement rules and profile integration",
   },
 
   historyPage: {

@@ -1,4 +1,5 @@
 import type { XReceipt } from "@masayume/core/x";
+import type { XRelayHealth } from "@masayume/db";
 import { z } from "zod";
 
 export const X_RECEIPTS_LIMIT = 30;
@@ -24,6 +25,8 @@ export interface XBinding {
  * RIGHT HERE (the cookie) and which account actually routes to a wallet, on any device (the store).
  */
 export interface XStatus {
+  /** Operational evidence is separate from OAuth configuration and wallet binding. */
+  relay?: XRelayHealth | null;
   configured: boolean;
   /** Variable names that would connect the rail; empty when configured. */
   missing: string[];

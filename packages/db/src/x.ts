@@ -26,6 +26,13 @@ const receiptDetailsSchema = z.object({
     "grant-missing", "grant-mismatch", "grant-expired", "no-window", "quote-unavailable",
     "no-liquidity", "price-moved", "permission-denied", "insufficient-funds", "execution-unavailable", "unconfirmed",
   ]).nullish(),
+  executionActor: z.string().regex(/^0x[0-9a-fA-F]{40}$/).nullish(),
+  poolAddress: z.string().regex(/^0x[0-9a-fA-F]{40}$/).nullish(),
+  collateralDecimals: z.number().int().min(0).max(18).nullish(),
+  intentRecordedAtMs: z.number().int().nonnegative().nullish(),
+  journalState: z.enum(["recorded", "sent", "confirmed", "failed", "unknown"]).nullish(),
+  recoveryFromBlock: baseUnits.nullish(),
+  expectedNonce: z.number().int().nonnegative().safe().nullish(),
 });
 
 export type XReceiptDetailsRecord = z.infer<typeof receiptDetailsSchema>;
@@ -178,8 +185,69 @@ export async function xReceiptUpsert(receipt: XReceiptRecord): Promise<void> {
       wallet = EXCLUDED.wallet, grant_id = EXCLUDED.grant_id, market_id = EXCLUDED.market_id, side = EXCLUDED.side,
       stake_base = EXCLUDED.stake_base,
       details = (CASE WHEN jsonb_typeof(x_receipts.details) = 'object' THEN x_receipts.details ELSE '{}'::jsonb END) || EXCLUDED.details,
-      status = EXCLUDED.status, reason = EXCLUDED.reason, tx_hash = EXCLUDED.tx_hash, updated_at = now()
+      status = EXCLUDED.status, reason = EXCLUDED.reason, tx_hash = COALESCE(EXCLUDED.tx_hash, x_receipts.tx_hash), updated_at = now()
+    WHERE NOT (x_receipts.status IN ('filled', 'nothing-filled', 'reverted') AND EXCLUDED.status IN ('submitted', 'unknown', 'refused'))
+      AND (x_receipts.tx_hash IS NULL OR EXCLUDED.tx_hash IS NULL OR x_receipts.tx_hash = EXCLUDED.tx_hash)
   `;
+}
+
+/** Record broadcast evidence directly on its durable mention; a different hash is never substituted. */
+export async function xRecordExecutionJournal(mentionId: string, patch: XReceiptDetailsRecord, txHash?: string): Promise<void> {
+  const db = getDb();
+  if (!db) throw new Error("X execution requires a database");
+  await ensureSchema();
+  if (txHash !== undefined && !/^0x[0-9a-fA-F]{64}$/.test(txHash)) throw new Error("Invalid transaction hash");
+  const rows = await db`
+    UPDATE x_receipts SET
+      details = (CASE WHEN jsonb_typeof(details) = 'object' THEN details ELSE '{}'::jsonb END) || ${db.json(receiptDetailsSchema.parse(patch))}::jsonb,
+      tx_hash = COALESCE(${txHash ?? null}, tx_hash), updated_at = now()
+    WHERE mention_id = ${mentionId} AND status IN ('submitted', 'unknown')
+      AND (${txHash ?? null}::text IS NULL OR tx_hash IS NULL OR tx_hash = ${txHash ?? null})
+    RETURNING mention_id
+  `;
+  if (rows.length !== 1) throw new Error("X execution evidence was not stored");
+}
+
+/** Recover old claims and known uncertain transactions without ever acquiring execution permission. */
+export async function xRecoveryCandidates(limit = 20): Promise<XReceiptRecord[]> {
+  const db = getDb();
+  if (!db) throw new Error("X recovery requires a database");
+  await ensureSchema();
+  const rows = await db<ReceiptRow[]>`
+    SELECT ${db.unsafe(RECEIPT_COLUMNS)} FROM x_receipts
+    WHERE (status = 'submitted' AND updated_at < now() - interval '5 minutes')
+      OR (status = 'unknown' AND (tx_hash IS NOT NULL OR details->>'intentRecordedAtMs' IS NOT NULL) AND updated_at < now() - interval '15 seconds')
+    ORDER BY updated_at LIMIT ${limit}
+  `;
+  return rows.map(toReceipt);
+}
+
+/** Compare against the snapshot read by recovery so it cannot overwrite a later final result or hash. */
+export async function xStoreRecoveredReceipt(before: XReceiptRecord, after: XReceiptRecord): Promise<boolean> {
+  const db = getDb();
+  if (!db) throw new Error("X recovery requires a database");
+  await ensureSchema();
+  const rows = await db`
+    UPDATE x_receipts SET status = ${after.status}, reason = ${after.reason}, tx_hash = COALESCE(${after.txHash}, tx_hash),
+      details = (CASE WHEN jsonb_typeof(details) = 'object' THEN details ELSE '{}'::jsonb END) || ${db.json(readReceiptDetails(after))}::jsonb,
+      updated_at = now()
+    WHERE mention_id = ${before.mentionId} AND status = ${before.status}
+      AND tx_hash IS NOT DISTINCT FROM ${before.txHash}
+    RETURNING mention_id
+  `;
+  return rows.length === 1;
+}
+
+/** Do not reuse an executor nonce while its prior broadcast is uncertain. */
+export async function xHasUnresolvedBroadcast(actor: string): Promise<boolean> {
+  const db = getDb();
+  if (!db) throw new Error("X execution requires a database");
+  await ensureSchema();
+  const [row] = await db<{ blocked: boolean }[]>`
+    SELECT EXISTS (SELECT 1 FROM x_receipts WHERE status IN ('submitted', 'unknown') AND tx_hash IS NULL
+      AND lower(details->>'executionActor') = ${actor.toLowerCase()} AND details->>'intentRecordedAtMs' IS NOT NULL) AS blocked
+  `;
+  return row?.blocked ?? true;
 }
 
 export async function xReceiptsByWallet(wallet: string, limit: number): Promise<XReceiptRecord[] | null> {

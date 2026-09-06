@@ -10,7 +10,8 @@ import { setTimeout as pause } from "node:timers/promises";
 import { getDb } from "../src/client";
 import { ensureSchema } from "../src/migrate";
 import { SCHEMA_SQL } from "../src/schema";
-import { xReceiptByMention, xReceiptUpsert, type XReceiptRecord } from "../src/x";
+import { xReceiptByMention, xReceiptUpsert, xRecordExecutionJournal, xRecoveryCandidates, xStoreRecoveredReceipt, xHasUnresolvedBroadcast, type XReceiptRecord } from "../src/x";
+import { xGetRelayHealth, xSetStageHealth } from "../src/x-health";
 import {
   xAcquireReplyDelivery, xBeginReplyPost, xClaimMention, xFinishReplyPost,
   xMarkInterruptedReplyPosts, xStopReplyDelivery,
@@ -221,6 +222,59 @@ async function main() {
     await sql`UPDATE x_reply_delivery SET updated_at = now() - interval '1 day'`;
     assert.equal(await xAcquireReplyDelivery(), null);
     assert.equal(await xMarkInterruptedReplyPosts(), 0);
+  });
+
+  await check("durable journal retains sender, target, nonce and hash across uncertain final persistence", async () => {
+    const actor = `0x${"22".repeat(20)}`;
+    const owner = `0x${"33".repeat(20)}`;
+    await xClaimMention({ ...receipt("1060", "submitted"), handle: "original" }, true);
+    await xReceiptUpsert({ ...receipt("1060", "submitted"), handle: "renamed", wallet: owner, marketId: HASH, grantId: "7", side: "up",
+      executionActor: actor, collateralDecimals: 6, recoveryFromBlock: "1234", expectedNonce: 9 });
+    await xRecordExecutionJournal("1060", { journalState: "recorded", intentRecordedAtMs: 1800000000000 });
+    assert.equal(await xHasUnresolvedBroadcast(actor), true);
+    await xRecordExecutionJournal("1060", { journalState: "sent" }, HASH);
+    assert.equal(await xHasUnresolvedBroadcast(actor), false);
+    await xReceiptUpsert({ ...receipt("1060", "unknown"), wallet: owner, marketId: HASH, grantId: "7", side: "up" });
+    const saved = await xReceiptByMention("1060");
+    assert.equal(saved?.txHash, HASH);
+    assert.equal(saved?.handle, "original");
+    assert.equal(saved?.expectedNonce, 9);
+    assert.equal(saved?.executionActor, actor);
+    await assert.rejects(xRecordExecutionJournal("1060", { journalState: "sent" }, `0x${"55".repeat(32)}`), /not stored/);
+  });
+
+  await check("recovery restores known outcomes and a late worker cannot downgrade them", async () => {
+    await xClaimMention(receipt("1061", "submitted"), true);
+    await sql`UPDATE x_receipts SET updated_at = now() - interval '6 minutes'`;
+    const [before] = await xRecoveryCandidates();
+    assert.ok(before);
+    const after = { ...before, status: "filled" as const, txHash: HASH, bookedCostBase: "1234567", bookedContractsRaw: "2469134" };
+    assert.equal(await xStoreRecoveredReceipt(before, after), true);
+    assert.equal(await xStoreRecoveredReceipt(before, { ...before, status: "unknown" }), false);
+    await xReceiptUpsert({ ...before, status: "unknown" });
+    const saved = await xReceiptByMention("1061");
+    assert.equal(saved?.status, "filled");
+    assert.equal(saved?.bookedCostBase, "1234567");
+    assert.equal(saved?.txHash, HASH);
+    assert.equal((await xAcquireReplyDelivery())?.mentionId, "1061");
+  });
+
+  await check("health separates provider checks, execution uncertainty and acknowledged images", async () => {
+    await xSetStageHealth("polling", "ok");
+    await xSetStageHealth("execution", "error");
+    await xSetStageHealth("delivery", "disabled", true);
+    await xClaimMention(receipt("1062", "unknown"), true);
+    const job = await xAcquireReplyDelivery(); assert.ok(job);
+    await xBeginReplyPost(job, "FIXTURE", "999");
+    let health = await xGetRelayHealth();
+    assert.equal(health?.polling?.state, "ok");
+    assert.equal(health?.execution?.state, "error");
+    assert.equal(health?.delivery?.state, "disabled");
+    assert.equal(health?.unresolvedExecutions, 1);
+    assert.equal(health?.lastImageReplyAtMs, null);
+    await xFinishReplyPost(job, "888");
+    health = await xGetRelayHealth();
+    assert.ok(health?.lastImageReplyAtMs);
   });
 
   console.log(`All ${passed} X delivery SQL integration checks passed on disposable Postgres 17.`);

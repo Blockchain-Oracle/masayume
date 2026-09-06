@@ -68,6 +68,8 @@ export function useXStatus(): XLink {
   }, [address]);
   useEffect(() => {
     void refresh();
+    const timer = setInterval(() => void refresh(), 15_000);
+    return () => clearInterval(timer);
   }, [refresh]);
 
   const session = status?.session ?? null;

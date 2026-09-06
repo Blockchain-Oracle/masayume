@@ -10,6 +10,8 @@ export interface ReplyCardInput {
   detail?: string;
   context?: string;
   footer?: string;
+  sender?: string | null;
+  txHash?: string | null;
 }
 
 export interface ReplyCardOptions {
@@ -122,22 +124,26 @@ export function renderReplyCardSvg(input: ReplyCardInput, options: ReplyCardOpti
     ? input.footer : state.footer;
   const context = plain(input.context, 180) || "Somnia Shannon testnet";
   const detail = plain(input.detail, 420) || "Open the receipt for details.";
+  const sender = typeof input.sender === "string" && /^(@[A-Za-z0-9_]{1,15}|X user \d{1,30})$/.test(input.sender) ? input.sender : null;
+  const hash = typeof input.txHash === "string" && /^0x[0-9a-fA-F]{64}$/.test(input.txHash) ? input.txHash : null;
   const contextLines = lines(context, inter, 27, 690, 2);
   const detailLines = lines(detail, inter, 22, 690, 2);
   const titleSize = Math.min(72, 690 / width(sora, title, 1));
   const banner = options.demo ? "DEMO · NOT A REAL TRADE" : "SOMNIA SHANNON TESTNET";
-  const description = `${banner}. ${title}. ${contextLines.join(" ")}. ${detailLines.join(" ")}. ${footer}`;
+  const description = `${banner}. ${sender ? `For ${sender}. ` : ""}${title}. ${contextLines.join(" ")}. ${detailLines.join(" ")}. ${footer}${hash ? ` Transaction ${hash}.` : ""}`;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" width="1200" height="600" role="img" aria-labelledby="reply-title reply-description" data-status="${status}">
 <title id="reply-title">${escapeXml(title)} — Masayume</title>
 <desc id="reply-description">${escapeXml(description)}</desc>
 <rect width="1200" height="600" fill="#050505"/>
 ${mark(963, 32, 42, INK)}
 ${text("Masayume", 1008, 61, 20, INK, sora)}
-${text("YOUR CALL HAS A RECEIPT", 64, 151, 16, ORANGE)}
-${text(title, 60, 248, titleSize, INK, sora)}
-${contextLines.map((line, i) => text(line, 64, 318 + i * 33, 27, INK)).join("\n")}
-${detailLines.map((line, i) => text(line, 64, 392 + i * 29, 22, MUTED)).join("\n")}
-${text(footer, 64, 468, 20, MUTED)}
+${sender ? text(`FOR ${sender}`, 64, 104, 19, INK) : ""}
+${text("YOUR CALL HAS A RECEIPT", 64, 146, 16, ORANGE)}
+${text(title, 60, 235, titleSize, INK, sora)}
+${contextLines.map((line, i) => text(line, 64, 298 + i * 33, 27, INK)).join("\n")}
+${detailLines.map((line, i) => text(line, 64, 372 + i * 29, 22, MUTED)).join("\n")}
+${text(footer, 64, 444, 20, MUTED)}
+${hash ? text(`TX ${hash}`, 64, 491, Math.min(15, 690 / width(inter, `TX ${hash}`, 1)), MUTED) : ""}
 ${receiptArt(status)}
 <path d="M64 523H1136" stroke="#39332D"/>
 ${text("masayume.app · Receipt details in the reply", 64, 563, 15, MUTED)}

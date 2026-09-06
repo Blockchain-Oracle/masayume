@@ -5,7 +5,8 @@ import { useMemo } from "react";
 import { AgentPortrait } from "./AgentPortrait";
 import { STRATEGIES } from "./copy";
 import { money } from "./format";
-import { ago, codenameFromAddress, shortAddress } from "./names";
+import { ago, shortAddress } from "./names";
+import { strategyIdentity } from "./identity";
 import type { FillWire, StrategyWire } from "./protocol";
 import "./strategies.css";
 
@@ -22,7 +23,7 @@ interface RecentCopyTradesProps {
 
 /** Recent copy-trades collapsed by copier+strategy so one person's repeats read as "copied ×N · total". */
 export function RecentCopyTrades({ fills, strategies, storeConnected, decimals, symbol, nowMs }: RecentCopyTradesProps) {
-  const runnerOf = useMemo(() => new Map(strategies.map((s) => [s.strategyId, s.runner])), [strategies]);
+  const strategyOf = useMemo(() => new Map(strategies.map((s) => [s.strategyId, s])), [strategies]);
   const grouped = useMemo(() => {
     const g = new Map<string, { strategyId: string; owner: string; count: number; totalBase: bigint; atSec: number; txHash: string }>();
     for (const f of fills) {
@@ -55,8 +56,7 @@ export function RecentCopyTrades({ fills, strategies, storeConnected, decimals, 
           <div className="strat-rows-empty">{STRATEGIES.recent.empty}</div>
         ) : (
           grouped.slice(0, RECENT_LIMIT).map((t) => {
-            const seed = t.strategyId + (runnerOf.get(t.strategyId) ?? "");
-            const name = codenameFromAddress(seed);
+            const { name, seed } = strategyIdentity(strategyOf.get(t.strategyId) ?? { strategyId: t.strategyId, runner: "", metadata: "" });
             return (
               <a key={`${t.strategyId}:${t.owner}`} href={txUrl(t.txHash as `0x${string}`)} target="_blank" rel="noreferrer" className="strat-row block">
                 <AgentPortrait seed={seed} name={name} size="small" />

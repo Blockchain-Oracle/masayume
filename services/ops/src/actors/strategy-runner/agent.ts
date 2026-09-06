@@ -1,11 +1,11 @@
-import { decideAgentWindow, missingCredentialHint, resolveModel, type ResolvedModel } from "@masayume/brain";
+import { decideAgentWindow, missingCredentialHint, promptHashOf, resolveModel, type ResolvedModel } from "@masayume/brain";
 import { formatCadence } from "@masayume/core/copy";
 import { phase } from "@masayume/core/lifecycle";
 import { isOk } from "@masayume/core/schemas";
-import { decisionSlot, type AgentSpec, type StrategyRecord } from "@masayume/core/strategies";
+import { agentPrompt, decisionSlot, gateAgentVerdict, type AgentSpec, type StrategyRecord } from "@masayume/core/strategies";
 import type { Bytes32, EventMarket } from "@masayume/core/types";
 import { msToSec } from "@masayume/core/units";
-import { listStrategyDecisions, recordStrategyDecision } from "@masayume/db";
+import { beginStrategyDecision, getStrategyDecision, listStrategyDecisions, recordStrategyDecision } from "@masayume/db";
 import { marketsProvider } from "@masayume/markets";
 import { readAgentContext } from "@masayume/markets/strategies";
 import { readAgentRecord, settlementReader } from "./agent-record";
@@ -41,6 +41,7 @@ export function agentBootLine(state: AgentState): string {
 export async function warmAgentState(state: AgentState, nowSec: number): Promise<number> {
   const rows = await listStrategyDecisions(null, WARM_ROWS, true).catch(() => null);
   for (const row of rows ?? []) state.read.set(`${row.strategyId}:${row.marketId}`, Math.floor(row.decidedAtMs / 1000) + FORGET_AFTER_SEC);
+  state.callsAtMs = (rows ?? []).map((row) => row.decidedAtMs).filter((at) => nowSec * 1000 - at < HOUR_MS);
   forget(state, nowSec);
   return rows?.length ?? 0;
 }
@@ -63,6 +64,7 @@ export interface AgentRunner {
   runnerKey: string;
   agent: AgentState;
   log: (why: string) => void;
+  onReading?: (why: string) => Promise<void>;
 }
 
 function label(market: EventMarket): string {
@@ -82,7 +84,7 @@ export async function scanVenueWithAgent(runner: AgentRunner, strategy: Strategy
   const nowSec = msToSec(nowMs);
   forget(agent, nowSec);
   const lanes = await marketsProvider.listLiveLanes(runner.venueId);
-  if (!isOk(lanes)) return { candidates: [], scanned: 0, closestBps: null, why: `lanes unreadable: ${lanes.error.technical}` };
+  if (!isOk(lanes) || lanes.stale) return { candidates: [], scanned: 0, closestBps: null, why: `lanes unreadable: ${isOk(lanes) ? "stale state" : lanes.error.technical}` };
   const markets = lanes.value.lanes.flatMap((lane) => lane.markets).filter((m) => spec.cadences.includes(m.intervalSec) && phase(m, nowMs) === "trading");
   const settlementOf = settlementReader();
   const candidates: Scan["candidates"] = [];
@@ -91,22 +93,44 @@ export async function scanVenueWithAgent(runner: AgentRunner, strategy: Strategy
 
   for (const market of markets) {
     const key = `${strategy.strategyId}:${market.marketId}`;
-    if (agent.read.has(key)) continue;
     const slot = decisionSlot(market, nowMs);
     if (!slot.open) {
       notes.push(`${label(market)}: ${nowSec < slot.opensAtSec ? `slot opens in ${slot.opensAtSec - nowSec}s` : "slot closed"}`);
       continue;
     }
-    if (!takeCall(agent, env.agentMaxCallsPerHour, nowMs)) {
-      notes.push(`${label(market)}: call budget spent (${env.agentMaxCallsPerHour}/h); holding`);
-      continue;
-    }
     const context = await readAgentContext(market, strategy.envelope.maxStakePerTradeBase, nowMs);
-    if (!isOk(context)) {
-      notes.push(`${label(market)}: ${context.error.technical}`);
+    if (!isOk(context) || context.stale) {
+      notes.push(`${label(market)}: ${isOk(context) ? "stale context; holding" : context.error.technical}`);
       continue;
     }
     const record = await readAgentRecord(strategy.strategyId, nowSec, env.dryRun, settlementOf);
+    const previous = await getStrategyDecision(strategy.strategyId.toString(), market.marketId, env.dryRun);
+    if (previous) {
+      // A held/failed read stays held for its Window. Only unfinished execution of a recorded
+      // trade can resume; each subscriber still needs its own durable attempt reservation.
+      if (previous.gate !== "trade" || !previous.side) {
+        notes.push(`${label(market)}: ${previous.gateReason}`);
+        continue;
+      }
+      // Reuse the recorded trade verdict, but check today's risk and quote before execution.
+      const verdict = previous.verdictSide === "none" || previous.confidence === null ? null : { side: previous.verdictSide, confidence: previous.confidence, why: previous.why };
+      const decision = gateAgentVerdict({ verdict, failure: previous.gateReason, spec, context: context.value, record, envelope: strategy.envelope, nowSec });
+      if (decision.side) candidates.push({ market, decision });
+      else notes.push(`${label(market)}: ${decision.reason}`);
+      continue;
+    }
+    if (agent.callsAtMs.filter((at) => nowMs - at < HOUR_MS).length >= env.agentMaxCallsPerHour) {
+      notes.push(`${label(market)}: call budget spent (${env.agentMaxCallsPerHour}/h); holding`);
+      continue;
+    }
+    const claim = await beginStrategyDecision({ strategyId: strategy.strategyId.toString(), marketId: market.marketId, runner: runner.runnerKey, model: `${brain.providerName}/${brain.modelId}`, promptHash: promptHashOf(agentPrompt(spec, context.value, record)), dryRun: env.dryRun });
+    if (claim !== "acquired") {
+      notes.push(`${label(market)}: read already reserved; holding`);
+      continue;
+    }
+    takeCall(agent, env.agentMaxCallsPerHour, nowMs);
+    log(`#${strategy.strategyId}: reading ${label(market)}`);
+    await runner.onReading?.(`reading ${label(market)}; awaiting the model's verdict`);
     const result = await decideAgentWindow({ spec, context: context.value, record, envelope: strategy.envelope, nowSec, model: brain.model, timeoutMs: env.agentTimeoutMs });
     agent.read.set(key, market.expirySec + FORGET_AFTER_SEC);
     reads += 1;
@@ -128,6 +152,7 @@ export async function scanVenueWithAgent(runner: AgentRunner, strategy: Strategy
       log(`#${strategy.strategyId}: decision not stored: ${error instanceof Error ? error.message : String(error)}`);
       return false;
     });
+    if (!stored) throw new Error("risk memory unavailable: decision could not be stored; holding");
     const said = read.ok ? `read ${read.verdict.side} (${read.verdict.confidence.toFixed(2)}) — "${read.verdict.why}"` : `read failed: ${read.failure} — ${read.detail}`;
     log(`#${strategy.strategyId}: ${label(market)} ${said}; gate: ${decision.side ? `trade ${decision.side}` : "hold"} — ${decision.reason}${stored ? "" : " (not stored)"}`);
     notes.push(`${label(market)} ${decision.side ? `bets ${decision.side}` : "held"}`);

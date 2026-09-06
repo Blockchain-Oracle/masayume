@@ -2,8 +2,25 @@ import { describe, expect, it } from "vitest";
 import sharp from "sharp";
 import type { XReceiptStatus } from "@masayume/core/x";
 import { renderReplyCardPng, renderReplyCardSvg } from "./reply-card";
+import { createReplyPresentation } from "./reply-format";
 
 describe("receipt reply artwork", () => {
+  it("changes the exact image for each persisted sender and transaction, with all facts intact", async () => {
+    const base = { mentionId: "123", authorId: "456", handle: "alice", wallet: null, grantId: null, marketId: null,
+      side: "up" as const, stakeBase: "5000000", bookedCostBase: "4950000", status: "filled" as const,
+      reason: null, instruction: "fixture", atMs: 1, txHash: `0x${"ab".repeat(32)}` };
+    const first = createReplyPresentation(base, 6);
+    const second = createReplyPresentation({ ...base, authorId: "789", handle: "bob", txHash: `0x${"cd".repeat(32)}` }, 6);
+    const svg = renderReplyCardSvg(first);
+    expect(svg).toContain("FOR @alice");
+    expect(svg).toContain(base.txHash);
+    expect(svg).toContain("Spent 4.95 tUSDC.");
+    expect(renderReplyCardSvg(second)).not.toContain(base.txHash);
+    const [a, b, same] = await Promise.all([renderReplyCardPng(first), renderReplyCardPng(second), renderReplyCardPng(first)]);
+    expect(a.equals(b)).toBe(false);
+    expect(a.equals(same)).toBe(true);
+    expect(renderReplyCardSvg({ status: "unknown", sender: "@bad\\nname", txHash: "0xfake" })).not.toMatch(/@bad|0xfake/);
+  });
   it("escapes supplied copy and removes layout/control characters", () => {
     const svg = renderReplyCardSvg({ status: "refused", detail: '<script>alert("x")</script> & <image href="https://bad.test"/>\u0001\u202E', context: 'BTC\nUP & "test"' });
     expect(svg).not.toContain("<script>");

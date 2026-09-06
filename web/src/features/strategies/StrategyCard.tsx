@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { AgentPortrait } from "./AgentPortrait";
 import { STRATEGIES } from "./copy";
 import { money } from "./format";
-import { codenameFromAddress } from "./names";
+import { strategyIdentity } from "./identity";
 import type { StrategyWire } from "./protocol";
 import "./strategies.css";
 
@@ -32,7 +32,7 @@ interface StrategyCardProps {
 
 /** One archive card (reference grid item): who, the one bold move, status, a quiet spec line, a borderless CTA. */
 export function StrategyCard({ card, sub, decimals, symbol, asset, onOpen }: StrategyCardProps) {
-  const name = codenameFromAddress(card.strategyId + card.runner);
+  const { name, seed } = strategyIdentity(card);
   const settled = card.record.settled > 0;
   const net = BigInt(card.record.netBase);
   const points: EquityPoint[] = [{ atMs: null, cumulativeBase: 0n }, ...card.record.curve.map((p) => ({ atMs: p.atSec * 1000, cumulativeBase: BigInt(p.cumBase) }))];
@@ -57,7 +57,7 @@ export function StrategyCard({ card, sub, decimals, symbol, asset, onOpen }: Str
       className="strat-card group flex flex-col"
     >
       <div className="flex items-start gap-3.5">
-        <AgentPortrait seed={card.strategyId + card.runner} name={name} />
+        <AgentPortrait seed={seed} name={name} />
         <div className="min-w-0 flex-1 pt-0.5">
           <h3 className="strat-card-name text-ink">{name}</h3>
           <p className="strat-card-instinct">{instinct}</p>
@@ -92,7 +92,7 @@ export function StrategyCard({ card, sub, decimals, symbol, asset, onOpen }: Str
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <span className="strat-card-tag strat-card-tag--quiet">
-          <span className="strat-card-tag-dot" /> {STRATEGIES.archive.archived}
+          <span className="strat-card-tag-dot" /> {card.active ? "Published" : "Inactive"}
         </span>
         {memory && <span className="strat-card-tag strat-mem">{STRATEGIES.archive.memory}</span>}
         {card.playbook && <span className="strat-card-tag strat-mem">{STRATEGIES.archive.playbook}</span>}
@@ -103,7 +103,7 @@ export function StrategyCard({ card, sub, decimals, symbol, asset, onOpen }: Str
         <span className={cn("strat-mono-11 inline-flex shrink-0 items-center gap-1.5 uppercase tracking-[0.12em] transition-colors", sub ? "text-vermilion" : "text-ink/55 group-hover:text-ink")}>
           {sub ? (
             <>
-              <span className="strat-live-dot" /> {STRATEGIES.archive.yourPosition}
+              {sub.live && <span className="strat-live-dot" />} Manage copy
             </>
           ) : (
             STRATEGIES.archive.copy

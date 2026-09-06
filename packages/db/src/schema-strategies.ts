@@ -77,4 +77,31 @@ CREATE TABLE IF NOT EXISTS strategy_decisions (
 
 CREATE INDEX IF NOT EXISTS strategy_decisions_strategy_idx
   ON strategy_decisions (strategy_id, decided_at DESC);
+
+-- Upgrade existing deployments without discarding their completed decisions.
+ALTER TABLE strategy_decisions DROP CONSTRAINT IF EXISTS strategy_decisions_gate_check;
+ALTER TABLE strategy_decisions ADD CONSTRAINT strategy_decisions_gate_check CHECK (gate IN ('pending', 'trade', 'held', 'failed'));
+ALTER TABLE strategy_decisions DROP CONSTRAINT IF EXISTS strategy_decisions_strategy_id_market_id_key;
+CREATE UNIQUE INDEX IF NOT EXISTS strategy_decisions_once_idx ON strategy_decisions (strategy_id, market_id, dry_run);
+
+-- Reserved before any submission. An interrupted attempt is reconciled, never replayed.
+CREATE TABLE IF NOT EXISTS strategy_attempts (
+  kind TEXT NOT NULL DEFAULT 'order' CHECK (kind IN ('order', 'settle')),
+  strategy_id TEXT NOT NULL,
+  market_id TEXT NOT NULL,
+  owner TEXT NOT NULL,
+  runner TEXT NOT NULL,
+  grant_id TEXT NOT NULL,
+  side TEXT NOT NULL CHECK (side IN ('up', 'down')),
+  stake_base TEXT NOT NULL,
+  from_block TEXT NOT NULL,
+  nonce INTEGER NOT NULL,
+  state TEXT NOT NULL CHECK (state IN ('attempting', 'filled', 'settled', 'nothing-filled', 'refused', 'reverted', 'unknown')),
+  tx_hash TEXT,
+  reason TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (strategy_id, market_id, owner, kind)
+);
+CREATE INDEX IF NOT EXISTS strategy_attempts_runner_idx ON strategy_attempts (runner, state);
 `;

@@ -1,101 +1,18 @@
 "use client";
 
-import { describeSpec, LOOKBACK_MAX, LOOKBACK_MIN, PRESETS, type PresetKey } from "@masayume/core/strategies";
+import { PRESETS } from "@masayume/core/strategies";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { STRATEGIES } from "./copy";
-import { draftSpec, type StudioDraft } from "./studio-draft";
+import type { StudioDraft } from "./studio-draft";
 import { StudioAgentFields } from "./StudioAgentFields";
 import "./strategies.css";
 
 export { draftSpec, type StudioDraft } from "./studio-draft";
-
 const S = STRATEGIES.studio;
 
-function Crosshairs() {
-  return (
-    <>
-      <span className="strat-corner strat-corner--tl" />
-      <span className="strat-corner strat-corner--tr" />
-      <span className="strat-corner strat-corner--bl" />
-      <span className="strat-corner strat-corner--br" />
-    </>
-  );
-}
-
 function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label className="block">
-      <span className="desk-field-label">{label}</span>
-      {children}
-    </label>
-  );
-}
-
-/** One numbered step of the creator studio — editorial index + rule. */
-function StudioStep({ step, children }: { step: readonly [string, string, string?]; children: ReactNode }) {
-  return (
-    <div>
-      <div className="mb-3 flex items-baseline gap-3">
-        <span className="strat-mono-11 tabular-nums text-vermilion">{step[0]}</span>
-        <h3 className="strat-choice-title text-ink">{step[1]}</h3>
-        {step[2] ? <span className="strat-mono-10 hidden text-ink/30 sm:block">· {step[2]}</span> : null}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function HostingOption({ active, onClick, option }: { active: boolean; onClick: () => void; option: readonly [string, string, string] }) {
-  return (
-    <button type="button" onClick={onClick} className={cn("strat-choice group", active && "strat-choice--on")}>
-      <Crosshairs />
-      <div className="mb-1.5 flex items-center justify-between gap-2">
-        <span className="strat-choice-title text-ink">{option[1]}</span>
-        <span className={cn("strat-micro", active ? "text-vermilion" : "text-ink/30")}>{option[0]}</span>
-      </div>
-      <p className="strat-choice-body">{option[2]}</p>
-    </button>
-  );
-}
-
-/** The house model's two knobs (reference step 02). */
-function TuneFields({ form, setForm, asset }: { form: StudioDraft; setForm: StudioFormProps["setForm"]; asset: string }) {
-  return (
-    <>
-      <div className="grid gap-5 sm:grid-cols-2">
-        <div>
-          <div className="mb-2 flex items-baseline justify-between">
-            <span className="desk-field-label mb-0">{S.lookback}</span>
-            <span className="strat-mono-12 tabular-nums text-ink">
-              {form.lookback}
-              <span className="text-ink/40"> {S.rounds}</span>
-            </span>
-          </div>
-          <input type="range" min={LOOKBACK_MIN} max={LOOKBACK_MAX} step={1} value={form.lookback} onChange={(e) => setForm((f) => ({ ...f, lookback: Number(e.target.value) }))} className="w-full accent-vermilion" aria-label={S.lookback} />
-          <div className="strat-mono-10 mt-1 text-ink/30">{S.lookbackHint}</div>
-        </div>
-        <div>
-          <div className="mb-2 flex items-baseline justify-between">
-            <span className="desk-field-label mb-0">{S.threshold}</span>
-            <span className="strat-mono-12 tabular-nums text-ink">{form.thresholdPct || "0"}%</span>
-          </div>
-          <div className="flex gap-1.5">
-            {["0.1", "0.2", "0.5", "1"].map((v) => (
-              <button key={v} type="button" onClick={() => setForm((f) => ({ ...f, thresholdPct: v }))} className={cn("strat-chip", form.thresholdPct === v && "strat-chip--on")}>
-                {v}%
-              </button>
-            ))}
-          </div>
-          <div className="strat-mono-10 mt-1.5 text-ink/30">{S.thresholdHint}</div>
-        </div>
-      </div>
-      <div className="mt-4 rounded-lg border border-hairline bg-ink/[0.02] px-4 py-3">
-        <div className="strat-micro mb-1.5 text-vermilion">{S.plain}</div>
-        <p className="text-sm leading-snug text-ink-secondary">{describeSpec(draftSpec(form), asset)}</p>
-      </div>
-    </>
-  );
+  return <label className="block"><span className="desk-field-label">{label}</span>{children}</label>;
 }
 
 interface StudioFormProps {
@@ -105,78 +22,61 @@ interface StudioFormProps {
   asset: string;
   decimals: number;
   houseRunner: string | null;
+  step: number;
 }
 
-/** The builder: pick a preset, tune it (two knobs, or a brief for an agent), set hard caps, choose who runs it (reference steps 01–04). */
-export function StudioForm({ form, setForm, symbol, asset, decimals, houseRunner }: StudioFormProps) {
-  const isAgent = form.preset === "agent";
-  return (
-    <div className="space-y-8">
-      <StudioStep step={S.steps.strategy}>
-        <div className="grid gap-3 sm:grid-cols-3">
-          {(Object.keys(PRESETS) as PresetKey[]).map((k) => {
-            const p = PRESETS[k];
-            const active = form.preset === k;
-            const comingSoon = k === "reversion";
-            return (
-              <button key={k} type="button" aria-disabled={comingSoon} onClick={() => !comingSoon && setForm((f) => ({ ...f, preset: k }))} className={cn("strat-choice group", comingSoon ? "strat-choice--off" : active && "strat-choice--on")}>
-                <Crosshairs />
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="strat-choice-title text-ink">{p.name}</span>
-                  <span className={cn("strat-micro", active ? "text-vermilion" : "text-ink/30")}>{active ? S.selected : p.tagline}</span>
-                </div>
-                <p className="strat-choice-body">{p.how}</p>
-                {comingSoon && <div className="strat-micro mt-2 text-ink/30">{S.soonMomentum}</div>}
-              </button>
-            );
-          })}
-        </div>
-      </StudioStep>
-
-      {isAgent ? (
-        <StudioStep step={S.agent.step}>
-          <StudioAgentFields form={form} setForm={setForm} asset={asset} decimals={decimals} />
-        </StudioStep>
-      ) : (
-        <StudioStep step={S.steps.tune}>
-          <TuneFields form={form} setForm={setForm} asset={asset} />
-        </StudioStep>
-      )}
-
-      <StudioStep step={S.steps.caps}>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <Field label={`${S.perTrade} (${symbol})`}>
-            <input inputMode="decimal" value={form.maxPerTrade} onChange={(e) => setForm((f) => ({ ...f, maxPerTrade: e.target.value }))} className="strat-input text-ink" />
-          </Field>
-          <Field label={`${S.daily} (${symbol})`}>
-            <input inputMode="decimal" value={form.maxDaily} onChange={(e) => setForm((f) => ({ ...f, maxDaily: e.target.value }))} className="strat-input text-ink" />
-          </Field>
-          <Field label={`${S.feeLabel} (${symbol})`}>
-            <input inputMode="decimal" value={form.subFee} onChange={(e) => setForm((f) => ({ ...f, subFee: e.target.value }))} className="strat-input text-ink" />
-          </Field>
-        </div>
-      </StudioStep>
-
-      <StudioStep step={S.steps.who}>
+/** Three editable panels; the independent Test read panel is owned by CreatorStudio. */
+export function StudioForm({ form, setForm, symbol, asset, decimals, houseRunner, step }: StudioFormProps) {
+  if (step === 1) return (
+    <div className="space-y-6">
+      <Field label="Agent name"><input value={form.name} maxLength={64} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Give your agent a name" className="strat-input text-ink" /></Field>
+      <div>
+        <div className="desk-field-label">Trading approach</div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <HostingOption active={form.hosting === "house"} onClick={() => setForm((f) => ({ ...f, hosting: "house" }))} option={S.hosting.house} />
-          <HostingOption active={form.hosting === "self"} onClick={() => setForm((f) => ({ ...f, hosting: "self" }))} option={S.hosting.self} />
+          {(["agent", "momentum"] as const).map((preset) => (
+            <button key={preset} type="button" aria-pressed={form.preset === preset} onClick={() => setForm((f) => ({ ...f, preset }))} className={cn("strat-choice group", form.preset === preset && "strat-choice--on")}>
+              <span className="strat-choice-title text-ink">{PRESETS[preset].name}</span>
+              <p className="strat-choice-body">{preset === "agent" ? "An AI reads the opening price, recent move and order books, then explains its call. Hard limits still decide what it may trade." : "A fixed rule follows the current EMA price away from each Window’s opening print. No AI model is used."}</p>
+            </button>
+          ))}
         </div>
-        {form.hosting === "house" && !houseRunner && <p className="strat-mono-10 mt-2 text-ink/40">{S.houseRunnerMissing}</p>}
-        {form.hosting === "self" && (
-          <div className="mt-3 max-w-sm">
-            <Field label={S.agentWallet}>
-              <input value={form.agent} onChange={(e) => setForm((f) => ({ ...f, agent: e.target.value }))} placeholder={S.agentPlaceholder} className="strat-input text-ink" />
-            </Field>
-            {isAgent && <p className="strat-mono-10 mt-2 leading-relaxed text-ink/40">{S.hostingSelfAgent}</p>}
-          </div>
-        )}
-        <div className="mt-4 max-w-xl">
-          <Field label={`${S.playbook} · ${S.playbookHint}`}>
-            <textarea value={form.playbook} onChange={(e) => setForm((f) => ({ ...f, playbook: e.target.value }))} className="strat-input strat-textarea text-ink" maxLength={4000} />
-          </Field>
+      </div>
+      <p className="strat-choice-body">Market scope: all live assets in this deployment’s venue. The runner chooses eligible Windows; this form does not restrict it to one coin.</p>
+      <button type="button" className="strat-sensei" onClick={() => setForm((f) => ({ ...f, portraitSeed: crypto.randomUUID() }))}>Choose another portrait</button>
+    </div>
+  );
+  if (step === 2) return (
+    <div className="space-y-6">
+      {form.preset === "agent" ? <StudioAgentFields form={form} setForm={setForm} asset={asset} decimals={decimals} /> : (
+        <div>
+          <div className="desk-field-label">Minimum move from the opening price</div>
+          <div className="flex flex-wrap gap-2">{["0.1", "0.2", "0.5", "1"].map((value) => <button type="button" key={value} aria-pressed={form.thresholdPct === value} onClick={() => setForm((f) => ({ ...f, thresholdPct: value }))} className={cn("strat-chip", form.thresholdPct === value && "strat-chip--on")}>{value}%</button>)}</div>
+          <p className="strat-choice-body mt-3">A move above this threshold may produce an UP call; a move below its negative may produce DOWN. The strategy waits when the move is smaller. Each Window is considered once.</p>
         </div>
-      </StudioStep>
+      )}
+      <div className="border-t border-hairline pt-5">
+        <h3 className="strat-choice-title mb-4 text-ink">Hard spending limits</h3>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label={`${S.perTrade} (${symbol})`}><input inputMode="decimal" value={form.maxPerTrade} onChange={(e) => setForm((f) => ({ ...f, maxPerTrade: e.target.value }))} className="strat-input text-ink" /></Field>
+          <Field label={`${S.daily} (${symbol})`}><input inputMode="decimal" value={form.maxDaily} onChange={(e) => setForm((f) => ({ ...f, maxDaily: e.target.value }))} className="strat-input text-ink" /></Field>
+        </div>
+        <p className="strat-choice-body mt-3">At most two open positions per follower. Followers can set tighter limits and revoke permission. Creating an agent does not fund it.</p>
+      </div>
+    </div>
+  );
+  return (
+    <div className="space-y-6">
+      <div>
+        <div className="desk-field-label">Who runs it</div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {(["house", "self"] as const).map((hosting) => <button key={hosting} type="button" disabled={hosting === "house" && !houseRunner} aria-pressed={form.hosting === hosting} onClick={() => setForm((f) => ({ ...f, hosting }))} className={cn("strat-choice group", form.hosting === hosting && "strat-choice--on")}><span className="strat-choice-title text-ink">{hosting === "house" ? "Let Masayume run it" : "Run your own bot"}</span><p className="strat-choice-body">{hosting === "house" ? houseRunner ? "The hosted runner discovers your published strategy. A follower’s funded permission enables trading." : "A house runner is not configured on this deployment." : "Publish with the address of your own running bot. You operate its process and model credentials."}</p></button>)}
+        </div>
+        {form.hosting === "self" && <div className="mt-4"><Field label="Runner wallet"><input value={form.agent} onChange={(e) => setForm((f) => ({ ...f, agent: e.target.value }))} placeholder="0x…" className="strat-input text-ink" /></Field></div>}
+      </div>
+      <Field label={`Subscription fee (${symbol})`}><input inputMode="decimal" value={form.subFee} onChange={(e) => setForm((f) => ({ ...f, subFee: e.target.value }))} className="strat-input text-ink" /></Field>
+      <p className="strat-choice-body">The registry charges this fee to a follower on every subscription, including a resume or a limits change. Set 0 for free subscriptions.</p>
+      <Field label="Public playbook · optional"><textarea value={form.playbook} onChange={(e) => setForm((f) => ({ ...f, playbook: e.target.value }))} className="strat-input strat-textarea text-ink" maxLength={4000} /></Field>
+      <p className="strat-choice-body">Your name, brief, playbook and runner address are public. Keep secrets and private instructions out of them.</p>
     </div>
   );
 }

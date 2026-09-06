@@ -38,7 +38,7 @@ function bannerOf(post: PostState): { banner: string; best: boolean; sub: string
     case "checking":
       return { banner: ARCADE.over.over, best: false, sub: ARCADE.over.checking, tone: null };
     case "posted":
-      if (post.isBest) return { banner: ARCADE.over.newBest, best: true, sub: ARCADE.over.topOfBoard, tone: null };
+      if (post.isBest) return { banner: ARCADE.over.newBest, best: true, sub: post.rank === 1 ? ARCADE.over.topOfBoard : ARCADE.over.ranked(post.rank), tone: null };
       return { banner: ARCADE.over.ranked(post.rank), best: false, sub: post.rank <= 10 ? ARCADE.over.onBoard : ARCADE.over.keepClimbing, tone: null };
     case "refused":
       return { banner: ARCADE.over.over, best: false, sub: ARCADE.over.refused(post.why), tone: "refused" };

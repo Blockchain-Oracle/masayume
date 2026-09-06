@@ -10,6 +10,8 @@ export interface ExecutorContext {
   session: SubmitterSession;
   venueId: Bytes32;
   log: (why: string) => void;
+  /** Required in production: preserve wallet/target before entering the signing lane. */
+  checkpoint?: (receipt: XReceiptRecord) => Promise<void>;
 }
 
 /** Every mention ends as one row: the instruction, what it resolved to, and what became of it. */
@@ -35,7 +37,7 @@ function receiptFor(mention: Mention, over: Partial<XReceiptRecord>): XReceiptRe
 /** The soonest Window still enterable for the asset and cadence a mention named. */
 async function liveWindow(venueId: Bytes32, instruction: XInstruction): Promise<EventMarket | null> {
   const lanes = await marketsProvider.listLiveLanes(venueId);
-  if (!lanes.ok) return null;
+  if (!lanes.ok || lanes.stale) return null;
   const nowMs = marketsProvider.nowMs();
   return (
     lanes.value.lanes
@@ -55,6 +57,7 @@ export async function executeMention(ctx: ExecutorContext, mention: Mention): Pr
   const { decimals } = getCollateral();
   const link = await xLinkByAuthor(mention.authorId);
   if (!link) return receiptFor(mention, { refusalCode: "account-not-linked", reason: "Link this X account to a wallet in the app." });
+  await ctx.checkpoint?.(receiptFor(mention, { wallet: link.wallet, status: "submitted" }));
 
   const parsed = parseInstruction(mention.text, { decimals });
   if (!parsed.ok) return receiptFor(mention, { wallet: link.wallet, refusalCode: "instruction-invalid", reason: describeRefusal(parsed.reason) });
@@ -62,7 +65,7 @@ export async function executeMention(ctx: ExecutorContext, mention: Mention): Pr
   const base = { wallet: link.wallet, side: instruction.side, stakeBase: instruction.stakeBase.toString() };
 
   const snapshot = await getVaultSnapshot(link.wallet as `0x${string}`);
-  if (!snapshot.ok) return receiptFor(mention, { ...base, refusalCode: "balance-unavailable", reason: "could not read the Trading Balance right now" });
+  if (!snapshot.ok || snapshot.stale) return receiptFor(mention, { ...base, refusalCode: "balance-unavailable", reason: "could not read the Trading Balance right now" });
   if (!snapshot.value) return receiptFor(mention, { ...base, refusalCode: "not-deployed", reason: "the Trading Balance contract is not deployed on this network" });
   const grant = snapshot.value.grants.executor;
   if (!grant) return receiptFor(mention, { ...base, refusalCode: "grant-missing", reason: "no live X grant for this wallet — fund and authorize on /trade-from-x" });
@@ -75,8 +78,17 @@ export async function executeMention(ctx: ExecutorContext, mention: Mention): Pr
   const target = { marketId: market.marketId, poolAddress: market.poolAddress, decimals: market.decimals, intervalSec: market.intervalSec };
   const quote = await marketsProvider.freshQuoteStake(target, instruction.side, instruction.stakeBase);
   const withMarket = { ...base, grantId: grant.grantId.toString(), marketId: market.marketId, asset: market.asset, intervalSec: market.intervalSec, expirySec: market.expirySec };
-  if (!quote.ok) return receiptFor(mention, { ...withMarket, refusalCode: "quote-unavailable", reason: "A current quote could not be confirmed." });
+  if (!quote.ok || quote.stale) return receiptFor(mention, { ...withMarket, refusalCode: "quote-unavailable", reason: "A current quote could not be confirmed." });
   if (!quote.value) return receiptFor(mention, { ...withMarket, refusalCode: "no-liquidity", reason: "No fillable quote was available for this instruction." });
+
+  if (ctx.checkpoint) {
+    const [block, expectedNonce] = await Promise.all([
+      ctx.session.contracts.publicClient.getBlockNumber(),
+      ctx.session.contracts.publicClient.getTransactionCount({ address: ctx.session.address, blockTag: "pending" }),
+    ]);
+    await ctx.checkpoint(receiptFor(mention, { ...withMarket, status: "submitted", executionActor: ctx.session.address,
+      poolAddress: market.poolAddress, collateralDecimals: market.decimals, recoveryFromBlock: block.toString(), expectedNonce }));
+  }
 
   const outcome = await ctx.session.submitter.submitOrder({
     market,

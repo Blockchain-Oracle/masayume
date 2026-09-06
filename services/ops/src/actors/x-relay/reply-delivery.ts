@@ -35,16 +35,17 @@ export interface ReplyDeliveryContext {
   imagesEnabled: boolean;
   render: (presentation: ReplyPresentation) => Promise<Uint8Array>;
   log: (message: string) => void;
+  health?: (state: "ok" | "idle" | "error" | "disabled") => Promise<void>;
 }
 
 /** Drain only completed receipts. There is deliberately no submitter or signer in this module. */
 export async function deliverReplies(ctx: ReplyDeliveryContext, limit = 5): Promise<void> {
-  if (!ctx.transport.reply) return;
+  if (!ctx.transport.reply) { await ctx.health?.("disabled"); return; }
   const interrupted = await ctx.store.markInterrupted();
   if (interrupted) ctx.log(`${interrupted} interrupted reply(s) need inspection; no automatic repost`);
   for (let i = 0; i < limit; i++) {
     const job = await ctx.store.acquire();
-    if (!job) return;
+    if (!job) { await ctx.health?.("idle"); return; }
     let startedPost = false;
     try {
       const receipt = await ctx.store.receipt(job.mentionId);
@@ -71,10 +72,12 @@ export async function deliverReplies(ctx: ReplyDeliveryContext, limit = 5): Prom
       const replyId = await withDeadline(ctx.transport.reply(job.mentionId, text, mediaId ?? undefined));
       if (!replyId || !/^\d+$/.test(replyId)) throw new Error("X did not acknowledge the reply id");
       await ctx.store.sent(job, replyId);
+      await ctx.health?.("ok");
       ctx.log(`reply ${job.mentionId}: published ${replyId}${mediaId ? " with image" : " as text"}`);
     } catch {
       // Even an acknowledgement-storage error is ambiguous: the public reply may already exist.
       await ctx.store.stop(job, startedPost ? "unknown" : "failed", startedPost ? "post-not-acknowledged" : "preparation-failed");
+      await ctx.health?.("error");
       ctx.log(`reply ${job.mentionId}: ${startedPost ? "delivery needs inspection; no automatic repost" : "preparation failed"}`);
     }
   }
@@ -90,6 +93,7 @@ export function startReplyDelivery(ctx: ReplyDeliveryContext, intervalMs = 15_00
       await deliverReplies(ctx);
     } catch {
       ctx.log("reply delivery unavailable; the next delivery cycle will inspect persisted state");
+      await ctx.health?.("error").catch(() => undefined);
     } finally {
       busy = false;
     }

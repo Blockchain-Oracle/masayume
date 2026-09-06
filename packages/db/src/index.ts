@@ -19,5 +19,7 @@ export * from "./schema";
 export * from "./takes";
 export * from "./x";
 export * from "./x-reply-delivery";
+export * from "./x-health";
 export * from "./strategies";
 export * from "./strategy-decisions";
+export * from "./strategy-attempts";

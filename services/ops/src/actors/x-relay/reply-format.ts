@@ -30,6 +30,8 @@ export interface ReplyPresentation {
   context?: string;
   footer?: string;
   url: string;
+  sender: string | null;
+  txHash: string | null;
 }
 
 const BASE_UNITS = /^(0|[1-9]\d{0,77})$/;
@@ -61,7 +63,10 @@ export function createReplyPresentation(receipt: XReceipt, decimals: number, sym
   if (!hash && (status === "filled" || status === "nothing-filled" || status === "reverted")) status = "unknown";
   const context = marketContext(receipt);
   const url = hash ? `${SHANNON_EXPLORER_URL}/tx/${hash}` : TRADE_FROM_X_URL;
-  const base = { status, context, url };
+  // The receipt's original author snapshot is immutable; never resolve a current profile here.
+  const sender = typeof receipt.handle === "string" && /^[A-Za-z0-9_]{1,15}$/.test(receipt.handle)
+    ? `@${receipt.handle}` : /^\d{1,30}$/.test(receipt.authorId) ? `X user ${receipt.authorId}` : null;
+  const base = { status, context, url, sender, txHash: hash };
   switch (status) {
     case "filled": {
       const spent = amount(receipt.bookedCostBase, decimals);
@@ -89,14 +94,15 @@ export function createReplyPresentation(receipt: XReceipt, decimals: number, sym
 /** Public replies are ASCII. With these URLs, the raw length also bounds X's weighted length. */
 export function replyText(receipt: XReceipt, decimals: number, symbol = "tUSDC"): string {
   const presentation = createReplyPresentation(receipt, decimals, symbol);
-  const lines = [presentation.title, presentation.context, presentation.detail, presentation.footer, presentation.url];
+  const sender = presentation.sender ? `For ${presentation.sender}` : null;
+  const lines = [presentation.title, presentation.context, sender, presentation.detail, presentation.footer, presentation.url];
   let text = lines.filter(Boolean).join("\n");
   if (text.length > REPLY_LIMIT) {
     lines[1] = "Somnia testnet";
     text = lines.filter(Boolean).join("\n");
   }
   // Keep the exact amount and complete URL. Optional context is the first thing removed.
-  if (text.length > REPLY_LIMIT) text = [presentation.title, presentation.detail, presentation.footer, presentation.url].filter(Boolean).join("\n");
-  if (text.length > REPLY_LIMIT) text = [presentation.title, "Check the linked receipt for details.", presentation.footer, presentation.url].filter(Boolean).join("\n");
+  if (text.length > REPLY_LIMIT) text = [presentation.title, sender, presentation.detail, presentation.footer, presentation.url].filter(Boolean).join("\n");
+  if (text.length > REPLY_LIMIT) text = [presentation.title, sender, "Check the linked receipt for details.", presentation.footer, presentation.url].filter(Boolean).join("\n");
   return text;
 }
