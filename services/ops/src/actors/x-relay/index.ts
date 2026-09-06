@@ -1,5 +1,5 @@
 import { createSubmitterSession, ensureMarkets, getCollateral, loadCollateral, parseMarketsEnv, syncClock } from "@masayume/markets";
-import { xAcquireReplyDelivery, xBeginReplyPost, xClaimMention, xFinishReplyPost, xMarkInterruptedReplyPosts, xReceiptByMention, xRelayStateGet, xRelayStateSet, xStopReplyDelivery, xRecoveryCandidates, xStoreRecoveredReceipt, xSetStageHealth, xHasUnresolvedBroadcast } from "@masayume/db";
+import { xAcquireReplyDelivery, xBeginReplyPost, xClaimMention, xFinishReplyPost, xMarkInterruptedReplyPosts, xReceiptByMention, xRelayStateGet, xRelayStateSet, xStopReplyDelivery, xRecoveryCandidates, xStoreRecoveredReceipt, xSetStageHealth, xHasUnresolvedBroadcast, xIsRelayReply, xSuppressRelayReplyDeliveries } from "@masayume/db";
 import type { Bytes32 } from "@masayume/core/types";
 import { readRelayEnv, RELAY_ENV } from "./env";
 import { executeMention, resolveVenue, xReceiptUpsert } from "./execute";
@@ -43,6 +43,20 @@ export async function startXRelay(log: (why: string) => void): Promise<void> {
   const session = await createSubmitterSession({ env: marketsEnv, authority: "x-executor", signer: { privateKey: relay.executorPrivateKey }, journal: execution.journal });
   // The way to X: the account's own session. Replies go out as the account only when asked for.
   const transport = rettiwtTransport(relay.rettiwtApiKey, relay.handle);
+  let botAuthorId: string;
+  for (;;) {
+    try {
+      botAuthorId = await transport.authenticatedAuthorId();
+      const suppressed = await xSuppressRelayReplyDeliveries();
+      if (suppressed) log(`${suppressed} recursive reply delivery(s) suppressed; original acknowledgements retained`);
+      break;
+    } catch {
+      // A provider/DB outage must hold this relay without rejecting main's detached actor startup.
+      log("relay startup paused: account identity or reply suppression could not be verified; retrying in one minute");
+      await xSetStageHealth("polling", "error").catch(() => {});
+      await new Promise(resolve => setTimeout(resolve, HEARTBEAT_MS));
+    }
+  }
   if (!relay.postingEnabled) transport.reply = null;
   const delivery = {
     store: { acquire: xAcquireReplyDelivery, receipt: xReceiptByMention, beginPost: xBeginReplyPost, sent: xFinishReplyPost, stop: xStopReplyDelivery, markInterrupted: xMarkInterruptedReplyPosts },
@@ -77,6 +91,11 @@ export async function startXRelay(log: (why: string) => void): Promise<void> {
           }
         },
         claim: receipt => xClaimMention(receipt, Boolean(transport.reply)), receipt: xReceiptByMention,
+        isRelayReply: async mention => {
+          if (!await xIsRelayReply(mention, botAuthorId)) return false;
+          await xSuppressRelayReplyDeliveries(mention.id);
+          return true;
+        },
         canExecute: async () => {
           if (!await xHasUnresolvedBroadcast(session.address)) return true;
           await xSetStageHealth("execution", "error");

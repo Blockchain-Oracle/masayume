@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ configs: [] as { maxRetries: number }[], post: vi.fn(), upload: vi.fn(), search: vi.fn() }));
+const mocks = vi.hoisted(() => ({ configs: [] as { maxRetries: number }[], post: vi.fn(), upload: vi.fn(), search: vi.fn(), details: vi.fn() }));
 vi.mock("rettiwt-api", () => ({
   Rettiwt: class {
     tweet = { post: mocks.post, upload: mocks.upload, search: mocks.search };
+    user = { details: mocks.details };
     constructor(options: { maxRetries: number }) { mocks.configs.push(options); }
   },
 }));
@@ -13,6 +14,19 @@ describe("X media transport", () => {
   beforeEach(() => { mocks.configs.length = 0; vi.clearAllMocks(); });
 
   const tweet = (id: string) => ({ id, tweetBy: { id: "55", userName: "caller" }, fullText: "BTC UP 5 5m" });
+  it("verifies the session's stable identity and retains reply-parent metadata", async () => {
+    mocks.details.mockResolvedValue({ id: "99", userName: "BOT" });
+    const transport = rettiwtTransport("fixture", "@bot");
+    expect(await transport.authenticatedAuthorId()).toBe("99");
+    expect(mocks.details).toHaveBeenCalledWith();
+    mocks.search.mockResolvedValue({ list: [{ ...tweet("30"), replyTo: "20" }, tweet("31")] });
+    expect(await transport.fetchMentions("0")).toMatchObject([{ id: "30", replyTo: "20" }, { id: "31", replyTo: null }]);
+  });
+  it.each([undefined, { id: "99", userName: "wrong" }, { id: "invalid", userName: "bot" }])("fails closed for an unverified account identity", async profile => {
+    mocks.details.mockResolvedValue(profile);
+    await expect(rettiwtTransport("fixture", "bot").authenticatedAuthorId()).rejects.toThrow("identity");
+    expect(mocks.post).not.toHaveBeenCalled();
+  });
   it("drains multiple pages beyond twenty, deduplicates, and processes oldest first", async () => {
     mocks.search.mockResolvedValueOnce({ list: Array.from({ length: 20 }, (_, i) => tweet(String(40 - i))), next: "page2" })
       .mockResolvedValueOnce({ list: [tweet("21"), ...Array.from({ length: 20 }, (_, i) => tweet(String(20 - i)))], next: "page3" })

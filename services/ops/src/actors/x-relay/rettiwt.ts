@@ -16,6 +16,13 @@ export function rettiwtTransport(apiKey: string, handle: string): XTransport {
   const writer = new Rettiwt({ apiKey, timeout: 30_000, maxRetries: 0 });
   return {
     describe: () => `rettiwt (the account's session) · mentions of @${user}`,
+    async authenticatedAuthorId() {
+      const profile = await client.user.details();
+      if (!profile || !/^\d+$/.test(profile.id) || profile.userName?.toLowerCase() !== user.toLowerCase()) {
+        throw new Error("X session identity does not match the configured relay account");
+      }
+      return profile.id;
+    },
     async fetchMentions(sinceId) {
       const mentions = new Map<string, Mention>();
       const cursors = new Set<string>();
@@ -31,6 +38,7 @@ export function rettiwtTransport(apiKey: string, handle: string): XTransport {
           handle: t.tweetBy?.userName ?? null,
           text: t.fullText,
           createdAtMs: t.createdAt ? Date.parse(t.createdAt) || Date.now() : Date.now(),
+          replyTo: t.replyTo ?? null,
           });
         }
         // First startup only establishes the newest cursor; never walk historical instructions.

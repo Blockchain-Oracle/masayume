@@ -14,7 +14,7 @@ import { xReceiptByMention, xReceiptUpsert, xRecordExecutionJournal, xRecoveryCa
 import { xGetRelayHealth, xSetStageHealth } from "../src/x-health";
 import {
   xAcquireReplyDelivery, xBeginReplyPost, xClaimMention, xFinishReplyPost,
-  xMarkInterruptedReplyPosts, xStopReplyDelivery,
+  xMarkInterruptedReplyPosts, xStopReplyDelivery, xIsRelayReply, xSuppressRelayReplyDeliveries,
 } from "../src/x-reply-delivery";
 
 const containerName = `masayume-x-delivery-test-${randomUUID().slice(0, 12)}`;
@@ -275,6 +275,60 @@ async function main() {
     await xFinishReplyPost(job, "888");
     health = await xGetRelayHealth();
     assert.ok(health?.lastImageReplyAtMs);
+  });
+
+  await check("stable bot identity suppresses own replies even when their POST acknowledgement was lost", async () => {
+    const bot = "9000";
+    await assert.rejects(xIsRelayReply({ id: "1", authorId: bot }, ""), /identity/);
+    assert.equal(await xIsRelayReply({ id: "1", authorId: bot, replyTo: "500" }, bot), true);
+    assert.equal(await xIsRelayReply({ id: "1", authorId: bot }, bot), false, "own top-level commands remain available");
+    assert.equal(await xIsRelayReply({ id: "1", authorId: "2001", replyTo: "500" }, bot), false, "other users may reply with commands");
+    const original = await jobFor("1070");
+    assert.equal(await xBeginReplyPost(original, "ORIGINAL RECEIPT", "990"), true);
+    await xFinishReplyPost(original, "8070");
+    assert.equal(await xIsRelayReply({ id: "8070", authorId: bot }, bot), true, "persisted IDs work without reply-parent metadata");
+    assert.equal((await sql`SELECT mention_id FROM x_receipts`).length, 1, "reply classification creates no receipt or outbox");
+  });
+
+  await check("known relay receipts cannot acquire or cross the POST gate, and old recursive jobs are permanently fenced", async () => {
+    const original = await jobFor("1080");
+    await xBeginReplyPost(original, "VALID RECEIPT", "991");
+    // Reproduce the old poller racing acknowledgement storage: it already claimed this bot reply.
+    const recursive = await jobFor("8080");
+    await xFinishReplyPost(original, "8080");
+    assert.equal(await xBeginReplyPost(recursive, "MUST NOT POST", null), false);
+    await sql`UPDATE x_reply_delivery SET updated_at = now() - interval '6 minutes' WHERE mention_id = '8080'`;
+    assert.equal(await xAcquireReplyDelivery(), null);
+    assert.equal(await xSuppressRelayReplyDeliveries(), 1);
+    assert.equal(await xSuppressRelayReplyDeliveries(), 0);
+    const [held] = await sql`SELECT state, lease, error_code FROM x_reply_delivery WHERE mention_id = '8080'`;
+    assert.deepEqual(held, { state: "failed", lease: null, error_code: "relay-reply-suppressed" });
+    const [sent] = await sql`SELECT state, reply_id, media_id, reply_text FROM x_reply_delivery WHERE mention_id = '1080'`;
+    assert.deepEqual(sent, { state: "sent", reply_id: "8080", media_id: "991", reply_text: "VALID RECEIPT" });
+    assert.equal(await xBeginReplyPost(recursive, "STALE WORKER", null), false);
+    assert.equal(await xAcquireReplyDelivery(), null);
+  });
+
+  await check("pending and ambiguous recursive jobs are held without erasing sent clutter or the valid original receipt", async () => {
+    const original = await jobFor("1090");
+    await xBeginReplyPost(original, "VALID ORIGINAL", "992");
+    const firstClutter = await jobFor("8090");
+    await xBeginReplyPost(firstClutter, "SPURIOUS REFUSAL", "993");
+    await xFinishReplyPost(original, "8090");
+    const uncertainClutter = await jobFor("8091");
+    await xBeginReplyPost(uncertainClutter, "UNKNOWN PUBLIC RESULT", "994");
+    await xStopReplyDelivery(uncertainClutter, "unknown", "post-not-acknowledged");
+    await xFinishReplyPost(firstClutter, "8091");
+    // Another historical job can be identified directly from authenticated author + reply parent.
+    await xClaimMention(receipt("8092"), true);
+    assert.equal(await xSuppressRelayReplyDeliveries(), 1);
+    assert.equal(await xSuppressRelayReplyDeliveries("8092"), 1);
+    const rows = await sql`SELECT mention_id, state, reply_id, media_id, reply_text FROM x_reply_delivery ORDER BY mention_id`;
+    assert.equal(rows[0]?.state, "sent");
+    assert.equal(rows[1]?.state, "sent");
+    assert.deepEqual(rows[2], { mention_id: "8091", state: "failed", reply_id: null, media_id: "994", reply_text: "UNKNOWN PUBLIC RESULT" });
+    assert.equal(rows[3]?.state, "failed");
+    assert.equal(await xAcquireReplyDelivery(), null);
   });
 
   console.log(`All ${passed} X delivery SQL integration checks passed on disposable Postgres 17.`);

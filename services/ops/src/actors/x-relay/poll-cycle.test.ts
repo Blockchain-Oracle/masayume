@@ -8,6 +8,7 @@ function fixture() {
   const ctx: MentionCycleContext = {
     getCursor: vi.fn(async () => "0"), setCursor: vi.fn(async id => { order.push(`cursor:${id}`); }),
     fetch: vi.fn(async () => [{ id: "1", authorId: "2", handle: "caller", text: "BTC UP 5 5m", createdAtMs: 1 }]),
+    isRelayReply: vi.fn(async () => false),
     claim: vi.fn(async r => { if (receipts.has(r.mentionId)) return false; receipts.set(r.mentionId, r); return true; }),
     execute: vi.fn(async m => ({ ...receipts.get(m.id)!, status: "refused" as const })),
     receipt: vi.fn(async id => receipts.get(id) ?? null),
@@ -17,6 +18,35 @@ function fixture() {
 }
 
 describe("mention execution ownership and cursor", () => {
+  it("skips relay receipts before claim and nonce checks, advancing only the cursor", async () => {
+    const { ctx, receipts } = fixture();
+    ctx.isRelayReply = vi.fn(async () => true);
+    ctx.canExecute = vi.fn(async () => false);
+    expect(await pollMentionCycle(ctx)).toBe(0);
+    expect(ctx.setCursor).toHaveBeenCalledWith("1");
+    expect(ctx.claim).not.toHaveBeenCalled(); expect(ctx.execute).not.toHaveBeenCalled();
+    expect(ctx.canExecute).not.toHaveBeenCalled(); expect(ctx.save).not.toHaveBeenCalled();
+    expect(receipts.size).toBe(0);
+  });
+  it("retains cursor and does not claim when the durable reply lookup fails", async () => {
+    const { ctx } = fixture();
+    ctx.isRelayReply = async () => { throw new Error("DB offline"); };
+    await expect(pollMentionCycle(ctx)).rejects.toThrow("DB offline");
+    expect(ctx.setCursor).not.toHaveBeenCalled(); expect(ctx.claim).not.toHaveBeenCalled();
+  });
+  it("continues past bot replies to own top-level commands and other users' reply commands", async () => {
+    const { ctx } = fixture();
+    const base = (await ctx.fetch("0"))[0]!;
+    ctx.fetch = async () => [
+      { ...base, id: "1", authorId: "99", replyTo: "10" },
+      { ...base, id: "2", authorId: "99" },
+      { ...base, id: "3", authorId: "55", replyTo: "10" },
+    ];
+    ctx.isRelayReply = async m => m.authorId === "99" && Boolean(m.replyTo);
+    expect(await pollMentionCycle(ctx)).toBe(2);
+    expect(vi.mocked(ctx.claim).mock.calls.map(([r]) => r.mentionId)).toEqual(["2", "3"]);
+    expect(vi.mocked(ctx.setCursor).mock.calls).toEqual([["1"], ["2"], ["3"]]);
+  });
   it("baselines first startup without claiming or executing historical mentions", async () => {
     const { ctx } = fixture(); ctx.getCursor = async () => null;
     await pollMentionCycle(ctx);

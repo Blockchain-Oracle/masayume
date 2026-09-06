@@ -5,6 +5,7 @@ export interface Mention {
   handle: string | null;
   text: string;
   createdAtMs: number;
+  replyTo?: string | null;
 }
 
 /**
@@ -15,6 +16,8 @@ export interface Mention {
 export interface XTransport {
   /** One line for the boot log: which way, and as whom. */
   describe(): string;
+  /** Resolve the session's stable account id and verify the configured handle before polling. */
+  authenticatedAuthorId(): Promise<string>;
   /** Mentions newer than `sinceId`, oldest first. */
   fetchMentions(sinceId: string | null): Promise<Mention[]>;
   /** Upload only; this must never post or execute an instruction. */

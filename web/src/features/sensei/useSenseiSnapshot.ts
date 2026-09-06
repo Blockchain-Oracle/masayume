@@ -2,11 +2,11 @@
 
 import { computeDrift, formatCadence, type Drift } from "@masayume/core/market";
 import type { EventMarket, LaneSet } from "@masayume/core/types";
-import { ORACLE_PRICE_SCALE } from "@masayume/markets/identity";
 import { useMemo } from "react";
 import { type ChartPoint, useChartSeries } from "../markets/hero/useChartSeries";
 import { useTopOfBook } from "../markets/hero/useTopOfBook";
 import type { SenseiSnapshot } from "./protocol";
+import { oracleToWholeUsd } from "./units";
 
 /** The reference reads the four nearest markets (`SenseiDock.tsx` L138). */
 const NEAREST = 4;
@@ -16,8 +16,6 @@ const DRIFT_WINDOW_MIN = 15;
 /** Sensei is told the market set twice a minute and the figures once — not 60 times. */
 const MEMBERSHIP_TICK_MS = 30_000;
 const SNAPSHOT_TICK_MS = 60_000;
-
-const toUsd = (raw: bigint | null): number | null => (raw === null ? null : Math.round(Number(raw) / ORACLE_PRICE_SCALE));
 
 export interface SenseiReading {
   snapshot: SenseiSnapshot | null;
@@ -80,7 +78,7 @@ export function useSenseiSnapshot(laneSet: LaneSet | null, nowMs: number): Sense
   const snapshot = useMemo<SenseiSnapshot | null>(() => {
     if (nearestMarkets.length === 0 || nowMs === 0) return null;
     const priceUsd: Record<string, number> = {};
-    const latest = toUsd(latestRaw);
+    const latest = oracleToWholeUsd(latestRaw);
     if (nearest !== null && latest !== null) priceUsd[nearest.asset] = latest;
 
     return {
@@ -89,7 +87,7 @@ export function useSenseiSnapshot(laneSet: LaneSet | null, nowMs: number): Sense
         asset: market.asset,
         cadence: formatCadence(market.intervalSec),
         minsToClose: Math.max(0, Math.round((market.expirySec * 1000 - nowMs) / 60_000)),
-        lineUsd: toUsd(market.openingPriceRaw),
+        lineUsd: oracleToWholeUsd(market.openingPriceRaw),
         upCents: books[index]?.upCents ?? null,
         downCents: books[index]?.downCents ?? null,
       })),

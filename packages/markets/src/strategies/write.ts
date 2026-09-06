@@ -2,7 +2,7 @@ import type { IntentJournal, PhaseListener, TxOutcome } from "@masayume/core/por
 import { GAS_SAFETY_BPS } from "@masayume/core/constants";
 import { encodeSpec, REGISTRY_NOT_DEPLOYED, type StrategyIntent } from "@masayume/core/strategies";
 import { diagnosis, type Address, type Hex } from "@masayume/core/types";
-import { formatBaseUnits, mulBpsCeil } from "@masayume/core/units";
+import { formatBaseUnits, mulBpsCeil, oneUnit } from "@masayume/core/units";
 import { erc20Abi, keccak256, toBytes, type ContractFunctionArgs, type ContractFunctionName } from "viem";
 import { SOMNIA_SHANNON } from "../chain";
 import { getCollateral } from "../collateral";
@@ -39,7 +39,18 @@ async function estimatedGas(contracts: VaultContracts, request: object): Promise
   if (estimate <= 0n) throw new Error("The registry gas estimate is unavailable; nothing was sent.");
   const gas = mulBpsCeil(estimate, GAS_SAFETY_BPS);
   const balance = await checkGas(owner, "vault", gas);
-  if (!balance.ok) throw new ReadingError(balance.diagnosis);
+  if (!balance.ok) {
+    if (balance.diagnosis.kind !== "out-of-gas" || balance.balanceWei === null) throw new ReadingError(balance.diagnosis);
+    const { decimals, symbol } = SOMNIA_SHANNON.nativeCurrency;
+    const displayUnit = oneUnit(Math.max(0, decimals - 6));
+    // Round the displayed minimum up, so following the refill instruction cannot underfund it.
+    const minimum = ((balance.requiredWei + displayUnit - 1n) / displayUnit) * displayUnit;
+    const available = formatBaseUnits(balance.balanceWei, decimals, { maxDp: 6, minDp: 0 });
+    const required = formatBaseUnits(minimum, decimals, { maxDp: 6, minDp: 0 });
+    const error = new ReadingError({ ...balance.diagnosis, technical: `Not enough ${symbol} for network gas. Your wallet has ${available} ${symbol}; this step needs at least ${required} ${symbol} available. Add ${symbol} from the Somnia testnet faucet, then retry.` });
+    error.cause = new ReadingError(balance.diagnosis);
+    throw error;
+  }
   return gas;
 }
 

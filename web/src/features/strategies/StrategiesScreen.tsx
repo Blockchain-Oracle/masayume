@@ -39,7 +39,7 @@ export function StrategiesScreen({ houseRunner }: { houseRunner: string | null }
     <nav className="agent-entry" aria-label="Strategy workspace">
       {([["create", "Create"], ["copy", "Copy a strategy"], ["yours", "Your strategies"]] as const).map(([key, label]) => <button key={key} type="button" aria-pressed={view === key} onClick={() => setView(key)}>{label}</button>)}
     </nav>
-    {writes.pending && <div className="copy-progress mt-5" role="status"><strong>Copy setup needs attention.</strong><p>Strategy #{writes.pending.strategyId} has an unfinished permission or subscription. Your progress is saved on this browser.</p><button className="desk-pill mt-3" onClick={() => setView("yours")}>Continue setup →</button></div>}
+    {writes.pending && !writes.busy && <div className="copy-progress mt-5" role="status"><strong>Copy setup needs attention.</strong><p>Strategy #{writes.pending.strategyId} has an unfinished permission or subscription. Your progress is saved on this browser.</p><button className="desk-pill mt-3" onClick={() => setView("yours")}>Continue setup →</button></div>}
     <div hidden={view !== "create"}>
       <CreatorStudio writes={writes} decimals={payload?.decimals ?? 6} symbol={payload?.symbol ?? "tUSDC"} asset={STRATEGY_MARKETS} houseRunner={houseRunner} onPublished={() => setView("yours")} />
     </div>

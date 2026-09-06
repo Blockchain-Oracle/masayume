@@ -12,6 +12,27 @@ async function requiredDb() {
   return db;
 }
 
+/** Own top-level commands remain usable; own replies must never become new financial instructions. */
+export async function xIsRelayReply(mention: { id: string; authorId: string; replyTo?: string | null }, botAuthorId: string): Promise<boolean> {
+  if (!/^\d+$/.test(botAuthorId)) throw new Error("X relay account identity is required");
+  if (mention.authorId === botAuthorId && mention.replyTo) return true;
+  const db = await requiredDb();
+  const [row] = await db`SELECT 1 FROM x_reply_delivery WHERE reply_id = ${mention.id} LIMIT 1`;
+  return Boolean(row);
+}
+
+/** Fence recursive jobs left by an earlier relay before delivery resumes. Preserve public acknowledgements. */
+export async function xSuppressRelayReplyDeliveries(knownReplyId: string | null = null): Promise<number> {
+  const db = await requiredDb();
+  const rows = await db`
+    UPDATE x_reply_delivery d SET state = 'failed', lease = NULL, error_code = 'relay-reply-suppressed', updated_at = now()
+    WHERE d.state IN ('pending', 'preparing', 'posting', 'unknown')
+      AND (d.mention_id = ${knownReplyId} OR EXISTS (SELECT 1 FROM x_reply_delivery parent WHERE parent.reply_id = d.mention_id))
+    RETURNING d.mention_id
+  `;
+  return rows.length;
+}
+
 /** Claim the financial instruction once. Enqueue its future reply in the same transaction. */
 export async function xClaimMention(receipt: XReceiptRecord, enqueueReply: boolean): Promise<boolean> {
   const db = await requiredDb();
@@ -36,6 +57,7 @@ export async function xAcquireReplyDelivery(): Promise<XReplyJob | null> {
     WITH candidate AS (
       SELECT d.mention_id FROM x_reply_delivery d JOIN x_receipts r USING (mention_id)
       WHERE r.status <> 'submitted' AND (d.state = 'pending' OR (d.state = 'preparing' AND d.updated_at < now() - interval '5 minutes'))
+        AND NOT EXISTS (SELECT 1 FROM x_reply_delivery parent WHERE parent.reply_id = d.mention_id)
       ORDER BY d.updated_at LIMIT 1 FOR UPDATE OF d SKIP LOCKED
     )
     UPDATE x_reply_delivery d SET state = 'preparing', lease = ${lease}, attempts = attempts + 1, updated_at = now()
@@ -48,8 +70,10 @@ export async function xAcquireReplyDelivery(): Promise<XReplyJob | null> {
 export async function xBeginReplyPost(job: XReplyJob, text: string, mediaId: string | null): Promise<boolean> {
   const db = await requiredDb();
   const rows = await db`
-    UPDATE x_reply_delivery SET state = 'posting', reply_text = ${text}, media_id = ${mediaId}, error_code = NULL, updated_at = now()
-    WHERE mention_id = ${job.mentionId} AND lease = ${job.lease} AND state = 'preparing' RETURNING mention_id
+    UPDATE x_reply_delivery d SET state = 'posting', reply_text = ${text}, media_id = ${mediaId}, error_code = NULL, updated_at = now()
+    WHERE d.mention_id = ${job.mentionId} AND d.lease = ${job.lease} AND d.state = 'preparing'
+      AND NOT EXISTS (SELECT 1 FROM x_reply_delivery parent WHERE parent.reply_id = d.mention_id)
+    RETURNING d.mention_id
   `;
   return rows.length > 0;
 }

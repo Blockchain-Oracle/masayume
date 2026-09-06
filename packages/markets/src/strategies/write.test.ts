@@ -55,8 +55,19 @@ describe("registry gas based on actual metadata", () => {
   });
   it("refuses before a signature when the computed native envelope is not funded", async () => {
     const f = fixture();
-    mocks.gas.mockResolvedValue({ ok: false, diagnosis: { kind: "out-of-gas", technical: "computed envelope not funded" } });
-    await expect(sendStrategyIntent(f.contracts, publish)).rejects.toThrow("computed envelope not funded");
+    const technical = "native balance 658688458000000000 wei is below the 810296568000000000 wei vault envelope";
+    mocks.gas.mockResolvedValue({ ok: false, lane: "vault", balanceWei: 658_688_458_000_000_000n, requiredWei: 810_296_568_000_000_000n, diagnosis: { kind: "out-of-gas", technical } });
+    await expect(sendStrategyIntent(f.contracts, publish)).rejects.toMatchObject({
+      message: "Not enough STT for network gas. Your wallet has 0.658688 STT; this step needs at least 0.810297 STT available. Add STT from the Somnia testnet faucet, then retry.",
+      diagnosis: { kind: "out-of-gas" },
+      cause: { message: technical },
+    });
+    expect(f.send).not.toHaveBeenCalled();
+  });
+  it("preserves unreadable balance errors instead of asking for a refill without a balance", async () => {
+    const f = fixture();
+    mocks.gas.mockResolvedValue({ ok: false, lane: "vault", balanceWei: null, requiredWei: 10n, diagnosis: { kind: "rpc-down", technical: "native balance RPC unavailable" } });
+    await expect(sendStrategyIntent(f.contracts, publish)).rejects.toThrow("native balance RPC unavailable");
     expect(f.send).not.toHaveBeenCalled();
   });
   it("holds an unavailable estimate and preserves simulation errors before estimating", async () => {

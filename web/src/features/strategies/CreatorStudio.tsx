@@ -57,6 +57,7 @@ export function CreatorStudio({ writes, decimals, symbol, asset, houseRunner, on
   };
   const publish = async () => {
     if (!canPublish || !runner || perTrade === null || daily === null || fee === null || published) return;
+    setProblem(null);
     const metadata = { name, portraitSeed: form.portraitSeed, description: summary, spec, ...(form.playbook.trim() ? { playbook: form.playbook.trim() } : {}) };
     const result = await writes.publish({ kind: "strategy-publish", runner: runner as `0x${string}`, spec, metadata, envelope: { maxStakePerTradeBase: perTrade, maxDailySpendBase: daily, maxOpenPositions: 2, maxPriceRaw: 0n }, feeBase: fee });
     if (result.ok || result.unknown) setPublished(result);

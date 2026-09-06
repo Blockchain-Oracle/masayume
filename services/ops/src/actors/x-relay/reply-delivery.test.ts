@@ -16,6 +16,7 @@ function fixture() {
     render: vi.fn(async () => new Uint8Array([1, 2, 3])),
     transport: {
       describe: () => "test", fetchMentions: vi.fn(async () => []),
+      authenticatedAuthorId: vi.fn(async () => "999"),
       uploadImage: vi.fn(async () => { state.order.push("upload"); return "789"; }),
       reply: vi.fn(async () => { state.order.push("post"); return "999"; }),
     },
