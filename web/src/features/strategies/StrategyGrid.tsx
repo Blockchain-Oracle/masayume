@@ -33,7 +33,7 @@ interface StrategyGridProps {
   onOpen: (card: StrategyWire) => void;
 }
 
-/** The archive (reference "Earlier agents"): collapsed by default, curated tabs hide their zero counts. */
+/** Published strategies, shown by default; filters hide their zero counts. */
 export function StrategyGrid({ strategies, subscriptionOf, decimals, symbol, asset, loadError, onOpen }: StrategyGridProps) {
   const [show, setShow] = useState(true);
   const [tab, setTab] = useState<TabKey>("all");
@@ -43,7 +43,7 @@ export function StrategyGrid({ strategies, subscriptionOf, decimals, symbol, ass
     <>
       <div className="mt-12 flex items-center justify-between gap-4 border-t border-hairline pt-6">
         <div>
-          <h2 className="strat-h2">Published strategies</h2>
+          <h2 className="strat-h2">{STRATEGIES.archive.title}</h2>
           <p className="strat-meta mt-1 text-ink/35">{STRATEGIES.archive.editions(strategies.length)}</p>
         </div>
         <button type="button" onClick={() => setShow((v) => !v)} aria-expanded={show} className="strat-toggle">

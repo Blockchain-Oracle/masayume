@@ -3,6 +3,7 @@ import { isOk } from "@masayume/core/schemas";
 import { decideOracleFollow, distanceToTriggerBps, type Decision, type OracleFollowSpec } from "@masayume/core/strategies";
 import type { Bytes32, EventMarket } from "@masayume/core/types";
 import { marketsProvider } from "@masayume/markets";
+import { openingOnFeedScale } from "@masayume/markets/strategies";
 
 export interface Scan {
   /** Windows the runner could act on this cycle, each with its decision. */
@@ -33,7 +34,8 @@ export async function scanVenue(venueId: Bytes32, spec: OracleFollowSpec, nowMs:
       skipped.push(`${market.asset}/${market.intervalSec}s: no fresh price`);
       continue;
     }
-    const decision = decideOracleFollow({ openingRaw: opening.value, priceRaw: price.value.emaRaw, spec });
+    const openingRaw = openingOnFeedScale(opening.value, price.value.decimals);
+    const decision = decideOracleFollow({ openingRaw, priceRaw: price.value.emaRaw, spec });
     const distance = distanceToTriggerBps(decision);
     if (closest === null || distance < closest) closest = distance;
     if (decision.side) candidates.push({ market, decision });

@@ -152,3 +152,5 @@ The user documentation lives in [its own repository](https://github.com/Blockcha
 The [source-led architecture record](docs/architecture/yosuku-source-led-migration/README.md) governs product and implementation decisions. [`context/`](context/README.md) retains the research behind it; `_bmad-output/` is superseded historical planning. For endpoint contracts and integration details, use the [API reference](https://docs.masayume.app/builders/api).
 
 Both GitHub repositories currently require access. The documentation and its published artwork are available through the docs domain; source links in the guides require repository access.
+
+Source and asset attribution is recorded in [Third-party notices](THIRD_PARTY_NOTICES.md). The [public-release audit](docs/submission/public-release-audit-2026-09-06.md) separates existing reuse authorization, third-party terms and the remaining project-license decisions.

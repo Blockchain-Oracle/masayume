@@ -3,6 +3,7 @@ import type { AgentContext, AgentSample } from "@masayume/core/strategies";
 import { diagnosis, type EventMarket, type PricePoint, type Side } from "@masayume/core/types";
 import { msToSec } from "@masayume/core/units";
 import { marketsProvider } from "../provider";
+import { openingOnFeedScale } from "./price-basis";
 
 /** The prompt sees at most this many points over the Window so far. */
 const MAX_SAMPLES = 12;
@@ -48,12 +49,15 @@ export async function readAgentContext(market: EventMarket, stakeBase: bigint, n
   if (price.value === null) return err(diagnosis("indexer-down", `no fresh ${market.asset} price`));
   if (!isOk(history)) return history;
   if (history.stale) return err(diagnosis("indexer-down", `${market.asset} price history is stale; holding`));
+  let openingRaw: bigint;
+  try { openingRaw = openingOnFeedScale(opening.value, price.value.decimals); }
+  catch { return err(diagnosis("indexer-down", "Opening print and price-feed units could not be reconciled; holding")); }
   return ok(
     {
       asset: market.asset,
       intervalSec: market.intervalSec,
       tradingStartSec: market.tradingStartSec,
-      openingRaw: opening.value,
+      openingRaw,
       emaRaw: price.value.emaRaw,
       spotRaw: price.value.priceRaw,
       feedDecimals: price.value.decimals,

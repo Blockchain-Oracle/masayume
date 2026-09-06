@@ -7,20 +7,17 @@ import { strategyIdentity, STRATEGY_MARKETS } from "./identity";
 import { COPY_STATE_LABEL } from "./lifecycle";
 import type { StrategiesPayload } from "./protocol";
 import { RecordCard } from "./RecordCard";
+import { StrategyActivity } from "./StrategyActivity";
 import type { DeskModel } from "./useDesk";
 import "./desk.css";
 
 /** The selected strategy, its actual consent state, and the runner's latest own report. */
-export function LiveDesk({ payload, desk, onManage }: { payload: StrategiesPayload; desk: DeskModel; onManage: () => void }) {
+export function LiveDesk({ payload, desk, nowMs, onManage }: { payload: StrategiesPayload; desk: DeskModel; nowMs: number; onManage: () => void }) {
   const card = desk.featured;
   if (!card) return null;
   const { name, seed } = strategyIdentity(card);
   const { decimals, symbol } = payload;
-  const health = desk.health?.ok ? desk.health.value.strategies[card.strategyId] : null;
-  const reachable = desk.health?.ok && !desk.health.stale ? desk.health.value.reachable : false;
-  const kind = health?.kind ?? card.health.kind;
-  const why = health?.why ?? card.health.why;
-  const heartbeat = !reachable ? "Runner status unavailable" : kind === "never-started" ? "Waiting for the runner's first check" : kind === "stale" ? "Runner heartbeat is late" : kind === "unknown" ? "Runner status unknown" : "Runner connected";
+  const health = desk.health?.ok && !desk.health.stale && desk.health.value.reachable ? desk.health.value.strategies[card.strategyId] ?? null : null;
   const spec = parseStrategyMetadata(card.metadata)?.spec;
   return (
     <section className="live-desk mt-6 mb-6" aria-label="Selected strategy">
@@ -32,8 +29,7 @@ export function LiveDesk({ payload, desk, onManage }: { payload: StrategiesPaylo
         <div className="mt-6"><RecordCard record={card.record} decimals={decimals} symbol={symbol} /></div>
         <div className="desk-pulse mt-5">
           <p className="desk-status text-vermilion">{COPY_STATE_LABEL[desk.state]}</p>
-          <p className="desk-note mt-2 text-ink-secondary">{heartbeat}</p>
-          {why && <p className="desk-note mt-1 text-ink-muted">Last report: {why}</p>}
+          <StrategyActivity state={desk.state} grant={desk.grant} health={health} nowMs={nowMs} />
         </div>
         {desk.grant && <div className="desk-numbers mt-5">
           <div><p className="desk-eyebrow">Remaining budget</p><p className="desk-figure">{money(desk.ledgerBase, decimals, symbol)}</p></div>

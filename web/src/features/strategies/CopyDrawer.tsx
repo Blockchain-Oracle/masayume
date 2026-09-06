@@ -14,6 +14,7 @@ import { strategyIdentity } from "./identity";
 import { copyStateOf, COPY_STATE_LABEL } from "./lifecycle";
 import type { StrategyWire } from "./protocol";
 import { RecordCard } from "./RecordCard";
+import { StrategyActivity } from "./StrategyActivity";
 import type { DeskWriteResult, useDeskWrites } from "./useDeskWrites";
 import { useSubscriptionFee } from "./useSubscriptionFee";
 import { useStrategyHealth } from "./useStrategies";
@@ -91,8 +92,8 @@ export function CopyDrawer({ card, sub, grant, readable, writes, availableBase, 
       <div className="mb-5 flex items-center gap-3 pr-8"><AgentPortrait seed={seed} name={name} /><div className="min-w-0"><h2 id="copy-strategy-title" className="strat-drawer-name">{name}</h2><a href={addressUrl(card.runner as `0x${string}`)} target="_blank" rel="noreferrer" className="strat-meta text-ink-muted">Runner on Somnia ↗</a></div></div>
       <p className="strat-drawer-body mb-5">{meta?.description || "A published strategy with enforced trading limits."} Markets: {asset}.</p>
       <RecordCard record={card.record} decimals={decimals} symbol={symbol} />
-      <div className="copy-progress mt-5"><strong>{health?.kind === "alive" ? "Runner connected" : health?.kind === "never-started" ? "Waiting for the runner’s first check" : health?.kind === "stale" ? "Runner heartbeat is late" : "Runner status unavailable"}</strong>{health?.why && <p>Last report: {health.why}</p>}</div>
       <div className="strat-drawer-rule mt-5"><p className="strat-meta mb-2 text-vermilion">{COPY_STATE_LABEL[state]}</p><p className="strat-drawer-body">{state === "copying" ? "Your permission is active. A trade still needs a signal and fresh risk checks." : state === "checking" ? "Checking your current vault permission and registry consent before making changes." : state === "inactive" ? "This strategy is not accepting new subscriptions. Existing consent can be paused." : "Review a new permission to start or resume. Publishing alone does not fund or activate a copy."}</p></div>
+      <StrategyActivity state={state} grant={grant && sub?.grantId === grant.grantId ? grant : null} health={health ?? null} nowMs={nowMs} />
       {result && <div className={result.ok ? "copy-progress mb-5" : "agent-builder-error mb-5"} role="status"><p>{result.ok ? "Confirmed. Your balances and permissions are refreshing." : result.reason}</p>{result.txHash && <a href={txUrl(result.txHash)} target="_blank" rel="noreferrer">View transaction ↗</a>}</div>}
       {pending && <div className="copy-progress mb-5"><strong>{pending.stage === "subscribe-ready" ? "Permission saved. Subscription remains." : "An interrupted step needs checking."}</strong><p>We will check this setup before continuing. The deposit will not be repeated.</p>{pending.grantTx && <a className="block mt-2" href={txUrl(pending.grantTx as `0x${string}`)} target="_blank" rel="noreferrer">Permission transaction ↗</a>}{pending.subscribeTx && <a className="block mt-2" href={txUrl(pending.subscribeTx as `0x${string}`)} target="_blank" rel="noreferrer">Subscription transaction ↗</a>}<button className="desk-pill mt-3" disabled={disabled} onClick={() => void perform(writes.releasePending)}>{pending.releasePending ? "Check permission release" : "Release this permission"}</button></div>}
       {!writes.address ? <ConnectButton /> : <>
