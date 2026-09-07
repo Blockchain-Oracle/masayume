@@ -43,8 +43,12 @@ export async function xGetRelayHealth(): Promise<XRelayHealth | null> {
   const [stages, [totals]] = await Promise.all([
     db<{ key: string; value: string }[]>`SELECT key, value FROM x_relay_state WHERE key IN ('health.polling', 'health.execution', 'health.delivery')`,
     db<{ unresolved: string; inspection: string; image_at: Date | null }[]>`
-      SELECT (SELECT count(*) FROM x_receipts WHERE status = 'unknown' OR (status = 'submitted' AND updated_at < now() - interval '5 minutes')) AS unresolved,
-        (SELECT count(*) FROM x_reply_delivery WHERE state IN ('unknown','failed') OR (state = 'posting' AND updated_at < now() - interval '5 minutes')) AS inspection,
+      SELECT (SELECT count(*) FROM x_receipts r
+        WHERE (r.status = 'unknown' OR (r.status = 'submitted' AND r.updated_at < now() - interval '5 minutes'))
+          AND NOT EXISTS (SELECT 1 FROM x_reply_delivery d WHERE d.reply_id = r.mention_id)) AS unresolved,
+        (SELECT count(*) FROM x_reply_delivery
+          WHERE (state IN ('unknown','failed') OR (state = 'posting' AND updated_at < now() - interval '5 minutes'))
+            AND error_code IS DISTINCT FROM 'relay-reply-suppressed') AS inspection,
         (SELECT max(updated_at) FROM x_reply_delivery WHERE state = 'sent' AND media_id IS NOT NULL) AS image_at
     `,
   ]);

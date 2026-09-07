@@ -1,6 +1,6 @@
 "use client";
 
-import { TRADE_FROM_X } from "./copy";
+import { TRADE_FROM_X, X_LINK_STATUS } from "./copy";
 import { Dot, Tick } from "./StepSpine";
 import type { XLink } from "./useXStatus";
 
@@ -18,9 +18,7 @@ const XGlyph = () => (
 export function LinkStep({ link, returnTo, enabled }: { link: XLink; returnTo: string; enabled: boolean }) {
   const session = link.status?.session ?? null;
   const binding = link.status?.binding ?? null;
-  if (!link.status?.configured) {
-    return <p className="xt-step-lede">{`Sign in with X is not configured here — set ${link.status?.missing.join(", ") || "X_API_KEY, X_API_KEY_SECRET, X_SESSION_SECRET"}.`}</p>;
-  }
+  if (link.loading) return <p className="xt-step-lede" role="status">{X_LINK_STATUS.checking}</p>;
   if (binding && !link.needsLink && !link.walletMismatch) {
     return (
       <div className="xt-done-line">
@@ -28,6 +26,7 @@ export function LinkStep({ link, returnTo, enabled }: { link: XLink; returnTo: s
       </div>
     );
   }
+  if (!link.status?.configured) return <p className="xt-step-lede">{X_LINK_STATUS.unavailable}</p>;
   if (!session) {
     return (
       <>

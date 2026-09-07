@@ -2,8 +2,9 @@ import { ArrowRightIcon, ChartCandlestickIcon, ChartColumnIcon, MessageSquareIco
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { DEMO } from "./copy";
-import { Eyebrow, Frame, Kicker, ProofLink, Reveal, Serif, VideoHolding } from "./DemoBlocks";
+import { Eyebrow, Frame, Kicker, ProofLink, Reveal, Serif } from "./DemoBlocks";
 import { DemoTraction } from "./DemoTraction";
+import { DemoVideo } from "./DemoVideo";
 import { CONTRACT_PROOFS, contractProof, contractProofHref, PROOF_WALLET, PROOFS_READ_ON, TX_PROOFS, txProofHref, txProofLabel } from "./proofs";
 
 /**
@@ -11,7 +12,7 @@ import { CONTRACT_PROOFS, contractProof, contractProofHref, PROOF_WALLET, PROOFS
  *
  * The reference is "the walkthrough, in place of a video": the real product, with
  * every claim a transaction anyone can open. That is kept exactly. What changes is
- * every fact: the video slot says no recording exists yet, the traction line is read
+ * every fact: the video uses dated Shannon testnet captures, the traction line is read
  * live from the venue, the screenshots are dated captures of this product, and the
  * proofs are this project's confirmed actions and pinned contracts on the Shannon explorer.
  *
@@ -66,7 +67,7 @@ function Hero() {
       </Reveal>
       <div className="demo-video-label">{DEMO.hero.videoLabel}</div>
       <Reveal immediate>
-        <VideoHolding />
+        <DemoVideo />
       </Reveal>
       <Reveal immediate>
         <p className="demo-lead">{DEMO.hero.lead}</p>

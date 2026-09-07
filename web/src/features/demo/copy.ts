@@ -20,9 +20,7 @@ export const DEMO = {
     eyebrow: "live demo",
     headline: "See Masayume ",
     headlineSerif: "work.",
-    videoLabel: "▶ the 2–3 min demo",
-    /** No recording exists yet; the frame says so rather than playing something staged. */
-    videoHolding: "The recording lands when it is cut. Everything below is the live product, not a recording.",
+    videoLabel: "▶ the 2:46 demo · Shannon testnet",
     lead: "The consumer front door to on-chain prediction markets — one tap, non-custodial, on the web and as an installable app. Full feature breakdown and verifiable on-chain proofs below.",
     open: "Open the app",
     stats: "View live stats",

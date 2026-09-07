@@ -42,16 +42,14 @@ The app currently targets **Somnia Shannon testnet — chain 50312**. Trading co
 ## Watch it work
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://docs.masayume.app/repo-assets/video-cover-dark.svg" />
-    <source media="(prefers-color-scheme: light)" srcset="https://docs.masayume.app/repo-assets/video-cover-light.svg" />
-    <img src="https://docs.masayume.app/repo-assets/video-cover-light.png" width="720" alt="Masayume, in motion — full video demo coming soon" />
-  </picture>
+  <a href="https://masayume.app/demo">
+    <img src="https://masayume.app/video/masayume-demo-2026-09-07.jpg" width="720" alt="Watch the Masayume demo: markets, agents, X receipts and Moonshot on Shannon testnet" />
+  </a>
 </p>
 
-**The full YouTube demo has not been published yet.** The artwork is ready for that link. You can already watch real, captioned recordings in the [Practice guide](https://docs.masayume.app/games/practice), [ticket walkthrough](https://docs.masayume.app/trading/first-trade) and [Candle Hop guide](https://docs.masayume.app/games/candle-hop). These show their actual recorded states; the ticket walkthrough previews controls without placing a funded trade.
+**[Watch the 2:46 demo](https://masayume.app/demo)** · [Direct MP4](https://masayume.app/video/masayume-demo-2026-09-07.mp4) · [English captions](https://masayume.app/video/masayume-demo-2026-09-07.vtt)
 
-<!-- When the full demo is published, wrap the video picture above in an anchor to its real YouTube URL and update the cover status. See docs/assets/readme/README.md. -->
+Real app captures from 6–7 September 2026 show the corrected AI Hold read, confirmed strategy publication, bounded copying, the X receipt and a paid Moonshot round. All financial evidence uses Shannon testnet assets. The player includes a transcript; the [Practice guide](https://docs.masayume.app/games/practice), [ticket walkthrough](https://docs.masayume.app/trading/first-trade) and [Candle Hop guide](https://docs.masayume.app/games/candle-hop) provide further recorded walkthroughs.
 
 ## How the parts connect
 

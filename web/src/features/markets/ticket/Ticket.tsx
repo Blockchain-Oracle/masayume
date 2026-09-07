@@ -282,6 +282,7 @@ export function Ticket({ selection, drawer }: TicketProps) {
           <ReadoutStrip cells={strip.cells} live={strip.live} caption={strip.caption} chance={strip.chance} note={boosted ? LEVERAGE.strip.knockout(multiple) : null} />
           <AccountGate
             session={session}
+            balanceSource={privateMode ? "private" : source}
             availableBase={privateMode ? (priv.budget?.spendableBase ?? null) : availableBase}
             stakeBase={stakeBase}
             decimals={decimals}

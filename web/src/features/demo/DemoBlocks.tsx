@@ -117,19 +117,3 @@ export function ProofLink({ href, label, reference }: ProofLinkProps) {
     </a>
   );
 }
-
-/** The 16:9 slot the reference fills with its YouTube embed. No recording exists yet, and the slot says so. */
-export function VideoHolding() {
-  return (
-    <div className="demo-video" role="status">
-      <div className="demo-video-holding">
-        <p>{DEMO.hero.videoHolding}</p>
-        <div className="demo-dots" aria-hidden>
-          <span />
-          <span />
-          <span />
-        </div>
-      </div>
-    </div>
-  );
-}

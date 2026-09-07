@@ -276,12 +276,15 @@
   }
 }
 
+@media (max-width: 420px) {
+  .header-right .wallet-pill { width: 36px; height: 36px; padding: 0; justify-content: center; }
+  .header-right .wallet-pill > span:last-child { display: none; }
+}
+
 @media (max-width: 380px) {
   .header { padding-inline: 10px; gap: 4px; }
   .header .logo { font-size: 13px; letter-spacing: 0.09em; gap: 6px; }
   .header-right { gap: 5px; }
-  .header-right .wallet-pill { width: 36px; height: 36px; padding: 0; justify-content: center; }
-  .header-right .wallet-pill > span:last-child { display: none; }
   .mobile-bottom-nav a span,
   .mobile-bottom-nav button span { display: block; }
   .mobile-bottom-nav a,

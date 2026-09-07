@@ -254,7 +254,13 @@ export async function xReceiptsByWallet(wallet: string, limit: number): Promise<
   const db = getDb();
   if (!db) return null;
   await ensureSchema();
-  const rows = await db<ReceiptRow[]>`SELECT ${db.unsafe(RECEIPT_COLUMNS)} FROM x_receipts WHERE wallet = ${wallet.toLowerCase()} ORDER BY at_ms DESC LIMIT ${limit}`;
+  // A historical relay reply can have a receipt from the old recursive poller. Keep its audit row,
+  // but do not present that bot output as an instruction from this wallet.
+  const rows = await db<ReceiptRow[]>`
+    SELECT ${db.unsafe(RECEIPT_COLUMNS)} FROM x_receipts r WHERE r.wallet = ${wallet.toLowerCase()}
+      AND NOT EXISTS (SELECT 1 FROM x_reply_delivery d WHERE d.reply_id = r.mention_id)
+    ORDER BY r.at_ms DESC LIMIT ${limit}
+  `;
   return rows.map(toReceipt);
 }
 

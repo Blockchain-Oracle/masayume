@@ -2,6 +2,7 @@
 
 import { FAUCET_UNITS } from "@masayume/core/constants";
 import { formatBaseUnits } from "@masayume/core/units";
+import Link from "next/link";
 import { OPEN_FUNDS_EVENT } from "@/features/funding";
 import { RouteControl, SessionControl, type FundingSource } from "@/features/session";
 import { diagnosisCopy, FAUCET, TICKET } from "@/lib/copy";
@@ -25,6 +26,7 @@ interface AccountGateProps {
   stakeBase: bigint;
   decimals: number;
   symbol: string;
+  balanceSource: "wallet" | "vault" | "private";
   route: RouteChoice | null;
 }
 
@@ -37,12 +39,14 @@ interface AccountGateProps {
  * Wallet / Trading Balance choice when a Trading Balance exists, and the tap-trading chip. The faucet
  * used to appear only at exactly zero and *replaced* the bet button; now it is one of the top-up's actions.
  */
-export function AccountGate({ session, availableBase, stakeBase, decimals, symbol, route }: AccountGateProps) {
+export function AccountGate({ session, availableBase, stakeBase, decimals, symbol, balanceSource, route }: AccountGateProps) {
   const faucet = useFaucet();
   const connected = session.isConnected;
   const short = connected && availableBase !== null && (availableBase === 0n || (stakeBase > 0n && stakeBase > availableBase));
   const needBase = availableBase !== null && stakeBase > availableBase ? stakeBase - availableBase : null;
   const minting = faucet.state.phase === "submitted";
+  const walletBalance = balanceSource === "wallet";
+  const balanceLabel = walletBalance ? "Wallet" : balanceSource === "private" ? "Private balance" : "Trading Balance";
 
   return (
     <>
@@ -56,15 +60,17 @@ export function AccountGate({ session, availableBase, stakeBase, decimals, symbo
         <div className="tk-gate tk-gate--warn" role="status">
           <div className="tk-gate-eyebrow">{TICKET.gate.topUp}</div>
           <p className="tk-gate-line">
-            {TICKET.gate.holds(formatBaseUnits(availableBase ?? 0n, decimals), symbol)}
-            {needBase !== null ? ` ${TICKET.gate.need(formatBaseUnits(needBase, decimals), symbol)}` : ` ${TICKET.gate.empty}`}
+            {TICKET.gate.holds(formatBaseUnits(availableBase ?? 0n, decimals), symbol, balanceLabel)}
+            {walletBalance
+              ? needBase !== null ? ` ${TICKET.gate.need(formatBaseUnits(needBase, decimals), symbol)}` : ` ${TICKET.gate.empty}`
+              : balanceSource === "private" ? " Fund and authorize your private balance on Portfolio before placing a private bet." : " Add funds to your Trading Balance on Portfolio, or switch to Wallet."}
           </p>
           {faucet.state.diagnosis && <p className="tk-gate-line">{diagnosisCopy(faucet.state.diagnosis.kind).headline}</p>}
           <div className="tk-gate-actions">
-            <button type="button" className="tk-gate-cta" onClick={() => window.dispatchEvent(new Event(OPEN_FUNDS_EVENT))} data-cursor="hover">
+            {walletBalance ? <button type="button" className="tk-gate-cta" onClick={() => window.dispatchEvent(new Event(OPEN_FUNDS_EVENT))} data-cursor="hover">
               {TICKET.gate.addMoney}
-            </button>
-            {faucet.hasSigner && (
+            </button> : <Link className="tk-gate-cta" href="/portfolio">{balanceSource === "private" ? "Manage private balance" : "Manage Trading Balance"}</Link>}
+            {walletBalance && faucet.hasSigner && (
               <button type="button" className="tk-gate-quiet" disabled={minting} onClick={() => void faucet.mint()} data-cursor="hover">
                 {minting ? FAUCET.minting : FAUCET.cta(String(FAUCET_UNITS))}
               </button>
@@ -79,7 +85,7 @@ export function AccountGate({ session, availableBase, stakeBase, decimals, symbo
           ) : (
             <span />
           )}
-          <SessionControl symbol={symbol} />
+          {balanceSource !== "private" && <SessionControl symbol={symbol} />}
         </div>
       )}
     </>

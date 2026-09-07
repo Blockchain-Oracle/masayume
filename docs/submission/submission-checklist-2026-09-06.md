@@ -1,68 +1,65 @@
 # Event Contracts Hackathon submission checklist
 
-Prepared **6 September 2026**. This is a preparation checklist, **not a submitted application**. The owner completes the actual DoraHacks submission. No form was filled, no submission button was pressed, and no repository visibility was changed by this task.
+Updated **7 September 2026**. This current checklist supersedes its 6 September preparation snapshot; the earlier revision remains in Git. The owner completes the actual DoraHacks submission. A public-facts draft has been started in the owner's signed-in Zen session, but **no BUIDL has been submitted and no submission acknowledgement exists**.
 
-## Official requirements and what is still unknown
+## Deadline and official requirements
 
-The event's [official DoraHacks page](https://dorahacks.io/hackathon/event-contracts/detail) lists a **working testnet prototype**, a **GitHub repository** and a **2–3 minute demo video**. A presentation deck and SDK/documentation feedback report are optional. The release coordinator checked that public page in the browser on 6 September; the [earlier organizer brief retained in this repository](../../context/00-hackathon-brief.md) provides historical corroboration.
+The [official event page](https://dorahacks.io/hackathon/event-contracts/detail), rechecked in authenticated Zen on 7 September, requires a **working testnet prototype**, **GitHub repository** and **2–3-minute demo video**. A presentation deck and SDK/documentation feedback report are optional.
 
-The official page displays the cutoff as **8 September 2026, 19:00** in the rehearsal browser. On 6 September at 20:57 UTC, the browser clock was independently read as **GMT+0100 (West Africa Time)** with offset −60 minutes. The initial server-rendered value was 18:00 and the hydrated value 19:00, consistent with local-time display: **19:00 WAT / 18:00 UTC**. The page does not print a timezone label, so the UTC value is a conversion from the observed local rendering, not a quoted organizer timezone statement. Recheck the page before the owner submits.
+Zen displays **8 September 2026, 19:00**. The previous independent browser clock check established UTC+1 / West Africa Time, making this **19:00 WAT / 18:00 UTC**. The event page itself does not print a timezone label; the UTC value is a conversion from its observed local rendering. Recheck the event page immediately before submission.
 
-The submission flow currently requires login. The authenticated form's exact fields, character limits, required attachments, video-host restrictions, consent wording and confirmation flow have **not** been inspected. Public requirements are not a field-by-field reconstruction of that form. Do not invent a category, required social link, minimum team size, deck requirement, SDK-feedback requirement, license field or submission-id value.
+## Actual authenticated form
 
-This worker's independent text-only fetch of the official event page returned an access/error page and no event text. A search result from a third-party aggregator incorrectly presented SDK feedback as required; it is excluded. The checklist relies on the coordinator's current official-page inspection, not that aggregator. Preserve the official public-page capture when available, then recheck inside the actual owner session before submission.
+The signed-in owner is already registered for the event. **Submit BUIDL** opens a choice between a new BUIDL and an existing one. The new-BUIDL wizard has five steps: **Profile → Details → Team → Contact → Submission**. Opening this wizard is separate from the final submission action.
+
+| Field | Exact visible requirement | Prepared value / evidence |
+| --- | --- | --- |
+| BUIDL name | Required | Masayume |
+| BUIDL logo | Required; JPEG or PNG, less than 2 MB; 480 × 480 px recommended | Existing Masayume icon; owner advanced this step after native picker control failed |
+| Vision | Required; no character counter shown in the inspected state | Public project summary entered in Zen |
+| Category | Required | Crypto / Web3 selected; AI / Robotics is also offered |
+| Crypto/Web3 subcategories and infrastructure | Optional; innovation domains, L1s, L2s, appchains and other ecosystems | Do not invent a required tag or unsupported deployment |
+| GitHub/Gitlab/Bitbucket | Required; repository or organization profile accepted by the field label | https://github.com/Blockchain-Oracle/masayume — source access remains a release gate |
+| Project website | Optional | https://masayume.app |
+| Demo video | Required; YouTube recommended for an embedded player | https://masayume.app/demo — verify the deployed 2:46 player before submission |
+| Social links | At least one required, up to three | https://x.com/masayume_app |
+| Details | Required rich-text/Markdown description; links, tables, images and YouTube supported; no length counter shown in inspected state | [Prepared BUIDL description](buidl-description-2026-09-07.md) |
+| Team / Contact / final Submission | Sections confirmed in the actual wizard; exact fields and final consent not yet read | Owner says the remaining flow is README and contact information. Preserve that distinction from independent inspection; do not invent contact values or accept terms. |
+
+The Profile fields were entered using public project facts. The owner manually completed the logo step. The Details editor was visibly inspected in Zen; subsequent native clicks returned `noWindowsAvailable`. The owner then explicitly stopped further form work. No successful README paste, contact-field update, final agreement or submission is claimed; further authenticated inspection is no longer a task prerequisite. Raw form observations are retained locally under `.masayume/acceptance-2026-09-06/`; private account/contact details must not be committed.
 
 ## Required package
 
-| Requirement | Current state | Concrete completion check |
+| Requirement | Current state | Completion check |
 | --- | --- | --- |
-| Working prototype on testnet | App is at [masayume.app](https://masayume.app). Current rehearsal includes confirmed strategy #1 publication/copy setup, Moonshot purchase and a recorded Candle Hop board entry. The first Momentum fill and AI read exposed a two-decimal oracle/eighteen-decimal feed mismatch; future Momentum copies are paused. Corrected signal/AI acceptance, settlement and the new X-media receipt remain pending. | Open the final deployed app anonymously and with the authorized test wallet; record deployment SHA and prove the exact journey used in the video. Link the current [acceptance ledger](../implementation/acceptance-2026-09-06.md); do not reuse the invalid-signal fill as proof of a working strategy or replace partial acceptance with “everything works.” |
-| GitHub repository | [Masayume app](https://github.com/Blockchain-Oracle/masayume) and [docs](https://github.com/Blockchain-Oracle/masayume-docs) were private in the [public-release audit](public-release-audit-2026-09-06.md). Code is present, but anonymous source access is a separate unfinished release step. | Complete the existing source-release/provenance decision, then verify the chosen repository access works for judges. If private judge access is supported by the actual process, record that route explicitly. The public page's “GitHub repository” wording alone does not establish a particular license or substitute for accessible source. |
-| 2–3 minute demo video | [160-second script and runbook](demo-script-2026-09-06.md) prepared. No finished recording, rendered video or public video URL exists from this task. | Capture the verified journey, edit without fabricated continuity, measure final duration, inspect audio/captions, and open the real video link without the creator's account. Include the actual URL only after it exists. |
+| Working testnet prototype | [App](https://masayume.app); genuine AI execution/loss settlement, corrected Momentum fill, X image receipt and complete Moonshot payout recorded | Use the current [acceptance ledger](../implementation/acceptance-2026-09-06.md), including failed and superseded evidence. Verify the final deployed revision. Momentum settlement and a later eligible decision remain pending its 04:00 UTC expiry at this snapshot. |
+| Repository | App and docs repositories are private | Complete the [source-release review](public-release-audit-2026-09-06.md), record redistribution terms, then verify judge access. Do not describe inaccessible repositories as open source. |
+| Demo | A measured 166-second / 2:46 video has been rendered from actual captures; public player integration is in progress | Verify the final `/demo` player, direct MP4, poster, captions and transcript anonymously. Technical audio checks passed; owner listening review remains useful. |
+
+The demo retains a real AI Hold, authentic publication/copy screens, matching X receipt, paid Moonshot and arcade recording. It does not present the invalid pre-fix Momentum signal as acceptance or claim profitable AI performance.
 
 ## Optional package
 
-| Optional artifact | Current state | Completion check if included |
-| --- | --- | --- |
-| SDK and documentation feedback | [Draft prepared](sdk-feedback-2026-09-06.md), with code pointers and a clear distinction between upstream suggestions and Masayume integration defects. | Attach the final reviewed revision and any new live receipt evidence. Keep “optional” explicit. |
-| Presentation deck | No deck produced by this task. | Include only if it helps explain product, implementation and adoption; do not delay the required video merely to manufacture a deck. |
+- [SDK and documentation feedback](sdk-feedback-2026-09-06.md): prepared, with code pointers and a distinction between upstream suggestions and Masayume integration defects.
+- Presentation deck: optional; no deck is required merely to complete this checklist.
 
-## Claim and evidence check before recording
+## Final owner runbook
 
-- [x] Strategy #1 publication receipt recorded: `0x11c193f9547e1a52e370cebe0edb6396104636af26197c5ba9727215005a2d9f`.
-- [x] Copy permission receipt confirmed by the coordinator: `0x96250651c1706a9de51d4aa5ec29b34e6e6414be4069ef6ae243bbbc84f1f9a0`.
-- [x] Registry subscription receipt confirmed by the coordinator: `0xa2f6547b0e6631aee769650dc5920a694105b777d562a90cd0bd11b06aa6f202`.
-- [x] Moonshot purchase receipt recorded: `0xefc7fe4c652ea288230f01485706cbc72e725bf2520e25d87e96c58a0fa1c8ef`; recorded In play state is historical and not a payout.
-- [x] Candle Hop best score 0/rank 2 confirmed in the recorded state and a separate board request; it is a server-checked arcade result.
-- [ ] Fresh viewport captures of the publication, copy state and independent explorer receipts are usable at 1080p. Existing tall/full-page images are fallback evidence, not the final video shots.
-- [ ] Final app and docs deployment revisions are identified. Source checks and deployed behavior are recorded separately.
-- [ ] If shown: Momentum decision/fill/settlement evidence comes after the decimal-normalization fix and belongs to the same strategy, owner and Window. The pre-fix fill is excluded from valid strategy acceptance.
-- [ ] If shown: AI Test read or runner output is a fresh real model response using correctly scaled market data, with Hold retained as a valid result. The earlier zero-opening response remains failure evidence.
-- [ ] If shown: X-media proof includes the original mention, saved sender, matching transaction and acknowledged reply containing the inspected card. The 20:56 test has a confirmed fill and public media acknowledgement, but its receipt triggered a recursive refusal; posting is disabled pending the suppression fix. Verify the actual card and no further recursive delivery before presenting this as a clean flow. A local PNG or healthy polling check is insufficient.
-- [ ] Current source access is honestly described; no “open source” statement or anonymous GitHub screenshot until that access is verified.
+1. Complete the remaining draft fields in the existing Zen session using the [prepared description](buidl-description-2026-09-07.md) and the owner's actual contact details.
+2. Check the final project name, app, docs, source and video links from an anonymous session. Review X's retained testnet demonstration and its transaction link.
+3. Compare the preview against the acceptance ledger. Preserve testnet labeling, AI Hold/loss evidence, upstream availability limitations and documented backlog.
+4. Review any final consent or agreement yourself. The owner performs the actual submission.
+5. Save the submitted project URL/id, acknowledgement time with timezone and final artifact revisions. Until that acknowledgement exists, the status is **prepared**, not **submitted**.
 
-Unneeded pending scenes can be omitted from the video. Their omission does not mark their product acceptance complete; the live ledger retains that remaining work.
-
-## Owner-session submission runbook
-
-1. Open the official event page and log in through the owner-controlled DoraHacks session.
-2. Inspect the actual submission form. Record its required fields and limits exactly as shown, plus the explicit deadline timezone if available. Do not prefill invented field names from this checklist.
-3. Prepare responses using the final project name, actual app/docs/repository links, truthful implementation description and finished video URL. Only map these into fields that the form actually presents.
-4. Check every link as a judge would see it. Confirm source access and video playback outside the owner session. Ensure no link points to localhost, an ignored evidence path or an unpublished draft.
-5. Preview the completed submission and compare each claim against its screen/receipt. Keep required testnet/GitHub/video artifacts distinct from optional deck/feedback.
-6. The owner performs the final submission action. Save the confirmation page, submitted project URL/id, submission time with timezone and the final artifact revisions. Until that acknowledgement exists, status remains **prepared**, not **submitted**.
-
-## Final status record to complete after submission
+## Release record
 
 | Field | Value |
 | --- | --- |
-| Actual form inspected at | Pending |
-| Displayed deadline and browser timezone | 8 September 2026, 19:00 in the verified UTC+1 browser; 18:00 UTC by conversion, event itself has no timezone label |
+| Actual form inspected | 7 September 2026, authenticated Zen; Profile and Details verified |
+| Displayed cutoff | 8 September 2026 19:00 in UTC+1 browser; 18:00 UTC by conversion |
 | Final app deployment/source revision | Pending final release verification |
-| Judge-accessible repository URL and access check | Pending |
-| Finished video URL and measured duration | Pending |
-| Optional artifacts included | Pending owner selection |
+| Judge-accessible source | Pending redistribution terms and access verification |
+| Video | 166 seconds; public playback verification pending final deployment |
+| X cleanup | Exact nine-post batch inventoried; action-time deletion confirmation pending |
 | Submitted project URL/id | Not submitted |
-| Submission acknowledgement time and timezone | Not submitted |
-
-The checklist is current only to its recorded preparation and coordinator evidence. Reconcile it with the final [acceptance ledger](../implementation/acceptance-2026-09-06.md) after the ongoing live rehearsal.
+| Submission acknowledgement | Not submitted |

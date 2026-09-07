@@ -57,7 +57,7 @@ export const TICKET = {
   gate: {
     connect: "Bets are placed from your wallet and winnings land back in it. Connect to place one.",
     topUp: "Top up to place this",
-    holds: (have: string, symbol: string) => `Wallet holds ${have} ${symbol}.`,
+    holds: (have: string, symbol: string, source: string) => `${source} holds ${have} ${symbol}.`,
     need: (need: string, symbol: string) => `Add ${need} ${symbol} more to place this — grab test funds from the faucet if you're short.`,
     empty: "Grab test funds from the faucet to place one.",
     addMoney: "Add money",

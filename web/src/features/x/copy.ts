@@ -8,8 +8,13 @@ import { SHARE } from "@/features/share/copy";
 
 export const X_HANDLE = SHARE.handle;
 
+export const X_LINK_STATUS = {
+  checking: "Checking your X connection…",
+  unavailable: "X sign-in is temporarily unavailable. Please try again shortly.",
+} as const;
+
 export const X_ERRORS = {
-  notConfigured: "Sign in with X is not configured on this deployment.",
+  notConfigured: X_LINK_STATUS.unavailable,
   storeUnavailable: "The social store is not connected on this deployment.",
   signInFirst: "sign in with X first",
   invalidWallet: "invalid wallet",
@@ -123,7 +128,7 @@ export const X_CARD = {
   notEnough: "Not enough collateral in your wallet. Grab some from the faucet on Markets first.",
   wrongWalletFund: "This X account bets from a different wallet. Connect that wallet before funding.",
   notDeployed: "The Trading Balance contract is not deployed on this network yet.",
-  noExecutor: "No executor wallet is configured on this deployment (X_EXECUTOR_ADDRESS).",
+  noExecutor: "Trading from X is temporarily unavailable. Please try again shortly.",
 } as const;
 
 export const CLAIM = {

@@ -10,7 +10,7 @@ import { setTimeout as pause } from "node:timers/promises";
 import { getDb } from "../src/client";
 import { ensureSchema } from "../src/migrate";
 import { SCHEMA_SQL } from "../src/schema";
-import { xReceiptByMention, xReceiptUpsert, xRecordExecutionJournal, xRecoveryCandidates, xStoreRecoveredReceipt, xHasUnresolvedBroadcast, type XReceiptRecord } from "../src/x";
+import { xReceiptByMention, xReceiptsByWallet, xReceiptUpsert, xRecordExecutionJournal, xRecoveryCandidates, xStoreRecoveredReceipt, xHasUnresolvedBroadcast, type XReceiptRecord } from "../src/x";
 import { xGetRelayHealth, xSetStageHealth } from "../src/x-health";
 import {
   xAcquireReplyDelivery, xBeginReplyPost, xClaimMention, xFinishReplyPost,
@@ -329,6 +329,46 @@ async function main() {
     assert.deepEqual(rows[2], { mention_id: "8091", state: "failed", reply_id: null, media_id: "994", reply_text: "UNKNOWN PUBLIC RESULT" });
     assert.equal(rows[3]?.state, "failed");
     assert.equal(await xAcquireReplyDelivery(), null);
+  });
+
+  await check("wallet orders exclude known bot receipts before applying the limit while keeping their audit rows", async () => {
+    const wallet = `0x${"44".repeat(20)}`;
+    await xClaimMention({ ...receipt("1100", "filled"), wallet, atMs: 1_800_000_000_000 }, true);
+    await xClaimMention({ ...receipt("1101"), wallet, atMs: 1_800_000_000_001 }, true);
+    await xClaimMention({ ...receipt("1102", "unknown"), wallet, atMs: 1_800_000_000_002 }, true);
+    await xClaimMention({ ...receipt("1103"), wallet, atMs: 1_800_000_000_003 }, true);
+    await xClaimMention({ ...receipt("1104"), wallet: `0x${"55".repeat(20)}`, atMs: 1_800_000_000_004 }, true);
+    // Reproduce the acknowledged old recursion, without asking the guarded delivery API to send it.
+    await sql`UPDATE x_reply_delivery SET state = 'sent', reply_id = '1102' WHERE mention_id = '1100'`;
+    await sql`UPDATE x_reply_delivery SET state = 'sent', reply_id = '1103' WHERE mention_id = '1102'`;
+    await xSuppressRelayReplyDeliveries();
+    assert.deepEqual((await xReceiptsByWallet(wallet, 30))?.map(r => r.mentionId), ["1101", "1100"]);
+    assert.deepEqual((await xReceiptsByWallet(wallet, 1))?.map(r => r.mentionId), ["1101"]);
+    assert.equal((await xReceiptByMention("1102"))?.status, "unknown");
+    assert.equal((await xReceiptByMention("1103"))?.status, "refused");
+    assert.equal((await sql`SELECT mention_id FROM x_receipts`).length, 5);
+    const health = await xGetRelayHealth();
+    assert.equal(health?.unresolvedExecutions, 0, "a known bot output is not an unresolved wallet order");
+    assert.equal(health?.deliveryNeedsInspection, 0, "a permanently suppressed recursive job is resolved");
+  });
+
+  await check("suppressed delivery is resolved while real failures, ambiguous posts and stale posts remain actionable", async () => {
+    await jobFor("1110");
+    await xSuppressRelayReplyDeliveries("1110");
+    assert.equal((await xGetRelayHealth())?.deliveryNeedsInspection, 0);
+    const failure = await jobFor("1111");
+    await xStopReplyDelivery(failure, "failed", "preparation-failed");
+    await sql`UPDATE x_reply_delivery SET error_code = NULL WHERE mention_id = '1111'`;
+    const unknown = await jobFor("1112");
+    await xBeginReplyPost(unknown, "UNCERTAIN", null);
+    await xStopReplyDelivery(unknown, "unknown", "post-not-acknowledged");
+    const stale = await jobFor("1113");
+    await xBeginReplyPost(stale, "STILL POSTING", null);
+    await sql`UPDATE x_reply_delivery SET updated_at = now() - interval '6 minutes' WHERE mention_id = '1113'`;
+    await xClaimMention(receipt("1114", "unknown"), false);
+    const health = await xGetRelayHealth();
+    assert.equal(health?.deliveryNeedsInspection, 3);
+    assert.equal(health?.unresolvedExecutions, 1);
   });
 
   console.log(`All ${passed} X delivery SQL integration checks passed on disposable Postgres 17.`);

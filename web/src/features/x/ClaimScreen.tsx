@@ -9,7 +9,7 @@ import { ConnectButton } from "@/features/markets/wallet";
 import { useVenue } from "@/features/markets/useVenue";
 import { useWalletSession } from "@/lib/wallet-session";
 import { ClaimReceiptCard } from "./ClaimReceiptCard";
-import { CLAIM } from "./copy";
+import { CLAIM, X_LINK_STATUS } from "./copy";
 import { useXStatus } from "./useXStatus";
 
 const RETURN_TO = "/claim";
@@ -87,8 +87,10 @@ export function ClaimScreen() {
             <Step index={1} label={CLAIM.steps.prove} done={Boolean(session)}>
               {session ? (
                 <div className="xc-done"><span className="xc-dot" /> {CLAIM.signedInAs(session.handle)}</div>
-              ) : link.status?.configured === false ? (
-                <p className="xc-hint">{`Sign in with X is not configured here — set ${link.status.missing.join(", ")}.`}</p>
+              ) : link.loading ? (
+                <p className="xc-hint" role="status">{X_LINK_STATUS.checking}</p>
+              ) : !link.status?.configured ? (
+                <p className="xc-hint">{X_LINK_STATUS.unavailable}</p>
               ) : (
                 <a href={link.startUrl(RETURN_TO)} className="xc-x-btn">
                   <XGlyph /> {CLAIM.signIn}

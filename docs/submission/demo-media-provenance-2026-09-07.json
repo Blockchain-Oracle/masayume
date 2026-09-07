@@ -1,0 +1,251 @@
+{
+  "title": "Masayume Shannon testnet demo",
+  "captureDates": [
+    "2026-09-06",
+    "2026-09-07"
+  ],
+  "renderedAtUtc": "2026-09-07T03:40:15.280764+00:00",
+  "durationSeconds": 166.0,
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "videoFrames": 4980,
+  "voice": "Stock macOS Daniel, no voice clone",
+  "transcript": "../../web/src/features/demo/transcript.json",
+  "captionTiming": "Exact narration text; phrase times use word weights within measured scene durations.",
+  "review": "Coordinator visually reviewed the selected proof captures. Full decode, transcript equality and timing checks passed. Auditory review was unavailable; no claim of human listening review.",
+  "assets": [
+    {
+      "file": "masayume-demo-2026-09-07.mp4",
+      "bytes": 9612322,
+      "sha256": "c544975160b447dea5cb80ded6f647ce2af27b7f02c26b7ecf6dfc77529caf89"
+    },
+    {
+      "file": "masayume-demo-2026-09-07.vtt",
+      "bytes": 4136,
+      "sha256": "2263bec0ca3f8f2172c6006814704ce0c779d5b7203afd572dd919c20387a47c"
+    },
+    {
+      "file": "masayume-demo-2026-09-07.jpg",
+      "bytes": 134561,
+      "sha256": "b630bddaaaa238b7f3677cd8ea6fd380620a6b286f46fedda08632a5e67b3ab0"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "01-intro",
+      "startSeconds": 0,
+      "endSeconds": 13,
+      "sourceKind": "real_cua_recording",
+      "captureDate": "2026-09-06",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "timingSource": "metadata.timestamp",
+      "captureFirstOffsetSeconds": 0.023334026336669922,
+      "captureLastOffsetSeconds": 12.632582902908325,
+      "finalFrameHoldSeconds": 0.3674170970916748,
+      "sourceFrameCount": 124,
+      "firstSourceFrame": {
+        "file": "00000.jpg",
+        "sha256": "121183ba83b1b1ef13a3b7b2279ff67ad12ef44ea3f06e1e8191efd15ea576e2"
+      },
+      "lastSourceFrame": {
+        "file": "00123.jpg",
+        "sha256": "00163980d77f21ab8704a0c0d88534e80f0dcf302f54548ac355efc30a0a8f55"
+      },
+      "orderedSourceFilesSha256": "4e3a91d195f7bc3eb85220c5fec5500cd7e3fa45fabc9e2af2aed7f53935a5e4"
+    },
+    {
+      "id": "02-markets",
+      "startSeconds": 13,
+      "endSeconds": 28,
+      "sourceKind": "real_cua_recording",
+      "captureDate": "2026-09-06",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "timingSource": "metadata.timestamp",
+      "captureFirstOffsetSeconds": 0.03460693359375,
+      "captureLastOffsetSeconds": 13.621640920639038,
+      "finalFrameHoldSeconds": 1.378359079360962,
+      "sourceFrameCount": 32,
+      "firstSourceFrame": {
+        "file": "00000.jpg",
+        "sha256": "cf92e6f29e8090a5d35377399e36e5a261b1a85c09e3fb99a1f3ffbbd47a4dff"
+      },
+      "lastSourceFrame": {
+        "file": "00031.jpg",
+        "sha256": "61101324205c9545ad1d142552b304addb534fc47c85320bf8f050e9fb8f9288"
+      },
+      "orderedSourceFilesSha256": "d66410adc333900925b055a3e19e2ca1935fb0ed2f75f87c8b8fc6583431e446"
+    },
+    {
+      "id": "03-builder",
+      "startSeconds": 28,
+      "endSeconds": 51,
+      "sourceKind": "approved_real_capture",
+      "captureDate": "2026-09-06",
+      "dimensions": [
+        1274,
+        717
+      ],
+      "sourceFrameCount": 1,
+      "sourceImage": {
+        "file": "ai-corrected-read-1280-dark.png",
+        "sha256": "147bc35c726e61e253fcc5d7dba57b13b86bb0e1907f7572a5eda873214f3650"
+      }
+    },
+    {
+      "id": "04-publication",
+      "startSeconds": 51,
+      "endSeconds": 66,
+      "sourceKind": "real_cua_hold",
+      "captureDate": "2026-09-06",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "sourceFrameCount": 1,
+      "sourceImage": {
+        "file": "hold.png",
+        "sha256": "56042d6ecc4aa43f997f4f2394491a515c018274c17434d8042dad276df85122"
+      }
+    },
+    {
+      "id": "05-permission",
+      "startSeconds": 66,
+      "endSeconds": 86,
+      "sourceKind": "real_cua_recording",
+      "captureDate": "2026-09-06",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "timingSource": "metadata.timestamp",
+      "captureFirstOffsetSeconds": 0.11368680000305176,
+      "captureLastOffsetSeconds": 18.496574878692627,
+      "finalFrameHoldSeconds": 1.503425121307373,
+      "sourceFrameCount": 54,
+      "firstSourceFrame": {
+        "file": "00000.jpg",
+        "sha256": "7dd7fb4bcaec4cd0dc2c719b8faf4fe6fe51a8ac7a8c93cd9880bb2ff832d359"
+      },
+      "lastSourceFrame": {
+        "file": "00053.jpg",
+        "sha256": "a08663aa0b4192649b0f8d062a5bfdb9e91b18dbbaa3240891938f41e99fe6a5"
+      },
+      "orderedSourceFilesSha256": "8eea52c29b01082eb78a555fd452b37cc37f8a0f0b65faf1cb76076beb954fee"
+    },
+    {
+      "id": "06-x",
+      "startSeconds": 86,
+      "endSeconds": 109,
+      "sourceKind": "approved_real_capture",
+      "captureDate": "2026-09-06",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "sourceFrameCount": 1,
+      "sourceImage": {
+        "file": "x-delivered-receipt-1280.png",
+        "sha256": "2170eaf40687d81ed4fb620d10be06fe577d51c79bab1e360e0fb020fedecea6"
+      }
+    },
+    {
+      "id": "07-moonshot",
+      "startSeconds": 109,
+      "endSeconds": 128,
+      "sourceKind": "real_cua_hold",
+      "captureDate": "2026-09-07",
+      "dimensions": [
+        1274,
+        717
+      ],
+      "note": "Clean paid-round capture recorded on 7 September 2026 at 03:21 UTC; replaces the earlier overlapping-header still.",
+      "sourceFrameCount": 1,
+      "sourceImage": {
+        "file": "hold.png",
+        "sha256": "f8a1a7da479d2eb01a5322dbfe615c9708343ce17322aba1816c02612b61b9dc"
+      }
+    },
+    {
+      "id": "08-arcade",
+      "startSeconds": 128,
+      "endSeconds": 139,
+      "sourceKind": "real_cua_recording",
+      "captureDate": "2026-09-07",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "timingSource": "metadata.timestamp",
+      "captureFirstOffsetSeconds": 0.04635310173034668,
+      "captureLastOffsetSeconds": 10.977744102478027,
+      "finalFrameHoldSeconds": 0.022255897521972656,
+      "sourceFrameCount": 258,
+      "firstSourceFrame": {
+        "file": "00000.jpg",
+        "sha256": "5e6285059efb69763a8f98b8636c11b1ec1e935dc61c58a0d5e0f5eb7cda645f"
+      },
+      "lastSourceFrame": {
+        "file": "00257.jpg",
+        "sha256": "ce99d4db52e95c0d8a3ff0aa9e6e669570f9f963336655f854ba3719e6d7385c"
+      },
+      "orderedSourceFilesSha256": "480115f265f6cdb65820bd3e95bb1401a4439774653df2d9985ad594c1fd3c25"
+    },
+    {
+      "id": "09-architecture",
+      "startSeconds": 139,
+      "endSeconds": 158,
+      "sourceKind": "real_cua_recording",
+      "captureDate": "2026-09-07",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "timingSource": "metadata.timestamp",
+      "captureFirstOffsetSeconds": 5.684325933456421,
+      "captureLastOffsetSeconds": 12.169118881225586,
+      "finalFrameHoldSeconds": 6.830881118774414,
+      "sourceFrameCount": 13,
+      "firstSourceFrame": {
+        "file": "00000.jpg",
+        "sha256": "b99029176997a5da32a9cfd9bdbe7dfb6d58c4ff85f2eee7464a405d3ee7ef86"
+      },
+      "lastSourceFrame": {
+        "file": "00012.jpg",
+        "sha256": "8b861954642ac747dfc7ddf551a62721b27598826f58f4944dbb02f60629120d"
+      },
+      "orderedSourceFilesSha256": "9952777abbb575df491c0f458081d8c051cd87c337e990d9ca44f131b2a98f00"
+    },
+    {
+      "id": "10-close",
+      "startSeconds": 158,
+      "endSeconds": 166,
+      "sourceKind": "real_cua_recording",
+      "captureDate": "2026-09-07",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "timingSource": "metadata.timestamp",
+      "captureFirstOffsetSeconds": 0.034150123596191406,
+      "captureLastOffsetSeconds": 7.944026947021484,
+      "finalFrameHoldSeconds": 0.055973052978515625,
+      "sourceFrameCount": 48,
+      "firstSourceFrame": {
+        "file": "00000.jpg",
+        "sha256": "1fababb48d86c6b35b3965c2cf0901b158cdd8e0f041026971e574c4ea023336"
+      },
+      "lastSourceFrame": {
+        "file": "00047.jpg",
+        "sha256": "2a6522e74bbcea3b97486085b1827c770fc56b9048547fcdc0288eee72c670a5"
+      },
+      "orderedSourceFilesSha256": "81a214c83efb3339528a174362865c208ab1e1c1cca65b20506aff7d67892c72"
+    }
+  ]
+}
