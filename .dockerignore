@@ -13,6 +13,8 @@ contracts/out
 contracts/cache
 contracts/broadcast
 .masayume
+.claude
+.review
 **/*.log
 **/.env
 **/.env.*

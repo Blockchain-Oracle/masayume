@@ -8,4 +8,6 @@ contracts/cache
 contracts/broadcast
 services/ops/node_modules
 .masayume
+.claude
+.review
 **/*.log
