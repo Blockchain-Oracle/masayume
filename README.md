@@ -73,6 +73,8 @@ Real app captures from 6–7 September 2026 show the corrected AI Hold read, con
 
 Masayume uses **`@somnia-chain/markets-sdk` 0.28.1** on **Somnia Shannon (50312)**. The [DreamDEX integration guide](https://docs.masayume.app/builders/dreamdex-sdk) maps each product feature to the SDK methods, source files and actual transaction evidence.
 
+[![How Masayume uses the DreamDEX SDK: public market reads, direct wallet orders, and Masayume contract execution](https://docs.masayume.app/diagrams/dreamdex-sdk.png)](https://docs.masayume.app/builders/dreamdex-sdk)
+
 | Connection | Code to follow |
 | --- | --- |
 | Discover Windows, share live books and read prices | [Account-free SDK runtime](packages/markets/src/runtime/read-runtime.ts), [market discovery](packages/markets/src/provider/markets.ts), [live coordinator](packages/markets/src/runtime/coordinator.ts) |
@@ -162,7 +164,7 @@ The user documentation lives in [its own repository](https://github.com/Blockcha
 | [`scripts/`](scripts/) | Architecture checks, protocol probes and setup utilities |
 | [`docs/assets/readme/`](docs/assets/readme/) | Branded SVG sources, PNG exports and video-link instructions |
 
-The [source-led architecture record](docs/architecture/yosuku-source-led-migration/README.md) governs product and implementation decisions. [`context/`](context/README.md) retains the research behind it; `_bmad-output/` is superseded historical planning. For endpoint contracts and integration details, use the [API reference](https://docs.masayume.app/builders/api).
+Use the [architecture maps](https://docs.masayume.app/architecture/overview), [DreamDEX integration guide](https://docs.masayume.app/builders/dreamdex-sdk) and [API reference](https://docs.masayume.app/builders/api) for implementation boundaries. The [acceptance ledger](docs/implementation/acceptance-2026-09-06.md) records dated verification. AI authoring notes, design drafts, reference clones and superseded planning are local, ignored build aids; they are not required to run the app.
 
 Both GitHub repositories currently require access. The documentation and its published artwork are available through the docs domain; source links in the guides require repository access.
 

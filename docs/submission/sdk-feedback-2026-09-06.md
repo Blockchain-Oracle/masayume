@@ -2,7 +2,7 @@
 
 Prepared 6 September and reviewed again 7 September 2026 for Masayume, using `@somnia-chain/markets-sdk` **0.28.1** on Somnia Shannon (chain **50312**). This report has not been submitted. It describes our integration and identifies suggestions; it does not claim that every suggestion is a reproduced upstream defect.
 
-The required submission artifacts in the [organizer brief retained in this repository](../../context/00-hackathon-brief.md#submission-each-team) are a working testnet prototype, a GitHub repository and a 2–3 minute demo video. This SDK/documentation report and a presentation deck are optional. Preparing this report does not complete those required artifacts or establish live acceptance.
+The required submission artifacts recorded in the [submission checklist](submission-checklist-2026-09-06.md) are a working testnet prototype, a GitHub repository and a 2–3 minute demo video. This SDK/documentation report and a presentation deck are optional. Preparing this report does not complete those required artifacts or establish live acceptance.
 
 ## What the SDK enabled
 
@@ -46,7 +46,7 @@ Evidence: [strategy lifecycle](../../services/ops/src/actors/strategy-runner/lif
 
 Our earlier fork verification recorded an instantly mined transaction whose receipt wait through the shared SDK client did not finish during the 90-second wait. Our contract adapter now polls `getTransactionReceipt` directly and preserves a known hash when waiting fails. This is dated fork evidence, not a newly reproduced Shannon or current SDK-wide issue. A troubleshooting recipe that separates “receipt exists,” “new-head subscription is alive,” and “receipt waiter is still pending” would help isolate the transport involved.
 
-Evidence: [dated fork verification](../../context/41-eventvault-fork-verification-2026-09-02.md), [receipt polling adapter](../../packages/markets/src/vault/write.ts).
+Evidence: the locally retained fork verification dated 2 September 2026 and the [receipt polling adapter](../../packages/markets/src/vault/write.ts). The original research note is ignored authoring context, not a dependency of the application or public documentation.
 
 During the 6 September release rehearsal, our StrategyRegistry publication also exposed a separate **Masayume integration defect**: we reused a fixed 4,000,000-gas envelope for a variable-size metadata write. The transaction consumed that full allowance and reverted; the release coordinator's read-only estimate for the same call was `0x51e49c` (5,366,940 gas), while `eth_call` succeeded. The inspected fix estimates the exact registry call, adds 20% headroom and checks the corresponding gas balance before sending. Its live retry belongs in the release acceptance record.
 

@@ -24,11 +24,37 @@ next-env.d.ts
 *.pem
 coverage/
 
-# research clones (not ours)
-reference/
-
-# agent worktrees
-.claude/worktrees/
+# Local AI authoring tools, memory and research (keep on disk, not in Git)
+/.21st/
+/.claude/
+/.codex/
+/.agents/
+/.agent/
+/.cursor/
+/.windsurf/
+/_bmad/
+/_bmad-output/
+/context/
+/reference/
+/references/
+/docs/plans/
+/docs/architecture/
+/docs/implementation/RESUME.md
+/docs/implementation/parity-ledger.md
+/docs/implementation/needs-user-review-*.md
+/docs/implementation/*-for-codex.md
+/docs/marketing/previews/
+/docs/marketing/reply-card-direction.md
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+prompt.md
+PROMPT.md
+.prompt.md
+*.prompt.md
+.pom.md
+*.pom.md
+.memlog.md
 
 # UI review screenshots (local)
 .review/

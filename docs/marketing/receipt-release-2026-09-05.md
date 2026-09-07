@@ -21,7 +21,7 @@ Twelve disposable Postgres integration checks passed, including concurrent claim
 
 Run the isolated database check with `pnpm exec tsx packages/db/scripts/test-x-reply-delivery-postgres.ts`. It creates its own loopback database and never uses the caller's DATABASE_URL.
 
-The six [DEMO previews](previews/README.md) are reproducible and visibly marked as fixtures. Actual receipt-component fixtures with the real CSS were checked at 320, 390 and 1280 pixels; they include tiny amounts, historical rows, long instructions and long reasons, with no content overflow. Unit tests mock transport and signing; they do not post or trade.
+The six DEMO previews were reproducible and visibly marked as fixtures; they were moved to local, ignored authoring material on 7 September. The [runtime renderer and its tests](../../services/ops/src/actors/x-relay/reply-card.test.ts) remain tracked. Actual receipt-component fixtures with the real CSS were checked at 320, 390 and 1280 pixels; they include tiny amounts, historical rows, long instructions and long reasons, with no content overflow. Unit tests mock transport and signing; they do not post or trade.
 
 ## Boundaries
 

@@ -6,7 +6,7 @@ Prepared 5 September 2026. The owner has completed the X profile update. This ki
 
 1. Keep the [approved banner](assets/x-profile-banner.png) and [profile copy](profile-copy.json) as source files. The PNG is 2172 × 724 pixels, exactly 3:1, approximately 1.17 MB. X recommends 1500 × 500; this master keeps that ratio. It is generated raster artwork, not an editable SVG.
 2. Work through the [two-week promotion plan](promotion-plan-2026-09-05.md), using actual recordings and each feature's documented prerequisites. Drafts remain for manual publication.
-3. See the [receipt-card design](reply-card-direction.md), [six DEMO previews](previews/README.md) and [release evidence](receipt-release-2026-09-05.md). The [source audit](x-reply-audit-2026-09-05.md) records the earlier behavior that prompted these changes.
+3. See the [receipt-card renderer](../../services/ops/src/actors/x-relay/reply-card.ts) and [release evidence](receipt-release-2026-09-05.md). The [source audit](x-reply-audit-2026-09-05.md) records the earlier behavior that prompted these changes. Design drafts and DEMO previews are retained locally as ignored authoring material.
 
 ## Recommended bio
 
@@ -21,7 +21,7 @@ Use `https://masayume.app` in the separate Website field. The copy identifies th
 | [Profile banner](assets/x-profile-banner.png) | X header | Approved; owner reports profile work complete |
 | [Reply concept](assets/x-reply-filled-concept.png) | Approved visual direction | Clearly marked DEMO; not a real transaction |
 | [Asset manifest](assets/manifest.json) | Dimensions, provenance and hashes | Original image bytes retained |
-| [Receipt previews](previews/README.md) | Six deterministic status cards | Reproducible DEMO fixtures |
+| [Receipt renderer](../../services/ops/src/actors/x-relay/reply-card.ts) | Deterministic status cards | Design previews are local, ignored fixtures |
 | [Promotion plan](promotion-plan-2026-09-05.md) | Post drafts, clip scripts and metrics | Manual plan for later |
 
 ## Visual direction

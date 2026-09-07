@@ -15,7 +15,7 @@ This audit covers source access, provenance, shipped assets, the supplied redact
 | Reference clones | `reference/` is ignored and has zero tracked files in the app repository; copied/adapted material elsewhere remains part of the app |
 | Public app and docs | Their deployed websites are publicly accessible. Public deployment and public GitHub source access are separate facts. |
 
-The [direction authority](../architecture/yosuku-source-led-migration/00-direction-authority.md) requires source-led Yosuku fidelity and identifies missing license documents. The [parity ledger](../implementation/parity-ledger.md), in its 1 September 2026 provenance row, records **“User approved (owns/has permission)”** for Yosuku source, CSS, tokens and assets. That approval already authorizes the implementation work; this audit does not ask to repeat it. The missing record is the scope and notice for **public source redistribution and any project-wide license**.
+The locally retained direction authority requires source-led Yosuku fidelity and identifies missing license documents. The local parity ledger, in its 1 September 2026 provenance row, records **“User approved (owns/has permission)”** for Yosuku source, CSS, tokens and assets. That approval already authorizes the implementation work; this audit preserves it after the AI authoring notes were untracked on 7 September. The missing record is the scope and notice for **public source redistribution and any project-wide license**.
 
 ## Material reference dependencies
 
@@ -37,7 +37,7 @@ A SHA-256 whole-file comparison of tracked source and common image/font/audio fo
 - Eleven identical Flicky asset files: `m6x11plus.ttf` corresponds to Flicky's `pixel.ttf`, and all ten shipped game MP3 files match.
 - One identical six-line utility: `web/src/lib/utils.ts` matches Flicky's `packages/ui/src/lib/utils.ts`. It is the common `clsx` / `tailwind-merge` `cn` helper shape; equality alone does not establish which project supplied it.
 
-This was a provenance inventory and whole-file comparison, not a comprehensive fragment-similarity or rights audit. The detailed independent-implementation rule is in [game architecture](../architecture/yosuku-source-led-migration/06-game-architecture.md) and the dated [game research](../../context/52-games-research-2026-09-03.md).
+This was a provenance inventory and whole-file comparison, not a comprehensive fragment-similarity or rights audit. The independent-implementation rule is preserved in [third-party notices](../../THIRD_PARTY_NOTICES.md#game-references). The original architecture and research notes remain local, ignored authoring material.
 
 ## Shipped asset terms
 
@@ -86,10 +86,10 @@ This means no live credential was identified among the supplied findings. It is 
 
 1. **Record the public redistribution scope for the already approved Yosuku reuse.** Identify the rights holder / permission record, the applicable copyright notice, whether permission covers public distribution of modified code, CSS, assets and documentation/screenshots, and any required attribution or exclusions. The current ledger records ownership/permission but not those terms.
 2. **Select a project-level source license, if one is intended.** Specify which first-party app/docs material it covers and preserve third-party exceptions. A root MIT file must not silently purport to relicense Yosuku-derived portions, the attribution-only pixel font, or unrelated upstream material.
-3. **Decide what research evidence belongs in the public source archive.** In particular, confirm permission or remove/exclude the five PIPS research screenshots from the public release tree; source clones are already ignored. Attribution alone is not a new permission grant.
+3. **Research cleanup settled on 7 September.** The owner requested exclusion of AI build context, including the five PIPS research screenshots. They are now local and ignored, alongside reference clones; older Git history is unchanged.
 4. **Make the intended app/docs repositories accessible to judges after those terms are recorded.** Neither repository visibility nor hackathon submission was changed by this audit. If private judge access is supported by the actual submission process, record that choice explicitly; do not describe private source as publicly open source.
 
-The owner-facing question is: **For the Yosuku material whose reuse you already approved, what rights-holder notice and public redistribution terms should accompany Masayume, and which license should cover our own app and documentation while preserving the listed third-party terms? Should the PIPS research screenshots remain in that public archive?**
+The owner-facing question is: **For the Yosuku material whose reuse you already approved, what rights-holder notice and public redistribution terms should accompany Masayume, and which license should cover our own app and documentation while preserving the listed third-party terms?**
 
 No answer has been inferred from a GitHub badge, a fork relationship, public website availability, or a general permission to continue implementation. This question concerns the concrete public release package, not a request to redo approved design or development work.
 
@@ -98,3 +98,9 @@ No answer has been inferred from a GitHub badge, a fork relationship, public web
 New app commits through `9bb7238` and docs commits through `7bfd240` were scanned with gitleaks; no new findings were detected. The original full-history findings and their prior dispositions remain preserved above. The app branch is pushed with draft PR #1, docs main is pushed, and both deployed sites are verified. This does not change repository visibility or grant a blanket license.
 
 The 166-second demo, captions and poster are published under the app's `/video/` path and their public bytes match the reviewed files. Demo provenance identifies actual dated captures and the stock Daniel voice. Local `.claude` worktrees and `.review` material are excluded from both deployment uploads. Existing reference-code redistribution terms remain unresolved; both GitHub repositories remain private pending that decision.
+
+### Owner-requested authoring cleanup
+
+On 7 September, 112 application files and six documentation design/review files were removed from Git tracking while preserving their local bytes. This includes 21st design context, Claude memory, BMAD output, research and reference screenshots, prompts, handoffs, design previews and ten previously ignored Foundry broadcast logs. The dated inventory tables above describe the earlier audit tree; the PIPS screenshots are no longer in the current tracked tree. Git, Vercel and Docker exclusions cover the relevant local authoring material.
+
+Runtime code, tests, deployment address manifests, build dependencies, published documentation and third-party notices remain tracked. Public-facing links now use the maintained docs and retained acceptance records. This cleanup changes the current tree, not older Git history or repository visibility.

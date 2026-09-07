@@ -1,2 +1,0 @@
-- [SDK types location](sdk-types-location.md) — markets-sdk .d.ts are pnpm-hoisted under root node_modules/.pnpm, not packages/markets/node_modules
-- [Chain-port review brief](chain-port-review-brief.md) — lead's fixed dimensions + top-5 file:line format for packages/core + packages/markets reviews
