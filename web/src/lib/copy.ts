@@ -58,8 +58,8 @@ export const BANNER = {
 
 export const FAUCET = {
   title: "Fuel up",
-  intro: (amountText: string) => `Mint test tUSDC straight from the venue's own faucet — ${amountText} per tap, no sign-up.`,
-  cta: (amountText: string) => `Mint ${amountText} tUSDC`,
+  intro: (amountText: string) => `Get ${amountText} test tUSDC. Eligible wallets below 1 STT can receive a gas top-up to 2 STT first, while the allocation lasts.`,
+  cta: (_amountText: string) => "Get test funds",
   minted: "Minted — your balance updates on its own",
   minting: "Minting…",
   gasTitle: "Get STT for gas first",

@@ -127,7 +127,7 @@ These are upstream contracts used by the installed Somnia Markets SDK, rather th
 
 </details>
 
-The checked-in records are [`contracts/deployments/50312.json`](contracts/deployments/50312.json), the generated [Masayume addresses](packages/markets/src/addresses.masayume.json), and the [upstream address manifest](packages/markets/src/addresses.pinned.json). Read the [contract reference](https://docs.masayume.app/builders/contracts) for roles and configuration boundaries. Get test STT from the [Somnia testnet hub](https://testnet.somnia.network/) and follow the [balance guide](https://docs.masayume.app/trading/balances) for test collateral.
+The checked-in records are [`contracts/deployments/50312.json`](contracts/deployments/50312.json), the generated [Masayume addresses](packages/markets/src/addresses.masayume.json), and the [upstream address manifest](packages/markets/src/addresses.pinned.json). Read the [contract reference](https://docs.masayume.app/builders/contracts) for roles and configuration boundaries. Choose **Get test funds** in the header or Portfolio: eligible wallets below 1 STT receive a top-up to 2 STT, then confirm the separate 10,000 tUSDC SDK faucet mint. Gas allocations are bounded and depend on treasury availability. The panel retains external faucet links. See [wallet setup and recovery](https://docs.masayume.app/start/wallet) and the [operator configuration](https://docs.masayume.app/builders/configuration#testnet-onboarding-faucet-on-web).
 
 ## Run locally
 

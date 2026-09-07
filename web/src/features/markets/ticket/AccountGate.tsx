@@ -44,7 +44,7 @@ export function AccountGate({ session, availableBase, stakeBase, decimals, symbo
   const connected = session.isConnected;
   const short = connected && availableBase !== null && (availableBase === 0n || (stakeBase > 0n && stakeBase > availableBase));
   const needBase = availableBase !== null && stakeBase > availableBase ? stakeBase - availableBase : null;
-  const minting = faucet.state.phase === "submitted";
+  const minting = faucet.busy;
   const walletBalance = balanceSource === "wallet";
   const balanceLabel = walletBalance ? "Wallet" : balanceSource === "private" ? "Private balance" : "Trading Balance";
 
@@ -71,8 +71,8 @@ export function AccountGate({ session, availableBase, stakeBase, decimals, symbo
               {TICKET.gate.addMoney}
             </button> : <Link className="tk-gate-cta" href="/portfolio">{balanceSource === "private" ? "Manage private balance" : "Manage Trading Balance"}</Link>}
             {walletBalance && faucet.hasSigner && (
-              <button type="button" className="tk-gate-quiet" disabled={minting} onClick={() => void faucet.mint()} data-cursor="hover">
-                {minting ? FAUCET.minting : FAUCET.cta(String(FAUCET_UNITS))}
+              <button type="button" className="tk-gate-quiet" disabled={minting} onClick={() => window.dispatchEvent(new Event(OPEN_FUNDS_EVENT))} data-cursor="hover">
+                {minting ? faucet.label : FAUCET.cta(String(FAUCET_UNITS))}
               </button>
             )}
           </div>

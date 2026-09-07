@@ -23,3 +23,4 @@ export * from "./x-health";
 export * from "./strategies";
 export * from "./strategy-decisions";
 export * from "./strategy-attempts";
+export * from "./faucet";

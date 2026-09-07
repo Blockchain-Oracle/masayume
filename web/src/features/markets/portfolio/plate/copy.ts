@@ -5,7 +5,7 @@ export const PLATE = {
   elsewhere: "elsewhere",
   addMoney: "Add money",
   /** "Get test DUSDC" — the collateral is tUSDC here. */
-  getTest: "Get test tUSDC",
+  getTest: "Get test funds",
   inWallet: "In your wallet",
   /** The reference's betting account is the Trading Balance here, and every other surface calls it that. */
   inAccount: "In your Trading Balance",

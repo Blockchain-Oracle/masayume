@@ -115,7 +115,7 @@ export const PITCH = {
     h1a: "A wallet and a",
     h1b: "tap of the ",
     emph: "faucet",
-    lead: "Connect any EVM wallet, mint test tUSDC from the venue's own faucet in one tap, and fetch STT for gas from the Somnia faucet. A card on-ramp and social sign-in are the next stage — they are labelled that way in the product too, never dressed up as live.",
+    lead: "Connect any EVM wallet and choose Get test funds. Eligible wallets receive a small STT top-up before confirming the venue’s test tUSDC mint. External STT faucets remain available when our allocation is unavailable. A card on-ramp and social sign-in are the next stage — they are labelled that way in the product too, never dressed up as live.",
     cells: [
       ["Faucet", "tUSDC · up to 10,000 per tap", "LIVE"],
       ["Wallet", "any EVM wallet · switch to Shannon", "LIVE"],

@@ -3,6 +3,7 @@
 import type { Diagnosis } from "@masayume/core";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { openFunds } from "@/features/funding/credited";
 import { diagnosisCopy, ERROR_BOUNDARY } from "@/lib/copy";
 import { cn } from "@/lib/utils";
 
@@ -28,8 +29,9 @@ export function ErrorState({ diagnosis, retry, backHref, variant = "inline", cla
         <p className={cn("text-ink", boundary ? "type-headline" : "type-body-strong")}>{copy.headline}</p>
         <p className="type-body text-ink-secondary">{copy.body}</p>
       </div>
-      {(retry || backHref) && (
+      {(retry || backHref || diagnosis.kind === "out-of-gas") && (
         <div className="flex flex-wrap gap-2">
+          {diagnosis.kind === "out-of-gas" && <Button size="sm" onClick={openFunds}>Get test funds</Button>}
           {retry && (
             <Button variant="secondary" size="sm" onClick={retry}>
               {ERROR_BOUNDARY.retry}

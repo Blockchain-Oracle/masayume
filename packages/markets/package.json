@@ -5,6 +5,7 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./faucet": "./src/faucet/index.ts",
     ".": "./src/index.ts",
     "./chain": "./src/chain.ts",
     "./env": "./src/env.ts",

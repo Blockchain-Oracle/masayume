@@ -10,14 +10,16 @@ import { useWalletSession } from "@/lib/wallet-session";
 import { deriveFaucetBlocker } from "./faucet-blocker";
 import { GasRouting } from "./GasRouting";
 import { useFaucet } from "./useFaucet";
+import { FundingProgress } from "@/features/funding/FundingProgress";
 
 const AMOUNT_TEXT = FAUCET_UNITS.toLocaleString("en-US");
 
 /** One tap mints from the venue's own token faucet; every refusal names itself, never a silent no-op (FR-2). */
 export function FaucetCard({ className }: { className?: string }) {
   const session = useWalletSession();
-  const { state, mint, recheckGas, hasSigner } = useFaucet();
-  const blocker = deriveFaucetBlocker({ session, hasSigner, phase: state.phase, gasShort: state.gasShort });
+  const faucet = useFaucet();
+  const { state, mint, recheckGas, hasSigner } = faucet;
+  const blocker = deriveFaucetBlocker({ session, hasSigner, phase: faucet.busy ? "submitted" : state.phase, gasShort: false });
   const refusal = state.diagnosis && !state.gasShort ? state.diagnosis : null;
 
   return (
@@ -26,6 +28,7 @@ export function FaucetCard({ className }: { className?: string }) {
         <h3 className="type-title text-ink">{FAUCET.title}</h3>
         <p className="type-caption text-ink-secondary">{FAUCET.intro(AMOUNT_TEXT)}</p>
       </div>
+      {session.address && <FundingProgress address={session.address} faucet={faucet} />}
       {state.gasShort && session.address && (
         <GasRouting address={session.address} onRecheck={() => void recheckGas()} checking={state.checkingGas} />
       )}
@@ -36,7 +39,7 @@ export function FaucetCard({ className }: { className?: string }) {
         </p>
       )}
       <BlockedButton blocker={blocker} onClick={() => void mint()} size="lg" className="w-full">
-        {FAUCET.cta(AMOUNT_TEXT)}
+        {faucet.busy ? faucet.label : FAUCET.cta(AMOUNT_TEXT)}
       </BlockedButton>
     </section>
   );

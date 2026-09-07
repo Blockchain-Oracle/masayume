@@ -37,7 +37,7 @@ export const STEPS: readonly Step[] = [
     number: 1,
     title: "Connect & Fund",
     description:
-      "Connect any EVM wallet on Somnia Shannon testnet. Test collateral is tUSDC, minted straight from the venue's faucet (up to 10,000 per tap); gas is STT from the Somnia faucet.",
+      "Connect any EVM wallet on Somnia Shannon testnet. Get test funds adds STT to eligible wallets, then asks you to confirm a 10,000 tUSDC mint from the venue’s faucet. STT pays network fees.",
     icon: CoinsIcon,
     tone: "mint",
   },
@@ -175,7 +175,7 @@ export interface Faq {
 export const FAQS: readonly Faq[] = [
   {
     question: "What currency does Masayume use?",
-    answer: "tUSDC, the test collateral DreamDEX Event Contracts use on Somnia Shannon. Mint it from the venue's faucet on the Ticket; gas is STT from the Somnia testnet faucet.",
+    answer: "tUSDC, the test collateral DreamDEX Event Contracts use on Somnia Shannon. Choose Get test funds from the header or Portfolio. Eligible wallets receive STT for gas first, then you confirm the tUSDC mint. External STT faucets are available if needed.",
   },
   {
     question: "How is the outcome decided?",

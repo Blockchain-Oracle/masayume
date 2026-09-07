@@ -1,9 +1,4 @@
-/**
- * The money's words — `components/AddFunds.tsx` and `CreditWelcome.tsx` in the reference, with one change of
- * fact: Yosuku's faucet drips from a treasury with no signature, ours is the venue's own `faucet(uint)` that the
- * wallet signs, so "free" stays true and "no tap" does not. The reference's card checkout (`app/fund/page.tsx`)
- * and bridge row are not carried — the owner's ruling of 2026-09-04: one money rail on this testnet, the mint.
- */
+/** Test funds use a bounded STT treasury and a separate wallet-signed tUSDC mint. */
 export const FUNDING = {
   pill: {
     title: "Tap to add money.",
@@ -13,18 +8,18 @@ export const FUNDING = {
   },
   modal: {
     eyebrow: "Add funds · testnet",
-    title: "Add money",
-    body: "Masayume runs on testnet, so these are play chips, not real money. Mint some for free — it lands straight in your wallet.",
+    title: "Get test funds",
+    body: "Get free tUSDC for trading. If your wallet is low on STT, we can add gas first, subject to the daily allocation. Both land in your wallet on Somnia Shannon.",
     connectFirst: "Connect a wallet first.",
     account: "Your account",
     copied: "copied ✓",
-    request: (amount: string, symbol: string) => `Mint ${amount} ${symbol} free`,
+    request: (_amount: string, _symbol: string) => "Get test funds",
     requesting: "Minting…",
     done: (amount: string, symbol: string) => `${amount} ${symbol} added to your wallet.`,
     trade: "Trade from wallet →",
     close: "Close add funds",
-    needMore: "Need STT for gas? Get it from a Somnia faucet ↗",
-    gasFirst: "Minting is a transaction, so the wallet needs a little STT first:",
+    needMore: "External STT faucets ↗",
+    gasFirst: "Need gas while our allocation is unavailable? Use an external faucet:",
   },
   welcome: {
     eyebrow: "You're funded",

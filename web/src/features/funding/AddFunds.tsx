@@ -7,25 +7,18 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { TUsdcMark } from "@/components/icons/AssetMarks";
 import { useFaucet } from "@/features/markets/faucet";
+import { ConnectButton } from "@/features/markets/wallet";
 import { diagnosisCopy } from "@/lib/copy";
 import { useWalletSession } from "@/lib/wallet-session";
 import { FUNDING } from "./copy";
 import "./funding.css";
+import { FundingProgress } from "./FundingProgress";
 
 const short = (a: string) => `${a.slice(0, 8)}…${a.slice(-6)}`;
 
-/**
- * The reference's `AddFunds` (`components/AddFunds.tsx`): a centred dialog over a blurred scrim, opened from
- * the header's money pill or from anywhere via `masayume:open-funds`. One tap mints test funds. The reference's
- * card and bridge rows are gone by the owner's ruling (2026-09-04): this testnet has exactly one money rail, the
- * venue's faucet, and a row that leads nowhere is the dead end Yosuku's own header comment refused to ship.
- *
- * The one factual difference from the reference: its faucet is a treasury drip with no signature, ours is the
- * venue's `faucet(uint)` that the wallet signs — so the mint needs STT, and an empty tank routes to the STT
- * faucets here instead of failing later.
- */
+/** Shared test-funds dialog: eligible STT top-up, then the wallet-signed venue faucet mint. */
 export function AddFunds({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { address } = useWalletSession();
+  const { address, isRightChain } = useWalletSession();
   const faucet = useFaucet();
   const [copied, setCopied] = useState(false);
   const symbol = collateralOrNull()?.symbol ?? "tUSDC";
@@ -46,7 +39,7 @@ export function AddFunds({ open, onClose }: { open: boolean; onClose: () => void
   }, [open, onClose]);
 
   if (!open) return null;
-  const minting = faucet.state.phase === "submitted";
+  const minting = faucet.busy;
   const done = faucet.state.phase === "confirmed";
   const diagnosis = faucet.state.diagnosis;
 
@@ -68,7 +61,7 @@ export function AddFunds({ open, onClose }: { open: boolean; onClose: () => void
         <p className="fund-body">{FUNDING.modal.body}</p>
 
         {!address ? (
-          <div className="fund-connect-first">{FUNDING.modal.connectFirst}</div>
+          <div className="fund-connect-first"><p>{FUNDING.modal.connectFirst}</p><ConnectButton /></div>
         ) : (
           <>
             <div className="fund-account">
@@ -88,20 +81,25 @@ export function AddFunds({ open, onClose }: { open: boolean; onClose: () => void
               </button>
             </div>
 
+            <FundingProgress address={address} faucet={faucet} />
+            {!isRightChain && <ConnectButton />}
+
             {done ? (
               <Link href="/markets" onClick={onClose} className="fund-cta-vermilion" data-cursor="hover">
                 {FUNDING.modal.trade}
               </Link>
             ) : (
               <div className="fund-rows">
+                <p className="fund-foot-line">10,000 {symbol} + an eligible STT gas top-up.</p>
                 <button type="button" onClick={() => void faucet.mint()} disabled={minting || !faucet.hasSigner} className="fund-cta-white" data-cursor="hover">
                   <TUsdcMark className="fund-cta-mark" />
-                  {minting ? FUNDING.modal.requesting : FUNDING.modal.request(amountText, symbol)}
+                  {minting ? faucet.label : FUNDING.modal.request(amountText, symbol)}
                 </button>
               </div>
             )}
 
             {done && <p className="fund-msg fund-msg--ok">{FUNDING.modal.done(amountText, symbol)}</p>}
+            {done && <button type="button" className="fund-foot-link" onClick={faucet.resetCompleted}>Get more test funds</button>}
             {diagnosis && !done && <p className="fund-msg fund-msg--err">{diagnosisCopy(diagnosis.kind).headline}</p>}
 
             <div className="fund-foot">

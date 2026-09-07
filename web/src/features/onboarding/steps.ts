@@ -40,7 +40,7 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
   {
     title: "Your wallet signs",
     description:
-      "Connect any Somnia wallet. You need STT for gas and test tUSDC to bet; the faucet mints the tUSDC. Nothing here holds your funds and nothing signs on your behalf — every order is a transaction you approve yourself.",
+      "Connect any Somnia wallet and choose Get test funds. Eligible wallets receive STT for gas before you confirm the test tUSDC mint. Nothing here holds your funds and nothing signs on your behalf — every order is a transaction you approve yourself.",
   },
   {
     title: "Where your money sits",
