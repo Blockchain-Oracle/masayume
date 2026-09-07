@@ -92,3 +92,9 @@ This means no live credential was identified among the supplied findings. It is 
 The owner-facing question is: **For the Yosuku material whose reuse you already approved, what rights-holder notice and public redistribution terms should accompany Masayume, and which license should cover our own app and documentation while preserving the listed third-party terms? Should the PIPS research screenshots remain in that public archive?**
 
 No answer has been inferred from a GitHub badge, a fork relationship, public website availability, or a general permission to continue implementation. This question concerns the concrete public release package, not a request to redo approved design or development work.
+
+## 7 September release follow-up
+
+New app commits through `9bb7238` and docs commits through `7bfd240` were scanned with gitleaks; no new findings were detected. The original full-history findings and their prior dispositions remain preserved above. The app branch is pushed with draft PR #1, docs main is pushed, and both deployed sites are verified. This does not change repository visibility or grant a blanket license.
+
+The 166-second demo, captions and poster are published under the app's `/video/` path and their public bytes match the reviewed files. Demo provenance identifies actual dated captures and the stock Daniel voice. Local `.claude` worktrees and `.review` material are excluded from both deployment uploads. Existing reference-code redistribution terms remain unresolved; both GitHub repositories remain private pending that decision.

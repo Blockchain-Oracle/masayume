@@ -1,12 +1,14 @@
 ---
 title: Resume point — read this first
-status: working handoff
+status: historical handoff — superseded by acceptance-2026-09-06.md
 updated: 2026-09-04 (twentieth session)
 ---
 
 # Resume point
 
-Start here, then read `parity-ledger.md`. The authority package is
+**Current status (7 September 2026): read the [acceptance ledger](acceptance-2026-09-06.md) first.** It records the agent/X implementation, tested deployments, live receipts, demo/docs release and remaining owner decisions. The snapshots below and `parity-ledger.md` are preserved history, not the current branch or acceptance status.
+
+For the earlier work, the authority package was
 `docs/architecture/yosuku-source-led-migration/` (read in its documented order).
 
 ## Where we are

@@ -32,9 +32,9 @@ The Profile fields were entered using public project facts. The owner manually c
 
 | Requirement | Current state | Completion check |
 | --- | --- | --- |
-| Working testnet prototype | [App](https://masayume.app); genuine AI execution/loss settlement, corrected Momentum fill, X image receipt and complete Moonshot payout recorded | Use the current [acceptance ledger](../implementation/acceptance-2026-09-06.md), including failed and superseded evidence. Verify the final deployed revision. Momentum settlement and a later eligible decision remain pending its 04:00 UTC expiry at this snapshot. |
+| Working testnet prototype | [App](https://masayume.app); genuine AI execution/loss settlement, corrected Momentum fill/settlement/new-Window fill, X image receipt and complete Moonshot payout recorded | Final deployed revisions verified. Use the current [acceptance ledger](../implementation/acceptance-2026-09-06.md), including failed and superseded evidence. Momentum settled successfully at 04:00:13 UTC and filled a new BTC Window at 04:07:51; that last faucet-funded position remains open until 05:00 UTC. |
 | Repository | App and docs repositories are private | Complete the [source-release review](public-release-audit-2026-09-06.md), record redistribution terms, then verify judge access. Do not describe inaccessible repositories as open source. |
-| Demo | A measured 166-second / 2:46 video has been rendered from actual captures; public player integration is in progress | Verify the final `/demo` player, direct MP4, poster, captions and transcript anonymously. Technical audio checks passed; owner listening review remains useful. |
+| Demo | A measured 166-second / 2:46 video is publicly deployed with captions, poster and transcript | Verify the final `/demo` player, direct MP4, poster, captions and transcript anonymously. Public playback and exact uploaded bytes passed; technical audio checks passed, and auditory listening review remains useful. |
 
 The demo retains a real AI Hold, authentic publication/copy screens, matching X receipt, paid Moonshot and arcade recording. It does not present the invalid pre-fix Momentum signal as acceptance or claim profitable AI performance.
 
@@ -57,9 +57,9 @@ The demo retains a real AI Hold, authentic publication/copy screens, matching X 
 | --- | --- |
 | Actual form inspected | 7 September 2026, authenticated Zen; Profile and Details verified |
 | Displayed cutoff | 8 September 2026 19:00 in UTC+1 browser; 18:00 UTC by conversion |
-| Final app deployment/source revision | Pending final release verification |
+| Final app deployment/source revision | `9bb7238` web; `c364fd7` operators; docs `7bfd240` pinned to `9bb7238` |
 | Judge-accessible source | Pending redistribution terms and access verification |
-| Video | 166 seconds; public playback verification pending final deployment |
+| Video | [Public demo](https://masayume.app/demo), 166 seconds; playback, captions, transcript and exact uploaded bytes verified |
 | X cleanup | Exact nine-post batch inventoried; action-time deletion confirmation pending |
 | Submitted project URL/id | Not submitted |
 | Submission acknowledgement | Not submitted |
