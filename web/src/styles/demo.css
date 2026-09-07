@@ -133,6 +133,18 @@
   height: 14px;
 }
 
+@media (max-width: 480px) {
+  .demo-bar-inner {
+    height: auto;
+    min-height: 56px;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    padding-block: 12px;
+  }
+  .demo-bar-links { flex-wrap: wrap; row-gap: 8px; }
+  .demo-bar-link, .demo-bar-open { white-space: nowrap; }
+}
+
 /* ── the hero ── */
 
 /* relative max-w-5xl mx-auto px-6 pt-12 pb-16 */
