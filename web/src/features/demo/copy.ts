@@ -5,7 +5,7 @@
  * this product actually does on Somnia. Two of its promises do not hold here and are
  * not repeated: bets are not gas-free (the wallet pays STT — there is no sponsor), and
  * there is no native mobile build (the web app installs as a PWA). Nothing here names
- * an X handle, because Masayume has none.
+ * an X handle; social account setup is described in its own guide.
  */
 export const DEMO = {
   title: "Demo",
@@ -82,10 +82,10 @@ export const DEMO = {
     },
     verify: {
       kicker: "05 · don't trust it. verify it.",
-      headline: "Every claim is a ",
-      headlineSerif: "transaction.",
-      body: "No screenshots to trust. Open any of these on the Shannon explorer and see for yourself.",
-      readOn: (wallet: string, date: string) => `Fills of a public venue wallet, ${wallet}, as read from the indexer on ${date}.`,
+      headline: "Real actions. ",
+      headlineSerif: "Open receipts.",
+      body: "Follow Masayume's strategy publication, bounded permission, copy subscription, and Moonshot purchase on the Shannon explorer.",
+      readOn: (wallet: string, date: string) => `Masayume testnet wallet ${wallet} · successful receipts verified on ${date}. These record completed actions, not current permission or settled winnings.`,
       contracts: "The contracts every Window runs on",
     },
   },

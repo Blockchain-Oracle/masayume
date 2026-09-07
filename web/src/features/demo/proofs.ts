@@ -1,51 +1,56 @@
-import { formatCadence } from "@masayume/core/copy";
 import type { Address, Hex } from "@masayume/core/types";
-import { formatUtc, secToMs } from "@masayume/core/units";
 import { addressUrl, txUrl } from "@masayume/core/urls";
 import { PINNED_TESTNET } from "@masayume/markets";
 
 /**
  * The proofs on `/demo` — real transactions and real contracts, nothing else.
  *
- * The fills below were read from the venue's indexer through the fill projection
- * (`listWalletHistory`) on `PROOFS_READ_ON`, for a public wallet that trades this
- * venue. They are its own settled Windows, wins and losses alike: a proof list that
- * showed only wins would be a claim, not a proof. The demo wallet this repo carries
- * (`0xd357…9358`) had no fills on that date, so it is not the source.
+ * These are this project's own demo-wallet receipts, verified through Shannon RPC
+ * on `PROOFS_READ_ON`: each succeeded and its emitted event establishes the
+ * named operation for `PROOF_WALLET`. The X fill was sent by its delegated
+ * executor; the other listed operations were sent by the wallet. See the dated acceptance
+ * ledger for the browser evidence. A confirmed setup or purchase is historical
+ * evidence of that action; it does not establish current permission or a payout.
+ * The Momentum fill affected by the opening/EMA price-basis bug is excluded.
  *
  * The contract addresses come from the pinned file the whole app is verified
  * against — never retyped here, so a drift check catches a stale demo too.
  */
-export const PROOF_WALLET = "0xe11825b13c96ccbe49cff978932375ce13daaeb4" as Address;
-export const PROOFS_READ_ON = "2026-09-02";
+export const PROOF_WALLET = "0xd357019E2c55375477802A047dB7bC1A77819358" as Address;
+export const PROOFS_READ_ON = "2026-09-06";
+
+type ProofOperation = "publication" | "permission" | "subscription" | "purchase" | "settlement" | "payout" | "x-trade";
 
 export interface TxProof {
   hash: Hex;
-  asset: string;
-  intervalSec: number;
-  expirySec: number;
-  outcome: "win" | "loss";
-  /** The wallet sold beyond its inventory and was handed the other side — booked as a short. */
-  short?: boolean;
+  operation: ProofOperation;
+  status: "confirmed";
+  detail: string;
 }
 
 export const TX_PROOFS: readonly TxProof[] = [
-  { hash: "0x93bff06526a7c765a1b8401439ed70c3a82c585bcc9a71fc44379c295529351d", asset: "BTC", intervalSec: 300, expirySec: 1788262200, outcome: "win" },
-  { hash: "0xd4fd5efdb8a66ffbdf07838488c82a8288274439ed3e74a8d146cb88de959066", asset: "BTC", intervalSec: 300, expirySec: 1788274500, outcome: "loss" },
-  { hash: "0x83a8b018a7d39f7c68b833c963bccf39e1c83fe83b9796f7d6277020f792dc87", asset: "ETH", intervalSec: 900, expirySec: 1788259500, outcome: "loss", short: true },
-  { hash: "0xa5bf44b69a748b1e8dd71ae36ec960036bc3513ed4815607aeb6ad101c4033ce", asset: "BTC", intervalSec: 86400, expirySec: 1788307200, outcome: "loss" },
-  { hash: "0x004a661b5049c0285c950713661431dcf2c53990a42132e83c7335bdf09da656", asset: "ETH", intervalSec: 86400, expirySec: 1788307200, outcome: "loss" },
-  { hash: "0x896b9b23ad44d9f7bab01f83e68f29fbf5308ba5ddc67a98a597318628df014f", asset: "BTC", intervalSec: 60, expirySec: 1788259200, outcome: "loss", short: true },
+  { hash: "0x11c193f9547e1a52e370cebe0edb6396104636af26197c5ba9727215005a2d9f", operation: "publication", status: "confirmed", detail: "Shannon Momentum #1 registered with its public strategy and trading limits." },
+  { hash: "0x96250651c1706a9de51d4aa5ec29b34e6e6414be4069ef6ae243bbbc84f1f9a0", operation: "permission", status: "confirmed", detail: "2 tUSDC budget · 1 tUSDC per trade · 1 open position allowed." },
+  { hash: "0xa2f6547b0e6631aee769650dc5920a694105b777d562a90cd0bd11b06aa6f202", operation: "subscription", status: "confirmed", detail: "Strategy #1 subscription · 0 tUSDC fee. Future copies were later paused." },
+  { hash: "0xefc7fe4c652ea288230f01485706cbc72e725bf2520e25d87e96c58a0fa1c8ef", operation: "purchase", status: "confirmed", detail: "Moonshot round #3 · BTC 1h · long 2×. Actual stake: 1.000354 tUSDC." },
+  { hash: "0x2411021930e8d592baff1192273cc4d9c9a18522ba1aea9bc4cf292a007e5320", operation: "settlement", status: "confirmed", detail: "Moonshot round #3 settled as a win, with a closing print of $79,922.31." },
+  { hash: "0x5e99e6496c2a4ece6ba33226c8e5dacd5ddef0f8b3247b462d5f3484ace9ee7f", operation: "payout", status: "confirmed", detail: "Moonshot round #3 paid 2.000132 tUSDC to the demo wallet." },
+  { hash: "0x072a0259bd75c22697d960da29c513ff9a0d3b0f24ba5eefbe626810093fa26b", operation: "x-trade", status: "confirmed", detail: "X command · BTC 4h UP. Grant #4 spent 0.90852 tUSDC for 1.34 contracts in one confirmed execution." },
 ];
 
-const OUTCOME_WORD = { win: "settled won", loss: "settled lost" } as const;
+const OPERATION_LABEL: Record<ProofOperation, string> = {
+  publication: "Strategy published",
+  permission: "Bounded Vault permission",
+  subscription: "Copy subscription consent",
+  purchase: "Moonshot purchase",
+  settlement: "Moonshot settled",
+  payout: "Moonshot payout claimed",
+  "x-trade": "X trade filled",
+};
 
-/** "BTC · 5m Window · settled won · closed 2026-09-01 11:30 UTC" — from the round's own fields. */
+/** Operation success is distinct from a market outcome or a permission's current state. */
 export function txProofLabel(proof: TxProof): string {
-  const parts = [proof.asset, `${formatCadence(proof.intervalSec)} Window`, OUTCOME_WORD[proof.outcome]];
-  if (proof.short) parts.push("sold short");
-  parts.push(`closed ${formatUtc(secToMs(proof.expirySec), { withSeconds: false, withDate: true })}`);
-  return parts.join(" · ");
+  return `${OPERATION_LABEL[proof.operation]} · ${proof.status}`;
 }
 
 export function txProofHref(proof: TxProof): string {

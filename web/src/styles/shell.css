@@ -5,6 +5,10 @@
 /* ── the money pill (reference Header.tsx L296–316) ──
    flex items-center gap-1.5 font-mono text-[12px] px-2.5 sm:px-3 py-1.5 rounded-full border border-white/10
    hover:border-white/25 hover:bg-white/[0.03] text-gray-300 hover:text-white */
+/* Scrolled headings must not compete with the fixed navigation labels. */
+.header { background: rgba(5, 5, 5, 0.96); }
+[data-theme="light"] .header { background: rgba(244, 238, 227, 0.96); }
+
 .dusdc-pill {
   display: inline-flex;
   align-items: center;

@@ -52,6 +52,48 @@ During the 6 September release rehearsal, our StrategyRegistry publication also 
 
 Public failed-transaction evidence: [Shannon publication receipt](https://shannon-explorer.somnia.network/tx/0x00dd839e37a0a4eeae44810c52950422cf936e9048f75b7bca25abd888bbe222). Implementation: [registry writer](../../packages/markets/src/strategies/write.ts). This failure is not attributed to the DreamDEX SDK. A successful simulation without a sufficient transaction gas limit is a useful integration troubleshooting example.
 
+## 6. Make oracle-print and price-feed units explicit at the comparison boundary
+
+The 6 September rehearsal exposed a **Masayume adapter defect**, not an established SDK defect. The deployed oracle's opening print is an integer with two decimal places, while the live price feed returned EMA/spot integers with `decimals: 18`. We compared those raw integers directly and later formatted the opening print as though it also used eighteen decimals. That produced an invalid Momentum signal and a model preview showing an opening price of `0.00`.
+
+Reproduce the unit mismatch without sending a trade:
+
+1. Read a live market's oracle opening print and its asset's price-feed record separately. Retain the declared feed `decimals` and the oracle's `numericDecimals` rather than assuming they match collateral decimals.
+2. For the observed BTC opening `7983070` with oracle decimals `2`, the correct price is **79,830.70 USD**. Formatting it at eighteen decimals is incorrect. To compare it with an eighteen-decimal EMA, normalize the opening to `7983070 × 10^16` first.
+3. Compute `(ema - normalizedOpening) × 10000 / normalizedOpening` using integer arithmetic. A corrected live observation returned approximately **+11 bps**, and the fresh real model preview produced a readable Hold. That preview establishes an input/read result, not an order or profit.
+
+Our correction uses the feed's declared decimals, rejects invalid or irreconcilable inputs, and leaves the provider's original oracle units unchanged for settlement consumers. Tests cover 6-, 8- and 18-decimal feeds, both directions, sub-threshold holds and correct prompt prices. Sensei exposed a related local formatting mistake: a decimal-count constant `2` was used as a divisor instead of `10^2`; its pending release fix converts oracle cents to whole dollars deliberately.
+
+Suggested documentation: give opening-print, spot/EMA, collateral and contract-price values separate unit labels, plus one worked comparison that uses their actual scales. A small typed normalization helper or a prominently named decimal-count field would make accidental cross-unit arithmetic harder. Evidence: [strategy normalization](../../packages/markets/src/strategies/price-basis.ts), [agent context](../../packages/markets/src/strategies/agent-context.ts), [Momentum comparison](../../services/ops/src/actors/strategy-runner/decide.ts), [Sensei conversion](../../web/src/features/sensei/units.ts), and [acceptance ledger](../implementation/acceptance-2026-09-06.md).
+
+## 7. Expose rolling-series liveness and the operator recovery path
+
+This is a dated **platform availability observation**, not a finding that SDK discovery is broken. At **20:51:00 UTC on 6 September 2026**, live-market discovery for venue `0x679795a0195a1b76cdebb7c51d74e058aee92919b8c3389af86ef24535e8a28c` returned BTC/ETH 1h, 4h and 1d Windows. Four registered 5m/15m series on the live markets' actual creator had old `latestExpiryBySeriesId` values:
+
+| Creator series | Asset / cadence | Last expiry integer | Last expiry UTC |
+| --- | --- | --- | --- |
+| 10 | BTC / 5m | `1788546000` | 4 September 2026, 18:20 |
+| 11 | ETH / 5m | `1788546000` | 4 September 2026, 18:20 |
+| 1 | BTC / 15m | `1788546600` | 4 September 2026, 18:30 |
+| 2 | ETH / 15m | `1788546600` | 4 September 2026, 18:30 |
+
+The creator was `0x94d963b6670ab96e78c8d0c46ca35d196d606efe`, with owner `0xf685C1245b59800a9940131DC1952F39736DdC2a`. The read found it approved by the venue policy and holding native balance. Those facts do not identify why its short-series rolling stopped. Normal `triggerRoll` is owner-controlled on this deployment; changing Masayume's `MM_INTERVALS` only changes our maker's market filter and cannot restart that creator.
+
+To reproduce the public reads with Foundry, repeat these calls for series `10`, `11`, `1` and `2`, and compare their expiries with the current block timestamp and live-market list:
+
+```sh
+REPRO_RPC=https://api.infra.testnet.somnia.network
+REPRO_CREATOR=0x94d963b6670ab96e78c8d0c46ca35d196d606efe
+cast call --rpc-url "$REPRO_RPC" "$REPRO_CREATOR" 'owner()(address)'
+cast call --rpc-url "$REPRO_RPC" "$REPRO_CREATOR" 'seriesById(uint32)(address,string,uint64,uint64,uint64)' 10
+cast call --rpc-url "$REPRO_RPC" "$REPRO_CREATOR" 'latestExpiryBySeriesId(uint32)(uint64)' 10
+cast block --rpc-url "$REPRO_RPC" latest --field timestamp
+```
+
+These are read calls; no roll, registration or policy change is requested. Repeat observations can differ as operators resume the series. The captured source record is the coordinator's public-only `venue-cadences-1788727860956.json`; the values needed to reproduce it are included above rather than linking an ignored local file.
+
+Suggested platform feedback: expose each registered series' latest expiry, expected next boundary and rolling/paused/stalled status alongside live discovery, plus a runbook naming the authorized owner and the reactivity/gas checks needed to resume. The SDK already exposes `seriesById`, `latestExpiryBySeriesId`, `triggerRoll` and `preflightRoll`; documenting their operational relationship would help builders distinguish **no qualifying market**, **stopped series**, and **read failure**. No cause or repair of the platform's stopped series is claimed here.
+
 ## Evidence to attach before submission
 
 The final report should name the committed application revision and the demo's actual public transaction receipts. Keep source/unit checks, isolated database tests, local rendered image checks and live provider acceptance separate. A generated receipt card does not establish media upload to X; a published strategy does not establish a funded copy, model decision, fill or settlement.

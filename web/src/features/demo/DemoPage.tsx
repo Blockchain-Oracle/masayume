@@ -13,7 +13,7 @@ import { CONTRACT_PROOFS, contractProof, contractProofHref, PROOF_WALLET, PROOFS
  * every claim a transaction anyone can open. That is kept exactly. What changes is
  * every fact: the video slot says no recording exists yet, the traction line is read
  * live from the venue, the screenshots are dated captures of this product, and the
- * proofs are real fills and the pinned contracts on the Shannon explorer.
+ * proofs are this project's confirmed actions and pinned contracts on the Shannon explorer.
  *
  * The reference draws its own near-black page outside the app shell. Here it sits in
  * the shell like every other route and its ground follows the theme — the user's
@@ -201,6 +201,7 @@ export function DemoPage() {
             <Reveal key={proof.hash}>
               <div className="demo-proof-row">
                 <ProofLink href={txProofHref(proof)} label={txProofLabel(proof)} reference={proof.hash} />
+                <p className="demo-proof-note">{proof.detail}</p>
               </div>
             </Reveal>
           ))}

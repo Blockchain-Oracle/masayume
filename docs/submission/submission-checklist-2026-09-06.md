@@ -6,7 +6,7 @@ Prepared **6 September 2026**. This is a preparation checklist, **not a submitte
 
 The event's [official DoraHacks page](https://dorahacks.io/hackathon/event-contracts/detail) lists a **working testnet prototype**, a **GitHub repository** and a **2–3 minute demo video**. A presentation deck and SDK/documentation feedback report are optional. The release coordinator checked that public page in the browser on 6 September; the [earlier organizer brief retained in this repository](../../context/00-hackathon-brief.md) provides historical corroboration.
 
-The public deadline date is **8 September 2026**. The coordinator observed an initial **18:00** server-rendered value and a hydrated **2026/09/08 19:00** value in the Lagos browser. **The authoritative timezone and exact cutoff are not yet confirmed.** Do not convert either observation into a promised local deadline or countdown until the event explicitly identifies its timezone.
+The official page displays the cutoff as **8 September 2026, 19:00** in the rehearsal browser. On 6 September at 20:57 UTC, the browser clock was independently read as **GMT+0100 (West Africa Time)** with offset −60 minutes. The initial server-rendered value was 18:00 and the hydrated value 19:00, consistent with local-time display: **19:00 WAT / 18:00 UTC**. The page does not print a timezone label, so the UTC value is a conversion from the observed local rendering, not a quoted organizer timezone statement. Recheck the page before the owner submits.
 
 The submission flow currently requires login. The authenticated form's exact fields, character limits, required attachments, video-host restrictions, consent wording and confirmation flow have **not** been inspected. Public requirements are not a field-by-field reconstruction of that form. Do not invent a category, required social link, minimum team size, deck requirement, SDK-feedback requirement, license field or submission-id value.
 
@@ -16,7 +16,7 @@ This worker's independent text-only fetch of the official event page returned an
 
 | Requirement | Current state | Concrete completion check |
 | --- | --- | --- |
-| Working prototype on testnet | App is at [masayume.app](https://masayume.app). Current rehearsal includes confirmed strategy #1 publication/copy setup, Moonshot purchase and a recorded Candle Hop board entry. Autonomous Momentum fill/settlement, AI inference and the new X-media receipt still need their own evidence. | Open the final deployed app anonymously and with the authorized test wallet; record deployment SHA and prove the exact journey used in the video. Link the current [acceptance ledger](../implementation/acceptance-2026-09-06.md); do not replace partial acceptance with a blanket “everything works.” |
+| Working prototype on testnet | App is at [masayume.app](https://masayume.app). Current rehearsal includes confirmed strategy #1 publication/copy setup, Moonshot purchase and a recorded Candle Hop board entry. The first Momentum fill and AI read exposed a two-decimal oracle/eighteen-decimal feed mismatch; future Momentum copies are paused. Corrected signal/AI acceptance, settlement and the new X-media receipt remain pending. | Open the final deployed app anonymously and with the authorized test wallet; record deployment SHA and prove the exact journey used in the video. Link the current [acceptance ledger](../implementation/acceptance-2026-09-06.md); do not reuse the invalid-signal fill as proof of a working strategy or replace partial acceptance with “everything works.” |
 | GitHub repository | [Masayume app](https://github.com/Blockchain-Oracle/masayume) and [docs](https://github.com/Blockchain-Oracle/masayume-docs) were private in the [public-release audit](public-release-audit-2026-09-06.md). Code is present, but anonymous source access is a separate unfinished release step. | Complete the existing source-release/provenance decision, then verify the chosen repository access works for judges. If private judge access is supported by the actual process, record that route explicitly. The public page's “GitHub repository” wording alone does not establish a particular license or substitute for accessible source. |
 | 2–3 minute demo video | [160-second script and runbook](demo-script-2026-09-06.md) prepared. No finished recording, rendered video or public video URL exists from this task. | Capture the verified journey, edit without fabricated continuity, measure final duration, inspect audio/captions, and open the real video link without the creator's account. Include the actual URL only after it exists. |
 
@@ -36,9 +36,9 @@ This worker's independent text-only fetch of the official event page returned an
 - [x] Candle Hop best score 0/rank 2 confirmed in the recorded state and a separate board request; it is a server-checked arcade result.
 - [ ] Fresh viewport captures of the publication, copy state and independent explorer receipts are usable at 1080p. Existing tall/full-page images are fallback evidence, not the final video shots.
 - [ ] Final app and docs deployment revisions are identified. Source checks and deployed behavior are recorded separately.
-- [ ] If shown: actual Momentum decision/fill/settlement evidence belongs to the same strategy, owner and Window.
-- [ ] If shown: AI Test read or runner output is a real model response, with Hold retained as a valid result.
-- [ ] If shown: X-media proof includes the original mention, saved sender, matching transaction and acknowledged reply containing the inspected card. A local PNG or healthy polling check is insufficient.
+- [ ] If shown: Momentum decision/fill/settlement evidence comes after the decimal-normalization fix and belongs to the same strategy, owner and Window. The pre-fix fill is excluded from valid strategy acceptance.
+- [ ] If shown: AI Test read or runner output is a fresh real model response using correctly scaled market data, with Hold retained as a valid result. The earlier zero-opening response remains failure evidence.
+- [ ] If shown: X-media proof includes the original mention, saved sender, matching transaction and acknowledged reply containing the inspected card. The 20:56 test has a confirmed fill and public media acknowledgement, but its receipt triggered a recursive refusal; posting is disabled pending the suppression fix. Verify the actual card and no further recursive delivery before presenting this as a clean flow. A local PNG or healthy polling check is insufficient.
 - [ ] Current source access is honestly described; no “open source” statement or anonymous GitHub screenshot until that access is verified.
 
 Unneeded pending scenes can be omitted from the video. Their omission does not mark their product acceptance complete; the live ledger retains that remaining work.
@@ -57,7 +57,7 @@ Unneeded pending scenes can be omitted from the video. Their omission does not m
 | Field | Value |
 | --- | --- |
 | Actual form inspected at | Pending |
-| Confirmed deadline and timezone | Pending |
+| Displayed deadline and browser timezone | 8 September 2026, 19:00 in the verified UTC+1 browser; 18:00 UTC by conversion, event itself has no timezone label |
 | Final app deployment/source revision | Pending final release verification |
 | Judge-accessible repository URL and access check | Pending |
 | Finished video URL and measured duration | Pending |
