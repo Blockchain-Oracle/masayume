@@ -19,6 +19,7 @@ const MARKET = `0x${"33".repeat(32)}`;
 const HASH = `0x${"44".repeat(32)}`;
 const ok = <T>(value: T) => ({ ok: true as const, value, stale: false, asOfMs: 0 });
 const grant = { grantId: 9n, owner: OWNER, actor: RUNNER, kind: "strategy", revoked: false, expiresAtSec: 10_000, spentDay: 0, spentTodayBase: 0n, openPositions: 0, budgetBase: 5_000_000n, caps: { maxStakePerTradeBase: 1_000_000n, maxDailySpendBase: 5_000_000n, maxOpenPositions: 1, maxPriceRaw: 0n } };
+const recordedFill = { txHash: HASH, strategyId: "1", grantId: "9", owner: OWNER, marketId: MARKET, side: "up", cashDelta: "100", tokenDelta: "200", atSec: 1_000, dryRun: false };
 const session = { address: RUNNER, contracts: { publicClient: { getBlockNumber: async () => 123n, getTransactionCount: async () => 7 } }, submitter: { submitOrder: mocks.send, submitTx: mocks.settle } } as unknown as SubmitterSession;
 const input = { session, sub: { strategyId: 1n, subscriber: OWNER, grantId: 9n } as StrategySubscription, market: { marketId: MARKET, asset: "BTC", decimals: 6, intervalSec: 900 } as EventMarket, decision: { side: "up" as const, moveBps: 20, thresholdBps: 10, reason: "trend" }, nowMs: 1_000_000, dryRun: false };
 
@@ -32,6 +33,7 @@ beforeEach(() => {
   mocks.quote.mockResolvedValue(ok({}));
   mocks.owners.mockResolvedValue([]);
   mocks.subscribers.mockResolvedValue([]);
+  mocks.fills.mockResolvedValue([recordedFill]);
 });
 
 describe("durable strategy attempts", () => {
@@ -97,6 +99,46 @@ describe("recovery and settlement", () => {
     expect(await settleStrategyPositions(session, 1n, false, () => undefined)).toBe(1);
     expect(mocks.tallies).toHaveBeenCalledWith(OWNER, { complete: true });
     expect(mocks.settle).toHaveBeenCalledExactlyOnceWith({ kind: "vault-crank-settle", owner: OWNER, marketId: MARKET });
+    expect(mocks.begin).toHaveBeenCalledWith(expect.objectContaining({ strategyId: "1", grantId: "9", kind: "settle" }));
+  });
+  it("attributes a shared owner's settlement to the position's strategy, not the discovering cycle", async () => {
+    mocks.owners.mockResolvedValue([OWNER]);
+    mocks.tallies.mockResolvedValue({ complete: true, tallies: [{ marketId: MARKET, settledAtSec: 0 }] });
+    mocks.onchain.mockResolvedValue(ok({ marketId: MARKET, isResolved: true, isVoided: false }));
+    mocks.holdings.mockResolvedValueOnce(ok({ upRaw: 200n, downRaw: 0n, upGrantId: 9n, downGrantId: 0n })).mockResolvedValueOnce(ok({ upRaw: 0n, downRaw: 0n }));
+    mocks.grant.mockResolvedValue(grant);
+    mocks.fills.mockResolvedValue([{ ...recordedFill, strategyId: "2" }]);
+    mocks.settle.mockResolvedValue({ status: "confirmed", txHash: HASH });
+    const log = vi.fn();
+    expect(await settleStrategyPositions(session, 1n, false, log)).toBe(1);
+    expect(mocks.getAttempt).toHaveBeenCalledWith(expect.objectContaining({ strategyId: "2", kind: "settle" }));
+    expect(mocks.begin).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ strategyId: "2", grantId: "9", kind: "settle" }));
+    expect(mocks.finish).toHaveBeenCalledWith(expect.objectContaining({ strategyId: "2" }), "settled", HASH, "settlement receipt confirmed");
+    expect(log).toHaveBeenCalledWith(expect.stringContaining("#2: settled"));
+  });
+  it("holds unknown provenance instead of borrowing a different owner, market, grant, side or dry-run fill", async () => {
+    mocks.owners.mockResolvedValue([OWNER]);
+    mocks.tallies.mockResolvedValue({ complete: true, tallies: [{ marketId: MARKET, settledAtSec: 0 }] });
+    mocks.onchain.mockResolvedValue(ok({ marketId: MARKET, isResolved: true, isVoided: false }));
+    mocks.holdings.mockResolvedValue(ok({ upRaw: 200n, downRaw: 0n, upGrantId: 9n, downGrantId: 0n }));
+    mocks.grant.mockResolvedValue(grant);
+    for (const rows of [null, [], ...[{ owner: RUNNER }, { marketId: HASH }, { grantId: "8" }, { side: "down" }, { dryRun: true }, { tokenDelta: "0" }].map((mismatch) => [{ ...recordedFill, ...mismatch }])]) {
+      mocks.fills.mockResolvedValue(rows);
+      await expect(settleStrategyPositions(session, 1n, false, () => undefined)).rejects.toThrow("settlement strategy attribution unknown");
+    }
+    expect(mocks.begin).not.toHaveBeenCalled();
+    expect(mocks.settle).not.toHaveBeenCalled();
+  });
+  it("holds conflicting origins when one settlement would burn positions from two strategies", async () => {
+    mocks.owners.mockResolvedValue([OWNER]);
+    mocks.tallies.mockResolvedValue({ complete: true, tallies: [{ marketId: MARKET, settledAtSec: 0 }] });
+    mocks.onchain.mockResolvedValue(ok({ marketId: MARKET, isResolved: true, isVoided: false }));
+    mocks.holdings.mockResolvedValue(ok({ upRaw: 200n, downRaw: 300n, upGrantId: 9n, downGrantId: 10n }));
+    mocks.grant.mockResolvedValue(grant);
+    mocks.fills.mockResolvedValue([recordedFill, { ...recordedFill, strategyId: "2", grantId: "10", side: "down", tokenDelta: "300" }]);
+    await expect(settleStrategyPositions(session, 1n, false, () => undefined)).rejects.toThrow("settlement strategy attribution unknown");
+    expect(mocks.begin).not.toHaveBeenCalled();
+    expect(mocks.settle).not.toHaveBeenCalled();
   });
   it("does not settle a Locked Window or another grant kind", async () => {
     mocks.owners.mockResolvedValue([OWNER]);

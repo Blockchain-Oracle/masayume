@@ -1,6 +1,6 @@
 import { isOk } from "@masayume/core/schemas";
 import { toMarketId, type Address, type Hex } from "@masayume/core/types";
-import { beginStrategyAttempt, finishStrategyAttempt, getStrategyAttempt, listStrategyOwners, listUnresolvedStrategyAttempts, recordAttemptFill } from "@masayume/db";
+import { beginStrategyAttempt, finishStrategyAttempt, getStrategyAttempt, listStrategyFills, listStrategyOwners, listUnresolvedStrategyAttempts, recordAttemptFill, type StrategyFillRecord } from "@masayume/db";
 import { marketsProvider, type SubmitterSession } from "@masayume/markets";
 import { listStrategySubscribers } from "@masayume/markets/strategies";
 import { getVaultGrant, listVaultTallies, recoverVaultExecution } from "@masayume/markets/vault";
@@ -55,6 +55,7 @@ export async function reconcileRunnerAttempts(session: SubmitterSession, log: (w
 export async function settleStrategyPositions(session: SubmitterSession, strategyId: bigint, dryRun: boolean, log: (why: string) => void): Promise<number> {
   const [subscribers, recorded] = await Promise.all([listStrategySubscribers(strategyId), listStrategyOwners(strategyId.toString())]);
   const owners = [...new Set([...subscribers, ...recorded].map((owner) => owner.toLowerCase() as Address))];
+  let fills: StrategyFillRecord[] | undefined;
   let settled = 0;
   for (const owner of owners) {
     const history = await listVaultTallies(owner, { complete: true });
@@ -68,14 +69,29 @@ export async function settleStrategyPositions(session: SubmitterSession, strateg
       if (!isOk(holdings) || holdings.stale) throw new Error(`settlement holdings unreadable for ${owner}`);
       const h = holdings.value;
       const grants = [...new Set([...(h.upRaw > 0n && h.upGrantId > 0n ? [h.upGrantId] : []), ...(h.downRaw > 0n && h.downGrantId > 0n ? [h.downGrantId] : [])])];
-      let ours = false;
+      let ours = 0;
       for (const id of grants) {
         const grant = await getVaultGrant(id);
-        if (grant.kind === "strategy" && grant.actor === session.address.toLowerCase()) ours = true;
+        if (grant.kind === "strategy" && grant.actor === session.address.toLowerCase()) ours += 1;
       }
       if (!ours) continue;
-      if (dryRun) { log(`#${strategyId}: would settle ${tally.marketId} for ${owner}`); continue; }
-      const key = { strategyId: strategyId.toString(), marketId: tally.marketId, owner, kind: "settle" as const };
+      // Owner-wide history can contain another strategy's position, including a replaced grant.
+      // A settlement burns both sides, so every held side must have the same proven origin.
+      const attributionUnknown = () => new Error(`settlement strategy attribution unknown for ${owner}/${tally.marketId}; holding until the original fill is available or the owner settles from Portfolio`);
+      if (ours !== grants.length) throw attributionUnknown();
+      fills ??= (await listStrategyFills(null, null)) ?? undefined;
+      if (!fills) throw attributionUnknown();
+      const origins = new Set<string>();
+      for (const [side, amount, grantId] of [["up", h.upRaw, h.upGrantId], ["down", h.downRaw, h.downGrantId]] as const) {
+        if (amount === 0n) continue;
+        const matching = fills.filter((fill) => !fill.dryRun && fill.owner.toLowerCase() === owner && fill.marketId.toLowerCase() === tally.marketId.toLowerCase() && fill.grantId === grantId.toString() && fill.side === side && BigInt(fill.tokenDelta) > 0n);
+        if (grantId === 0n || matching.length === 0) throw attributionUnknown();
+        for (const fill of matching) origins.add(fill.strategyId);
+      }
+      if (origins.size !== 1) throw attributionUnknown();
+      const originStrategyId = [...origins][0]!;
+      if (dryRun) { log(`#${originStrategyId}: would settle ${tally.marketId} for ${owner}`); continue; }
+      const key = { strategyId: originStrategyId, marketId: tally.marketId, owner, kind: "settle" as const };
       const previous = await getStrategyAttempt(key);
       if (previous) throw new Error(`settlement ${previous.state}: prior attempt not repeated; inspect the receipt or settle from Portfolio`);
       const [fromBlock, nonce] = await Promise.all([session.contracts.publicClient.getBlockNumber(), session.contracts.publicClient.getTransactionCount({ address: session.address, blockTag: "pending" })]);
@@ -92,7 +108,7 @@ export async function settleStrategyPositions(session: SubmitterSession, strateg
       const after = await marketsProvider.getVaultHoldings(owner, chain.value);
       if (!isOk(after) || after.stale || after.value.upRaw + after.value.downRaw !== 0n) throw new Error("settlement receipt landed but holdings could not be verified");
       settled += 1;
-      log(`#${strategyId}: settled ${tally.marketId} for ${owner} — ${result.txHash}; proceeds available to the owner`);
+      log(`#${originStrategyId}: settled ${tally.marketId} for ${owner} — ${result.txHash}; proceeds available to the owner`);
     }
   }
   return settled;
