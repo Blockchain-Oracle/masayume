@@ -69,6 +69,21 @@ Real app captures from 6–7 September 2026 show the corrected AI Hold read, con
 
 [Explore the interactive map](https://docs.masayume.app/architecture/overview), then go deeper into [Range](https://docs.masayume.app/architecture/range), [Boost](https://docs.masayume.app/architecture/leverage), [Private mode](https://docs.masayume.app/architecture/private), [agents](https://docs.masayume.app/architecture/agents), [games](https://docs.masayume.app/architecture/games) or [X](https://docs.masayume.app/architecture/x). The documentation maps adapt to mobile screens and explain what each part can control.
 
+## How we use DreamDEX
+
+Masayume uses **`@somnia-chain/markets-sdk` 0.28.1** on **Somnia Shannon (50312)**. The [DreamDEX integration guide](https://docs.masayume.app/builders/dreamdex-sdk) maps each product feature to the SDK methods, source files and actual transaction evidence.
+
+| Connection | Code to follow |
+| --- | --- |
+| Discover Windows, share live books and read prices | [Account-free SDK runtime](packages/markets/src/runtime/read-runtime.ts), [market discovery](packages/markets/src/provider/markets.ts), [live coordinator](packages/markets/src/runtime/coordinator.ts) |
+| Calculate a stake quote and submit a direct wallet order | [SDK quote helpers](packages/markets/src/provider/quotes.ts), [separate signing sessions](packages/markets/src/sessions/submitter-session.ts), [SDK order send](packages/markets/src/submitter/steps/send.ts) |
+| Let agents and X trade with bounded permission | [Agent market context](packages/markets/src/strategies/agent-context.ts), [strategy execution](services/ops/src/actors/strategy-runner/execute.ts), [X execution](services/ops/src/actors/x-relay/execute.ts), [EventVault venue gateway](contracts/src/vault/VenueGateway.sol) |
+| Resolve positions and specialist tickets | [SDK resolution reads](packages/markets/src/provider/resolution.ts), [strategy settlement](services/ops/src/actors/strategy-runner/lifecycle.ts), [Range/Moonshot oracle settlement](contracts/src/range/RangeReserve.sol) |
+
+The SDK provides market connectivity and trading primitives. Masayume's Solidity contracts enforce its permissions and ticket rules; its services handle AI decisions, X delivery and durable recovery. The guide distinguishes direct SDK calls from contract-to-contract use of DreamDEX, and includes the different game paths.
+
+**For judges and AI readers:** [SDK guide as Markdown](https://docs.masayume.app/raw/builders/dreamdex-sdk) · [llms.txt index](https://docs.masayume.app/llms.txt) · [full documentation text](https://docs.masayume.app/llms-full.txt). The exports include reviewed source references. The [acceptance ledger](docs/implementation/acceptance-2026-09-06.md) separates implemented behavior, local checks and dated live results.
+
 ## Contracts on Somnia testnet
 
 Shannon addresses checked against the repository and public RPC on **5 September 2026**, at block **480,250,668**. All 20 unique configured addresses returned code. This confirms code presence at that block; it does not establish current liquidity, source-code verification or service availability.
