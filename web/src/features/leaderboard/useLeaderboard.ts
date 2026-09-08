@@ -1,21 +1,28 @@
 "use client";
 
-import { diagnosis, err, ok, type Reading } from "@masayume/core";
-import { useReadingQuery } from "@masayume/markets/react";
-import { leaderboardPayloadSchema, toBoardData, type BoardData } from "./protocol";
+import { diagnosis, err, ok, stale, type Reading } from "@masayume/core";
+import { useQuery } from "@tanstack/react-query";
+import { BOARD_REFRESH_MS, readLeaderboard } from "./leaderboard-client";
+import type { BoardData } from "./protocol";
 
 const POLL_MS = 120_000;
 export const LEADERBOARD_KEY = ["masayume", "leaderboard"] as const;
 
-async function readLeaderboard(): Promise<Reading<BoardData>> {
-  const response = await fetch("/api/leaderboard", { cache: "no-store" });
-  if (!response.ok) return err(diagnosis("indexer-down", `leaderboard route answered ${response.status}`));
-  const parsed = leaderboardPayloadSchema.safeParse(await response.json());
-  if (!parsed.success) return err(diagnosis("indexer-down", "leaderboard payload did not parse"));
-  return ok(toBoardData(parsed.data), Date.now());
-}
-
-/** The reference's `useLeaderboard`: fetch the route, refresh every two minutes while visible. */
+/** Keep the last snapshot during refresh failures; an empty board retries without a page reload. */
 export function useLeaderboard(): Reading<BoardData> | null {
-  return useReadingQuery(LEADERBOARD_KEY, readLeaderboard, { pollMs: POLL_MS, needs: [] });
+  const query = useQuery({
+    queryKey: LEADERBOARD_KEY,
+    queryFn: ({ signal }) => readLeaderboard(signal),
+    staleTime: POLL_MS,
+    retry: false,
+    refetchInterval: (q) => q.state.data ? POLL_MS : 10_000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+  });
+  if (query.data) {
+    const reading = ok(query.data, query.data.meta.computedAtMs);
+    return query.isError ? stale(reading, "refresh-failed")
+      : Date.now() - reading.asOfMs > BOARD_REFRESH_MS ? stale(reading, "aged") : reading;
+  }
+  return query.isError ? err(diagnosis("indexer-down", "Leaderboard request failed or timed out")) : null;
 }

@@ -23,10 +23,12 @@ export function createFaucetChain(privateKey: Hex, rpcUrl: string = SOMNIA_SHANN
       ]);
       if (latestNonce !== pendingNonce) throw new FaucetError("busy", "A funding transfer is still confirming. Please try again shortly.");
       const gas = (estimate * 12n + 9n) / 10n;
-      if (gas > 300_000n) throw new FaucetError("recipient-gas", "This wallet needs more transfer gas than the testnet faucet allows.");
       const price = (gasPrice * 12n + 9n) / 10n;
       const feeWei = gas * price;
-      if (feeWei > 10_000_000_000_000_000n) throw new FaucetError("fees-high", "Network fees are above the faucet limit. Try again later.", 503);
+      // Shannon estimates 631,500 gas to create a fresh recipient account (read 2026-09-08).
+      // Bound treasury spending in STT, not Ethereum-sized gas units: the former 300k cap
+      // rejected empty wallets even though their estimated transfer fee was within budget.
+      if (feeWei > STT_FAUCET_POLICY.maxTransferFeeWei) throw new FaucetError("fees-high", "Network fees are above the faucet limit. Try again later.", 503);
       const rawTransaction = await account.signTransaction({ chainId: STT_FAUCET_POLICY.chainId, type: "legacy", nonce: latestNonce, gas, gasPrice: price, to: wallet as Address, value: amountWei });
       return { nonce: latestNonce, feeWei: feeWei.toString(), rawTransaction, txHash: keccak256(rawTransaction) };
     },

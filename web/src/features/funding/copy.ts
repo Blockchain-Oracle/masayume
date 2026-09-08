@@ -9,7 +9,9 @@ export const FUNDING = {
   modal: {
     eyebrow: "Add funds · testnet",
     title: "Get test funds",
-    body: "Get free tUSDC for trading. If your wallet is low on STT, we can add gas first, subject to the daily allocation. Both land in your wallet on Somnia Shannon.",
+    body: "STT pays for transactions. We add it first when your wallet is below 1 STT, then you confirm the free tUSDC claim for trading. You can start with an empty wallet.",
+    sequence: (amount: string, symbol: string) => `1. Add STT if needed → 2. Claim ${amount} ${symbol}`,
+    gasPolicy: "Below 1 STT: top up to 2 STT, at most once per 24 hours while funds last. With enough STT, skip straight to tUSDC.",
     connectFirst: "Connect a wallet first.",
     account: "Your account",
     copied: "copied ✓",

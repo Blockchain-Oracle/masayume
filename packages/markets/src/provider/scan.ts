@@ -28,7 +28,7 @@ const ROUTER_MAX_PAGES = 3;
 
 const feeByMarket = new Map<MarketId, number>();
 
-/** Past markets newest-first, paged until the tail predates the lookback. */
+/** Keep the full lookback: an older expiry can resolve inside the ranking window. */
 export async function marketsInScope(scope: ScanScope): Promise<{ markets: BinaryMarket[]; pools: Set<string>; complete: boolean }> {
   const client = getClient();
   const nowSec = Math.floor(scope.windowEndMs / 1000);
@@ -37,15 +37,20 @@ export async function marketsInScope(scope: ScanScope): Promise<{ markets: Binar
   let complete = false;
   for (let page = 0; page < PAST_MAX_PAGES; page += 1) {
     const rows = await client.listPastBinaryMarkets({ venueId: scope.venueId, limit: PAST_PAGE, offset: page * PAST_PAGE, nowSec });
-    for (const row of rows) pools.add(row.poolAddress.toLowerCase());
-    markets.push(...rows.filter((row) => Number(row.expiry) * 1000 >= scope.windowStartMs && Number(row.tradingStart ?? row.expiry) >= scope.lookbackSec));
+    const included = rows.filter((row) => {
+      const resolvedAtMs = Number(row.resolvedAtTimestamp) * 1000;
+      const closesInWindow = Number(row.expiry) * 1000 >= scope.windowStartMs
+        || (resolvedAtMs >= scope.windowStartMs && resolvedAtMs < scope.windowEndMs);
+      return closesInWindow && Number(row.tradingStart ?? row.expiry) >= scope.lookbackSec;
+    });
+    for (const row of included) pools.add(row.poolAddress.toLowerCase());
+    markets.push(...included);
     const oldest = rows.at(-1);
     if (rows.length < PAST_PAGE || (oldest && Number(oldest.expiry) < scope.lookbackSec)) {
       complete = true;
       break;
     }
   }
-  for (const row of await client.listLiveBinaryMarkets({ venueId: scope.venueId, limit: PAST_PAGE, nowSec })) pools.add(row.poolAddress.toLowerCase());
   return { markets, pools, complete };
 }
 

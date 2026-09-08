@@ -94,6 +94,12 @@ export function LeaderboardBoard({ reading, address, nextExpirySec, nowMs, retry
       <Hero data={data} nextExpirySec={nextExpirySec} nowMs={nowMs} />
       <div>
         <div className="container">
+          {reading?.ok && (
+            <p className="lb-freshness" role="status">
+              {LEADERBOARD.updated(reading.asOfMs)}
+              {reading.stale && <> · {reading.staleReason === "refresh-failed" ? LEADERBOARD.refreshFailed : LEADERBOARD.refreshing}</>}
+            </p>
+          )}
           {reading === null && (
             <div className="lb-state" role="status" aria-busy="true">
               {LEADERBOARD.loading}

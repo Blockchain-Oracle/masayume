@@ -5,6 +5,7 @@ export const STT_FAUCET_POLICY = {
   targetWei: 2_000_000_000_000_000_000n,
   dailyWei: 40_000_000_000_000_000_000n,
   reserveWei: 10_000_000_000_000_000_000n,
+  maxTransferFeeWei: 10_000_000_000_000_000n,
   cooldownMs: 86_400_000,
   challengeTtlMs: 300_000,
   maxPerIpPerDay: 10,

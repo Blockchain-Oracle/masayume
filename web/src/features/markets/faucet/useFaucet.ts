@@ -5,7 +5,7 @@ import type { FaucetClaimView, FaucetStatus } from "@masayume/core/faucet";
 import type { WritePhase } from "@masayume/core/ports";
 import type { Diagnosis, Hex } from "@masayume/core/types";
 import { oneUnit } from "@masayume/core/units";
-import { collateralOrNull, requiredGasWei } from "@masayume/markets";
+import { collateralOrNull, loadCollateral, requiredGasWei } from "@masayume/markets";
 import { invalidateAfterWrite, useSigner, useSubmitter } from "@masayume/markets/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -96,7 +96,15 @@ export function useFaucet() {
       }
       if (!enoughGas) throw new Error(funding?.message ?? "You need STT for gas. Our gas service is unavailable; use an external faucet below.");
       if (!current()) return;
-      const collateral = collateralOrNull();
+      let collateral = collateralOrNull();
+      if (!collateral) {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        try {
+          const reading = await Promise.race([loadCollateral(), new Promise<null>((resolve) => { timer = setTimeout(() => resolve(null), 15_000); })]);
+          if (reading?.ok) collateral = reading.value;
+        } finally { clearTimeout(timer); }
+      }
+      if (!current()) return;
       if (!collateral) throw new Error("Gas is available, but the tUSDC token details could not be read. Retry once the connection recovers; any confirmed STT stays in your wallet.");
       stage("minting");
       const outcome = await submitter.submitTx({ kind: "faucet", amountBase: FAUCET_UNITS * oneUnit(collateral.decimals) }, (phase, detail) => { if (current()) setState((s) => ({ ...s, phase, txHash: detail?.txHash ?? s.txHash })); });

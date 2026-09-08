@@ -41,3 +41,15 @@ pnpm build
 ```
 
 The database check requires a locally available `postgres:17-alpine` Docker image and creates/removes its own loopback database. It never connects to the configured production database.
+
+## Fresh-wallet correction — 8 September 2026
+
+The released chain adapter rejected buffered transfer gas above 300,000 units. Read-only calls to Shannon reproduced the problem: a new address with zero balance, zero nonce and no code needed an `eth_estimateGas` allowance of 631,500 units; an existing recipient needed 21,000. The 20% buffer made the fresh-address allowance 757,800, so the old cap rejected the wallets this onboarding is intended to fund. No user transaction or prior tUSDC claim should be required to receive STT.
+
+The adapter now uses the estimated gas with the existing buffer and caps the total transfer fee at 0.01 STT. At the observed 6 gwei price, the buffered fee allowance is 0.00545616 STT. Readiness and signing share that fee cap. The target, wallet cooldown, daily allocation, treasury reserve and durable transfer recovery are unchanged. The previous service tests mocked transaction preparation; a new adapter regression test covers the actual fresh-recipient gas estimate and decoded signed transaction, plus existing recipients, excessive fees, pending nonces and unavailable/wrong-network reads.
+
+The UI presents STT first, then tUSDC, explains that the faucet pays for the STT transfer, and retains one Get test funds action. It also waits up to 15 seconds for missing collateral metadata after gas funding instead of immediately requiring a manual retry. Neither tUSDC holdings nor an existing STT balance are prerequisites for the gas request. STT eligibility uses native balance only: below 1 STT, top up toward 2 STT subject to availability and cooldown. The separate tUSDC mint currently checks a conservative 0.72 STT wallet gas envelope before signing; a wallet with enough gas can still mint while another STT allocation is unavailable.
+
+The production status endpoint was read on 8 September and reported 50 STT in the dedicated funding wallet, a full 40 STT daily allocation and readiness for an empty wallet. This confirms treasury availability, not a successful payout. At investigation time, this correction was a local worktree change; no live transfer was sent for this investigation.
+
+References: [Somnia gas differences](https://docs.somnia.network/developer/deployment-and-production/somnia-gas-differences-to-ethereum), [Markets SDK native RPC documentation](https://prd.smk.somnia.host/docs/typescript/native).

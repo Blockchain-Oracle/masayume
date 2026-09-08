@@ -1,4 +1,5 @@
 export { keys } from "./keys";
+export { useWalletCollateral } from "./useWalletCollateral";
 export { MarketsProvider } from "./provider";
 export {
   SubmitterSessionProvider,

@@ -34,7 +34,7 @@ export function createFaucetService(chain: FaucetChain, overrides: Partial<Fauce
       const current = previous ? await inspect(previous) : null;
       const amount = balance === null ? POLICY.targetWei : faucetTopUpWei(balance);
       const remaining = POLICY.dailyWei > used.amountWei ? POLICY.dailyWei - used.amountWei : 0n;
-      const funded = funding >= POLICY.reserveWei + amount + 10_000_000_000_000_000n;
+      const funded = funding >= POLICY.reserveWei + amount + POLICY.maxTransferFeeWei;
       const ready = funded && remaining >= amount;
       const nextMs = current ? current.createdAtMs + POLICY.cooldownMs : null;
       const message = current?.status === "prepared" ? "Your STT transfer is confirming. It will not be paid twice."
@@ -43,7 +43,7 @@ export function createFaucetService(chain: FaucetChain, overrides: Partial<Fauce
         : nextMs !== null && nextMs > deps.now() ? "This wallet has used its gas top-up for the last 24 hours."
         : !funded ? "Our STT faucet is waiting for a refill. External faucets are available below."
         : remaining < amount ? "Today's gas allocation is used up. Try later or use an external faucet."
-        : "If your wallet is below 1 STT, we can top it up to 2 STT, once every 24 hours.";
+        : "Verify with a free wallet signature. Our faucet pays the STT transfer fee; then you can claim tUSDC.";
       return { configured: true, ready, address: deps.chain.address, fundingBalanceWei: funding.toString(), walletBalanceWei: balance?.toString() ?? null, dailyRemainingWei: remaining.toString(), targetWei: POLICY.targetWei.toString(), thresholdWei: POLICY.thresholdWei.toString(), claim: current ? faucetClaimView(current) : null, message };
     },
     async challenge(wallet: string, ipHash: string, origin: string) {

@@ -90,7 +90,7 @@ export function AddFunds({ open, onClose }: { open: boolean; onClose: () => void
               </Link>
             ) : (
               <div className="fund-rows">
-                <p className="fund-foot-line">10,000 {symbol} + an eligible STT gas top-up.</p>
+                <p className="fund-foot-line">{FUNDING.modal.sequence(FAUCET_UNITS.toLocaleString("en-US"), symbol)}</p>
                 <button type="button" onClick={() => void faucet.mint()} disabled={minting || !faucet.hasSigner} className="fund-cta-white" data-cursor="hover">
                   <TUsdcMark className="fund-cta-mark" />
                   {minting ? faucet.label : FUNDING.modal.request(amountText, symbol)}

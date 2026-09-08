@@ -59,6 +59,7 @@ export const keys = {
   arenaCredit: (wallet: string | null) => [QUERY_KEY_SCOPE, APP, "arena", "credit", wallet] as const,
   arenaQuote: (signature: string) => [QUERY_KEY_SCOPE, APP, "arenaQuote", signature] as const,
   balanceSheet: (wallet: string | null) => [QUERY_KEY_SCOPE, APP, "balanceSheet", wallet] as const,
+  walletCollateral: (wallet: string | null) => [QUERY_KEY_SCOPE, APP, "walletCollateral", wallet] as const,
   nextWindow: (marketId: MarketId | null) => [QUERY_KEY_SCOPE, APP, "nextWindow", marketId] as const,
   /** Nested under the boot prefix so the boot fact and `useClock` are one cache entry, not two chain reads. */
   clock: () => [QUERY_KEY_SCOPE, APP, "boot", "clock"] as const,

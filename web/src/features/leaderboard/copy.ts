@@ -16,11 +16,14 @@ export const LEADERBOARD = {
     partial: (n: number) => `${n.toLocaleString()} closed calls · partial day`,
   },
   loading: "Reading on-chain trade data…",
+  refreshing: "Showing the last computed board while rankings refresh.",
+  refreshFailed: "The update could not be read. These are the last computed rankings; we'll retry automatically.",
+  updated: (atMs: number) => `Computed ${new Date(atMs).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`,
   empty: {
     headline: "No closed calls in this window yet.",
     body: "The board ranks players by real profit, so names show up once bets settle. Check back after the next few rounds settle.",
   },
-  failed: "The board could not be read right now.",
+  failed: "The board is taking longer than expected. We'll check again automatically.",
   retry: "Try again",
   podium: {
     number: "01",

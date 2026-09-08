@@ -1,10 +1,11 @@
 import { ensureMarkets, parseMarketsEnv, readVenueBoard, unwrap, type VenueBoard } from "@masayume/markets";
 import type { LeaderboardPayload } from "./protocol";
+import { unstable_cache } from "next/cache";
 
 /**
  * The board, served: one venue-wide replay per few minutes, shared by every reader — server-side,
- * cached in memory, no database and no credential. The reference caches its route the same way;
- * a venue is ranked once, not once per visitor.
+ * persisted in Next's Data Cache, no database and no credential. Expired snapshots remain
+ * available while the framework refreshes them; a cold function instance can reuse the board.
  *
  * A day, as the reference settled on: a venue whose Windows close in minutes fills a day with
  * hundreds of rounds and a week with more pages than a request can finish. Fills are read from two
@@ -13,10 +14,8 @@ import type { LeaderboardPayload } from "./protocol";
 const DAY_MS = 86_400_000;
 const WINDOW_MS = DAY_MS;
 const LOOKBACK_MS = 2 * DAY_MS;
-const CACHE_TTL_MS = 3 * 60_000;
 const TOP = 50;
 
-let cache: { payload: LeaderboardPayload; atMs: number } | null = null;
 let inFlight: Promise<LeaderboardPayload> | null = null;
 
 function serialize(board: VenueBoard, computedAtMs: number): LeaderboardPayload {
@@ -53,18 +52,18 @@ async function compute(nowMs: number): Promise<LeaderboardPayload> {
   return serialize(board, nowMs);
 }
 
-/** One computation at a time per process; concurrent readers share it, and a result serves for three minutes. */
-export async function readBoard(nowMs = Date.now()): Promise<LeaderboardPayload> {
-  if (cache && nowMs - cache.atMs < CACHE_TTL_MS) return cache.payload;
+async function computeBoard(): Promise<LeaderboardPayload> {
   if (!inFlight) {
-    inFlight = compute(nowMs)
-      .then((payload) => {
-        cache = { payload, atMs: nowMs };
-        return payload;
-      })
+    inFlight = compute(Date.now())
       .finally(() => {
         inFlight = null;
       });
   }
   return inFlight;
+}
+
+/** Key by the deployment's data source, never by a per-request timestamp. */
+export function readBoard(): Promise<LeaderboardPayload> {
+  const { chainId, venueId, indexerUrl } = parseMarketsEnv();
+  return unstable_cache(computeBoard, ["masayume-venue-board-v2", String(chainId), venueId, indexerUrl], { revalidate: 180 })();
 }

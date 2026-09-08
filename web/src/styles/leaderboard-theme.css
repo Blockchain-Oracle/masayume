@@ -45,6 +45,7 @@
 .lb-state-empty { padding: 96px 24px; font-size: 12px; line-height: 2; }
 .lb-state-glyph { font-size: 30px; margin-bottom: 14px; opacity: 0.5; }
 .lb-state-sub { color: var(--gray-600); }
+.lb-freshness { margin-top: 16px; font-family: var(--font-mono); font-size: 11px; line-height: 1.6; color: var(--gray-500); }
 .lb-retry { margin-top: 16px; }
 .lb-section-head { margin-top: 48px; margin-bottom: 24px; }
 /* The app shell already clears the fixed chrome; the reference's 124px hero margin was its own. */
