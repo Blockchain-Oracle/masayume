@@ -1,0 +1,89 @@
+MASAYUME — SPOKEN SCRIPT, 8 September 2026
+Read this column only. Everything else lives in demo-video-script-2026-09-08.md.
+A slash / is a breath. A blank line is a cut.
+
+
+Howdy to the Somnia and DreamDEX team. It's Blockchain Oracle, and I bring you Masayume — a
+prediction market you can tap, play, hand to an agent, or just tweet at.
+
+
+Let's start with that last one. / This is a Bitcoin trade. And it started with a post.
+
+Here's the post. One test dollar. Bitcoin. Up. / Here's the reply — the order filled. / And
+this link, that's the trade on Somnia.
+
+So I made that call on X, and I never opened the app. You link your wallet once. After that,
+you just post.
+
+
+Okay. So where does that live?
+
+This is Masayume. And these markets are DreamDEX, on Somnia — we built the app around them.
+
+Here's one. Bitcoin. This is the starting price, and this is the clock. When it hits zero,
+Bitcoin's either at or above that price, or below it. / Up, or Down. That's the call.
+
+
+So let's make one. I connect my wallet. Tap Up. One dollar.
+
+It shows me what I'm paying, and what comes back if I'm right. If I'm wrong, I lose the dollar.
+
+Confirm. / And there it is in my portfolio.
+
+Then tap-trading. I set a spending limit once, and after that it's one tap.
+
+
+Right. Agents.
+
+Because I don't want to make every call myself.
+
+There's Sensei — the AI in the app. I can just ask it what it thinks.
+
+Or I build my own. I give it instructions, and I test it before I trust it.
+
+Watch this one. It reads Bitcoin's real opening price, sees an eleven basis point move, and it
+holds. / It waits. That's exactly what I wanted.
+
+Then I publish it on Somnia. Publishing is free — funding it is separate.
+
+And you can copy mine. Check its record, set your budget, cap each trade.
+
+Here's a run we recorded. The bot bought Ethereum Down, the market closed, and the money came
+back. / Here's that transaction.
+
+The AI keeps a record too. Twelve calls. It held eleven times. The one trade it took, it
+lost — and that's in there too.
+
+
+Now, X. Because that's a whole feature.
+
+The grammar is just words. Asset, side, amount, window. Any order you like.
+
+And when I send it something it can't read, it tells me. One reply, no trade, no loop. / That
+part took the longest to get right.
+
+
+Okay — what if your call is more specific?
+
+Range, you pick a price band instead of a direction. Parlay, you stack a few calls and they all
+have to land. Boost is leverage, two or three times, with a knockout line — price touches that
+line, you're out early.
+
+There's Private trading. And Earn, where you put money behind the quotes.
+
+
+And games. Because sometimes I just want to play.
+
+Practice costs nothing — that's where you learn. Duel puts you against one other person, same
+cards. Lucky Draw deals you a call, and you decide whether to take it. Moonshot, you aim at a
+closing price. Line Rider and Candle Hop are pure arcade. Scores only.
+
+There's Reels for sharing a take, Rooms, and price alerts. And Portfolio keeps everything.
+
+
+If you want to try it, the docs take you from setting up a wallet to your first call. If you're
+building, there's local setup, self-hosted bots, and our DreamDEX integration.
+
+Start at masayume dot app. And we're on X.
+
+That's Masayume. / Now — what's your call?

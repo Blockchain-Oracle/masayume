@@ -1,129 +1,124 @@
-# Masayume: Demo Video Script (8 September 2026)
+# Masayume: Demo Video Direction (8 September 2026)
 
-The narrated cut for the hackathon submission and YouTube. Replaces the earlier presenter draft of the
-same date — same evidence, rebuilt story. The 166-second stock-voice review cut at `/demo`
-([demo-script-2026-09-06.md](demo-script-2026-09-06.md)) is untouched.
+Pairs with **[demo-voiceover-2026-09-08.txt](demo-voiceover-2026-09-08.txt)** — that file is what you
+read aloud, and nothing else. This file is what the screen does while you read it.
 
-- **Runtime:** 03:12 primary cut. A named 02:52 trim is at the end if you want to sit strictly inside the brief's 2–3 minutes.
-- **Spoken words:** 446 at ~175 wpm — 153s of speech, 39s of deliberate holds and silence.
-- **Proof environment:** Somnia Shannon testnet, chain 50312. tUSDC collateral, STT gas. Every number is testnet.
-- **Tagline:** *Make your call. See it through.*
+- **Spoken words:** 572. At your normal pace that's **3:36–3:50** of speech; **3:54–4:08** with the
+  silent proof holds. Four minutes is the ceiling — if the take runs long, the named cuts are at the end.
+- **Environment:** Somnia Shannon testnet, chain 50312. tUSDC for stakes, STT for fees. Every number is testnet.
+- **Closing line:** *"That's Masayume. Now — what's your call?"*
 
----
+## The shape
 
-## The spine
+**Greeting, then the post.** The greeting stays exactly as it was — it works. Then straight into a
+Bitcoin trade that started as a post on X, because that's the most interesting thing you own and the
+viewer should meet it before they've been asked to understand anything.
 
-**Cold open, then rewind.** The video opens mid-action with no greeting, no logo and no face: a tweet
-becomes a real on-chain order in fourteen seconds. Only then does it back up and introduce anybody.
-This is the highest-retention opening pattern there is, and it is the one thing the previous draft
-did not do — it buried the tweet at 02:12, roughly ninety seconds after a cold viewer leaves.
+**Sections are announced out loud.** *"Right. Agents."* *"Now, X."* *"And games."* The viewer is being
+shown a product with a lot in it, and hiding the seams behind smooth transitions is how people lose
+the thread. Say the topic, then explain it. Each section opens with the reason you'd want it —
+*"because I don't want to make every call myself"* — not with the feature name alone.
 
-**We are not claiming to be first, and that is the pitch.** Prediction markets are old. DreamDEX
-already built the hard part — a real on-chain order book on Somnia for one question. The wedge is not
-the market. It is that nobody built the thing a normal person would touch. Said out loud, this is
-honest, it credits the sponsors, and it is a stronger claim than inventing a category.
-
-**One hero, everything else is motion.** The agent that refuses to trade, publishes itself, gets
-copied under a bounded permission, then loses money and settles honestly — that gets fifty seconds.
-The seven games, the leverage, the parlay, the vault get twenty seconds and are carried by on-screen
-chips, not by a spoken list. Naming features out loud is what made the last cut drag.
-
-| | |
-| --- | --- |
-| **Viewer** | Anyone watching. Judges are in the room, they are not the address. |
-| **Pain** | The rails work. The surface is unusable by anyone who is not already a trader. |
-| **Promise** | Make the call in one tap, one tweet, or not at all — hand it to an agent. |
-| **Hero proof** | An AI that read a live price, said no eleven times out of twelve, traded once, lost, and settled itself on chain. |
+**Screen answers the sentence you just said.** Never let a shot arrive before the words that motivate it.
 
 ---
 
 ## Voice rules
 
-The last draft failed on voice, not on facts. These are binding for any rewrite.
+These are written from the notes on the two rejected drafts. They're binding.
 
 **Do**
 
-- Talk to one person. "You shouldn't have to be here at all." Never "users can."
-- Say *I* and *you*. Narrate what your hands are doing while they do it.
-- Sentence fragments. "Confirm. Done." "And it lost."
-- Plain money words: *bet*, *money*, *dollar*, *order*. Not *position*, *collateral*, *notional*.
-- Let a number be the drama on its own. "Twelve decisions. Eleven holds. One trade."
-- Leave the seam in. "I left it in the video" is worth more than any adjective.
+- **Break compound sentences in two.** *"This is a Bitcoin trade. And it started with a post."* — not
+  *"This Bitcoin trade started with a post."* Speech goes in short beats; prose packs ideas together.
+  This is the single biggest fix.
+- **Say what happens.** *"I set a spending limit once, and after that it's one tap."*
+- **Announce the section, then explain it.** *"Right. Agents."*
+- **Lead with the want.** *"Because sometimes I just want to play."* Then the feature.
+- **Discourse markers are good:** *okay, so, right, now, then, and.* They're how people actually talk.
+- Contractions everywhere. First person doing things in the present tense.
 
 **Never**
 
-- **Balanced antithesis.** "It was never a hard question, it was a hard app." Two matched clauses
-  pivoting on a contrast is the loudest AI tell in spoken copy. There are zero in this script.
-- Lists of four in one breath. The old opening line had four.
-- Presentational verbs: *I bring you*, *allow me to*, *let's dive into*.
-- Aphorisms as beat-enders. "That refusal matters more than the trade." Say what happened instead.
-- Narrating a feature inventory. If it can be a chip on screen, it is a chip on screen.
+- **Negative framing.** *"Not a friendly average."* *"No wallet popup."* *"Not a rounded number to make
+  me feel good."* A negation only lands if the viewer already knows the bad thing — someone who's
+  never seen a wallet popup hears nothing at all. All of these are gone.
+- **Past-perfect setup before the action.** *"I'd linked my wallet and set a budget."* Nobody announces
+  preconditions. Do the thing, then explain the setup afterwards if it matters — which is why the
+  wallet-linking line now comes *after* the trade lands.
+- **Specification prose.** *"Publishing is one step; giving it a trading budget is another."*
+  *"Portfolio tracks the result."* That's a manual read aloud.
+- **Aphorisms as beat-enders.** *"It was never a hard question. It was a hard app."*
 - Present tense over recorded footage. Ever.
 
----
-
-## Cold open (00:00–00:14)
-
-No greeting. No logo. No face cam. No music. Screen only, from the first frame.
-
-| Beat | On screen | Spoken |
-| --- | --- | --- |
-| 1 | X compose box, cursor already in it | "Watch this." |
-| 2 | Type `@masayume_app btc up 1 4h`. Do not rush the typing — it must be readable. | "Bitcoin. Up. One dollar. Next four hours." |
-| 3 | Hit Post | "That's a tweet." |
-| 4 | The reply card lands: Masayume mark, sender, spend, full hash | "And it tweets back a receipt." |
-| 5 | Click the hash → Shannon explorer, **Success**. Hold 2s. | "That's the order. On chain. I never opened an app." |
-
-That is 28 spoken words over fourteen seconds. The silence between beats 3 and 4 is doing work — do
-not fill it.
-
-**Capture decision — the one thing you have to choose.** Two ways to shoot this, both honest:
-
-- **Live (preferred).** Bring the X relay up, rehearse one command off camera, then post on camera.
-  Highest impact. Requires the relay running and a real testnet spend from the executor wallet.
-- **Recorded thread (safe).** Shoot the existing verified thread: scroll to
-  [the command](https://x.com/masayume_app/status/2096704007112696288), then
-  [the receipt](https://x.com/masayume_app/status/2096704198461084030), then click through to
-  [the fill](https://shannon-explorer.somnia.network/tx/0x072a0259bd75c22697d960da29c513ff9a0d3b0f24ba5eefbe626810093fa26b).
-  Same words work unchanged except beat 3, which becomes "That was a tweet." Carry a
-  **Recorded · 6 September 2026** label.
-
-The recorded version still lands. Do not delay the shoot over this.
+**Overruled from the earlier draft:** the four-item promise in the greeting and *"I bring you"* both
+stay. They were flagged as AI tells; they aren't. The greeting is the strongest thing in the video and
+the four verbs preview the whole running order.
 
 ---
 
-## Full timeline
+## Screen direction
 
-| Time | What you say | What's on screen | Proof / note |
+Blocks match the blank-line breaks in the voiceover file, in order.
+
+| # | You say (first words) | Show and do | Evidence requirement |
 | --- | --- | --- | --- |
-| **00:00–00:14** | *(cold open above)* | X → reply card → explorer | Live post, or the verified thread with a Recorded label |
-| **00:14–00:24** | "Okay, let me back up. Somnia team, DreamDEX team — hey. I'm Blockchain Oracle. This is Masayume, and it's all on your testnet. Test money, real chain." | Hard cut to `masayume.app` hero. Face cam fades in lower right, first appearance. | Corner label **Somnia Shannon testnet** goes up here and stays up. |
-| **00:24–00:46** | "I didn't invent prediction markets. They've been around for years. You already built the hard part — a real order book on Somnia for one question. Up, or down. The rails work. And that's where a normal person leaves. So I didn't build a market. I built what goes on top of yours." | Cut to a raw DreamDEX / CLOB order-book view. Let it sit two full seconds. One fast scroll on "a normal person leaves". Cut back to the Masayume Window on "on top of yours". | Frame the book as **raw rails**, which is what it is. No sneer, no comparison graphic. This beat is why the pitch is credible. |
-| **00:46–00:57** | "One question at a time. We call it a Window. Bitcoin. This price, right now. This clock. Up or down when it hits zero. That's the whole thing." | `/markets` → a live BTC Window. Cursor lands on each field exactly as it's named: asset → opening print → countdown → the Up/Down pair. | Slowest cursor in the video. This is the ten seconds that decide whether a non-trader stays. |
-| **00:57–01:22** | "Bitcoin, next hour, I say up. Tap Up. One dollar. Before I confirm, it shows me the real price off the real book. Not a rounded number to make me feel good. Confirm. Now notice what didn't happen. No wallet popup. I handed this browser a key with limits I set. It can buy. It can't withdraw. Only my wallet does that." | Tap **Up**, type `1`. Hold 2s on the readout strip — contracts, actual price, total. Confirm. Cut to the session chip → session sheet. Hold on **"Never: withdraw, change where money goes, or spend past the caps."** | **Live signed testnet trade, your wallet, your funds.** Fallback: clean pre-recorded take of the identical flow. Per-tap / per-day / expiry ride as on-screen chips — do not say them. |
-| **01:22–02:17** | "Now the part I actually care about. You shouldn't have to be here at all. This is the agent builder. Name it, pick how it thinks, test it before anyone trusts it. This one's an AI. Watch. It read Bitcoin's real opening price. Eleven basis points. Basically nothing. And it said no. That's the point. I don't want a bot that bets. I want one that waits. Here it is, published on Somnia. Fee, zero. And here's someone copying it. That's a permission, not a deposit. Then I let it run overnight. Twelve decisions. Eleven holds. One trade. And it lost. Bought up, market went down, settled itself for zero. On chain. And I left it in the video. Don't take my word for it. The hashes are right there." | `/agents` builder, scrub four steps fast (≤4s total). Cut to the saved Sensei read — hold on opening **79,830.70**, **+11 bps**, **Hold**. Cut to explorer on `0x7a18eff5…`, hold 2s on Success + **zero fee**. Cut to the copy drawer (budget / cap / expiry visible, unspoken). Cut to the decision journal — the 11-hold, 1-trade list. Then explorer: fill `0xe175d59f…` → settlement `0x19738859…`, ~2s each. Then the rules agent's win `0x88a8aefd…` held 2s **silent**, captioned **Won · 1.661 tUSDC paid at expiry**. | **Hero beat.** Everything from the Sensei read onward carries **Recorded · 7 September 2026** — the grant is revoked and the loop is paused, so nothing here is narrated live. Never crop a hash. Full-face punch-in on "I left it in the video." The copy drawer's budget / per-trade cap / expiry and *I never hold their money* ride as on-screen chips — unspoken. |
-| **02:17–02:28** | "And that tweet from the start? I sent it garbage on purpose. It refused and spent nothing. If you've run a bot on X, you know why that matters." | Cut to [the refusal post](https://x.com/masayume_app/status/2096796003147940231). Hold on the refusal card — no hash on it, which is the point. | Callback to the cold open. This is the beat that reads as *built by someone who has shipped*, not as a feature claim. |
-| **02:28–02:46** | "It should also be fun. Seven games, one economy. Season one has a hundred test dollars locked in a contract. Not promised. Locked. Same markets under all of it." | **Montage, ~2s a beat, no lingering.** `/games` hub → Duel stage → Lucky spin → Moonshot **Paid** capture → Candle Hop run → season banner, hold 2s on **100 tUSDC**. Then chips over the market ticket: `Boost 2× / 3×` · `Parlay` · `Private` · `Earn`. Duel gets the longest montage beat (3s) with the chip **Duel · real orders + real side pot**. | Names ride as on-screen chips: Lucky · Range · Moonshot · Line Rider · Candle Hop · Practice. **Do not read them out.** Moonshot uses the recorded Paid capture, labelled. Claim nothing specific about Lucky, Range or Line Rider. |
-| **02:46–02:59** | "Under all of it is DreamDEX. Their SDK finds the markets, prices them, fills the orders. I didn't rebuild any of that — what I built sits on top." | `docs.masayume.app/builders/dreamdex-sdk` — hold the SDK diagram. Contracts table. Then `docs.masayume.app/llms.txt` raw, hold 2s. | Counts ride as on-screen text: **10 contracts · 1,067 tests · 14 invariants**. Do not say them. The llms.txt shot runs silent for 2s under the caption **Docs, in plain text, for your AI** — a wink at AI-assisted judging that costs no words. |
-| **02:59–03:12** | "Masayume's live on Somnia testnet right now. App, docs, and every hash are in the description. Or skip all of it. You've got my handle. Make your call. See it through." | Back to the app hero, face cam grows. Full-face punch-in on "Make your call." End card: `masayume.app` · `docs.masayume.app` · `@masayume_app`. Hold to black. | "You've got my handle" bookends the cold open. Leave a full beat of silence before the tagline. |
-
-**Extended YouTube cut (03:30).** Add these back, in this order of value: the rules-agent win spoken at 02:14 — *"The other agent won one, and paid itself the second the window closed"*; the Duel line at 02:30 — *"Duel is you against one person. Real orders, real side pot"*; the docs line at 02:56 — *"And the docs point every feature at the exact SDK call. Reading them with an AI? There's a plain-text version."* Then one roadmap line before the close: *"Next: more
-conditions for the agents, paid memory so a strategy can sell what it learned, and mainnet the day
-Event Contracts get there."* Over the app hero. Roadmap framing only — never present tense. Cut this
-line for the submission link.
+| 1 | "Howdy to the Somnia and DreamDEX team…" | Hard cuts ~1s: hackathon page → GitHub repo → land on `masayume.app` hero and hold. Face cam lower right from frame one. | Hero shows the Masayume mark and the Shannon testnet label. Persistent corner label **Somnia Shannon testnet** goes up here and stays. |
+| 2 | "Let's start with that last one…" | Cut to the original X instruction post. Readable crop: BTC / UP / amount / window. | Label **Recorded testnet trade · 6 September 2026**. Never animate a fresh send. |
+| 3 | "Here's the post…" | The post, then the delivered reply card — point at **Spent**. Then click through to the explorer, hold 2s on Success and the full hash. | [Command](https://x.com/masayume_app/status/2096704007112696288) → [reply](https://x.com/masayume_app/status/2096704198461084030) → [fill](https://shannon-explorer.somnia.network/tx/0x072a0259bd75c22697d960da29c513ff9a0d3b0f24ba5eefbe626810093fa26b). **Actual spend was 0.90852 tUSDC on a one-dollar request** — the reply card must stay readable, don't crop it to hide that. A filled order is not a won market. |
+| 4 | "So I made that call on X…" | Brief inset of the account-link panel, then back. | The link step is real and precedes the post. Shown after the payoff, not before. |
+| 5 | "Okay. So where does that live?" | Cut to the app. | — |
+| 6 | "This is Masayume…" | Product header, then a compact DreamDEX / Somnia foundation shot. | DreamDEX supplies markets, quotes and fills. Do not imply we built the market layer, and do not imply DreamDEX has no apps. |
+| 7 | "Here's one. Bitcoin…" | A live BTC Window. Cursor lands on each field **in the order you name it**: opening price → countdown → the Up/Down pair. | Slowest cursor in the video. **Up includes equality** — "at or above" is deliberate, keep it. |
+| 8 | "So let's make one…" | Wallet connect, then tap **Up**, type `1`. | **The faucet is cut from the script** — funded and `ready`, but no live payout is on record. Come to the shoot pre-funded. The funding panel may appear as a visual; claim nothing about it. |
+| 9 | "It shows me what I'm paying…" | Hold 2s on the readout strip: contracts, actual price, total. | On-screen: **tUSDC for stakes · STT for fees**. The loss sentence is the risk disclosure — do not cut it. |
+| 10 | "Confirm." | Confirm, then Portfolio showing the position. | Live signed testnet trade from your own wallet, or a clean pre-recorded take of the same flow. |
+| 11 | "Then tap-trading…" | Session chip → the spending-limit panel. Hold on the caps. | Tap approval is a bounded spending limit, not universal gaslessness. Per-tap / per-day / expiry ride as on-screen chips — don't say them. |
+| 12 | **"Right. Agents."** | Full-screen section card or a hard cut to `/agents`. Give it a beat of silence. | The signpost is the point. Let it land. |
+| 13 | "Because I don't want to make every call myself." | Optional brief face-cam return. | — |
+| 14 | "There's Sensei…" | The Sensei advice dock. | Sensei advises. It does not execute autonomously. |
+| 15 | "Or I build my own…" | The builder: instructions field, then the test-read control. | — |
+| 16 | "Watch this one…" | The saved Sensei corrected read. Hold on opening **79,830.70**, **+11 bps**, **Hold**. | Label **Recorded · 7 September 2026**. The grant is revoked and the loop is paused — **do not re-run the model on camera** and do not narrate it as live. |
+| 17 | "Then I publish it on Somnia…" | Explorer on the publication tx, hold 2s on Success and **zero fee**. | [`0x7a18eff5…f4619`](https://shannon-explorer.somnia.network/tx/0x7a18eff5353ac5ee423c0c331a56ec0a8b450acbae01cb07c4a79c6c743f4619). Publishing does not fund or start a strategy — that's why the line separates them. |
+| 18 | "And you can copy mine…" | Copy drawer: record, budget, per-trade cap, expiry, fee. | Chip: **A permission, not a deposit — the owner never holds your money.** Chip: **Pause stops new copies; open trades stay open.** Both unspoken. |
+| 19 | "Here's a run we recorded…" | Momentum #3 activity → fill → settlement → the owner's Trading Balance. Then the explorer. | Fill [`0x8a3c1652…cb7b2`](https://shannon-explorer.somnia.network/tx/0x8a3c1652ace3f626aae68abb576b6ab71012059285fcf717ee6b78a6f22cb7b2) → settlement [`0x88a8aefd…92600`](https://shannon-explorer.somnia.network/tx/0x88a8aefd9c3d6d310ac14710d893c9d72391446b864ce6bea8004de185492600), paying **1.661 tUSDC**. Overlay **Momentum · rule-based**. Recorded timestamps visible — settlement was not instantaneous. |
+| 20 | "The AI keeps a record too…" | The AI decision journal — the 11-hold, 1-trade list. Then the losing fill and its zero settlement, ~2s each. | Overlay **AI · a separate strategy** — this must not read as the Momentum win. Fill [`0xe175d59f…d67d17`](https://shannon-explorer.somnia.network/tx/0xe175d59f302f3e55864dcaa05ccffa662c36461d942738e21157b37cb4d67d17) → settled for zero, [`0x19738859…679f8`](https://shannon-explorer.somnia.network/tx/0x197388596631f01ce571894163e47aa4e268e41f8073718e56e57b56131679f8). **The loss stays in.** Full-face punch-in on "it lost". |
+| 21 | **"Now, X."** | Section card or hard cut to the X account. | Second signpost. |
+| 22 | "The grammar is just words…" | On-screen, large: `@masayume_app btc up 1 4h`, with `asset · side · amount · window` labelled under it. Then the same command reordered. | Real grammar — any token order, `$` signs, decimals and synonyms all parse. `packages/core/src/x/parse.ts`. |
+| 23 | "And when I send it something it can't read…" | [The refusal post](https://x.com/masayume_app/status/2096796003147940231). Hold on the card — no hash on it, which is the point. | Exactly one refusal, `instruction-invalid`, no transaction, no recursion. |
+| 24 | **"Okay — what if your call is more specific?"** | Section transition back into the app. | Third signpost. |
+| 25 | "Range… Parlay… Boost…" | One continuous choice sequence: Range band → Parlay legs → Boost 2×/3× chips and the knockout line. ~4s each. | Controls only. **Claim no new execution.** The knockout caveat is spoken because it's the one that can cost someone money. |
+| 26 | "There's Private trading. And Earn…" | Private panel, then Earn shares. | Chip: **Private reduces the direct wallet link — it is not anonymity.** Chip: **Earn is variable exposure, not fixed yield.** |
+| 27 | **"And games."** | Section card → `/games` hub. | Fourth signpost. |
+| 28 | "Practice… Duel… Lucky Draw… Moonshot… Line Rider and Candle Hop" | One continuous montage, ~3s a name, in spoken order. All seven legible; Range is already covered. | Duel chip: **card trades use funds; ranked adds a pot.** Lucky: the draw and the order are separate actions. Moonshot uses the recorded **Paid** capture (2.000132 tUSDC on a 1.000354 stake), labelled. Arcade courses are seeded, not live-market charts — **no trading payouts**. Season banner may appear; **100 tUSDC escrowed** as on-screen text only. |
+| 29 | "There's Reels for sharing a take…" | Reels take → Room → alert control → Portfolio. | A signed take is not an order. Room requires a position. Alerts need the tab open. Show controls or genuine existing captures — don't post anything new. |
+| 30 | "If you want to try it…" | Docs home → Start → Agents/Games → Builders SDK map → `llms.txt` raw, 2s. | On-screen over the contracts table: **10 contracts · 1,067 tests · 14 invariants**. llms.txt caption: **Docs, in plain text, for your AI.** |
+| 31 | "That's Masayume. Now — what's your call?" | Back to the app hero, face cam grows. End card: `masayume.app` · `docs.masayume.app` · `@masayume_app`. Hold to black. | Full beat of silence before the last line. Don't pronounce every URL. |
 
 ---
 
-## What changed from the previous draft
+## Coverage ledger
 
-| Previous cut | This cut | Why |
+Dropping a spoken feature list must not silently drop the feature. This is where each family lands.
+
+| Family | Status | Treatment |
 | --- | --- | --- |
-| Greeting + product name + four-item tagline at 00:00 | Tweet → receipt → on-chain order at 00:00, greeting at 00:14 | Cold open. The most surprising thing the product does was at 02:12; nobody was still watching. |
-| "It was never a hard question. It was a hard app." | "The rails work. And that's where a normal person leaves." | Antithesis out. What actually happens, in.  |
-| Implicitly novel | "I didn't invent prediction markets. They've been around for years." | True, credits DreamDEX, and scores on ecosystem impact. |
-| X trade at 02:12 as a feature | X trade at 00:00 as the hook; the **refusal** at 02:09 as the callback | Same footage, four times the impact, plus a structural payoff. |
-| Seven games and four surfaces read aloud (72 words) | Chips on screen, 44 spoken words | Narrating an inventory is what made it drag. |
-| 03:52 | **03:12** | The brief asks 2–3 minutes. This is 12s over the ceiling with a 02:52 trim named below; the previous cut was 52s over with no path back. |
+| X instruction → fill → transaction | Dated live, 6 Sep | **Opening hero.** Spoken, with proof click. |
+| X grammar and refusal | Verified local + dated refusal post | **Own section.** Spoken. |
+| DreamDEX / Somnia foundation | Source verified | Spoken early, shown again at the docs handoff. |
+| Windows, Up/Down, ticket, Portfolio | Verified local | Spoken. Up includes equality. |
+| Wallet connect, tap-trading limits | Verified local | Spoken. **Faucet cut** — no live payout on record. |
+| Sensei, agent builder, test read | Verified local + dated read | Spoken. Sensei advises only. |
+| Publication, copy, budget, caps, pause | Dated live | Spoken; pause caveat is an on-screen chip. |
+| Momentum #3 trade → settlement → balance | Dated live | Second proof. Spoken. |
+| AI decisions, holds, the loss | Dated live | Spoken. The loss stays in. |
+| Range, Parlay, Boost | Verified local | One spoken choice sequence, controls only. |
+| Private, Earn | Verified local | Spoken, with risk chips. |
+| Seven games + Moonshot claim | Catalog verified + dated Moonshot | One montage, six names spoken. |
+| Season pool, 100 tUSDC escrowed | Dated live | On-screen text only. |
+| Reels, Rooms, alerts | Verified local | One spoken bridge. |
+| Docs, llms.txt, self-hosting, SDK map | Verified live | One closing handoff. |
+| Paid Memory Market, Reversion, achievements, native app, mainnet | Roadmap | **Omitted.** Not spoken, not shown. |
 
 ---
 
@@ -131,104 +126,57 @@ line for the submission link.
 
 ### Preflight
 
-- **Record** at 2560×1440+, export 1920×1080. Browser at 100% on the app, **110% on the explorer** so hashes survive the downscale.
-- **Face cam** lower right, ~22% frame width. **Absent for the entire cold open.** Shrink or move it for the ticket readout and every explorer hold.
-- **Captions** burned in, lower centre, one line. Persistent corner label **Somnia Shannon testnet**. Add **Recorded · <date>** on every agent scene, the Moonshot capture, and the X thread if shot recorded.
-- **Fixtures:** demo-user wallet connected on 50312, funded with tUSDC and STT before rolling. Tap-trading already armed so the session sheet has real caps.
-- **Hide:** private keys, `~/.config/masayume/*.env`, X DMs and sidebar, bookmarks, the email in the profile chip, Vercel/Fly dashboards, terminal scrollback.
-- **Environment:** production `masayume.app` only, never localhost. Confirm `/api/status` reads `healthy` with ≥1 live Window immediately before rolling.
-- **Notifications:** macOS Focus on. Slack, Mail, Chrome notifications off.
+- Record 2560×1440+, export 1920×1080. Browser 100% on the app, **110–125% on the explorer** so hashes survive the downscale. **Check the finished cut at phone size** — enlarge any panel whose words don't read.
+- **Record one natural take before cutting a single word.** The script is a speaking guide. Contractions and small changes in your own voice are welcome as long as the claim stays true.
+- Face cam lower right, ~22% frame width. Keep it clear of the ticket, the receipt card and every explorer hold. Optional brief return at "Because I don't want to make every call myself."
+- Come **pre-funded** — tUSDC and STT in the demo wallet, tap-trading already armed so the limits panel has real caps to show.
+- Hide: private keys, `~/.config/masayume/*.env`, X DMs and sidebar, bookmarks, the email in the profile chip, Vercel/Fly dashboards, terminal scrollback, wallet extension internals. Public proof wallets and hashes stay visible.
+- Confirm `/api/status` reads `healthy` with at least one live Window immediately before rolling. Notifications off, Focus on.
 
 ### Tab order
 
-1. `x.com/masayume_app` — compose box ready (or the command / receipt / refusal posts open)
-2. Shannon explorer on the X fill `0x072a0259…`
-3. A raw DreamDEX order-book / CLOB view
-4. `masayume.app` hero → `/markets` → a live BTC Window
-5. `masayume.app/agents` builder, and the agent detail / decision journal
-6. Shannon explorer — four tabs on `0x7a18eff5…`, `0xe175d59f…`, `0x19738859…`, `0x88a8aefd…`
-7. `masayume.app/games` → season banner → `/earn` → `/parlay`
-8. `docs.masayume.app/builders/dreamdex-sdk` → contracts table → `docs.masayume.app/llms.txt`
-9. `masayume.app` hero (closing frame)
-
-### Exact inputs
-
-| Step | Action | Expected | Fallback | Boundary |
-| --- | --- | --- | --- | --- |
-| Status check | Load `/api/status` off camera | `healthy`, ≥1 live Window | Postpone the shoot | Read-only |
-| **Cold open** | Post `@masayume_app btc up 1 4h`, then click the hash in the reply | Receipt card with sender, spend, full hash; explorer shows Success | The verified 6 Sep thread, labelled | **Real testnet spend from the executor wallet.** Rehearse once off camera first |
-| First call | BTC 1h Window → **Up** → stake `1` | Readout shows contracts + actual price; fills | Pre-recorded clean take | **Signs a real testnet trade from your own wallet** |
-| Tap-trading | Session chip → session sheet | Caps, expiry, "Never: withdraw…" visible | Screenshot of the armed sheet | Read-only if already armed |
-| Agent read | Saved Sensei corrected-read capture | 79,830.70 opening, +11 bps, **Hold** | The capture is the evidence | **Do not re-run the model on camera** — grant revoked |
-| Publication | Explorer `0x7a18eff5…` | Success, full hash, zero fee | Saved screenshot | Read-only |
-| Copy drawer | Open on the published strategy | Budget, per-trade cap, expiry, fee | Existing capture | **Stop before signing a new grant** |
-| Loss + win | Explorer `0xe175d59f…`, `0x19738859…`, `0x88a8aefd…` | Confirmed, amounts legible | Saved screenshots | Read-only |
-| Refusal | The refusal post | One reply, no hash | Saved screenshot | **Post nothing new from the account** beyond the cold open |
-| Games | `/games`, Duel stage, Lucky, Candle Hop | Motion only | Recorded Moonshot Paid capture | Practice and arcade spend nothing |
-| Season pool | Season banner | 100 tUSDC escrowed, ends 30 Sep | Escrow on explorer | Read-only |
+1. [Original X instruction](https://x.com/masayume_app/status/2096704007112696288)
+2. [Delivered reply](https://x.com/masayume_app/status/2096704198461084030)
+3. [Matching transaction](https://shannon-explorer.somnia.network/tx/0x072a0259bd75c22697d960da29c513ff9a0d3b0f24ba5eefbe626810093fa26b)
+4. `masayume.app` hero → `/markets` → a live BTC Window → Portfolio → session/limits panel
+5. `/agents` — Sensei dock, builder, the saved corrected read, the decision journal
+6. Explorer — `0x7a18eff5…`, `0x8a3c1652…`, `0x88a8aefd…`, `0xe175d59f…`, `0x19738859…`
+7. [The refusal post](https://x.com/masayume_app/status/2096796003147940231)
+8. Range → Parlay → Boost → Private → `/earn`
+9. `/games` hub, Duel, Lucky, Moonshot Paid capture, Candle Hop, Line Rider, season banner
+10. Reels → Room → alerts → Portfolio
+11. `docs.masayume.app` → Start → Builders SDK → `llms.txt`
+12. `masayume.app` hero (closing frame)
 
 ### Retake triggers
 
 - `/api/status` degrades, or live Windows drop to zero mid-take.
-- Any hash, amount, sender or status cropped, blurred, or covered by the face cam or captions.
+- A hash, amount, sender or status is cropped, blurred, or covered by the face cam or captions.
 - A recorded scene appears without its **Recorded · date** label.
+- The AI strategy and the Momentum strategy appear without their distinguishing overlays.
 - A wallet popup, seed phrase, private key, env file or personal identifier enters frame.
-- The cursor lands on a destructive control not in the script.
 - You narrate a recorded agent decision in the present tense.
-- The face cam is visible during the cold open.
+- The faucet gets attempted on camera.
 
 ---
 
 ## Edit map
 
-- **First frame is the compose box.** No logo animation, no fade, no music. Music enters at 00:14 on the cut to the hero.
-- **Hard cuts** on every "→" in the tab order. Cut on the word, not after it.
-- **Silence** for the three explorer proof holds, the "And it said no" beat, and the beat before the tagline.
-- **Remove:** wallet spinners, page loads, explorer indexing, typing dead air, the Duel queue countdown. Never cut between a click and its result.
-- **Hold ≥2s, uncovered:** the X receipt card; the ticket readout strip; "Never: withdraw…"; publication hash and zero fee; the losing settlement; the winning 1.661 settlement; the 100 tUSDC escrow.
-- **Full-face punch-ins — two only:** "I left it in the video" (≈02:10) and "Make your call" (≈03:06).
-- **Closing frame:** app hero + `masayume.app` · `docs.masayume.app` · `@masayume_app`.
+- **Music** enters under the greeting, drops out for every explorer hold and for the beat before the last line.
+- **Section cards** for the four signposts — "Agents", "X", "more specific", "games". A beat of silence on each. They're the spine of the cut.
+- **Hold ≥2s, uncovered:** the X reply card; the fill transaction; the ticket readout; the limits panel; the publication hash and zero fee; the Momentum settlement; the losing settlement; the Moonshot Paid record.
+- **Remove:** wallet spinners, page loads, explorer indexing, typing dead air, queue countdowns. Never cut between a click and its result.
+- **Full-face punch-ins — two only:** "it lost" and "what's your call?"
+- **Persistent:** corner label **Somnia Shannon testnet**. **Recorded · date** on every X, agent and Moonshot scene.
 
-### Trim to 02:52 (strictly inside the brief)
+### If the take runs past 4:00
 
-Take these in order. Each is named so you can stop when you're inside.
+In this order:
 
-1. **Drop the refusal callback entirely** (02:17–02:28, −11s). It's the beat I'd miss most, but it's the only whole beat that isn't load-bearing — the cold open already proved the tweet works.
-2. **Shorten the games montage** from 18s to 14s (−4s): cut the Lucky and Line Rider beats, keep Duel, Moonshot, Candle Hop and the season banner.
-3. **Trim two explorer holds** from 2s to 1.5s (−1s) — the publication tx and the losing fill. Never trim the settlement.
-4. **Cut "Not a rounded number to make me feel good"** (−3s). Last resort; it's the best line in the trading beat.
+1. The social bridge — "There's Reels for sharing a take…" (−6s). Whole line goes; the docs shot covers it.
+2. "There's Private trading. And Earn, where you put money behind the quotes." (−6s). Keep both as visuals.
+3. "That part took the longest to get right." (−4s). It's a good line, it isn't load-bearing.
+4. "If you're building, there's local setup, self-hosted bots, and our DreamDEX integration." (−6s).
 
-**Never trim:** the cold open, the Window explanation, "And it said no", the loss, or the settlement hold.
-
----
-
-## Project truth
-
-### Verified (as of 8 September 2026)
-
-- `masayume.app` live and `healthy`. `/api/status` at 21:03 UTC: RPC block 483,281,985, **10 live windows** across 5 lanes, BTC $78,567.13, ETH $2,486.08, Sensei `openai/gpt-5.4 via direct`.
-- Docs live at `docs.masayume.app` — 52 guides, 215 links, 241 source references, plus `llms.txt` / `llms-full.txt`.
-- 10 Masayume contracts on Shannon; all 20 configured addresses returned code at block 480,250,668.
-- **Strategy published:** [`0x7a18eff5…f4619`](https://shannon-explorer.somnia.network/tx/0x7a18eff5353ac5ee423c0c331a56ec0a8b450acbae01cb07c4a79c6c743f4619), zero fee.
-- **12 real AI decisions** (`openai.responses/gpt-5.4-2026-03-05`), unique by Window: **11 held, 1 traded** at 58%.
-- **AI fill and honest loss:** [`0xe175d59f…d67d17`](https://shannon-explorer.somnia.network/tx/0xe175d59f302f3e55864dcaa05ccffa662c36461d942738e21157b37cb4d67d17) — 4.608 UP for 0.935424 tUSDC; market resolved DOWN; auto-settled for zero at 02:00:22 UTC, [`0x19738859…679f8`](https://shannon-explorer.somnia.network/tx/0x197388596631f01ce571894163e47aa4e268e41f8073718e56e57b56131679f8).
-- **Rules agent win:** fill [`0x8a3c1652…cb7b2`](https://shannon-explorer.somnia.network/tx/0x8a3c1652ace3f626aae68abb576b6ab71012059285fcf717ee6b78a6f22cb7b2) (1.661 DOWN for 0.908567 tUSDC), auto-settled 04:00:13 UTC paying **1.661 tUSDC**, [`0x88a8aefd…92600`](https://shannon-explorer.somnia.network/tx/0x88a8aefd9c3d6d310ac14710d893c9d72391446b864ce6bea8004de185492600).
-- **Trade from X:** [command](https://x.com/masayume_app/status/2096704007112696288) → [image receipt](https://x.com/masayume_app/status/2096704198461084030) → [fill](https://shannon-explorer.somnia.network/tx/0x072a0259bd75c22697d960da29c513ff9a0d3b0f24ba5eefbe626810093fa26b), spending 0.90852 tUSDC for 1.34 contracts. Grammar is `@masayume_app <asset> <side> <stake> <cadence>`, any order, with synonyms.
-- **Invalid command refused:** [`2096795838307590451`](https://x.com/masayume_app/status/2096795838307590451) produced exactly one refusal, [`2096796003147940231`](https://x.com/masayume_app/status/2096796003147940231) — `instruction-invalid`, no transaction, no recursion.
-- **Moonshot round 3 full cycle:** purchase → settlement (closing print $79,922.31) → claim paying **2.000132 tUSDC** on a 1.000354 tUSDC stake.
-- **Duel driven end to end on Shannon** — [context/54](../../context/54-first-full-duel-2026-09-03.md).
-- **Season 1 escrowed:** `/api/games/season` returns 100.000000 tUSDC deposited at [`0x6B34…96fA`](https://shannon-explorer.somnia.network/address/0x6B340DBE7AC3283B5f5c3aA5f6AaEd57378596fA), ending 30 Sep 2026, split 40/20/10 then 6 × 5.
-- **Seven games:** practice, duel, lucky, range, moonshot, line-rider, candle-hop — three honesty tiers in `packages/core/src/games/types.ts`.
-- Gates: **1,067 tests across 83 files**, all workspace typechecks, **14 invariants**, **226 contract tests across 24 suites**; [CI green](https://github.com/Blockchain-Oracle/masayume/actions/runs/34081587977) on `9bb7238`.
-
-### Implemented, not verified — qualify or omit
-
-- **Agent loop is paused.** Grant 8 revoked, #3 consent paused, `/api/strategies/health` reports no active strategies. Every agent scene is **recorded evidence** and must be labelled.
-- **Faucet.** Funded and `ready: true` (47.997 STT treasury), but **no successful live payout is on record.** Cut from this script entirely. Do not shoot it.
-- **Lucky, Range, Line Rider.** Built and routed, no dated live economics. Montage motion only, no spoken claim.
-- **Private mode.** Local recovery passed, public empty state verified, balance reads 0.00 tUSDC.
-
-### Roadmap only
-
-Paid Memory Market, Reversion, achievements, game-profile statistics, broader performance work — and
-mainnet. Nothing about mainnet is deployed. Say "the day Event Contracts get there," never "we are on mainnet."
+**Never cut:** the greeting, the post sequence, the Window explanation, "If I'm wrong, I lose the
+dollar", the agent hold, the loss, or any of the four signposts.
