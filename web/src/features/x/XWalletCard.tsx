@@ -160,13 +160,17 @@ export function XWalletCardView({ address, link, grant, compact = false, returnT
             </div>
             <XPermissionPanel grant={grant} executor={status?.executor ?? null} symbol={symbol} disabled={link.walletMismatch || Boolean(link.busy)} />
             {canFund && <>
-            {grant.availableBase !== null && grant.availableBase > 0n && <label className="xw-source">
-              Fund from
-              <select value={source} onChange={(e) => setSource(e.target.value as typeof source)} disabled={Boolean(busy)}>
-                <option value="wallet">Connected wallet</option>
-                <option value="trading-balance">Trading Balance · {formatBaseUnits(grant.availableBase, grant.decimals)} {symbol} available</option>
-              </select>
-            </label>}
+            {grant.availableBase !== null && grant.availableBase > 0n && <fieldset className="xw-source">
+              <legend>Fund from</legend>
+              <div className="xw-source-options">
+                <button type="button" aria-pressed={source === "wallet"} disabled={Boolean(busy)} onClick={() => setSource("wallet")}>
+                  <strong>Connected wallet</strong><span>Add wallet funds</span>
+                </button>
+                <button type="button" aria-pressed={source === "trading-balance"} disabled={Boolean(busy)} onClick={() => setSource("trading-balance")}>
+                  <strong>Trading Balance</strong><span>{formatBaseUnits(grant.availableBase, grant.decimals)} {symbol} available</span>
+                </button>
+              </div>
+            </fieldset>}
             <div className="xw-fund">
               <div className="xw-quick">
                 {QUICK.map((v) => (

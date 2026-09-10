@@ -136,8 +136,7 @@ export function TradeFromXScreen() {
         {(grant.ok || link.ok) && <div className="xt-ok">{grant.ok || link.ok}</div>}
 
         <div className={`xt-composer${step === 4 ? " xt-composer--live" : ""}`}>
-          <div className="xt-composer-eyebrow">{step === 4 ? TRADE_FROM_X.then : "Next · trade from X"}</div>
-          <div className="xt-composer-title">{step === 4 ? TRADE_FROM_X.justTweet : "Finish setup before tweeting a trade."}</div>
+          <div className="xt-composer-eyebrow">Trade from X</div>
           <XInstructionBuilder enabled={step === 4} balanceBase={grant.balanceBase} decimals={grant.decimals} symbol={symbol} />
           <XRelayStatus health={link.status?.relay} />
         </div>

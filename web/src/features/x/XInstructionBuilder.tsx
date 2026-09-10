@@ -7,9 +7,15 @@ import type { EventMarket } from "@masayume/core/types";
 import { selectXWindow, X_CADENCES, xRefusalCopy, type XAsset } from "@masayume/core/x";
 import { marketsProvider } from "@masayume/markets";
 import { useLanes, useTick } from "@masayume/markets/react";
+import { ArrowDownRight, ArrowUpRight, Check, Copy } from "lucide-react";
 import { useState } from "react";
+import { BitcoinMark, EthereumMark } from "@/components/icons/AssetMarks";
 import { useVenue } from "@/features/markets/useVenue";
 import { X_HANDLE } from "./copy";
+import "./x-instruction.css";
+
+const ASSETS = [{ name: "BTC", label: "Bitcoin", Mark: BitcoinMark }, { name: "ETH", label: "Ethereum", Mark: EthereumMark }] as const;
+const AMOUNTS = ["5", "10", "25"] as const;
 
 interface BuilderProps {
   enabled: boolean;
@@ -41,6 +47,8 @@ export function XInstructionBuilderView({ enabled, balanceBase, decimals, symbol
     ? `Your X balance is ${formatBaseUnits(balanceBase, decimals)} ${symbol}. Use a smaller amount or add funds.` : "";
   const instruction = `${X_HANDLE} ${asset} ${side.toUpperCase()} ${amount} ${cadence}`;
   const canCopy = enabled && selection?.ok && !amountError;
+  const amountInvalid = !stake || stake <= 0n;
+  const maxAmount = balanceBase === null ? null : formatBaseUnits(balanceBase, decimals, { maxDp: decimals, minDp: 0, group: false });
   const status = selection?.ok ? `Entries close at ${formatUtc(noEntryCutoffSec(selection.market.expirySec, selection.market.intervalSec) * 1000, { withSeconds: true })}.`
     : selection ? xRefusalCopy({ refusalCode: selection.code, entryClosesAtSec: selection.market ? noEntryCutoffSec(selection.market.expirySec, selection.market.intervalSec) : null,
       nextWindowAtSec: selection.code === "window-not-started" ? selection.market?.tradingStartSec : null }).detail
@@ -50,23 +58,68 @@ export function XInstructionBuilderView({ enabled, balanceBase, decimals, symbol
     try { await navigator.clipboard.writeText(instruction); setCopied(instruction); }
     catch { setCopied("Copy failed. Select the instruction text and copy it."); }
   };
-  return <section id="x-instruction" className="xw xw-permission" aria-label="Build an X instruction">
-    <h2 className="xw-slab-title">Build your X instruction</h2>
-    <p className="xw-slab-body">Choose an asset, direction, amount and timeframe. UP and LONG mean the same thing; DOWN and SHORT also work.</p>
-    <div className="grid grid-cols-1 gap-3 mt-3 sm:grid-cols-2">
-      <label className="xw-source">Asset<select value={asset} onChange={e => setAsset(e.target.value as XAsset)}><option>BTC</option><option>ETH</option></select></label>
-      <label className="xw-source">Direction<select value={side} onChange={e => setSide(e.target.value)}><option value="up">UP / LONG</option><option value="down">DOWN / SHORT</option></select></label>
-      <label className="xw-source">Amount ({symbol})<input className="xw-instruction-amount" inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value.replace(/[^0-9.]/g, ""))} /></label>
-      <label className="xw-source">Timeframe<select value={cadence} onChange={e => setCadence(e.target.value as keyof typeof X_CADENCES)}>
-        {Object.entries(X_CADENCES).map(([name, intervalSec]) => <option key={name} value={name}>{name}{markets ? selectXWindow(markets, { asset, intervalSec }, nowMs).ok ? " · entries open" : " · unavailable" : ""}</option>)}
-      </select></label>
+  return <section id="x-instruction" className="xi" aria-label="Build an X instruction">
+    <header className="xi-heading">
+      <h2>Make your call.</h2>
+      <p>Choose. Copy. Post on X.</p>
+    </header>
+    <div className="xi-choices">
+      <fieldset className="xi-field">
+        <legend>Asset</legend>
+        <div className="xi-pair">
+          {ASSETS.map(({ name, label, Mark }) => <button key={name} type="button" className="xi-asset" aria-pressed={asset === name} aria-label={name} onClick={() => setAsset(name)}>
+            <Mark className="xi-asset-mark" /><span><strong>{name}</strong><small>{label}</small></span>
+            {asset === name && <Check className="xi-check" aria-hidden />}
+          </button>)}
+        </div>
+      </fieldset>
+      <fieldset className="xi-field">
+        <legend>Direction</legend>
+        <div className="xi-pair">
+          <button type="button" className="xi-side" data-side="up" aria-pressed={side === "up"} aria-label="UP / LONG" onClick={() => setSide("up")}>
+            <ArrowUpRight aria-hidden /><span><strong>UP</strong><small>Long</small></span>
+          </button>
+          <button type="button" className="xi-side" data-side="down" aria-pressed={side === "down"} aria-label="DOWN / SHORT" onClick={() => setSide("down")}>
+            <ArrowDownRight aria-hidden /><span><strong>DOWN</strong><small>Short</small></span>
+          </button>
+        </div>
+      </fieldset>
     </div>
-    <p className="xw-slab-body" role="status">{status}</p>
-    <p className="xw-slab-note">Entry closes {ENTRY_BUFFER_SEC} seconds before the Window ends. X delivery takes time, so send before the cutoff. Availability is checked again when your mention arrives.</p>
-    <code className="xw-instruction-code">{instruction}</code>
-    {amountError && <p className="xw-err">{amountError}</p>}
-    {!enabled && <p className="xw-slab-note">Complete wallet, funding and X setup above before sending a trade.</p>}
-    <button className="xw-btn-v" type="button" disabled={!canCopy} onClick={() => void copy()}>{copied === instruction ? "Copied" : "Copy instruction"}</button>
-    {copied.startsWith("Copy failed") && <p className="xw-err">{copied}</p>}
+    <fieldset className="xi-field xi-timeframes">
+      <legend>Timeframe <span>Live availability</span></legend>
+      <div className="xi-cadences">
+        {Object.entries(X_CADENCES).map(([name, intervalSec]) => {
+          const window = markets ? selectXWindow(markets, { asset, intervalSec }, nowMs) : null;
+          const label = window?.ok ? "Open" : window?.code === "window-not-started" ? "Soon" : window?.code === "opening-price-pending" ? "Starting" : window ? "Closed" : unavailable ? "Unavailable" : "Checking";
+          return <button key={name} type="button" className="xi-cadence" aria-pressed={cadence === name} aria-label={`${name}, ${label.toLowerCase()}`}
+            disabled={!window?.ok} data-open={Boolean(window?.ok)} onClick={() => setCadence(name as keyof typeof X_CADENCES)}>
+            <strong>{name}</strong><small><i aria-hidden />{label}</small>
+          </button>;
+        })}
+      </div>
+      <p className="xi-window-status" data-open={Boolean(selection?.ok)} role="status">{status}</p>
+    </fieldset>
+    <fieldset className="xi-field xi-amount-field">
+      <legend>Amount <span>X balance · {maxAmount ?? "—"} {symbol}</span></legend>
+      <div className="xi-amount-row">
+        <label className="xi-amount"><input aria-label={`Amount (${symbol})`} aria-invalid={Boolean(amountError)} aria-describedby={amountError ? "x-amount-error" : undefined}
+          inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value.replace(/[^0-9.]/g, ""))} /><span>{symbol}</span></label>
+        <div className="xi-quick" role="group" aria-label="Quick amounts">
+          {AMOUNTS.map(value => <button key={value} type="button" aria-pressed={amount === value} disabled={balanceBase !== null && BigInt(value) * 10n ** BigInt(decimals) > balanceBase} onClick={() => setAmount(value)}>{value}</button>)}
+          <button type="button" disabled={!maxAmount || !balanceBase} aria-label="Use available X balance" onClick={() => maxAmount && setAmount(maxAmount)}>Max</button>
+        </div>
+      </div>
+      {amountError && <p id="x-amount-error" className="xi-error">{amountError}</p>}
+    </fieldset>
+    <div className="xi-post" data-side={side}>
+      <div className="xi-post-label">Your X post <span>Preview</span></div>
+      <code><span className="xi-handle">{X_HANDLE}</span><span className="xi-command">{asset} <b>{side.toUpperCase()}</b> {amountInvalid ? "…" : amount} {cadence}</span></code>
+      <button className="xi-copy" type="button" disabled={!canCopy} onClick={() => void copy()}>
+        {copied === instruction ? <Check aria-hidden /> : <Copy aria-hidden />}{copied === instruction ? "Copied — paste into X" : "Copy instruction"}
+      </button>
+      {!enabled && <p className="xi-setup">Complete wallet, funding and X setup above to enable copying.</p>}
+      {copied.startsWith("Copy failed") && <p className="xi-setup" role="alert">{copied}</p>}
+    </div>
+    <p className="xi-timing">Entries close {ENTRY_BUFFER_SEC}s before the Window ends. Post early enough for X delivery; availability is checked again on arrival.</p>
   </section>;
 }
