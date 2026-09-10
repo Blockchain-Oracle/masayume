@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
-import type { XReceiptStatus } from "@masayume/core/x";
+import { X_REFUSAL_TITLES, type XReceiptStatus } from "@masayume/core/x";
 
 /** Structural subset of ReplyPresentation. All facts come from the receipt formatter. */
 export interface ReplyCardInput {
@@ -117,9 +117,9 @@ ${mark(909, 174, 49, "#211C18")}
 export function renderReplyCardSvg(input: ReplyCardInput, options: ReplyCardOptions = {}): string {
   const status: XReceiptStatus = Object.hasOwn(states, input.status) ? input.status : "unknown";
   const state = states[status];
-  // Status determines the headline: unknown can also follow an already-mined
-  // transaction, so it must not imply that chain confirmation is still pending.
-  const title = state.title;
+  // Only fixed refusal titles may refine the status headline. Unknown outcomes
+  // must never imply success or that chain confirmation is still pending.
+  const title = status === "refused" && Object.values(X_REFUSAL_TITLES).some(title => title === input.title) ? input.title! : state.title;
   const footer = status === "unknown" && input.footer === "Check this transaction before trying again."
     ? input.footer : state.footer;
   const context = plain(input.context, 180) || "Somnia Shannon testnet";

@@ -35,6 +35,28 @@ beforeEach(() => {
 });
 
 describe("mention execution receipt integration", () => {
+  it("reports failed market reads as unavailable, never as a nonexistent Window", async () => {
+    dependencies.lanes.mockResolvedValue({ ok: false, error: { technical: "private provider error" } });
+    expect(await executeMention(context, mention)).toMatchObject({ refusalCode: "market-data-unavailable", asset: "BTC", intervalSec: 300 });
+    expect(dependencies.lanes).toHaveBeenCalledTimes(2);
+    expect(dependencies.submit).not.toHaveBeenCalled();
+  });
+  it("recovers from one failed market read without repeating an execution", async () => {
+    dependencies.lanes.mockResolvedValueOnce({ ok: false, error: {} });
+    expect((await executeMention(context, mention)).status).toBe("filled");
+    expect(dependencies.submit).toHaveBeenCalledTimes(1);
+  });
+  it("retains the matched Window and cutoff when entry has closed", async () => {
+    dependencies.lanes.mockResolvedValue({ ok: true, value: { lanes: [{ markets: [{ ...market, tradingStartSec: 0, expirySec: 130 }] }] } });
+    expect(await executeMention(context, mention)).toMatchObject({ refusalCode: "window-entry-closed", marketId: MARKET_ID, entryClosesAtSec: 100, expirySec: 130 });
+    expect(dependencies.submit).not.toHaveBeenCalled();
+  });
+  it("preserves the missing-field diagnosis for both the reply text and image", async () => {
+    const result = await executeMention(context, { ...mention, text: "BTC long 5" });
+    expect(result.parseRefusal).toBe("no-cadence");
+    expect(replyText(result, 6)).toContain("Add a timeframe");
+    expect(replyText(result, 6)).toContain("BTC UP 5 15m");
+  });
   it("routes a funded legacy permission to its update flow before quoting or submitting", async () => {
     dependencies.snapshot.mockResolvedValue({ ok: true, value: { grants: { executor: {
       grantId: 10n, actor: ADDRESS, kind: "executor", expiresAtSec: Math.floor(Date.now() / 1000) + 3600,

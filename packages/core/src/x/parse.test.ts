@@ -22,6 +22,12 @@ describe("parseInstruction", () => {
     expect(ok("bitcoin long 25 usdc 5m please")).toMatchObject({ side: "up", asset: "BTC", cadence: "5m" });
     expect(ok("short ether 1 4h")).toMatchObject({ side: "down", asset: "ETH", cadence: "4h" });
   });
+  it.each(["BTC long 5 5 minutes", "btc up 5 5min", "BTC up 5 5 mins"])("accepts written minute units: %s", text => {
+    expect(ok(text)).toMatchObject({ asset: "BTC", side: "up", stakeBase: 5_000_000n, intervalSec: 300 });
+  });
+  it.each(["1d", "24h", "24 hours", "1 day"])("accepts the venue's daily Window: %s", duration => {
+    expect(ok(`BTC up 5 ${duration}`)).toMatchObject({ cadence: "1d", intervalSec: 86400 });
+  });
   it("refuses every ambiguity by name", () => {
     expect(refused("@masayume_app btc up down 5 15m")).toBe("two-sides");
     expect(refused("btc eth up 5 15m")).toBe("two-assets");

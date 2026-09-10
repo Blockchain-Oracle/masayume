@@ -1,6 +1,6 @@
 import { SHANNON_EXPLORER_URL } from "@masayume/core/constants";
 import { formatBaseUnits } from "@masayume/core/units";
-import { X_RECEIPT_STATUSES, X_REFUSAL_DETAILS as REFUSAL_DETAILS, xReceiptRecovery, type XReceipt, type XReceiptStatus } from "@masayume/core/x";
+import { X_RECEIPT_STATUSES, xRefusalCopy, xReceiptRecovery, type XReceipt, type XReceiptStatus } from "@masayume/core/x";
 
 export const REPLY_LIMIT = 280;
 export const TRADE_FROM_X_URL = "https://masayume.app/trade-from-x";
@@ -20,7 +20,7 @@ export interface ReplyPresentation {
 
 const BASE_UNITS = /^(0|[1-9]\d{0,77})$/;
 const TX_HASH = /^0x[0-9a-fA-F]{64}$/;
-const CADENCES: Record<number, string> = { 60: "1m", 300: "5m", 900: "15m", 3600: "1h", 14400: "4h" };
+const CADENCES: Record<number, string> = { 60: "1m", 300: "5m", 900: "15m", 3600: "1h", 14400: "4h", 86400: "1d" };
 
 function amount(value: string | null | undefined, decimals: number): string | null {
   if (typeof value !== "string" || !BASE_UNITS.test(value) || !Number.isInteger(decimals) || decimals < 0 || decimals > 18) return null;
@@ -69,9 +69,8 @@ export function createReplyPresentation(receipt: XReceipt, decimals: number, sym
       return { ...base, title: "Instruction received", detail: "Checks are in progress; no confirmed trade yet." };
     case "refused": {
       const code = receipt.refusalCode ?? "unconfirmed";
-      const detail = Object.hasOwn(REFUSAL_DETAILS, code) ? REFUSAL_DETAILS[code] : REFUSAL_DETAILS.unconfirmed;
       const recovery = xReceiptRecovery(code);
-      return { ...base, title: "Order not confirmed", detail, url: !hash && recovery ? `https://masayume.app${recovery.href}` : url };
+      return { ...base, ...xRefusalCopy(receipt), url: !hash && recovery ? `https://masayume.app${recovery.href}` : url };
     }
   }
 }

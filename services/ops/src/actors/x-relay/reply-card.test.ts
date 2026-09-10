@@ -5,6 +5,17 @@ import { renderReplyCardPng, renderReplyCardSvg } from "./reply-card";
 import { createReplyPresentation } from "./reply-format";
 
 describe("receipt reply artwork", () => {
+  it("shows actionable refusal headings and the missing input in the image", () => {
+    const receipt = { mentionId: "123", authorId: "456", handle: "alice", wallet: null, grantId: null, marketId: null,
+      side: null, stakeBase: null, status: "refused" as const, reason: null, instruction: "BTC long 5", atMs: 1, txHash: null,
+      refusalCode: "instruction-invalid" as const, parseRefusal: "no-cadence" as const };
+    const svg = renderReplyCardSvg(createReplyPresentation(receipt, 6));
+    expect(svg).toContain("Check your instruction");
+    expect(svg).toContain("Add a timeframe, such as 5m or 15m.");
+    expect(svg).toContain("Example: BTC UP 5 15m.");
+    expect(renderReplyCardSvg({ status: "refused", title: "Entries closed" })).toContain("Entries closed");
+    expect(renderReplyCardSvg({ status: "refused", title: "arbitrary injected title" })).not.toContain("arbitrary injected title");
+  });
   it("changes the exact image for each persisted sender and transaction, with all facts intact", async () => {
     const base = { mentionId: "123", authorId: "456", handle: "alice", wallet: null, grantId: null, marketId: null,
       side: "up" as const, stakeBase: "5000000", bookedCostBase: "4950000", status: "filled" as const,

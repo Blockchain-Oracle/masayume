@@ -1,8 +1,8 @@
 import type { Side } from "../types/market";
 import { oneUnit } from "../units/decimals";
 
-/** The Windows a mention may name, as the venue lists them (1m/5m/15m/1h/4h). */
-export const X_CADENCES = { "1m": 60, "5m": 300, "15m": 900, "1h": 3_600, "4h": 14_400 } as const;
+/** Supported instructions; the live venue decides which Windows are available now. */
+export const X_CADENCES = { "1m": 60, "5m": 300, "15m": 900, "1h": 3_600, "4h": 14_400, "1d": 86_400 } as const;
 export type XCadence = keyof typeof X_CADENCES;
 
 export type XAsset = "BTC" | "ETH";
@@ -38,11 +38,11 @@ export interface XInstruction {
 export type XParse = { ok: true; instruction: XInstruction } | { ok: false; reason: XRefusalReason; token?: string };
 
 /** The one sentence the UI shows as the grammar. */
-export const X_GRAMMAR = "@handle <btc|eth> <up|down> <stake> <1m|5m|15m|1h|4h>";
+export const X_GRAMMAR = "@handle <btc|eth> <up|down> <stake> <1m|5m|15m|1h|4h|1d>";
 export const X_EXAMPLES = ["btc up 5 15m", "eth down $10 1h", "bitcoin long 25 5m"] as const;
 
 const STAKE_RE = /^\$?(\d+(?:\.\d+)?)$/;
-const CADENCE_RE = /^(\d+)(m|h)$/;
+const CADENCE_RE = /^(\d+)(m|h|d)$/;
 
 function stakeToBase(text: string, decimals: number): bigint | null {
   const [whole = "0", fraction = ""] = text.split(".");
@@ -60,6 +60,10 @@ function stakeToBase(text: string, decimals: number): bigint | null {
 export function parseInstruction(text: string, options: { decimals: number }): XParse {
   const tokens = text
     .toLowerCase()
+    .replace(/\b(\d+)\s*(?:minutes?|mins?)\b/g, "$1m")
+    .replace(/\b(\d+)\s*(?:hours?|hrs?)\b/g, "$1h")
+    .replace(/\b(\d+)\s*days?\b/g, "$1d")
+    .replace(/\b24h\b/g, "1d")
     .replace(/[,;:!?()"']/g, " ")
     .split(/\s+/)
     .filter((t) => t.length > 0 && !t.startsWith("@") && !t.startsWith("#") && !t.startsWith("http"));
@@ -134,9 +138,9 @@ export function describeRefusal(reason: XRefusalReason, token?: string): string 
     case "two-stakes":
       return `one stake per call${near}`;
     case "no-cadence":
-      return "name the Window: 1m, 5m, 15m, 1h or 4h";
+      return "add a timeframe, such as 5m or 15m";
     case "cadence-not-listed":
-      return `that Window is not listed${near} — 1m, 5m, 15m, 1h or 4h`;
+      return `use a supported timeframe${near}: 1m, 5m, 15m, 1h, 4h or 1d`;
     case "two-cadences":
       return `one Window per call${near}`;
     case "unknown-token":

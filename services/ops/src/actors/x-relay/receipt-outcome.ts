@@ -21,6 +21,7 @@ function refusalCode(diagnosis: Diagnosis): XRefusalCode {
     "insufficient-collateral": "insufficient-funds",
     "out-of-gas": "execution-unavailable",
     "not-deployed": "not-deployed",
+    "market-not-trading": "window-entry-closed",
   };
   return Object.hasOwn(codes, diagnosis.kind) ? (codes[diagnosis.kind] ?? "unconfirmed") : "unconfirmed";
 }

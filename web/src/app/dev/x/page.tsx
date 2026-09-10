@@ -8,6 +8,8 @@ import { WALLET } from "../states/fixtures";
 import "@/features/x/x.css";
 import "@/features/x/x-card.css";
 import { X_FIXTURE_NOW_SEC, XUpgradeFixture } from "./XUpgradeFixture";
+import { XInstructionBuilderView } from "@/features/x/XInstructionBuilder";
+import { FIXTURE_NOW_MS, WINDOWS } from "../surface/fixtures";
 
 const DEV = {
   title: "X rail",
@@ -59,6 +61,10 @@ const RECEIPTS: XReceipt[] = (["filled", "nothing-filled", "refused", "submitted
   refusalCode: s === "refused" ? "permission-denied" : null,
   txHash: s === "filled" || s === "reverted" ? `0x${"9f".repeat(32)}` : null, instruction: "@masayume_app btc up 5 15m", atMs: X_FIXTURE_NOW_SEC * 1000 - i * 600_000,
 }));
+RECEIPTS.push(
+  { ...RECEIPTS[2]!, mentionId: "190", refusalCode: "window-entry-closed", asset: "BTC", intervalSec: 900, entryClosesAtSec: X_FIXTURE_NOW_SEC - 30 },
+  { ...RECEIPTS[2]!, mentionId: "191", refusalCode: "instruction-invalid", parseRefusal: "no-cadence", instruction: "@masayume_app BTC long 5" },
+);
 
 export default function DevXPage() {
   return (
@@ -66,6 +72,10 @@ export default function DevXPage() {
       <SectionHeader index="00" title={DEV.title} />
       <p className="type-body text-ink-secondary">{DEV.intro}</p>
       <XUpgradeFixture />
+      <section className="xt xt-page rounded-lg p-6">
+        <h2 className="type-body-strong text-ink">Instruction builder — fixed market fixtures</h2>
+        <XInstructionBuilderView enabled balanceBase={55_000_000n} decimals={6} symbol="tUSDC" markets={WINDOWS} unavailable={false} nowMs={FIXTURE_NOW_MS} />
+      </section>
       {CASES.map((c) => (
         <section key={c.title} className="flex flex-col gap-3">
           <h2 className="type-body-strong text-ink">{c.title}</h2>

@@ -1,9 +1,9 @@
-import { HEADROOM_FRACTION, HEADROOM_MAX_SEC, HEADROOM_MIN_SEC } from "../constants/timing";
+import { ENTRY_BUFFER_SEC } from "../constants/timing";
 import { secToMs } from "../units/time";
 
-/** No-entry buffer before expiry: max(30, min(300, interval × 0.4)) seconds (canon #9). */
-export function headroomSec(intervalSec: number): number {
-  return Math.max(HEADROOM_MIN_SEC, Math.min(HEADROOM_MAX_SEC, Math.round(intervalSec * HEADROOM_FRACTION)));
+/** The same 30-second entry buffer for every cadence and execution surface. */
+export function headroomSec(_intervalSec: number): number {
+  return ENTRY_BUFFER_SEC;
 }
 
 /** The instant entry closes: expiry less the headroom — the one definition every surface and the order lane share. */

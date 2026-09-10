@@ -88,6 +88,12 @@ describe("public X receipt text", () => {
     expect(createReplyPresentation({ ...refused, refusalCode: "position-limit" }, 6).url).toBe("https://masayume.app/portfolio");
     expect(createReplyPresentation({ ...refused, txHash: HASH }, 6).url).toBe(TX_URL);
   });
+  it("preserves a closed Window's precise recovery reason and instruction-builder link", () => {
+    const model = createReplyPresentation(receipt({ status: "refused", refusalCode: "window-entry-closed", txHash: null, entryClosesAtSec: Date.parse("2026-09-10T08:24:30Z") / 1000 }), 6);
+    expect(model.title).toBe("Entries closed");
+    expect(model.detail).toContain("08:24:30 UTC");
+    expect(model.url).toBe(`${TRADE_FROM_X_URL}#x-instruction`);
+  });
 
   it.each(["constructor", "__proto__", "toString", "unknown-code"])("does not index inherited refusal copy: %s", (code) => {
     const model = createReplyPresentation(receipt({ status: "refused", refusalCode: code as XRefusalCode }), 6);

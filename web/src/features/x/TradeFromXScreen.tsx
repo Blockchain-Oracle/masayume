@@ -1,11 +1,10 @@
 "use client";
 
 import { isOk } from "@masayume/core/schemas";
-import { X_EXAMPLES } from "@masayume/core/x";
 import { formatBaseUnits } from "@masayume/core/units";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ConnectButton } from "@/features/markets/wallet";
 import { useVenue } from "@/features/markets/useVenue";
 import { useWalletSession } from "@/lib/wallet-session";
@@ -23,10 +22,10 @@ import { XRelayStatus } from "./XRelayStatus";
 import { useXReceipts } from "./useXReceipts";
 import { useXStatus } from "./useXStatus";
 import { XPermissionPanel } from "./XPermissionPanel";
+import { XInstructionBuilder } from "./XInstructionBuilder";
 import "./x-card.css";
 
 const RETURN_TO = "/trade-from-x";
-const EXAMPLE_MS = 2_600;
 
 /**
  * yosuku.xyz/trade-from-x — "X-trade", ported. Connect → fund + authorize →
@@ -42,23 +41,12 @@ export function TradeFromXScreen() {
   const grant = useXGrant();
   const receipts = useXReceipts(address ?? null);
   const [amount, setAmount] = useState("5");
-  const [ex, setEx] = useState(0);
-
-  useEffect(() => {
-    const t = setInterval(() => setEx((i) => (i + 1) % X_EXAMPLES.length), EXAMPLE_MS);
-    return () => clearInterval(t);
-  }, []);
 
   const permission = grant.permission(link.status?.executor ?? null);
   const funded = permission === "ready";
   const linked = Boolean(link.status?.binding) && !link.needsLink && !link.walletMismatch;
   const step = !address ? 1 : !funded ? 2 : !linked ? 3 : 4;
   const error = grant.error || link.error;
-  const example = X_EXAMPLES[ex]!.replace(/\$?\d+ (?=\d+[mh]$)/, (stake) => {
-    const requested = BigInt(stake.trim().replace("$", "")) * 10n ** BigInt(grant.decimals);
-    const available = grant.balanceBase ?? 0n;
-    return `${formatBaseUnits(available > 0n && available < requested ? available : requested, grant.decimals, { maxDp: grant.decimals, minDp: 0, group: false })} `;
-  });
 
   return (
     <div className="xt xt-page" data-theme="dark">
@@ -150,13 +138,7 @@ export function TradeFromXScreen() {
         <div className={`xt-composer${step === 4 ? " xt-composer--live" : ""}`}>
           <div className="xt-composer-eyebrow">{step === 4 ? TRADE_FROM_X.then : "Next · trade from X"}</div>
           <div className="xt-composer-title">{step === 4 ? TRADE_FROM_X.justTweet : "Finish setup before tweeting a trade."}</div>
-          {step === 4 && <>
-          <div className="xt-example">
-            <span className="xt-example-caret">›</span>
-            <span key={ex} className="xt-boot xt-example-text" style={{ animationDuration: ".5s" }}>{`${X_HANDLE} ${example}`}</span>
-          </div>
-          <p className="xt-composer-note">{TRADE_FROM_X.opensFrom}</p>
-          </>}
+          <XInstructionBuilder enabled={step === 4} balanceBase={grant.balanceBase} decimals={grant.decimals} symbol={symbol} />
           <XRelayStatus health={link.status?.relay} />
         </div>
 

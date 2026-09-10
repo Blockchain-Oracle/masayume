@@ -1,8 +1,8 @@
-import { phase } from "@masayume/core/lifecycle";
-import { describeRefusal, isBalanceOnlyXGrant, parseInstruction, X_REFUSAL_DETAILS, type XInstruction } from "@masayume/core/x";
+import { noEntryCutoffSec } from "@masayume/core/lifecycle";
+import { describeRefusal, isBalanceOnlyXGrant, parseInstruction, selectXWindow, X_REFUSAL_DETAILS, type XInstruction } from "@masayume/core/x";
 import { xLinkByAuthor, xReceiptUpsert, type XReceiptRecord } from "@masayume/db";
 import { getCollateral, getVaultSnapshot, marketsProvider, resolveVenueId, type SubmitterSession } from "@masayume/markets";
-import type { Bytes32, EventMarket } from "@masayume/core/types";
+import type { Bytes32 } from "@masayume/core/types";
 import type { Mention } from "./transport";
 import { outcomeToReceipt } from "./receipt-outcome";
 
@@ -35,16 +35,12 @@ function receiptFor(mention: Mention, over: Partial<XReceiptRecord>): XReceiptRe
 }
 
 /** The soonest Window still enterable for the asset and cadence a mention named. */
-async function liveWindow(venueId: Bytes32, instruction: XInstruction): Promise<EventMarket | null> {
-  const lanes = await marketsProvider.listLiveLanes(venueId);
-  if (!lanes.ok || lanes.stale) return null;
-  const nowMs = marketsProvider.nowMs();
-  return (
-    lanes.value.lanes
-      .flatMap((lane) => lane.markets)
-      .filter((m) => m.asset === instruction.asset && m.intervalSec === instruction.intervalSec && m.isUpDown && phase(m, nowMs) === "trading")
-      .sort((a, b) => a.expirySec - b.expirySec)[0] ?? null
-  );
+async function liveWindow(venueId: Bytes32, instruction: XInstruction) {
+  let lanes = await marketsProvider.listLiveLanes(venueId);
+  // Retry the read once, never the order. A failed refresh is not evidence of an empty venue.
+  if (!lanes.ok || lanes.stale) lanes = await marketsProvider.listLiveLanes(venueId);
+  if (!lanes.ok || lanes.stale) return { ok: false as const, code: "market-data-unavailable" as const };
+  return selectXWindow(lanes.value.lanes.flatMap(lane => lane.markets), instruction, marketsProvider.nowMs());
 }
 
 /**
@@ -60,9 +56,9 @@ export async function executeMention(ctx: ExecutorContext, mention: Mention): Pr
   await ctx.checkpoint?.(receiptFor(mention, { wallet: link.wallet, status: "submitted" }));
 
   const parsed = parseInstruction(mention.text, { decimals });
-  if (!parsed.ok) return receiptFor(mention, { wallet: link.wallet, refusalCode: "instruction-invalid", reason: describeRefusal(parsed.reason) });
+  if (!parsed.ok) return receiptFor(mention, { wallet: link.wallet, refusalCode: "instruction-invalid", parseRefusal: parsed.reason, reason: describeRefusal(parsed.reason) });
   const { instruction } = parsed;
-  const base = { wallet: link.wallet, side: instruction.side, stakeBase: instruction.stakeBase.toString() };
+  const base = { wallet: link.wallet, side: instruction.side, stakeBase: instruction.stakeBase.toString(), asset: instruction.asset, intervalSec: instruction.intervalSec };
 
   const snapshot = await getVaultSnapshot(link.wallet as `0x${string}`);
   if (!snapshot.ok || snapshot.stale) return receiptFor(mention, { ...base, refusalCode: "balance-unavailable", reason: "could not read the Trading Balance right now" });
@@ -74,8 +70,15 @@ export async function executeMention(ctx: ExecutorContext, mention: Mention): Pr
   if (!isBalanceOnlyXGrant(grant)) return receiptFor(mention, { ...base, grantId: grant.grantId.toString(), refusalCode: "grant-update-required", reason: X_REFUSAL_DETAILS["grant-update-required"] });
   if (instruction.stakeBase > grant.budgetBase) return receiptFor(mention, { ...base, grantId: grant.grantId.toString(), refusalCode: "insufficient-funds", reason: X_REFUSAL_DETAILS["insufficient-funds"] });
 
-  const market = await liveWindow(ctx.venueId, instruction);
-  if (!market) return receiptFor(mention, { ...base, refusalCode: "no-window", grantId: grant.grantId.toString(), reason: `no ${instruction.asset} ${instruction.cadence} Window is open right now` });
+  const selected = await liveWindow(ctx.venueId, instruction);
+  if (!selected.ok) {
+    const window = "market" in selected ? selected.market : undefined;
+    return receiptFor(mention, { ...base, refusalCode: selected.code, grantId: grant.grantId.toString(), reason: X_REFUSAL_DETAILS[selected.code],
+      ...(window ? { marketId: window.marketId, expirySec: window.expirySec, entryClosesAtSec: noEntryCutoffSec(window.expirySec, window.intervalSec),
+        ...(selected.code === "window-not-started" ? { nextWindowAtSec: window.tradingStartSec } : {}) } : {}),
+    });
+  }
+  const market = selected.market;
 
   const target = { marketId: market.marketId, poolAddress: market.poolAddress, decimals: market.decimals, intervalSec: market.intervalSec };
   const quote = await marketsProvider.freshQuoteStake(target, instruction.side, instruction.stakeBase);

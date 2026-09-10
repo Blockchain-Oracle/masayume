@@ -1,4 +1,5 @@
 import type { Side } from "../types/market";
+import type { XRefusalReason } from "./parse";
 
 /** What became of one mention — every state a reply or a row can be in. */
 export const X_RECEIPT_STATUSES = ["refused", "submitted", "filled", "nothing-filled", "reverted", "unknown"] as const;
@@ -10,7 +11,8 @@ export type XRefusalCode =
   | "grant-missing" | "grant-mismatch" | "grant-expired" | "no-window"
   | "quote-unavailable" | "no-liquidity" | "price-moved" | "permission-denied"
   | "insufficient-funds" | "execution-unavailable" | "unconfirmed"
-  | "grant-update-required" | "position-limit" | "price-limit" | "execution-paused";
+  | "grant-update-required" | "position-limit" | "price-limit" | "execution-paused"
+  | "market-data-unavailable" | "window-entry-closed" | "window-not-started" | "opening-price-pending";
 
 /** Optional for receipts written before booked amounts and resolved market details were retained. */
 export interface XReceiptDetails {
@@ -21,6 +23,9 @@ export interface XReceiptDetails {
   intervalSec?: number | null;
   expirySec?: number | null;
   refusalCode?: XRefusalCode | null;
+  parseRefusal?: XRefusalReason | null;
+  entryClosesAtSec?: number | null;
+  nextWindowAtSec?: number | null;
   /** Durable execution context, captured before the order lane can broadcast. */
   executionActor?: string | null;
   poolAddress?: string | null;

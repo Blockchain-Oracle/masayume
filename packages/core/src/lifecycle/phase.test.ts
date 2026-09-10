@@ -5,7 +5,7 @@ import { ONCHAIN_STATUS } from "./status";
 const START_SEC = 1_000_000;
 const INTERVAL_SEC = 300;
 const EXPIRY_SEC = START_SEC + INTERVAL_SEC;
-const HEADROOM_SEC = 120;
+const HEADROOM_SEC = 30;
 
 function market(overrides: Partial<PhaseInput> = {}): PhaseInput {
   return {

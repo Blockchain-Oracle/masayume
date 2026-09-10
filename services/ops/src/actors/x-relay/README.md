@@ -27,6 +27,12 @@ Legacy grants need the owner's explicit wallet update. Portfolio and `/trade-fro
 
 Release the web recovery controls before updating the relay. The relay refuses old monetary-cap policies with `grant-update-required` and a direct recovery link; it does not modify grants or replay historical refused mentions. New specific refusal categories live in the existing JSONB receipt details and require no database schema or contract deployment. Historical generic permission failures remain generic; the UI must not invent their exact cause.
 
+## Window timing and instruction recovery
+
+All entry surfaces share a 30-second buffer before the Window ends. The relay still requires the requested asset and duration, a ready opening price, an enterable market, a fresh quote and the order lane's current on-chain checks. It never substitutes another timeframe or queues a refused instruction for a later Window.
+
+The parser accepts casing, token order, UP/LONG and DOWN/SHORT, written durations such as `5 minutes`, and `1d`/`24h`. Missing or ambiguous inputs produce the specific safe correction in both reply text and image. Market-read failure is retried once as a read and then reported separately from closed entries, a future Window, a pending opening price or no matching market. Known cutoff/start times are retained in receipt details. `/trade-from-x#x-instruction` builds a copyable instruction from the same live selection rule and shows its cutoff; X delivery latency means eligibility is checked again on arrival.
+
 ## Execution and posting are separate
 
 The mention claim and optional reply queue entry are inserted in one database transaction. An existing mention is never executed again. Posting runs in its own loop every 15 seconds, with its own busy gate and error boundary, independently of the financial poll.

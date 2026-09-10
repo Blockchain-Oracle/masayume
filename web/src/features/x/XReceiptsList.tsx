@@ -1,4 +1,4 @@
-import { X_REFUSAL_DETAILS, xReceiptRecovery, type XReceipt } from "@masayume/core/x";
+import { xRefusalCopy, xReceiptRecovery, type XReceipt } from "@masayume/core/x";
 import { shortHex } from "@masayume/core/units";
 import { EXPLORER_URL } from "@masayume/markets/chain";
 import { TRADE_FROM_X } from "./copy";
@@ -17,10 +17,11 @@ export function XReceiptsList({ receipts, configured, decimals, symbol }: { rece
         receipts.map((r) => {
           const display = receiptDisplay(r, decimals, symbol);
           const recovery = display.status === "refused" ? xReceiptRecovery(r.refusalCode) : null;
-          const reason = display.status === "refused" && r.refusalCode && Object.hasOwn(X_REFUSAL_DETAILS, r.refusalCode) ? X_REFUSAL_DETAILS[r.refusalCode] : r.reason;
+          const refusal = display.status === "refused" && r.refusalCode ? xRefusalCopy(r) : null;
+          const reason = refusal?.detail ?? r.reason;
           return (
             <div key={r.mentionId} className="xt-receipt">
-              <span className={`xt-receipt-status xt-receipt-status--${display.status}`}>{display.label}</span>
+              <span className={`xt-receipt-status xt-receipt-status--${display.status}`}>{refusal?.title ?? display.label}</span>
               <span className="xt-receipt-words">{r.instruction}</span>
               <span>
                 {display.summary}

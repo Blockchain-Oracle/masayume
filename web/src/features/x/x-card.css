@@ -16,6 +16,8 @@
 .xw-permission .xw-btn-ink { display: flex; width: fit-content; margin-top: 10px; }
 .xw-source { display: grid; gap: 6px; margin-bottom: 10px; color: var(--xw-mute); font-size: 12px; }
 .xw-source select { min-width: 0; width: 100%; padding: 8px; border: 1px solid var(--xw-line); border-radius: 8px; background: var(--xw-paper); color: var(--xw-ink); }
+.xw-instruction-amount { min-width: 0; width: 100%; padding: 8px; border: 1px solid var(--xw-line); border-radius: 8px; color: var(--xw-ink); background: var(--xw-paper); }
+.xw-instruction-code { display: block; margin: 12px 0; overflow-wrap: anywhere; color: var(--xw-ink); }
 .xt .xw { --xw-ink: var(--xt-ink); --xw-mute: var(--xt-muted); --xw-line: rgba(255,255,255,.14); --xw-paper: var(--xt-paper); }
 /* mb-4 rounded-lg border border-[#E04D26]/30 bg-[#E04D26]/[0.07] px-3.5 py-3 (hard stop: /40 and /[0.09]) */
 .xw-slab { margin-bottom: 16px; border-radius: 8px; border: 1px solid rgba(224, 77, 38, 0.3); background: rgba(224, 77, 38, 0.07); padding: 12px 14px; }
@@ -172,3 +174,4 @@
 .xr-bars { display: flex; align-items: flex-end; gap: 2px; height: 42px; }
 .xr-bar { height: 100%; background: var(--xr-ink); opacity: 0.8; }
 .xr-foot { margin-top: 12px; display: flex; justify-content: space-between; font-family: var(--font-mono), ui-monospace, monospace; font-size: 11px; color: var(--xr-faint); }
+.xt #x-instruction, #x-trading { scroll-margin-top: 8rem; }

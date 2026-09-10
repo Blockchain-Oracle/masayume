@@ -18,10 +18,8 @@ export const CLOCK_RESYNC_MS = 60_000;
  */
 export const SETTLED_HISTORY_POLL_MS = 300_000;
 
-/** No-entry buffer before expiry: max(30, min(300, interval × 0.4)) seconds (canon #9). */
-export const HEADROOM_MIN_SEC = 30;
-export const HEADROOM_MAX_SEC = 300;
-export const HEADROOM_FRACTION = 0.4;
+/** Owner-approved 2026-09-10: all app entry lanes close 30 seconds before expiry. */
+export const ENTRY_BUFFER_SEC = 30;
 
 /** Countdown turns urgent at min(60, interval × 0.4) seconds (UX-DR14). */
 export const URGENT_MAX_SEC = 60;
