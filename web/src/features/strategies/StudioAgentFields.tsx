@@ -42,10 +42,17 @@ export function StudioAgentFields({ form, setForm, asset }: StudioAgentFieldsPro
           onChange={(e) => setForm((f) => ({ ...f, persona: e.target.value.slice(0, AGENT_PERSONA_MAX_CHARS) }))}
           placeholder={A.personaPlaceholder}
           maxLength={AGENT_PERSONA_MAX_CHARS}
+          rows={6}
           className="strat-input strat-textarea text-ink"
           aria-label={A.persona}
+          aria-describedby="strategy-persona-hint"
         />
-        <div className="strat-mono-10 mt-1.5 text-ink/30">{A.personaHint}</div>
+        <div id="strategy-persona-hint" className="strat-mono-10 mt-1.5 text-ink/30">{A.personaHint}</div>
+        {persona !== A.defaultPersona && (
+          <button type="button" className="strat-sensei mt-3" onClick={() => setForm((f) => ({ ...f, persona: A.defaultPersona }))}>
+            {A.restorePersona}
+          </button>
+        )}
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
