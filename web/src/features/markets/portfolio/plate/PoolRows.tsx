@@ -7,7 +7,7 @@ import { PLATE } from "./copy";
 import type { Pool, PoolId } from "./useMoney";
 import "./ledger-plate.css";
 
-function Body({ pool, decimals, symbol }: { pool: Pool; decimals: number; symbol: string }) {
+function Body({ pool, decimals, symbol, disclosureAction }: { pool: Pool; decimals: number; symbol: string; disclosureAction?: string }) {
   return (
     <div className="pool-body">
       {/* The note stays ON the row, not behind a hover: it explains where money is and why it cannot be bet here. */}
@@ -17,6 +17,7 @@ function Body({ pool, decimals, symbol }: { pool: Pool; decimals: number; symbol
           {pool.blockedReason ? <span className="pool-blocked">{pool.blockedReason}</span> : null}
         </div>
         <p className="pool-note">{pool.note}</p>
+        {disclosureAction && <span className="pool-action">{disclosureAction}</span>}
       </div>
       {/* The amount IS the row. */}
       <div className="pool-amount">
@@ -64,7 +65,7 @@ export function PoolRows({ pools, decimals, symbol, panels = {} }: PoolRowsProps
             <details key={pool.id} className="pool-line">
               <summary className="pool-summary">
                 <div className="min-w-0 flex-1">
-                  <Body pool={pool} decimals={decimals} symbol={symbol} />
+                  <Body pool={pool} decimals={decimals} symbol={symbol} disclosureAction={!pool.blockedReason ? pool.action?.label : undefined} />
                 </div>
                 <span className="pool-chevron">
                   <Chevron />

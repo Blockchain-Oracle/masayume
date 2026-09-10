@@ -25,6 +25,7 @@ const receiptDetailsSchema = z.object({
     "account-not-linked", "instruction-invalid", "balance-unavailable", "not-deployed",
     "grant-missing", "grant-mismatch", "grant-expired", "no-window", "quote-unavailable",
     "no-liquidity", "price-moved", "permission-denied", "insufficient-funds", "execution-unavailable", "unconfirmed",
+    "grant-update-required", "position-limit", "price-limit", "execution-paused",
   ]).nullish(),
   executionActor: z.string().regex(/^0x[0-9a-fA-F]{40}$/).nullish(),
   poolAddress: z.string().regex(/^0x[0-9a-fA-F]{40}$/).nullish(),

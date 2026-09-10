@@ -19,6 +19,14 @@ The public formatter uses fixed status and refusal copy, validated amounts and a
 
 A lower filled cost does not prove a partial fill: a better price can also cost less. There is no partial-fill, winning-prediction, payout or automatic settlement-follow-up claim in this release.
 
+## X balance and permission updates
+
+The X allocation is the monetary spending boundary. New X permissions use the deployed vault's `uint128` ceiling for both monetary cap fields, so an initial deposit or later top-up does not introduce a separate per-trade or daily allowance. The permission still expires after 30 days, permits up to eight open positions per grant, and cannot spend the owner's unallocated Trading Balance. There are no optional monetary-limit controls in the X setup.
+
+Legacy grants need the owner's explicit wallet update. Portfolio and `/trade-from-x#x-trading` share this action: revoke the old grant, verify its `GrantRevoked.returned` amount, then allocate exactly that amount to the new permission. This uses no additional deposit, preserves existing positions, and does not silently take other Trading Balance funds if an order spends money during confirmation. Browser progress is saved before each transaction; uncertain sends are checked by receipt before continuing. If the second confirmation is cancelled, users can continue or keep the returned funds in Trading Balance.
+
+Release the web recovery controls before updating the relay. The relay refuses old monetary-cap policies with `grant-update-required` and a direct recovery link; it does not modify grants or replay historical refused mentions. New specific refusal categories live in the existing JSONB receipt details and require no database schema or contract deployment. Historical generic permission failures remain generic; the UI must not invent their exact cause.
+
 ## Execution and posting are separate
 
 The mention claim and optional reply queue entry are inserted in one database transaction. An existing mention is never executed again. Posting runs in its own loop every 15 seconds, with its own busy gate and error boundary, independently of the financial poll.

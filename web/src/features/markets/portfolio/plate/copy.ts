@@ -18,6 +18,8 @@ export const PLATE = {
       label: "X replies",
       note: "Your X replies bet from this. Only you can cash it out.",
       manage: "Manage",
+      update: "Update X trading",
+      updateNote: "Your existing permission needs an update. Open this row to use your funded X balance.",
       mismatch: (wallet: string) => `This X account bets from ${wallet}. Connect that wallet to use this balance.`,
       unlinked: "Link your X account and you can bet by replying to a card.",
     },

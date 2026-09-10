@@ -9,7 +9,8 @@ export type XRefusalCode =
   | "account-not-linked" | "instruction-invalid" | "balance-unavailable" | "not-deployed"
   | "grant-missing" | "grant-mismatch" | "grant-expired" | "no-window"
   | "quote-unavailable" | "no-liquidity" | "price-moved" | "permission-denied"
-  | "insufficient-funds" | "execution-unavailable" | "unconfirmed";
+  | "insufficient-funds" | "execution-unavailable" | "unconfirmed"
+  | "grant-update-required" | "position-limit" | "price-limit" | "execution-paused";
 
 /** Optional for receipts written before booked amounts and resolved market details were retained. */
 export interface XReceiptDetails {

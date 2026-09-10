@@ -19,7 +19,7 @@ interface CapabilityReceiptProps {
   onDeposit: (amountBase: bigint) => void;
 }
 
-/** The one-signature step, turned into the un-drainable proof (reference `CapabilityReceipt`): what the grant CAN and CANNOT do, then sign. */
+/** Show the X allocation and the executor's authority before wallet confirmation. */
 export function CapabilityReceipt({ amount, setAmount, disabled, depositing, firstTime, decimals, symbol, onDeposit }: CapabilityReceiptProps) {
   const amountBase = parseDecimalToBaseUnits(amount || "0", decimals) ?? 0n;
   const shown = amountBase > 0n ? formatBaseUnits(amountBase, decimals) : "—";

@@ -57,12 +57,20 @@ export function useMoney(): Money {
   if (address) {
     const binding = x.status?.binding ?? null;
     const budget = xGrant.grant?.budgetBase ?? null;
+    const permission = xGrant.permission(x.status?.executor ?? null);
+    const xAction = xGrant.pendingUpdate ? "Continue X trading update"
+      : permission === "update" ? PLATE.pools.x.update : permission === "expired" ? "Renew X trading"
+      : permission === "mismatch" ? "Reconnect X trading" : PLATE.pools.x.manage;
     pools.push({
       id: "x",
       label: PLATE.pools.x.label,
-      note: PLATE.pools.x.note,
+      note: xGrant.pendingUpdate ? "Your permission update is unfinished. Open this row to continue."
+        : permission === "update" ? PLATE.pools.x.updateNote
+        : permission === "expired" ? "X trading has expired. Open this row to renew it and reuse your remaining funds."
+        : permission === "mismatch" ? "Reconnect your permission to the current X service. Open this row to continue."
+        : PLATE.pools.x.note,
       amountBase: budget ?? (xGrant.deployed ? 0n : null),
-      action: x.walletMismatch || !binding ? null : { label: PLATE.pools.x.manage, href: "/trade-from-x" },
+      action: x.walletMismatch || !binding ? null : { label: xAction, href: "/trade-from-x#x-trading" },
       blockedReason:
         x.walletMismatch && binding
           ? PLATE.pools.x.mismatch(shortHex(binding.wallet))

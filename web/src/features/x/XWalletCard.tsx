@@ -7,6 +7,7 @@ import { useWalletSession } from "@/lib/wallet-session";
 import { X_CARD, X_HANDLE, X_LINK_STATUS } from "./copy";
 import { useXGrant, type XGrantState } from "./useXGrant";
 import { useXStatus, type XLink } from "./useXStatus";
+import { XPermissionPanel } from "./XPermissionPanel";
 
 const QUICK = ["5", "10", "25"] as const;
 
@@ -42,6 +43,7 @@ export interface XWalletCardViewProps extends XWalletCardProps {
 export function XWalletCardView({ address, link, grant, compact = false, returnTo = "/portfolio", symbol = "tUSDC" }: XWalletCardViewProps) {
   const [amount, setAmount] = useState("5");
   const [manage, setManage] = useState(false);
+  const [source, setSource] = useState<"wallet" | "trading-balance">("wallet");
   const status = link.status;
   const session = status?.session ?? null;
   const binding = status?.binding ?? null;
@@ -49,7 +51,9 @@ export function XWalletCardView({ address, link, grant, compact = false, returnT
   const boundWallet = binding?.wallet ?? null;
   const startHref = link.startUrl(returnTo);
   const balance = grant.balanceBase;
-  const shownBalance = balance === null ? "0.00" : formatBaseUnits(balance, grant.decimals);
+  const shownBalance = balance === null ? "—" : formatBaseUnits(balance, grant.decimals);
+  const permission = grant.permission(status?.executor ?? null);
+  const canFund = ["ready", "unfunded"].includes(permission) && !grant.pendingUpdate;
   const busy = grant.busy || link.busy;
   const err = grant.error || link.error;
   const ok = grant.ok || link.ok;
@@ -58,7 +62,7 @@ export function XWalletCardView({ address, link, grant, compact = false, returnT
     if (link.walletMismatch) return grant.clear(), link.setError(X_CARD.wrongWalletFund);
     const base = parseDecimalToBaseUnits(amount || "0", grant.decimals);
     if (!base || base <= 0n) return link.setError(X_CARD.enterAmount);
-    void grant.fund(base, status?.executor ?? null);
+    void grant.fund(base, status?.executor ?? null, source);
   };
 
   return (
@@ -149,35 +153,45 @@ export function XWalletCardView({ address, link, grant, compact = false, returnT
                 )}
               </div>
               {balance !== null && balance > 0n && (
-                <button type="button" onClick={() => void grant.cashOut()} disabled={busy !== ""} className="xw-btn-out">
+                <button type="button" onClick={() => void grant.cashOut()} disabled={busy !== "" || !grant.readable || Boolean(grant.pendingUpdate)} className="xw-btn-out">
                   {grant.busy === "cashout" ? X_CARD.cashingOut : X_CARD.cashOut} ↗
                 </button>
               )}
             </div>
+            <XPermissionPanel grant={grant} executor={status?.executor ?? null} symbol={symbol} disabled={link.walletMismatch || Boolean(link.busy)} />
+            {canFund && <>
+            {grant.availableBase !== null && grant.availableBase > 0n && <label className="xw-source">
+              Fund from
+              <select value={source} onChange={(e) => setSource(e.target.value as typeof source)} disabled={Boolean(busy)}>
+                <option value="wallet">Connected wallet</option>
+                <option value="trading-balance">Trading Balance · {formatBaseUnits(grant.availableBase, grant.decimals)} {symbol} available</option>
+              </select>
+            </label>}
             <div className="xw-fund">
               <div className="xw-quick">
                 {QUICK.map((v) => (
-                  <button key={v} type="button" onClick={() => setAmount(v)} className={`xw-quick-btn${amount === v ? " xw-quick-btn--on" : ""}`}>
+                  <button key={v} type="button" disabled={Boolean(busy)} onClick={() => setAmount(v)} className={`xw-quick-btn${amount === v ? " xw-quick-btn--on" : ""}`}>
                     ${v}
                   </button>
                 ))}
                 <div className="xw-amount">
                   <span className="xw-amount-sign">$</span>
-                  <input value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))} inputMode="decimal" aria-label={X_CARD.amountAria} />
+                  <input value={amount} disabled={Boolean(busy)} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))} inputMode="decimal" aria-label={X_CARD.amountAria} />
                   <span className="xw-amount-unit">{symbol}</span>
                 </div>
               </div>
-              <button type="button" onClick={fund} disabled={busy !== "" || grant.deployed !== true} className="xw-btn-fill">
+              <button type="button" onClick={fund} disabled={busy !== "" || !grant.readable || link.walletMismatch} className="xw-btn-fill">
                 {grant.busy === "fund" ? X_CARD.funding : X_CARD.fund}
               </button>
             </div>
+            </>}
             {grant.deployed === false && <div className="xw-err">{X_CARD.notDeployed}</div>}
-            {err && <div className="xw-err">{err}</div>}
-            {ok && <div className="xw-ok">{ok}</div>}
+            {err && <div className="xw-err" role="alert">{err}</div>}
+            {ok && <div className="xw-ok" role="status">{ok}</div>}
           </>
         )}
 
-        <div className="xw-foot">{link.loading ? X_CARD.checking : connected ? X_CARD.howTo(X_HANDLE) : null}</div>
+        <div className="xw-foot">{link.loading ? X_CARD.checking : binding && !link.needsLink && !link.walletMismatch && permission === "ready" ? X_CARD.howTo(X_HANDLE) : connected ? "Complete the steps above before tweeting a trade." : null}</div>
       </div>
     </section>
   );

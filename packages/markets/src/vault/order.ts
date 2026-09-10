@@ -79,7 +79,10 @@ async function assertVaultFunded(contracts: VaultContracts, route: VaultRoute, r
     one: oneUnit(market.decimals),
     opensNewPosition: heldRaw === 0n,
   });
-  if (!verdict.ok) throw new OrderRefusedError(diagnosis("grant-refused", capRefusalText(verdict.refusal, market.decimals)));
+  if (!verdict.ok) {
+    const names: Record<CapRefusal["kind"], string> = { revoked: "GrantIsRevoked", expired: "GrantExpired", price: "OverPriceCap", escrow: "Insufficient", stake: "OverStakeCap", daily: "OverDailyCap", positions: "OverPositionCap" };
+    throw new OrderRefusedError(diagnosis("grant-refused", capRefusalText(verdict.refusal, market.decimals), { errorName: names[verdict.refusal.kind] }));
+  }
 }
 
 /** What the vault booked is what its `Executed` event says — collateral moved and tokens gained (FR-9). */

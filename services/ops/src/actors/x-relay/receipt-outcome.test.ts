@@ -6,6 +6,14 @@ const HASH = `0x${"ab".repeat(32)}` as const;
 const PRIVATE_DIAGNOSTIC = "Provider error at https://private-rpc.example/?key=secret";
 
 describe("X execution receipt truth", () => {
+  it.each([
+    ["OverStakeCap", "grant-update-required"], ["OverDailyCap", "grant-update-required"],
+    ["OverPositionCap", "position-limit"], ["Insufficient", "insufficient-funds"], ["GrantExpired", "grant-expired"],
+  ])("retains actionable refusal category %s without provider text", (errorName, refusalCode) => {
+    const result = outcomeToReceipt({ status: "refused", diagnosis: diagnosis("grant-refused", PRIVATE_DIAGNOSTIC, { errorName }) });
+    expect(result.refusalCode).toBe(refusalCode);
+    expect(result.reason).not.toContain("secret");
+  });
   it("preserves actual fill measurements without replacing the requested stake", () => {
     const original = { stakeBase: "100000000" };
     const result = { ...original, ...outcomeToReceipt({ status: "confirmed", booked: {

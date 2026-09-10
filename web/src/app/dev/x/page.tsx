@@ -1,12 +1,13 @@
 "use client";
 
-import type { XReceipt } from "@masayume/core/x";
+import { xGrantCaps, xPermissionState, type XReceipt } from "@masayume/core/x";
 import type { VaultGrant } from "@masayume/core/vault";
 import { SectionHeader } from "@/components/chrome";
 import { ClaimReceiptCard, XReceiptsList, XWalletCardView, type XGrantState, type XLink, type XStatus } from "@/features/x";
 import { WALLET } from "../states/fixtures";
 import "@/features/x/x.css";
 import "@/features/x/x-card.css";
+import { X_FIXTURE_NOW_SEC, XUpgradeFixture } from "./XUpgradeFixture";
 
 const DEV = {
   title: "X rail",
@@ -27,15 +28,17 @@ function link(over: Partial<XLink> & { status: XStatus }): XLink {
 
 const GRANT: VaultGrant = {
   grantId: 3n, owner: WALLET.toLowerCase() as VaultGrant["owner"], actor: EXECUTOR as VaultGrant["actor"], kind: "executor", revoked: false,
-  expiresAtSec: Math.floor(Date.now() / 1000) + 86_400 * 20, spentDay: 0, spentTodayBase: 0n, openPositions: 1,
-  caps: { maxStakePerTradeBase: 10_000_000n, maxDailySpendBase: 10_000_000n, maxOpenPositions: 8, maxPriceRaw: 0n }, budgetBase: 7_250_000n,
+  expiresAtSec: X_FIXTURE_NOW_SEC + 86_400 * 20, spentDay: 0, spentTodayBase: 0n, openPositions: 1,
+  caps: xGrantCaps(), budgetBase: 7_250_000n,
 };
 
 function grant(over: Partial<XGrantState>): XGrantState {
-  return { deployed: true, decimals: 6, grant: null, balanceBase: 0n, availableBase: 12_000_000n, busy: "", error: "", ok: "", fund: noop, cashOut: noop, clear: () => undefined, ...over };
+  return { deployed: true, decimals: 6, grant: null, balanceBase: 0n, availableBase: 12_000_000n, readable: true, pendingUpdate: null,
+    permission: (executor) => over.readable === false || over.deployed === false ? "unavailable" : xPermissionState(over.grant ?? null, executor, X_FIXTURE_NOW_SEC),
+    busy: "", error: "", ok: "", fund: noop, cashOut: noop, update: noop, keepReturnedFunds: () => undefined, clear: () => undefined, ...over };
 }
 
-const BINDING = { authorId: "1234567890", handle: "abu_builds", wallet: WALLET.toLowerCase(), since: Date.now() - 86_400_000 };
+const BINDING = { authorId: "1234567890", handle: "abu_builds", wallet: WALLET.toLowerCase(), since: X_FIXTURE_NOW_SEC * 1000 - 86_400_000 };
 const SESSION = { authorId: "1234567890", handle: "abu_builds" };
 
 const CASES: Array<{ title: string; address: string | null; link: XLink; grant: XGrantState }> = [
@@ -43,6 +46,8 @@ const CASES: Array<{ title: string; address: string | null; link: XLink; grant: 
   { title: "Connected wallet, X not signed in", address: WALLET, link: link({ status: status({}) }), grant: grant({}) },
   { title: "Signed in, one more step to link", address: WALLET, link: link({ status: status({ signedIn: true, session: SESSION }), needsLink: true }), grant: grant({}) },
   { title: "Linked and funded (the executor grant holds the balance)", address: WALLET, link: link({ status: status({ signedIn: true, session: SESSION, binding: BINDING }), sessionMatchesBinding: true }), grant: grant({ grant: GRANT, balanceBase: GRANT.budgetBase }) },
+  { title: "Expired permission keeps the X balance visible", address: WALLET, link: link({ status: status({ binding: BINDING }) }), grant: grant({ grant: { ...GRANT, expiresAtSec: 1 }, balanceBase: GRANT.budgetBase }) },
+  { title: "Unavailable reading does not enable funding", address: WALLET, link: link({ status: status({ binding: BINDING }) }), grant: grant({ grant: GRANT, balanceBase: GRANT.budgetBase, readable: false }) },
   { title: "Wrong wallet for this X account", address: OTHER, link: link({ status: status({ signedIn: true, session: SESSION, binding: BINDING }), walletMismatch: true }), grant: grant({}) },
   { title: "Vault not deployed on this network", address: WALLET, link: link({ status: status({ binding: BINDING }) }), grant: grant({ deployed: false, balanceBase: null }) },
 ];
@@ -50,8 +55,9 @@ const CASES: Array<{ title: string; address: string | null; link: XLink; grant: 
 const RECEIPTS: XReceipt[] = (["filled", "nothing-filled", "refused", "submitted", "reverted", "unknown"] as const).map((s, i) => ({
   mentionId: `18${i}`, authorId: SESSION.authorId, handle: SESSION.handle, wallet: WALLET.toLowerCase(), grantId: "3", marketId: `0x${"11".repeat(32)}`,
   side: i % 2 ? "down" : "up", stakeBase: "5000000", status: s,
-  reason: s === "refused" ? "the grant's budget is 2.00 but the order escrows 5.00" : s === "unknown" ? "the send timed out with no digest; reconciling" : null,
-  txHash: s === "filled" || s === "reverted" ? `0x${"9f".repeat(32)}` : null, instruction: "@masayume_app btc up 5 15m", atMs: Date.now() - i * 600_000,
+  reason: s === "refused" ? "Review your trading permission and spending limits." : s === "unknown" ? "The transaction needs checking." : null,
+  refusalCode: s === "refused" ? "permission-denied" : null,
+  txHash: s === "filled" || s === "reverted" ? `0x${"9f".repeat(32)}` : null, instruction: "@masayume_app btc up 5 15m", atMs: X_FIXTURE_NOW_SEC * 1000 - i * 600_000,
 }));
 
 export default function DevXPage() {
@@ -59,6 +65,7 @@ export default function DevXPage() {
     <div className="mx-auto flex w-full max-w-(--content-reading) flex-col gap-8 px-gutter py-8">
       <SectionHeader index="00" title={DEV.title} />
       <p className="type-body text-ink-secondary">{DEV.intro}</p>
+      <XUpgradeFixture />
       {CASES.map((c) => (
         <section key={c.title} className="flex flex-col gap-3">
           <h2 className="type-body-strong text-ink">{c.title}</h2>

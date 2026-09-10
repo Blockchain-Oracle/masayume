@@ -82,6 +82,13 @@ describe("public X receipt text", () => {
     }
   });
 
+  it("links permission refusals directly to the update controls while preserving known transactions", () => {
+    const refused = receipt({ status: "refused", refusalCode: "grant-update-required", txHash: null });
+    expect(createReplyPresentation(refused, 6).url).toBe(`${TRADE_FROM_X_URL}#x-trading`);
+    expect(createReplyPresentation({ ...refused, refusalCode: "position-limit" }, 6).url).toBe("https://masayume.app/portfolio");
+    expect(createReplyPresentation({ ...refused, txHash: HASH }, 6).url).toBe(TX_URL);
+  });
+
   it.each(["constructor", "__proto__", "toString", "unknown-code"])("does not index inherited refusal copy: %s", (code) => {
     const model = createReplyPresentation(receipt({ status: "refused", refusalCode: code as XRefusalCode }), 6);
     expect(model.detail).toBe(REFUSAL_DETAILS.unconfirmed);

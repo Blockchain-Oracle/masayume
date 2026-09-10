@@ -1,27 +1,11 @@
 import { SHANNON_EXPLORER_URL } from "@masayume/core/constants";
 import { formatBaseUnits } from "@masayume/core/units";
-import { X_RECEIPT_STATUSES, type XReceipt, type XReceiptStatus, type XRefusalCode } from "@masayume/core/x";
+import { X_RECEIPT_STATUSES, X_REFUSAL_DETAILS as REFUSAL_DETAILS, xReceiptRecovery, type XReceipt, type XReceiptStatus } from "@masayume/core/x";
 
 export const REPLY_LIMIT = 280;
 export const TRADE_FROM_X_URL = "https://masayume.app/trade-from-x";
 
-export const REFUSAL_DETAILS: Record<XRefusalCode, string> = {
-  "account-not-linked": "Link your X account to your wallet in the app.",
-  "instruction-invalid": "Use BTC or ETH, UP or DOWN, an amount, and a Window.",
-  "balance-unavailable": "The Trading Balance could not be checked.",
-  "not-deployed": "Trading is unavailable on this network.",
-  "grant-missing": "Authorize X trading from your Trading Balance.",
-  "grant-mismatch": "Review the executor authorized for your X trading.",
-  "grant-expired": "Renew your X trading permission in the app.",
-  "no-window": "No matching Window is open right now.",
-  "quote-unavailable": "A current quote could not be confirmed.",
-  "no-liquidity": "No fillable quote was available for this instruction.",
-  "price-moved": "The price moved beyond the accepted cost.",
-  "permission-denied": "Review your trading permission and spending limits.",
-  "insufficient-funds": "Review your available balance and spending limits.",
-  "execution-unavailable": "Execution is unavailable; check the app for status.",
-  unconfirmed: "The order could not be confirmed. Check the app before trying again.",
-};
+export { X_REFUSAL_DETAILS as REFUSAL_DETAILS } from "@masayume/core/x";
 
 export interface ReplyPresentation {
   status: XReceiptStatus;
@@ -86,7 +70,8 @@ export function createReplyPresentation(receipt: XReceipt, decimals: number, sym
     case "refused": {
       const code = receipt.refusalCode ?? "unconfirmed";
       const detail = Object.hasOwn(REFUSAL_DETAILS, code) ? REFUSAL_DETAILS[code] : REFUSAL_DETAILS.unconfirmed;
-      return { ...base, title: "Order not confirmed", detail };
+      const recovery = xReceiptRecovery(code);
+      return { ...base, title: "Order not confirmed", detail, url: !hash && recovery ? `https://masayume.app${recovery.href}` : url };
     }
   }
 }

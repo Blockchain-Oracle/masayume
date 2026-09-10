@@ -98,6 +98,24 @@ contract EventVaultTradingTest is VaultTestBase {
 
     // --- delegated lane ---
 
+    function test_xBalanceOnly_topUpAndSameDayTradesRemainBoundedByAllocation() public {
+        venue.setFill(500_000, 10_000);
+        vm.startPrank(owner);
+        uint256 id = vault.grant(IEventVault.GrantKind.EXECUTOR, actor, caps(type(uint128).max, type(uint128).max, 8, 0), uint64(block.timestamp + 30 days), 5 * ONE);
+        vault.fundGrant(id, 50 * ONE);
+        vm.stopPrank();
+        uint256 freeBefore = available(owner);
+        vm.startPrank(actor);
+        vault.placeFor(id, market, 0, true, 500_000, 50 * ONE, EXPIRE_NS);
+        vault.placeFor(id, market, 0, true, 500_000, 50 * ONE, EXPIRE_NS);
+        assertEq(vault.grantOf(id).budget, 5 * ONE);
+        assertEq(vault.grantOf(id).spentToday, 50 * ONE);
+        vm.expectRevert(abi.encodeWithSelector(IEventVault.Insufficient.selector, 6 * ONE, 5 * ONE));
+        vault.placeFor(id, market, 0, true, 500_000, 12 * ONE, EXPIRE_NS);
+        vm.stopPrank();
+        assertEq(available(owner), freeBefore, "unallocated Trading Balance cannot be spent");
+    }
+
     function test_placeFor_spendsBudgetNotAvailable() public {
         uint256 id = grantStrategy(200 * ONE, caps(50 * ONE, 100 * ONE, 5, 0));
         vm.prank(actor);

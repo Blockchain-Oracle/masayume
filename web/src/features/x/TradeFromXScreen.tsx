@@ -2,6 +2,7 @@
 
 import { isOk } from "@masayume/core/schemas";
 import { X_EXAMPLES } from "@masayume/core/x";
+import { formatBaseUnits } from "@masayume/core/units";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -15,18 +16,20 @@ import { CapabilityReceipt } from "./CapabilityReceipt";
 import { TRADE_FROM_X, X_HANDLE } from "./copy";
 import { CustodyRail } from "./CustodyRail";
 import { LinkStep } from "./LinkStep";
-import { Dot, IdentityChip, ProofLink, Step, Tick } from "./StepSpine";
+import { Dot, IdentityChip, ProofLink, Step } from "./StepSpine";
 import { useXGrant } from "./useXGrant";
 import { XReceiptsList } from "./XReceiptsList";
 import { XRelayStatus } from "./XRelayStatus";
 import { useXReceipts } from "./useXReceipts";
 import { useXStatus } from "./useXStatus";
+import { XPermissionPanel } from "./XPermissionPanel";
+import "./x-card.css";
 
 const RETURN_TO = "/trade-from-x";
 const EXAMPLE_MS = 2_600;
 
 /**
- * yosuku.xyz/trade-from-x — "X-trade", ported. Connect → fund + authorize (one signature) →
+ * yosuku.xyz/trade-from-x — "X-trade", ported. Connect → fund + authorize →
  * link X → mention your calls. The page's whole argument is the un-drainable custody rail: the
  * agent's only power over your money is one function that opens a position YOU own and settles
  * back to you; the vault has no path that pays the agent.
@@ -46,10 +49,16 @@ export function TradeFromXScreen() {
     return () => clearInterval(t);
   }, []);
 
-  const funded = grant.grant !== null && grant.grant.budgetBase > 0n;
+  const permission = grant.permission(link.status?.executor ?? null);
+  const funded = permission === "ready";
   const linked = Boolean(link.status?.binding) && !link.needsLink && !link.walletMismatch;
   const step = !address ? 1 : !funded ? 2 : !linked ? 3 : 4;
   const error = grant.error || link.error;
+  const example = X_EXAMPLES[ex]!.replace(/\$?\d+ (?=\d+[mh]$)/, (stake) => {
+    const requested = BigInt(stake.trim().replace("$", "")) * 10n ** BigInt(grant.decimals);
+    const available = grant.balanceBase ?? 0n;
+    return `${formatBaseUnits(available > 0n && available < requested ? available : requested, grant.decimals, { maxDp: grant.decimals, minDp: 0, group: false })} `;
+  });
 
   return (
     <div className="xt xt-page" data-theme="dark">
@@ -98,29 +107,33 @@ export function TradeFromXScreen() {
         </div>
       </section>
 
-      <section className="xt-flow-wrap">
+      <section className="xt-flow-wrap" id="x-trading">
         <div className="xt-flow-label">{TRADE_FROM_X.setup}</div>
         <ol className="xt-steps">
           <Step n="1" title={TRADE_FROM_X.steps.connect} state={step > 1 ? "done" : "active"} spine={{ from: 1, cur: step }}>
             {address ? <IdentityChip addr={address} /> : <ConnectButton />}
           </Step>
           <Step n="2" title={TRADE_FROM_X.steps.fund} state={funded ? "done" : step === 2 ? "active" : "idle"} spine={{ from: 2, cur: step }}>
-            {funded ? (
-              <div className="xt-done-line"><Tick /> {TRADE_FROM_X.funded}</div>
-            ) : grant.deployed === false ? (
+            {!address && <p className="xt-step-lede">Connect your wallet to check your X balance and permission.</p>}
+            {address && (grant.grant || grant.pendingUpdate || !["ready", "unfunded"].includes(permission)) && <div className="xw">
+              {grant.balanceBase !== null && <p className="xt-step-lede">X balance · <strong>{formatBaseUnits(grant.balanceBase, grant.decimals)} {symbol}</strong></p>}
+              <XPermissionPanel grant={grant} executor={link.status?.executor ?? null} symbol={symbol} disabled={link.walletMismatch || Boolean(link.busy)} />
+            </div>}
+            {funded ? <a className="xt-receipt-link" href="/portfolio">Manage X balance in Portfolio ↗</a>
+            : grant.deployed === false ? (
               <p className="xt-step-lede">{TRADE_FROM_X.receipt.notDeployed}</p>
-            ) : (
+            ) : permission === "unfunded" ? (
               <CapabilityReceipt
                 amount={amount}
                 setAmount={setAmount}
-                disabled={!address || grant.deployed !== true}
+                disabled={!address || !grant.readable || Boolean(grant.busy) || link.walletMismatch}
                 depositing={grant.busy === "fund"}
                 firstTime={grant.grant === null}
                 decimals={grant.decimals}
                 symbol={symbol}
                 onDeposit={(amountBase) => void grant.fund(amountBase, link.status?.executor ?? null)}
               />
-            )}
+            ) : null}
           </Step>
           <Step n="3" title={TRADE_FROM_X.steps.link} state={linked ? "done" : step === 3 ? "active" : "idle"} spine={{ from: 3, cur: step }} isLast>
             <LinkStep link={link} returnTo={RETURN_TO} enabled={Boolean(address) && funded} />
@@ -129,19 +142,21 @@ export function TradeFromXScreen() {
 
         {error && (
           <div className="xt-err">
-            {error} <span className="xt-err-tail">{TRADE_FROM_X.errTail}</span>
+            {error}
           </div>
         )}
         {(grant.ok || link.ok) && <div className="xt-ok">{grant.ok || link.ok}</div>}
 
-        <div className={`xt-composer${linked ? " xt-composer--live" : ""}`}>
-          <div className="xt-composer-eyebrow">{TRADE_FROM_X.then}</div>
-          <div className="xt-composer-title">{TRADE_FROM_X.justTweet}</div>
+        <div className={`xt-composer${step === 4 ? " xt-composer--live" : ""}`}>
+          <div className="xt-composer-eyebrow">{step === 4 ? TRADE_FROM_X.then : "Next · trade from X"}</div>
+          <div className="xt-composer-title">{step === 4 ? TRADE_FROM_X.justTweet : "Finish setup before tweeting a trade."}</div>
+          {step === 4 && <>
           <div className="xt-example">
             <span className="xt-example-caret">›</span>
-            <span key={ex} className="xt-boot xt-example-text" style={{ animationDuration: ".5s" }}>{`${X_HANDLE} ${X_EXAMPLES[ex]}`}</span>
+            <span key={ex} className="xt-boot xt-example-text" style={{ animationDuration: ".5s" }}>{`${X_HANDLE} ${example}`}</span>
           </div>
           <p className="xt-composer-note">{TRADE_FROM_X.opensFrom}</p>
+          </>}
           <XRelayStatus health={link.status?.relay} />
         </div>
 

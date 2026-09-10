@@ -1,5 +1,5 @@
 import { phase } from "@masayume/core/lifecycle";
-import { describeRefusal, parseInstruction, type XInstruction } from "@masayume/core/x";
+import { describeRefusal, isBalanceOnlyXGrant, parseInstruction, X_REFUSAL_DETAILS, type XInstruction } from "@masayume/core/x";
 import { xLinkByAuthor, xReceiptUpsert, type XReceiptRecord } from "@masayume/db";
 import { getCollateral, getVaultSnapshot, marketsProvider, resolveVenueId, type SubmitterSession } from "@masayume/markets";
 import type { Bytes32, EventMarket } from "@masayume/core/types";
@@ -71,6 +71,8 @@ export async function executeMention(ctx: ExecutorContext, mention: Mention): Pr
   if (!grant) return receiptFor(mention, { ...base, refusalCode: "grant-missing", reason: "no live X grant for this wallet — fund and authorize on /trade-from-x" });
   if (grant.actor !== ctx.session.address.toLowerCase()) return receiptFor(mention, { ...base, refusalCode: "grant-mismatch", grantId: grant.grantId.toString(), reason: "the wallet's X grant names a different executor" });
   if (grant.expiresAtSec * 1000 <= Date.now()) return receiptFor(mention, { ...base, refusalCode: "grant-expired", grantId: grant.grantId.toString(), reason: "the X grant has expired — renew it on /trade-from-x" });
+  if (!isBalanceOnlyXGrant(grant)) return receiptFor(mention, { ...base, grantId: grant.grantId.toString(), refusalCode: "grant-update-required", reason: X_REFUSAL_DETAILS["grant-update-required"] });
+  if (instruction.stakeBase > grant.budgetBase) return receiptFor(mention, { ...base, grantId: grant.grantId.toString(), refusalCode: "insufficient-funds", reason: X_REFUSAL_DETAILS["insufficient-funds"] });
 
   const market = await liveWindow(ctx.venueId, instruction);
   if (!market) return receiptFor(mention, { ...base, refusalCode: "no-window", grantId: grant.grantId.toString(), reason: `no ${instruction.asset} ${instruction.cadence} Window is open right now` });

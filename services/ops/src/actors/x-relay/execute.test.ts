@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { toMarketId } from "@masayume/core/types";
 import { executeMention, type ExecutorContext } from "./execute";
 import { replyText } from "./reply-format";
+import { xGrantCaps } from "@masayume/core/x";
 
 const dependencies = vi.hoisted(() => ({
   link: vi.fn(), snapshot: vi.fn(), lanes: vi.fn(), quote: vi.fn(), submit: vi.fn(),
@@ -27,13 +28,28 @@ const market = {
 beforeEach(() => {
   vi.resetAllMocks();
   dependencies.link.mockResolvedValue({ wallet: ADDRESS });
-  dependencies.snapshot.mockResolvedValue({ ok: true, value: { grants: { executor: { grantId: 7n, actor: ADDRESS, expiresAtSec: Math.floor(Date.now() / 1000) + 3600 } } } });
+  dependencies.snapshot.mockResolvedValue({ ok: true, value: { grants: { executor: { grantId: 7n, actor: ADDRESS, kind: "executor", caps: xGrantCaps(), budgetBase: 100_000_000n, expiresAtSec: Math.floor(Date.now() / 1000) + 3600 } } } });
   dependencies.lanes.mockResolvedValue({ ok: true, value: { lanes: [{ markets: [market] }] } });
   dependencies.quote.mockResolvedValue({ ok: true, value: { maxCostBase: 100_000_000n } });
   dependencies.submit.mockResolvedValue({ status: "confirmed", booked: { txHash: HASH, costBase: 1_234_567n, contractsRaw: 2_469_134n, avgPriceBps: 5000 } });
 });
 
 describe("mention execution receipt integration", () => {
+  it("routes a funded legacy permission to its update flow before quoting or submitting", async () => {
+    dependencies.snapshot.mockResolvedValue({ ok: true, value: { grants: { executor: {
+      grantId: 10n, actor: ADDRESS, kind: "executor", expiresAtSec: Math.floor(Date.now() / 1000) + 3600,
+      caps: { ...xGrantCaps(), maxStakePerTradeBase: 5_000_000n, maxDailySpendBase: 5_000_000n }, budgetBase: 55_000_000n,
+    } } } });
+    expect(await executeMention(context, { ...mention, text: "BTC long 25 5m" })).toMatchObject({ status: "refused", refusalCode: "grant-update-required", grantId: "10", txHash: null });
+    expect(dependencies.quote).not.toHaveBeenCalled();
+    expect(dependencies.submit).not.toHaveBeenCalled();
+  });
+  it("refuses a request above the allocated X balance, without using other wallet funds", async () => {
+    const snapshot = await dependencies.snapshot();
+    snapshot.value.grants.executor.budgetBase = 5_000_000n;
+    expect(await executeMention(context, { ...mention, text: "BTC long 25 5m" })).toMatchObject({ status: "refused", refusalCode: "insufficient-funds" });
+    expect(dependencies.submit).not.toHaveBeenCalled();
+  });
   it("durably captures sender routing, target, block and nonce before the submitter is allowed to send", async () => {
     const order: string[] = [];
     const checkpoint = vi.fn(async () => { order.push("checkpoint"); });
