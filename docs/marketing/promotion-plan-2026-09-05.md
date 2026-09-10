@@ -99,7 +99,7 @@ The deployment targets **Somnia Shannon testnet, chain 50312**, using **tUSDC** 
 | [Ticket controls](https://docs.masayume.app/videos/ticket.mp4) | 20.93s; H.264, 1920 × 1080, 30 fps; 677,779 bytes | UP and amount, 2× warning, back to 1×, Range and Wide. Quote remains pending; no order submitted. |
 | [Candle Hop](https://docs.masayume.app/videos/candle-hop.mp4) | 8.00s; H.264, 1920 × 1080, 30 fps; 902,817 bytes | Start, attempt, collision, zero-point result and Play again. No connected wallet or score submission. |
 
-All three public media URLs returned HTTP 200 with `video/mp4` during this review. Dimensions/durations were checked with `ffprobe`; the descriptions match the docs walkthrough manifest. This research did not upload them to X or verify X transcoding. Keep the original dates and state captions when reusing them. The full YouTube demo remains unpublished; its cover is not a playable video.
+All three public media URLs returned HTTP 200 with `video/mp4` during this review. Dimensions/durations were checked with `ffprobe`; the descriptions match the docs walkthrough manifest. This research did not upload them to X or verify X transcoding. Keep the original dates and state captions when reusing them. **10 September update:** the owner supplied the [official YouTube demo](https://youtu.be/tJ__aXds1dE), embedded at [masayume.app/demo](https://masayume.app/demo); the three instructional clips above remain available separately.
 
 ## Two-week calendar: 7–20 September 2026
 
@@ -218,6 +218,6 @@ On **13 September**, compare the first four posts and choose one change for week
 - Verify the linked guide, app status and exact deployment handle shortly before publishing.
 - Keep Shannon testnet/test-collateral context visible when discussing trades or returns.
 - Match every screenshot/clip caption to its real connected, signed-out, pending or failed state.
-- Leave the future YouTube artwork unlinked until a real public video exists.
+- Link official demo artwork to [masayume.app/demo](https://masayume.app/demo), where readers can watch the YouTube video.
 - Use the approved banner as the profile asset after reviewing its actual crop; this plan does not upload it.
 - Check draft copy against the current X composer. No posting, scheduling or bot activation has been performed by this research.

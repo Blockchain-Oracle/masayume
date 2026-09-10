@@ -205,16 +205,13 @@
   box-shadow: var(--demo-frame-shadow);
 }
 
-/* Native controls keep keyboard, mobile fullscreen and caption support available. */
+/* Keep YouTube's controls usable even when a narrow viewport is shorter than 16:9. */
 .demo-video-figure { margin: 0; min-width: 0; }
-.demo-video-figure .demo-video { display: block; width: 100%; max-width: 100%; height: auto; background: #050505; }
+.demo-video-figure .demo-video { display: block; width: 100%; max-width: 100%; height: auto; min-height: 200px; background: #050505; }
 .demo-video-figure .demo-video:focus-visible { outline: 3px solid var(--vermilion); outline-offset: 4px; }
 .demo-video-caption { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 12px; color: var(--gray-400); font-size: 13px; line-height: 1.5; }
-.demo-video-caption a, .demo-transcript summary { color: var(--white); text-decoration: underline; text-underline-offset: 3px; }
-.demo-video-caption a { min-height: 28px; display: inline-flex; align-items: center; }
-.demo-transcript { margin-top: 12px; font-size: 14px; line-height: 1.7; color: var(--gray-400); }
-.demo-transcript summary { cursor: pointer; width: fit-content; padding: 8px 0; }
-.demo-transcript p { margin-top: 12px; max-width: 72ch; }
+.demo-video-caption a { min-height: 44px; display: inline-flex; align-items: center; color: var(--white); text-decoration: underline; text-underline-offset: 3px; }
+.demo-video-caption span { align-self: center; }
 
 /* mt-6 text-lg text-gray-400 max-w-[52ch] leading-relaxed */
 .demo-lead {

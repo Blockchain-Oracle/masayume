@@ -9,6 +9,13 @@
  */
 export const DEMO = {
   title: "Demo",
+  video: {
+    title: "Masayume — official demo",
+    description: "Watch the official Masayume demo: markets, games, and agents on Somnia Shannon testnet.",
+    watchUrl: "https://youtu.be/tJ__aXds1dE",
+    embedUrl: "https://www.youtube-nocookie.com/embed/tJ__aXds1dE?playsinline=1&rel=0",
+    coverUrl: "https://masayume.app/demo/official-demo-cover.jpg",
+  },
   bar: {
     brand: "MASAYUME",
     sub: "/ demo",
@@ -20,7 +27,7 @@ export const DEMO = {
     eyebrow: "live demo",
     headline: "See Masayume ",
     headlineSerif: "work.",
-    videoLabel: "▶ the 2:46 demo · Shannon testnet",
+    videoLabel: "▶ official demo · 3:23 · Shannon testnet",
     lead: "The consumer front door to on-chain prediction markets — one tap, non-custodial, on the web and as an installable app. Full feature breakdown and verifiable on-chain proofs below.",
     open: "Open the app",
     stats: "View live stats",

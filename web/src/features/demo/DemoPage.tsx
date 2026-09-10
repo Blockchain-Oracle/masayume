@@ -12,7 +12,7 @@ import { CONTRACT_PROOFS, contractProof, contractProofHref, PROOF_WALLET, PROOFS
  *
  * The reference is "the walkthrough, in place of a video": the real product, with
  * every claim a transaction anyone can open. That is kept exactly. What changes is
- * every fact: the video uses dated Shannon testnet captures, the traction line is read
+ * every fact: the official video is hosted on YouTube, the traction line is read
  * live from the venue, the screenshots are dated captures of this product, and the
  * proofs are this project's confirmed actions and pinned contracts on the Shannon explorer.
  *

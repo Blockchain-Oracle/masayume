@@ -43,13 +43,15 @@ The app currently targets **Somnia Shannon testnet — chain 50312**. Trading co
 
 <p align="center">
   <a href="https://masayume.app/demo">
-    <img src="https://masayume.app/video/masayume-demo-2026-09-07.jpg" width="720" alt="Watch the Masayume demo: markets, agents, X receipts and Moonshot on Shannon testnet" />
+    <img src="https://masayume.app/demo/official-demo-cover.jpg" width="720" alt="Play the official Masayume demo. Make a call. Meet your agent. See it happen." />
   </a>
 </p>
 
-**[Watch the 2:46 demo](https://masayume.app/demo)** · [Direct MP4](https://masayume.app/video/masayume-demo-2026-09-07.mp4) · [English captions](https://masayume.app/video/masayume-demo-2026-09-07.vtt)
+<p align="center">
+  <a href="https://masayume.app/demo"><b>▶ Watch the official demo · 3:23</b></a>
+</p>
 
-Real app captures from 6–7 September 2026 show the corrected AI Hold read, confirmed strategy publication, bounded copying, the X receipt and a paid Moonshot round. All financial evidence uses Shannon testnet assets. The player includes a transcript; the [Practice guide](https://docs.masayume.app/games/practice), [ticket walkthrough](https://docs.masayume.app/trading/first-trade) and [Candle Hop guide](https://docs.masayume.app/games/candle-hop) provide further recorded walkthroughs.
+Watch the [official YouTube video](https://youtu.be/tJ__aXds1dE) right on our demo page, with a feature walkthrough and transaction evidence below the player. Masayume uses Shannon testnet assets. For step-by-step recordings, see the [Practice guide](https://docs.masayume.app/games/practice), [ticket walkthrough](https://docs.masayume.app/trading/first-trade) and [Candle Hop guide](https://docs.masayume.app/games/candle-hop).
 
 ## How the parts connect
 

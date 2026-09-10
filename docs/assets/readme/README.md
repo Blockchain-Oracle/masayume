@@ -16,8 +16,10 @@ The source generator and licensed font files live in the [documentation reposito
 
 ## Demo video
 
-The root README now links to the native [Masayume demo player](https://masayume.app/demo), with its [direct MP4](https://masayume.app/video/masayume-demo-2026-09-07.mp4), [English captions](https://masayume.app/video/masayume-demo-2026-09-07.vtt) and a genuine poster frame. The prepared cut lasts **2:46**. The player includes native controls and a full transcript.
+The root README's clickable [official demo cover](../../../web/public/demo/official-demo-cover.jpg) opens [masayume.app/demo](https://masayume.app/demo). That page embeds the owner's [official YouTube video](https://youtu.be/tJ__aXds1dE), published on 10 September 2026 and lasting **3:23**, with a direct Watch on YouTube link. The same cover supplies the page's Open Graph and X previews. It is served by the app at `https://masayume.app/demo/official-demo-cover.jpg`, independently of the shared themed exports above.
 
-The earlier themed video-cover SVGs/PNGs in this folder remain historical artwork; their coming-soon text is no longer used by the root README. Rendering and wiring the player do not by themselves establish production playback or hackathon submission. See the [demo source and review record](../../submission/demo-script-2026-09-06.md).
+The cover was generated with image generation using Masayume's existing branded cover and real market capture. The [NoxVote README](https://github.com/Blockchain-Oracle/noxvote) inspired its headline, screenshot, and prominent play-button treatment. This is promotional artwork; the dated original market capture remains at `web/public/demo/markets.png`.
+
+The earlier themed video-cover SVGs/PNGs and their manifest remain historical artwork; their coming-soon text is no longer used by the root README. The former MP4, captions and transcript are retained as dated source evidence, but are no longer presented as the official demo. See the [earlier demo source and review record](../../submission/demo-script-2026-09-06.md). The separate instructional videos in the documentation remain in use.
 
 GitHub raw URLs follow `https://raw.githubusercontent.com/Blockchain-Oracle/masayume/main/docs/assets/readme/hero-light.svg`. That form is suitable for a public repository. These repositories are currently private, so the live README uses the public docs host instead of assuming anonymous raw-file access.

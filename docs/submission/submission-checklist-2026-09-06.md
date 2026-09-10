@@ -2,6 +2,8 @@
 
 Updated **7 September 2026**. This current checklist supersedes its 6 September preparation snapshot; the earlier revision remains in Git. The owner completes the actual DoraHacks submission. A public-facts draft has been started in the owner's signed-in Zen session, but **no BUIDL has been submitted and no submission acknowledgement exists**.
 
+**Demo update · 10 September 2026:** The owner selected [this YouTube video](https://youtu.be/tJ__aXds1dE) as the official demo, embedded at [masayume.app/demo](https://masayume.app/demo). YouTube reports a **3:23** duration and permits embedding. This replaces the earlier 2:46 cut; the earlier duration and playback evidence do not apply to it. Submission observations below remain the dated 7 September record.
+
 ## Deadline and official requirements
 
 The [official event page](https://dorahacks.io/hackathon/event-contracts/detail), rechecked in authenticated Zen on 7 September, requires a **working testnet prototype**, **GitHub repository** and **2–3-minute demo video**. A presentation deck and SDK/documentation feedback report are optional.
@@ -21,7 +23,7 @@ The signed-in owner is already registered for the event. **Submit BUIDL** opens 
 | Crypto/Web3 subcategories and infrastructure | Optional; innovation domains, L1s, L2s, appchains and other ecosystems | Do not invent a required tag or unsupported deployment |
 | GitHub/Gitlab/Bitbucket | Required; repository or organization profile accepted by the field label | https://github.com/Blockchain-Oracle/masayume — source access remains a release gate |
 | Project website | Optional | https://masayume.app |
-| Demo video | Required; YouTube recommended for an embedded player | https://masayume.app/demo — verify the deployed 2:46 player before submission |
+| Demo video | Required; YouTube recommended for an embedded player | https://youtu.be/tJ__aXds1dE — official video; embedded at https://masayume.app/demo |
 | Social links | At least one required, up to three | https://x.com/masayume_app |
 | Details | Required rich-text/Markdown description; links, tables, images and YouTube supported; no length counter shown in inspected state | [Prepared BUIDL description](buidl-description-2026-09-07.md) |
 | Team / Contact / final Submission | Sections confirmed in the actual wizard; exact fields and final consent not yet read | Owner says the remaining flow is README and contact information. Preserve that distinction from independent inspection; do not invent contact values or accept terms. |
@@ -34,9 +36,9 @@ The Profile fields were entered using public project facts. The owner manually c
 | --- | --- | --- |
 | Working testnet prototype | [App](https://masayume.app); genuine AI execution/loss settlement, corrected Momentum fill/settlement/new-Window fill, X image receipt and complete Moonshot payout recorded | Final deployed revisions verified. Use the current [acceptance ledger](../implementation/acceptance-2026-09-06.md), including failed and superseded evidence. Momentum settled successfully at 04:00:13 UTC and filled a new BTC Window at 04:07:51; that last faucet-funded position remains open until 05:00 UTC. |
 | Repository | App and docs repositories are private | Complete the [source-release review](public-release-audit-2026-09-06.md), record redistribution terms, then verify judge access. Do not describe inaccessible repositories as open source. |
-| Demo | A measured 166-second / 2:46 video is publicly deployed with captions, poster and transcript | Verify the final `/demo` player, direct MP4, poster, captions and transcript anonymously. Public playback and exact uploaded bytes passed; technical audio checks passed, and auditory listening review remains useful. |
+| Demo | Owner-selected YouTube video, 3:23; README cover links to `/demo` | Verify the YouTube player and direct link anonymously. The current video exceeds the previously recorded 2–3-minute requirement; do not carry over the earlier cut's duration compliance. |
 
-The demo retains a real AI Hold, authentic publication/copy screens, matching X receipt, paid Moonshot and arcade recording. It does not present the invalid pre-fix Momentum signal as acceptance or claim profitable AI performance.
+The earlier 2:46 cut retained a real AI Hold, authentic publication/copy screens, matching X receipt, paid Moonshot and arcade recording. Its source and review record remain historical evidence, not a content review of the replacement YouTube video.
 
 ## Optional package
 
